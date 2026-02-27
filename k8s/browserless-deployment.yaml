@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: browserless
+  namespace: browser-streamer
+  labels:
+    app: browserless
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: browserless
+  template:
+    metadata:
+      labels:
+        app: browserless
+    spec:
+      containers:
+        - name: chromium
+          image: ghcr.io/browserless/chromium:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: CONCURRENT
+              value: "10"
+            - name: TIMEOUT
+              value: "60000"
+            - name: TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: browserless-auth
+                  key: token
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: "1"
+              memory: 4Gi
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - "wget -q -O /dev/null http://localhost:3000/json/version?token=${TOKEN}"
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - "wget -q -O /dev/null http://localhost:3000/json/version?token=${TOKEN}"
+            initialDelaySeconds: 15
+            periodSeconds: 30

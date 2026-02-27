@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: session-manager
+  namespace: browser-streamer
+  labels:
+    app: session-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: session-manager
+  template:
+    metadata:
+      labels:
+        app: session-manager
+    spec:
+      serviceAccountName: session-manager
+      containers:
+        - name: session-manager
+          image: session-manager:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          env:
+            - name: TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: browserless-auth
+                  key: token
+            - name: NAMESPACE
+              value: browser-streamer
+            - name: STREAMER_IMAGE
+              value: browser-streamer:latest
+            - name: MAX_SESSIONS
+              value: "3"
+            - name: IDLE_TIMEOUT
+              value: "10"
+            - name: PORT_RANGE_START
+              value: "31000"
+            - name: PORT_RANGE_END
+              value: "31099"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 30
