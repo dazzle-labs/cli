@@ -175,12 +175,10 @@ func (m *Manager) mcpMiddleware(next http.Handler) http.Handler {
 				return
 			}
 			if endpoint == nil {
-				// Backward compatibility: auto-create endpoint with this UUID for authenticated users
-				if err := dbCreateEndpointWithID(m.db, agentID, info.UserID, "auto"); err != nil {
-					log.Printf("WARN: failed to auto-create endpoint %s for user %s: %v", agentID, info.UserID, err)
-				} else {
-					log.Printf("Auto-created endpoint %s for user %s", agentID, info.UserID)
-				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusNotFound)
+				w.Write([]byte(`{"error":"endpoint not found"}`))
+				return
 			} else if endpoint.UserID != info.UserID {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusNotFound)

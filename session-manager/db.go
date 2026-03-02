@@ -282,14 +282,6 @@ func dbCreateEndpoint(db *sql.DB, userID, name string) (string, error) {
 	return id, err
 }
 
-func dbCreateEndpointWithID(db *sql.DB, id, userID, name string) error {
-	_, err := db.Exec(`
-		INSERT INTO endpoints (id, user_id, name)
-		VALUES ($1, $2, $3)
-		ON CONFLICT (id) DO NOTHING`, id, userID, name)
-	return err
-}
-
 func dbListEndpoints(db *sql.DB, userID string) ([]endpointRow, error) {
 	rows, err := db.Query(`
 		SELECT id, user_id, name, created_at

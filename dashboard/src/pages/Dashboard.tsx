@@ -62,36 +62,9 @@ export function Dashboard() {
     }
   }
 
-  // Initial load + auto-provision
+  // Initial load
   useEffect(() => {
-    async function init() {
-      const data = await refresh();
-      if (data.ok && data.endpoints.length === 0) {
-        setProvisioning(true);
-        try {
-          const epResp = await endpointClient.createEndpoint({ name: "default" });
-          const ep = epResp.endpoint;
-          if (ep) {
-            setWelcomeEndpoint(ep);
-
-            // Also create API key if user has none
-            const keysResp = await apiKeyClient.listApiKeys({});
-            if (keysResp.keys.length === 0) {
-              const keyResp = await apiKeyClient.createApiKey({ name: "default" });
-              setWelcomeApiKey(keyResp.secret);
-            }
-
-            // Re-fetch to show the new endpoint
-            await refresh();
-          }
-        } catch {
-          // provisioning failed — still show the page
-        } finally {
-          setProvisioning(false);
-        }
-      }
-    }
-    init();
+    refresh();
   }, []);
 
   // Poll for connection when on welcome screen

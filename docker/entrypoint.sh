@@ -85,6 +85,10 @@ mkdir -p "$OBS_CONFIG_DIR/basic/scenes" "$OBS_CONFIG_DIR/basic/profiles/Default"
 
 # Global config: enable WebSocket on port 4455, no auth
 cat > "$OBS_CONFIG_DIR/global.ini" <<'OBSINI'
+[General]
+FirstRun=false
+LastVersion=503841792
+
 [OBSWebSocket]
 ServerEnabled=true
 ServerPort=4455
