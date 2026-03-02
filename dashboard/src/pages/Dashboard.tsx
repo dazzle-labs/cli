@@ -8,7 +8,7 @@ import type { GetProfileResponse } from "../gen/api/v1/user_pb.js";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Cpu, Globe, Radio, ToggleLeft, ToggleRight, X, ChevronRight, Copy, Check, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { Trash2, Cpu, Globe, Radio, ToggleLeft, ToggleRight, X, ChevronRight, Copy, Check, Loader2 } from "lucide-react";
 import { StreamDestinationForm } from "@/components/onboarding/StreamDestinationForm";
 import type { StreamDestinationData } from "@/components/onboarding/StreamDestinationForm";
 import { FRAMEWORKS } from "@/components/onboarding/frameworks";
@@ -21,11 +21,7 @@ export function Dashboard() {
   const [profile, setProfile] = useState<GetProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Welcome screen state (first-time user)
-  const [welcomeEndpoint, setWelcomeEndpoint] = useState<Endpoint | null>(null);
-  const [welcomeApiKey, setWelcomeApiKey] = useState<string | null>(null);
-  const [welcomeConnected, setWelcomeConnected] = useState(false);
-  const [showExplainer, setShowExplainer] = useState(false);
+  const [creatingEndpoint, setCreatingEndpoint] = useState(false);
 
   // Panel state
   const [selectedEndpointId, setSelectedEndpointId] = useState<string | null>(null);
@@ -65,26 +61,6 @@ export function Dashboard() {
   useEffect(() => {
     refresh();
   }, []);
-
-  // Poll for connection when on welcome screen
-  useEffect(() => {
-    if (!welcomeEndpoint || welcomeConnected) return;
-    const interval = setInterval(async () => {
-      try {
-        const resp = await sessionClient.listSessions({});
-        const connected = resp.sessions.some(
-          (s) => s.id === welcomeEndpoint.id
-        );
-        if (connected) {
-          setWelcomeConnected(true);
-          setSessions(resp.sessions);
-        }
-      } catch {
-        // ignore
-      }
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [welcomeEndpoint, welcomeConnected]);
 
   // Cleanup copy timeout on unmount
   useEffect(() => {
@@ -205,159 +181,22 @@ export function Dashboard() {
     );
   }
 
-  // ─── Welcome Screen (first-time user) ─────────────────────────
-  if (welcomeEndpoint && welcomeApiKey !== null) {
-    const mcpUrl = `${window.location.origin}/mcp/${welcomeEndpoint.id}`;
-    const maskedKey = welcomeApiKey
-      ? `${welcomeApiKey.slice(0, 8)}${"•".repeat(24)}`
-      : null;
-    const activeFw = FRAMEWORKS.find((fw) => fw.id === activeFramework) ?? FRAMEWORKS[0];
-    const snippet = activeFw.getSnippet(mcpUrl, "");
+  // ─── Dashboard (endpoint-centric) ───────────────────────
 
-    return (
-      <div className="max-w-2xl mx-auto pt-8">
-        <h1
-          className="text-3xl tracking-[-0.02em] text-white mb-2"
-          style={{ fontFamily: "'DM Serif Display', serif" }}
-        >
-          Your agent's stage is ready.
-        </h1>
-
-        {/* MCP URL */}
-        <div className="mt-6 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
-          <p className="text-xs font-medium text-zinc-400 mb-2">MCP Endpoint</p>
-          <div className="flex items-center gap-2">
-            <code className="flex-1 text-sm font-mono text-emerald-400 bg-zinc-950/50 rounded-lg px-3 py-2 border border-white/[0.06] truncate min-w-0">
-              {mcpUrl}
-            </code>
-            <button
-              onClick={() => handleCopy(mcpUrl, "mcp-url")}
-              className="text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10 p-2 rounded-md transition-colors cursor-pointer shrink-0"
-            >
-              {copiedId === "mcp-url" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-            </button>
-          </div>
-        </div>
-
-        {/* API Key */}
-        {welcomeApiKey && (
-          <div className="mt-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
-            <p className="text-xs font-medium text-zinc-400 mb-1">API Key</p>
-            <p className="text-xs text-zinc-600 mb-2">Save this — shown once</p>
-            <div className="flex items-center gap-2">
-              <code className="flex-1 text-xs font-mono text-zinc-500 bg-zinc-950/50 rounded-lg px-3 py-2 border border-white/[0.06] truncate min-w-0">
-                {maskedKey}
-              </code>
-              <button
-                onClick={() => handleCopy(welcomeApiKey, "api-key")}
-                className="text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10 p-2 rounded-md transition-colors cursor-pointer shrink-0"
-              >
-                {copiedId === "api-key" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Env var instruction */}
-        <div className="mt-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
-          <p className="text-xs font-medium text-zinc-400 mb-2">
-            Set <code className="text-emerald-400 bg-white/[0.04] px-1 py-0.5 rounded">DAZZLE_API_KEY</code> in your environment
-          </p>
-          <code className="text-xs font-mono text-zinc-500">
-            export DAZZLE_API_KEY={welcomeApiKey || "<your-key>"}
-          </code>
-        </div>
-
-        {/* Framework snippet tabs */}
-        <div className="mt-4 rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-          <div className="flex gap-1 px-3 py-2 border-b border-white/[0.06] overflow-x-auto">
-            {FRAMEWORKS.map((fw) => (
-              <button
-                key={fw.id}
-                type="button"
-                onClick={() => { setActiveFramework(fw.id); setCopiedId(null); }}
-                className={
-                  fw.id === activeFramework
-                    ? "bg-emerald-500/10 text-emerald-400 text-xs px-2.5 py-1 rounded-md font-medium whitespace-nowrap"
-                    : "text-zinc-500 hover:text-zinc-300 text-xs px-2.5 py-1 rounded-md whitespace-nowrap"
-                }
-              >
-                {fw.name}
-              </button>
-            ))}
-          </div>
-          <div className="relative">
-            <pre className="p-4 text-sm font-mono text-zinc-300 overflow-x-auto leading-relaxed">
-              {snippet}
-            </pre>
-            <button
-              onClick={() => handleCopy(snippet, `snippet-${activeFw.id}`)}
-              className="absolute top-2 right-2 text-zinc-500 hover:text-emerald-400 p-1.5 rounded-md transition-colors cursor-pointer"
-            >
-              {copiedId === `snippet-${activeFw.id}` ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Connection status */}
-        <div className="mt-6 flex items-center gap-3 justify-center">
-          {welcomeConnected ? (
-            <>
-              <div className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-              <span className="text-sm font-medium text-emerald-400">Connected!</span>
-            </>
-          ) : (
-            <>
-              <div className="h-2.5 w-2.5 rounded-full bg-zinc-600 animate-pulse" />
-              <span className="text-sm text-zinc-500">Waiting for your agent to connect...</span>
-            </>
-          )}
-        </div>
-
-        {/* "I'm new to this" toggle */}
-        <div className="mt-6 border-t border-white/[0.06] pt-4">
-          <button
-            onClick={() => setShowExplainer(!showExplainer)}
-            className="flex items-center gap-2 text-xs text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
-          >
-            {showExplainer ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-            I'm new to this
-          </button>
-          {showExplainer && (
-            <div className="mt-4 flex flex-col sm:flex-row gap-4">
-              {[
-                { icon: Globe, label: "Production stage", desc: "A cloud environment runs your agent — Chrome, streaming, everything." },
-                { icon: Cpu, label: "Agent drives via MCP", desc: "Your agent connects over MCP to set HTML, take screenshots, and control OBS." },
-                { icon: Radio, label: "Stream it live", desc: "Watch on your dashboard or go live on Twitch, YouTube, and more." },
-              ].map((s) => (
-                <div key={s.label} className="flex-1 flex flex-col items-center text-center">
-                  <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-2">
-                    <s.icon className="h-5 w-5 text-emerald-400" />
-                  </div>
-                  <p className="text-sm font-medium text-white mb-1">{s.label}</p>
-                  <p className="text-xs text-zinc-500 leading-relaxed">{s.desc}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Continue to dashboard */}
-        {welcomeConnected && (
-          <div className="mt-6 flex justify-center">
-            <Button
-              onClick={() => { setWelcomeEndpoint(null); setWelcomeApiKey(null); }}
-              className="bg-emerald-500 text-zinc-950 hover:bg-emerald-400 font-semibold"
-            >
-              Go to Dashboard
-            </Button>
-          </div>
-        )}
-      </div>
-    );
+  async function handleCreateEndpoint() {
+    setCreatingEndpoint(true);
+    try {
+      const resp = await endpointClient.createEndpoint({ name: "" });
+      await refresh();
+      if (resp.endpoint) {
+        openPanel(resp.endpoint.id);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setCreatingEndpoint(false);
+    }
   }
-
-  // ─── Normal Dashboard (endpoint-centric) ───────────────────────
   const hasActiveSessions = sessions.length > 0;
   const hasStreamDests = destinations.length > 0;
   const showStreamBanner = hasActiveSessions && !hasStreamDests && !bannerDismissed;
@@ -416,13 +255,36 @@ export function Dashboard() {
             </p>
           )}
         </div>
+        {endpoints.length > 0 && (
+          <Button
+            onClick={handleCreateEndpoint}
+            disabled={creatingEndpoint}
+            variant="ghost"
+            size="sm"
+            className="text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10"
+          >
+            {creatingEndpoint ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-1" />
+            ) : null}
+            New Endpoint
+          </Button>
+        )}
       </div>
 
       {/* Endpoints list */}
       {endpoints.length === 0 ? (
-        <div className="flex items-center gap-2 text-zinc-500 text-sm">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          No endpoints yet.
+        <div className="text-center py-16">
+          <p className="text-zinc-500 text-sm mb-4">No endpoints yet. Create one to get started.</p>
+          <Button
+            onClick={handleCreateEndpoint}
+            disabled={creatingEndpoint}
+            className="bg-emerald-500 text-zinc-950 hover:bg-emerald-400 font-semibold"
+          >
+            {creatingEndpoint ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : null}
+            Create Endpoint
+          </Button>
         </div>
       ) : (
         <div className="flex flex-col gap-2">
