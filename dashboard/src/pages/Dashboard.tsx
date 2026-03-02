@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { sessionClient, apiKeyClient, endpointClient, userClient, streamClient } from "../client.js";
+import { sessionClient, endpointClient, userClient, streamClient } from "../client.js";
 import type { Session } from "../gen/api/v1/session_pb.js";
 import type { Endpoint } from "../gen/api/v1/endpoint_pb.js";
 import type { StreamDestination } from "../gen/api/v1/stream_pb.js";
@@ -20,7 +20,6 @@ export function Dashboard() {
   const [destinations, setDestinations] = useState<StreamDestination[]>([]);
   const [profile, setProfile] = useState<GetProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [provisioning, setProvisioning] = useState(false);
 
   // Welcome screen state (first-time user)
   const [welcomeEndpoint, setWelcomeEndpoint] = useState<Endpoint | null>(null);
@@ -197,11 +196,11 @@ export function Dashboard() {
     localStorage.setItem("dazzle-stream-banner-dismissed", "true");
   }
 
-  if (loading || provisioning) {
+  if (loading) {
     return (
       <div className="flex items-center gap-2 text-zinc-500 text-sm pt-12">
         <div className="h-4 w-4 border-2 border-zinc-600 border-t-emerald-400 rounded-full animate-spin" />
-        {provisioning ? "Setting up your stage..." : "Loading endpoints..."}
+        Loading endpoints...
       </div>
     );
   }
