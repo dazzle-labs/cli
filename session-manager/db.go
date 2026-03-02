@@ -264,6 +264,77 @@ func dbDeleteStreamDest(db *sql.DB, id, userID string) error {
 	return nil
 }
 
+// --- Endpoint queries ---
+
+type endpointRow struct {
+	ID        string
+	UserID    string
+	Name      string
+	CreatedAt time.Time
+}
+
+func dbCreateEndpoint(db *sql.DB, userID, name string) (string, error) {
+	var id string
+	err := db.QueryRow(`
+		INSERT INTO endpoints (user_id, name)
+		VALUES ($1, $2)
+		RETURNING id`, userID, name).Scan(&id)
+	return id, err
+}
+
+func dbCreateEndpointWithID(db *sql.DB, id, userID, name string) error {
+	_, err := db.Exec(`
+		INSERT INTO endpoints (id, user_id, name)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (id) DO NOTHING`, id, userID, name)
+	return err
+}
+
+func dbListEndpoints(db *sql.DB, userID string) ([]endpointRow, error) {
+	rows, err := db.Query(`
+		SELECT id, user_id, name, created_at
+		FROM endpoints WHERE user_id=$1 ORDER BY created_at`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var endpoints []endpointRow
+	for rows.Next() {
+		var e endpointRow
+		if err := rows.Scan(&e.ID, &e.UserID, &e.Name, &e.CreatedAt); err != nil {
+			return nil, err
+		}
+		endpoints = append(endpoints, e)
+	}
+	return endpoints, rows.Err()
+}
+
+func dbGetEndpoint(db *sql.DB, id string) (*endpointRow, error) {
+	var e endpointRow
+	err := db.QueryRow(`
+		SELECT id, user_id, name, created_at
+		FROM endpoints WHERE id=$1`, id).Scan(&e.ID, &e.UserID, &e.Name, &e.CreatedAt)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &e, nil
+}
+
+func dbDeleteEndpoint(db *sql.DB, id, userID string) error {
+	res, err := db.Exec("DELETE FROM endpoints WHERE id=$1 AND user_id=$2", id, userID)
+	if err != nil {
+		return err
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return fmt.Errorf("endpoint not found")
+	}
+	return nil
+}
+
 // --- Session log queries ---
 
 func dbLogSessionCreate(db *sql.DB, id, userID, podName string) error {

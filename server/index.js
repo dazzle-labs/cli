@@ -153,6 +153,13 @@ app.post('/api/navigate', auth, async (req, res) => {
     }
 });
 
+// Serve HLS preview segments (auth required — proxied through session manager, but also reachable via HostPort)
+app.use('/hls', auth, express.static('/tmp/hls', {
+    setHeaders: (res) => {
+        res.setHeader('Cache-Control', 'no-cache, no-store');
+    }
+}));
+
 // Create HTTP server
 const server = http.createServer(app);
 

@@ -1,25 +1,35 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { useNavigate } from "react-router-dom";
-import { sessionClient, userClient, streamClient } from "../client.js";
+import { sessionClient, apiKeyClient, endpointClient, userClient, streamClient } from "../client.js";
 import type { Session } from "../gen/api/v1/session_pb.js";
+import type { Endpoint } from "../gen/api/v1/endpoint_pb.js";
 import type { StreamDestination } from "../gen/api/v1/stream_pb.js";
 import type { GetProfileResponse } from "../gen/api/v1/user_pb.js";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Cpu, Globe, Sparkles, ArrowRight, Radio, ToggleLeft, ToggleRight, X, ChevronRight, Copy, Check } from "lucide-react";
+import { Trash2, Cpu, Globe, Radio, ToggleLeft, ToggleRight, X, ChevronRight, Copy, Check, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { StreamDestinationForm } from "@/components/onboarding/StreamDestinationForm";
 import type { StreamDestinationData } from "@/components/onboarding/StreamDestinationForm";
 import { FRAMEWORKS } from "@/components/onboarding/frameworks";
+import { StreamPreview } from "@/components/StreamPreview";
 
 export function Dashboard() {
-  const navigate = useNavigate();
+  const [endpoints, setEndpoints] = useState<Endpoint[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [destinations, setDestinations] = useState<StreamDestination[]>([]);
   const [profile, setProfile] = useState<GetProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [provisioning, setProvisioning] = useState(false);
+
+  // Welcome screen state (first-time user)
+  const [welcomeEndpoint, setWelcomeEndpoint] = useState<Endpoint | null>(null);
+  const [welcomeApiKey, setWelcomeApiKey] = useState<string | null>(null);
+  const [welcomeConnected, setWelcomeConnected] = useState(false);
+  const [showExplainer, setShowExplainer] = useState(false);
+
+  // Panel state
+  const [selectedEndpointId, setSelectedEndpointId] = useState<string | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [panelMounted, setPanelMounted] = useState(false);
   const [activeFramework, setActiveFramework] = useState(FRAMEWORKS[0].id);
@@ -27,26 +37,82 @@ export function Dashboard() {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
 
+  // Streaming banner
+  const [bannerDismissed, setBannerDismissed] = useState(
+    () => localStorage.getItem("dazzle-stream-banner-dismissed") === "true"
+  );
+
   async function refresh() {
     try {
-      const [sessResp, profResp, streamResp] = await Promise.all([
+      const [epResp, sessResp, profResp, streamResp] = await Promise.all([
+        endpointClient.listEndpoints({}),
         sessionClient.listSessions({}),
         userClient.getProfile({}),
         streamClient.listStreamDestinations({}),
       ]);
+      setEndpoints(epResp.endpoints);
       setSessions(sessResp.sessions);
       setProfile(profResp);
       setDestinations(streamResp.destinations);
+      return { endpoints: epResp.endpoints, sessions: sessResp.sessions, ok: true };
     } catch {
-      // still show the page even if fetch fails
+      return { endpoints: [], sessions: [], ok: false };
     } finally {
       setLoading(false);
     }
   }
 
+  // Initial load + auto-provision
   useEffect(() => {
-    refresh();
+    async function init() {
+      const data = await refresh();
+      if (data.ok && data.endpoints.length === 0) {
+        setProvisioning(true);
+        try {
+          const epResp = await endpointClient.createEndpoint({ name: "default" });
+          const ep = epResp.endpoint;
+          if (ep) {
+            setWelcomeEndpoint(ep);
+
+            // Also create API key if user has none
+            const keysResp = await apiKeyClient.listApiKeys({});
+            if (keysResp.keys.length === 0) {
+              const keyResp = await apiKeyClient.createApiKey({ name: "default" });
+              setWelcomeApiKey(keyResp.secret);
+            }
+
+            // Re-fetch to show the new endpoint
+            await refresh();
+          }
+        } catch {
+          // provisioning failed — still show the page
+        } finally {
+          setProvisioning(false);
+        }
+      }
+    }
+    init();
   }, []);
+
+  // Poll for connection when on welcome screen
+  useEffect(() => {
+    if (!welcomeEndpoint || welcomeConnected) return;
+    const interval = setInterval(async () => {
+      try {
+        const resp = await sessionClient.listSessions({});
+        const connected = resp.sessions.some(
+          (s) => s.id === welcomeEndpoint.id
+        );
+        if (connected) {
+          setWelcomeConnected(true);
+          setSessions(resp.sessions);
+        }
+      } catch {
+        // ignore
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [welcomeEndpoint, welcomeConnected]);
 
   // Cleanup copy timeout on unmount
   useEffect(() => {
@@ -55,40 +121,29 @@ export function Dashboard() {
     };
   }, []);
 
-  // Open panel: mount first, then animate in on next frame
   function openPanel(id: string) {
-    setSelectedSessionId(id);
+    setSelectedEndpointId(id);
     setPanelMounted(true);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => setPanelOpen(true));
     });
   }
 
-  // Close panel: animate out, then unmount after transition
   const closePanel = useCallback(() => {
     setPanelOpen(false);
     setConfirmingDelete(false);
     setTimeout(() => {
-      setSelectedSessionId(null);
+      setSelectedEndpointId(null);
       setPanelMounted(false);
     }, 200);
   }, []);
 
-  // Close panel if selected session disappears from list
-  useEffect(() => {
-    if (selectedSessionId && !sessions.find(s => s.id === selectedSessionId)) {
-      closePanel();
-    }
-  }, [sessions, selectedSessionId, closePanel]);
-
-  // Body scroll lock when panel is mounted
   useEffect(() => {
     if (!panelMounted) return;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
   }, [panelMounted]);
 
-  // Escape key handler for slide-over
   useEffect(() => {
     if (!panelMounted) return;
     function handleKey(e: KeyboardEvent) {
@@ -98,11 +153,11 @@ export function Dashboard() {
     return () => document.removeEventListener("keydown", handleKey);
   }, [panelMounted, closePanel]);
 
-  async function handleDelete(id: string) {
+  async function handleDeleteEndpoint(id: string) {
     try {
-      await sessionClient.deleteSession({ id });
+      await endpointClient.deleteEndpoint({ id });
     } catch {
-      // ignore — pod may already be gone
+      // ignore
     }
     await refresh();
   }
@@ -119,7 +174,7 @@ export function Dashboard() {
       });
       await refresh();
     } catch {
-      // ignore network errors
+      // ignore
     }
   }
 
@@ -145,13 +200,12 @@ export function Dashboard() {
       }
       await refresh();
     } catch {
-      // ignore network errors
+      // ignore
     }
   }
 
-  function getDestForSession(index: number): StreamDestination | undefined {
-    if (destinations.length === 0) return undefined;
-    return destinations[index % destinations.length];
+  function getSessionForEndpoint(endpointId: string): Session | undefined {
+    return sessions.find((s) => s.id === endpointId);
   }
 
   async function handleCopy(text: string, id: string) {
@@ -161,29 +215,220 @@ export function Dashboard() {
       setCopiedId(id);
       copyTimeoutRef.current = setTimeout(() => setCopiedId(null), 2000);
     } catch {
-      // clipboard not available in insecure contexts
+      // clipboard not available
     }
   }
 
-  if (loading) {
+  function dismissBanner() {
+    setBannerDismissed(true);
+    localStorage.setItem("dazzle-stream-banner-dismissed", "true");
+  }
+
+  if (loading || provisioning) {
     return (
       <div className="flex items-center gap-2 text-zinc-500 text-sm pt-12">
         <div className="h-4 w-4 border-2 border-zinc-600 border-t-emerald-400 rounded-full animate-spin" />
-        Loading endpoints...
+        {provisioning ? "Setting up your stage..." : "Loading endpoints..."}
       </div>
     );
   }
 
+  // ─── Welcome Screen (first-time user) ─────────────────────────
+  if (welcomeEndpoint && welcomeApiKey !== null) {
+    const mcpUrl = `${window.location.origin}/mcp/${welcomeEndpoint.id}`;
+    const maskedKey = welcomeApiKey
+      ? `${welcomeApiKey.slice(0, 8)}${"•".repeat(24)}`
+      : null;
+    const activeFw = FRAMEWORKS.find((fw) => fw.id === activeFramework) ?? FRAMEWORKS[0];
+    const snippet = activeFw.getSnippet(mcpUrl, "");
+
+    return (
+      <div className="max-w-2xl mx-auto pt-8">
+        <h1
+          className="text-3xl tracking-[-0.02em] text-white mb-2"
+          style={{ fontFamily: "'DM Serif Display', serif" }}
+        >
+          Your agent's stage is ready.
+        </h1>
+
+        {/* MCP URL */}
+        <div className="mt-6 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+          <p className="text-xs font-medium text-zinc-400 mb-2">MCP Endpoint</p>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 text-sm font-mono text-emerald-400 bg-zinc-950/50 rounded-lg px-3 py-2 border border-white/[0.06] truncate min-w-0">
+              {mcpUrl}
+            </code>
+            <button
+              onClick={() => handleCopy(mcpUrl, "mcp-url")}
+              className="text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10 p-2 rounded-md transition-colors cursor-pointer shrink-0"
+            >
+              {copiedId === "mcp-url" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
+
+        {/* API Key */}
+        {welcomeApiKey && (
+          <div className="mt-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+            <p className="text-xs font-medium text-zinc-400 mb-1">API Key</p>
+            <p className="text-xs text-zinc-600 mb-2">Save this — shown once</p>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 text-xs font-mono text-zinc-500 bg-zinc-950/50 rounded-lg px-3 py-2 border border-white/[0.06] truncate min-w-0">
+                {maskedKey}
+              </code>
+              <button
+                onClick={() => handleCopy(welcomeApiKey, "api-key")}
+                className="text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10 p-2 rounded-md transition-colors cursor-pointer shrink-0"
+              >
+                {copiedId === "api-key" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Env var instruction */}
+        <div className="mt-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+          <p className="text-xs font-medium text-zinc-400 mb-2">
+            Set <code className="text-emerald-400 bg-white/[0.04] px-1 py-0.5 rounded">DAZZLE_API_KEY</code> in your environment
+          </p>
+          <code className="text-xs font-mono text-zinc-500">
+            export DAZZLE_API_KEY={welcomeApiKey || "<your-key>"}
+          </code>
+        </div>
+
+        {/* Framework snippet tabs */}
+        <div className="mt-4 rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+          <div className="flex gap-1 px-3 py-2 border-b border-white/[0.06] overflow-x-auto">
+            {FRAMEWORKS.map((fw) => (
+              <button
+                key={fw.id}
+                type="button"
+                onClick={() => { setActiveFramework(fw.id); setCopiedId(null); }}
+                className={
+                  fw.id === activeFramework
+                    ? "bg-emerald-500/10 text-emerald-400 text-xs px-2.5 py-1 rounded-md font-medium whitespace-nowrap"
+                    : "text-zinc-500 hover:text-zinc-300 text-xs px-2.5 py-1 rounded-md whitespace-nowrap"
+                }
+              >
+                {fw.name}
+              </button>
+            ))}
+          </div>
+          <div className="relative">
+            <pre className="p-4 text-sm font-mono text-zinc-300 overflow-x-auto leading-relaxed">
+              {snippet}
+            </pre>
+            <button
+              onClick={() => handleCopy(snippet, `snippet-${activeFw.id}`)}
+              className="absolute top-2 right-2 text-zinc-500 hover:text-emerald-400 p-1.5 rounded-md transition-colors cursor-pointer"
+            >
+              {copiedId === `snippet-${activeFw.id}` ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Connection status */}
+        <div className="mt-6 flex items-center gap-3 justify-center">
+          {welcomeConnected ? (
+            <>
+              <div className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+              <span className="text-sm font-medium text-emerald-400">Connected!</span>
+            </>
+          ) : (
+            <>
+              <div className="h-2.5 w-2.5 rounded-full bg-zinc-600 animate-pulse" />
+              <span className="text-sm text-zinc-500">Waiting for your agent to connect...</span>
+            </>
+          )}
+        </div>
+
+        {/* "I'm new to this" toggle */}
+        <div className="mt-6 border-t border-white/[0.06] pt-4">
+          <button
+            onClick={() => setShowExplainer(!showExplainer)}
+            className="flex items-center gap-2 text-xs text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
+          >
+            {showExplainer ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            I'm new to this
+          </button>
+          {showExplainer && (
+            <div className="mt-4 flex flex-col sm:flex-row gap-4">
+              {[
+                { icon: Globe, label: "Production stage", desc: "A cloud environment runs your agent — Chrome, streaming, everything." },
+                { icon: Cpu, label: "Agent drives via MCP", desc: "Your agent connects over MCP to set HTML, take screenshots, and control OBS." },
+                { icon: Radio, label: "Stream it live", desc: "Watch on your dashboard or go live on Twitch, YouTube, and more." },
+              ].map((s) => (
+                <div key={s.label} className="flex-1 flex flex-col items-center text-center">
+                  <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-2">
+                    <s.icon className="h-5 w-5 text-emerald-400" />
+                  </div>
+                  <p className="text-sm font-medium text-white mb-1">{s.label}</p>
+                  <p className="text-xs text-zinc-500 leading-relaxed">{s.desc}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Continue to dashboard */}
+        {welcomeConnected && (
+          <div className="mt-6 flex justify-center">
+            <Button
+              onClick={() => { setWelcomeEndpoint(null); setWelcomeApiKey(null); }}
+              className="bg-emerald-500 text-zinc-950 hover:bg-emerald-400 font-semibold"
+            >
+              Go to Dashboard
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ─── Normal Dashboard (endpoint-centric) ───────────────────────
+  const hasActiveSessions = sessions.length > 0;
+  const hasStreamDests = destinations.length > 0;
+  const showStreamBanner = hasActiveSessions && !hasStreamDests && !bannerDismissed;
+
   // Panel data
-  const selectedIndex = sessions.findIndex(s => s.id === selectedSessionId);
-  const selected = selectedIndex >= 0 ? sessions[selectedIndex] : null;
-  const selectedDest = selectedIndex >= 0 ? getDestForSession(selectedIndex) : undefined;
-  const mcpUrl = selectedSessionId ? `${window.location.origin}/mcp/${selectedSessionId}` : "";
-  const activeFw = FRAMEWORKS.find(fw => fw.id === activeFramework) ?? FRAMEWORKS[0];
-  const snippet = selectedSessionId ? activeFw.getSnippet(mcpUrl, "") : "";
+  const selectedEp = endpoints.find((e) => e.id === selectedEndpointId);
+  const selectedSession = selectedEndpointId ? getSessionForEndpoint(selectedEndpointId) : undefined;
+  const selectedDest = destinations.length > 0 ? destinations[0] : undefined;
+  const mcpUrl = selectedEndpointId ? `${window.location.origin}/mcp/${selectedEndpointId}` : "";
+  const activeFw = FRAMEWORKS.find((fw) => fw.id === activeFramework) ?? FRAMEWORKS[0];
+  const snippet = selectedEndpointId ? activeFw.getSnippet(mcpUrl, "") : "";
 
   return (
     <div>
+      {/* Streaming banner */}
+      {showStreamBanner && (
+        <div className="mb-6 flex items-center justify-between rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] px-5 py-3">
+          <div className="flex items-center gap-3">
+            <Radio className="h-4 w-4 text-emerald-400" />
+            <span className="text-sm text-zinc-300">
+              Your agent has a stage. Ready to open the curtains?
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              className="bg-emerald-500 text-zinc-950 hover:bg-emerald-400 font-semibold text-xs"
+              onClick={() => {
+                if (endpoints.length > 0) openPanel(endpoints[0].id);
+              }}
+            >
+              Set up streaming
+            </Button>
+            <button
+              onClick={dismissBanner}
+              className="text-zinc-600 hover:text-zinc-400 transition-colors cursor-pointer p-1"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -195,71 +440,43 @@ export function Dashboard() {
           </h1>
           {profile && (
             <p className="text-sm text-zinc-500">
-              {profile.sessionCount} active &middot; {profile.apiKeyCount} API key{profile.apiKeyCount !== 1 ? 's' : ''}
+              {sessions.length} active session{sessions.length !== 1 ? "s" : ""} &middot; {profile.apiKeyCount} API key{profile.apiKeyCount !== 1 ? "s" : ""}
             </p>
           )}
         </div>
-        <Button
-          onClick={() => navigate("/get-started")}
-          className="bg-emerald-500 text-zinc-950 hover:bg-emerald-400 font-semibold"
-        >
-          <Plus className="h-4 w-4 mr-1" />
-          Create
-        </Button>
       </div>
 
       {/* Endpoints list */}
-      {sessions.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="h-16 w-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-6">
-            <Sparkles className="h-7 w-7 text-emerald-400" />
-          </div>
-          <h2
-            className="text-xl tracking-[-0.02em] text-white mb-2"
-            style={{ fontFamily: "'DM Serif Display', serif" }}
-          >
-            Welcome to Dazzle
-          </h2>
-          <p className="text-zinc-400 text-sm max-w-sm mb-2">
-            Get your agent connected in under a minute.
-            We'll create an endpoint, generate an API key, and give you the config snippet for your framework.
-          </p>
-          <p className="text-zinc-600 text-xs mb-8">
-            Works with Claude Code, OpenAI Agents SDK, CrewAI, LangGraph, and more.
-          </p>
-          <Button
-            onClick={() => navigate("/get-started")}
-            className="bg-emerald-500 text-zinc-950 hover:bg-emerald-400 font-semibold text-sm px-6 h-10"
-          >
-            Get Started
-            <ArrowRight className="h-4 w-4 ml-1" />
-          </Button>
+      {endpoints.length === 0 ? (
+        <div className="flex items-center gap-2 text-zinc-500 text-sm">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          No endpoints yet.
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {sessions.map((s, i) => {
-            const dest = getDestForSession(i);
+          {endpoints.map((ep) => {
+            const sess = getSessionForEndpoint(ep.id);
             return (
               <button
                 type="button"
-                key={s.id}
-                onClick={() => openPanel(s.id)}
+                key={ep.id}
+                onClick={() => openPanel(ep.id)}
                 className="w-full flex items-center justify-between px-4 py-3 rounded-lg border border-white/[0.06] bg-white/[0.02] hover:border-emerald-500/15 hover:bg-emerald-500/[0.02] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500/50 transition-all cursor-pointer"
               >
                 <div className="flex items-center gap-3">
-                  <code className="text-sm font-mono text-zinc-300">{s.id.slice(0, 8)}</code>
-                  <Badge variant={s.status === "running" ? "success" : "warning"}>
-                    {s.status}
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-2">
-                  {dest && (
-                    <span className="text-xs font-mono text-zinc-400 bg-white/[0.04] px-1.5 py-0.5 rounded">
-                      {dest.platform}
-                    </span>
+                  <code className="text-sm font-mono text-zinc-300">{ep.id.slice(0, 8)}</code>
+                  {ep.name && ep.name !== "default" && (
+                    <span className="text-xs text-zinc-500">{ep.name}</span>
                   )}
-                  <ChevronRight className="h-4 w-4 text-zinc-600" />
+                  {sess ? (
+                    <Badge variant={sess.status === "running" ? "success" : "warning"}>
+                      {sess.status}
+                    </Badge>
+                  ) : (
+                    <Badge variant="default">idle</Badge>
+                  )}
                 </div>
+                <ChevronRight className="h-4 w-4 text-zinc-600" />
               </button>
             );
           })}
@@ -267,7 +484,7 @@ export function Dashboard() {
       )}
 
       {/* Slide-over panel */}
-      {panelMounted && selected && createPortal(
+      {panelMounted && selectedEp && createPortal(
         <div
           className={`fixed inset-0 z-50 transition-all duration-200 ${panelOpen ? "backdrop-blur-sm bg-zinc-950/80" : "bg-zinc-950/0"}`}
           onClick={(e) => {
@@ -286,39 +503,52 @@ export function Dashboard() {
             {/* Section 1: Header */}
             <div className="flex items-center gap-3 pr-8">
               <code className="text-sm font-mono text-zinc-300 bg-white/[0.04] px-2 py-0.5 rounded">
-                {selected.id}
+                {selectedEp.id}
               </code>
-              <Badge variant={selected.status === "running" ? "success" : "warning"}>
-                {selected.status}
-              </Badge>
+              {selectedSession ? (
+                <Badge variant={selectedSession.status === "running" ? "success" : "warning"}>
+                  {selectedSession.status}
+                </Badge>
+              ) : (
+                <Badge variant="default">idle</Badge>
+              )}
             </div>
 
             {/* Section 2: Details */}
             <div className="border-t border-white/[0.06] pt-4 mt-4">
               <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2 text-xs text-zinc-500">
-                  <Cpu className="h-3.5 w-3.5" />
-                  <span className="font-mono">{selected.podName}</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-zinc-500">
-                  <Globe className="h-3.5 w-3.5" />
-                  <span>Port {selected.directPort}</span>
-                </div>
+                {selectedSession && (
+                  <>
+                    <div className="flex items-center gap-2 text-xs text-zinc-500">
+                      <Cpu className="h-3.5 w-3.5" />
+                      <span className="font-mono">{selectedSession.podName}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-zinc-500">
+                      <Globe className="h-3.5 w-3.5" />
+                      <span>Port {selectedSession.directPort}</span>
+                    </div>
+                  </>
+                )}
                 <div className="flex items-center gap-2 text-xs text-zinc-500">
                   <span className="text-zinc-600 w-[52px]">Created</span>
-                  <span>{selected.createdAt ? timestampDate(selected.createdAt).toLocaleDateString() : "—"}</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-zinc-500">
-                  <span className="text-zinc-600 w-[52px]">Activity</span>
-                  <span>{selected.lastActivity ? timestampDate(selected.lastActivity).toLocaleDateString() : "—"}</span>
+                  <span>{selectedEp.createdAt ? timestampDate(selectedEp.createdAt).toLocaleDateString() : "—"}</span>
                 </div>
               </div>
             </div>
 
-            {/* Section 3: Stream Destination */}
+            {/* Section 3: Stream Preview */}
             <div className="border-t border-white/[0.06] pt-4 mt-4">
-              <p className="text-xs font-medium text-zinc-400 mb-3">Stream destination</p>
-              {selectedDest && (
+              <p className="text-xs font-medium text-zinc-400 mb-3">Preview</p>
+              <StreamPreview
+                sessionId={selectedEndpointId!}
+                status={selectedSession?.status === "running" ? "running" : selectedSession?.status === "starting" ? "starting" : "stopped"}
+              />
+            </div>
+
+            {/* Section 4: Stream Destination */}
+            <div className="border-t border-white/[0.06] pt-4 mt-4">
+              <p className="text-xs font-medium text-zinc-400 mb-3">Streaming</p>
+              {selectedDest ? (
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <Radio className="h-3.5 w-3.5 text-zinc-500" />
@@ -336,9 +566,13 @@ export function Dashboard() {
                     {selectedDest.enabled ? <ToggleRight className="h-3.5 w-3.5" /> : <ToggleLeft className="h-3.5 w-3.5" />}
                   </button>
                 </div>
+              ) : (
+                <p className="text-xs text-zinc-500 mb-3">
+                  Open the curtains — set up streaming to go live.
+                </p>
               )}
               <StreamDestinationForm
-                key={selectedSessionId}
+                key={selectedEndpointId}
                 compact
                 initial={
                   selectedDest
@@ -362,7 +596,7 @@ export function Dashboard() {
             <div className="border-t border-white/[0.06] pt-4 mt-4">
               <p className="text-xs font-medium text-zinc-400 mb-3">Connect</p>
               <div className="flex gap-1 mb-3 overflow-x-auto">
-                {FRAMEWORKS.map(fw => (
+                {FRAMEWORKS.map((fw) => (
                   <button
                     key={fw.id}
                     type="button"
@@ -405,7 +639,7 @@ export function Dashboard() {
               ) : (
                 <div>
                   <p className="text-sm text-zinc-400 mb-3">
-                    Delete this endpoint? This will terminate the running session.
+                    Delete this endpoint? Any running session will be terminated.
                   </p>
                   <div className="flex items-center gap-2">
                     <Button
@@ -421,9 +655,9 @@ export function Dashboard() {
                       size="sm"
                       className="text-red-400 hover:bg-red-500/10"
                       onClick={() => {
-                        const id = selectedSessionId!;
+                        const id = selectedEndpointId!;
                         closePanel();
-                        handleDelete(id);
+                        handleDeleteEndpoint(id);
                       }}
                     >
                       <Trash2 className="h-3.5 w-3.5 mr-1" />

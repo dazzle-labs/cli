@@ -165,6 +165,30 @@ func (m *Manager) mcpMiddleware(next http.Handler) http.Handler {
 			dbUpsertUser(m.db, info.UserID, "", "")
 		}
 
+		// Validate endpoint UUID exists and belongs to the authenticated user
+		if m.db != nil {
+			endpoint, err := dbGetEndpoint(m.db, agentID)
+			if err != nil {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(`{"error":"internal error"}`))
+				return
+			}
+			if endpoint == nil {
+				// Backward compatibility: auto-create endpoint with this UUID for authenticated users
+				if err := dbCreateEndpointWithID(m.db, agentID, info.UserID, "auto"); err != nil {
+					log.Printf("WARN: failed to auto-create endpoint %s for user %s: %v", agentID, info.UserID, err)
+				} else {
+					log.Printf("Auto-created endpoint %s for user %s", agentID, info.UserID)
+				}
+			} else if endpoint.UserID != info.UserID {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusNotFound)
+				w.Write([]byte(`{"error":"endpoint not found"}`))
+				return
+			}
+		}
+
 		// Rewrite path: strip the /<uuid> segment so MCP handler sees /mcp or /mcp/...
 		if len(parts) > 1 {
 			r.URL.Path = "/mcp/" + parts[1]

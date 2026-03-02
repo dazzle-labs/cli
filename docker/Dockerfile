@@ -8,9 +8,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     xvfb \
     pulseaudio \
-    ffmpeg \
+    dbus-x11 \
     curl \
-    dbus \
     gnupg \
     fonts-liberation \
     libasound2 \
@@ -31,12 +30,13 @@ RUN apt-get update && apt-get install -y \
     unclutter \
     software-properties-common \
     netcat-openbsd \
+    tmux \
     && rm -rf /var/lib/apt/lists/*
 
 # Install OBS Studio (28+ includes obs-websocket built-in)
 RUN add-apt-repository ppa:obsproject/obs-studio \
     && apt-get update \
-    && apt-get install -y obs-studio \
+    && apt-get install -y obs-studio ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Chromium from the official Google Chrome stable channel (real .deb, not snap)

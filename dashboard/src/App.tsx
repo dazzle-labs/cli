@@ -8,7 +8,7 @@ import { useEffect } from "react";
 import { setTokenGetter } from "./client.js";
 import { Layout } from "./components/Layout.js";
 import { Dashboard } from "./pages/Dashboard.js";
-import { GetStarted } from "./pages/GetStarted.js";
+
 import { ApiKeys } from "./pages/ApiKeys.js";
 import { Docs } from "./pages/Docs.js";
 import { LandingPage } from "./pages/LandingPage.js";
@@ -32,7 +32,7 @@ export function App() {
         <Layout>
           <Routes>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/get-started" element={<GetStarted />} />
+            <Route path="/get-started" element={<Navigate to="/" replace />} />
             <Route path="/api-keys" element={<ApiKeys />} />
             <Route path="/docs" element={<Docs />} />
             <Route path="*" element={<Navigate to="/" replace />} />

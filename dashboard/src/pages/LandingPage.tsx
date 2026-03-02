@@ -1,23 +1,23 @@
 import { useState, useEffect, useRef } from "react";
 import { SignIn } from "@clerk/clerk-react";
-import { Eye, Share2, Plug, ArrowRight, X } from "lucide-react";
+import { Eye, Share2, Plug, ArrowRight, X, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const VALUE_PROPS = [
   {
     icon: Eye,
-    title: "See what they see",
-    body: "Agents aren't black boxes anymore. Watch them think, navigate, and act — in real time.",
+    title: "Watch your agent work",
+    body: "See every action in real time on your private dashboard preview.",
   },
   {
     icon: Share2,
-    title: "Share it with the world",
-    body: "Stream your agent live to Twitch, YouTube, or anywhere. Turn invisible work into something people can experience.",
+    title: "Stream it to the world",
+    body: "Go live on Twitch, YouTube, or any RTMP destination when you're ready.",
   },
   {
     icon: Plug,
-    title: "Works with everything",
-    body: "Claude Code, OpenAI Agents SDK, CrewAI, or your own stack. If your agent can act, it can go live.",
+    title: "One line to connect",
+    body: "Add your MCP endpoint to any agent framework. Claude Code, OpenAI, CrewAI, and more.",
   },
 ];
 
@@ -97,9 +97,9 @@ export function LandingPage() {
             className="text-[clamp(2.5rem,7vw,5.5rem)] leading-[1.05] tracking-[-0.02em] text-white max-w-4xl mx-auto"
             style={{ fontFamily: "'DM Serif Display', serif" }}
           >
-            Every agent deserves
+            Give your AI agent
             <br />
-            <span className="text-emerald-400">an audience.</span>
+            <span className="text-emerald-400">a stage.</span>
           </h1>
         </div>
 
@@ -114,8 +114,8 @@ export function LandingPage() {
             className="mt-7 text-lg md:text-xl text-zinc-400 max-w-xl mx-auto leading-relaxed"
             style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 300 }}
           >
-            AI agents are the most capable tools ever built — and nobody can see
-            what they do. Give them a stage. Let the world watch.
+            Every agent deserves an audience. Dazzle gives yours a production
+            stage — visible, streamable, controllable via MCP.
           </p>
         </div>
 
@@ -133,9 +133,28 @@ export function LandingPage() {
               style={{ fontFamily: "'Outfit', sans-serif" }}
               onClick={() => setShowSignIn(true)}
             >
-              Get Started
+              Launch a session
               <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Demo video placeholder */}
+      <section className="relative z-10 px-6 pb-20 md:pb-28">
+        <div className="mx-auto max-w-4xl">
+          <div
+            className="relative aspect-video rounded-2xl border border-white/[0.06] bg-zinc-900 flex flex-col items-center justify-center gap-4 overflow-hidden"
+          >
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400">
+              <Play className="h-7 w-7 ml-0.5" />
+            </div>
+            <p
+              className="text-sm text-zinc-500"
+              style={{ fontFamily: "'Outfit', sans-serif" }}
+            >
+              See an agent in action
+            </p>
           </div>
         </div>
       </section>
@@ -169,6 +188,12 @@ export function LandingPage() {
       {/* Ecosystem strip */}
       <section className="relative z-10 px-6 pb-28 md:pb-36">
         <div className="mx-auto max-w-3xl text-center">
+          <h3
+            className="text-xl md:text-2xl text-white mb-3"
+            style={{ fontFamily: "'DM Serif Display', serif" }}
+          >
+            One MCP endpoint. Every agent framework.
+          </h3>
           <p
             className="text-xs uppercase tracking-[0.2em] text-zinc-500 mb-6"
             style={{ fontFamily: "'Outfit', sans-serif" }}

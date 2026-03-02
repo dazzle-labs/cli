@@ -3,10 +3,12 @@ set -euo pipefail
 
 cleanup() {
     echo "Shutting down..."
+    kill "${FFMPEG_PID:-}" 2>/dev/null || true
     kill "$NODE_PID" 2>/dev/null || true
     kill "$OBS_PID" 2>/dev/null || true
     kill "$CHROME_PID" 2>/dev/null || true
     kill "$PULSE_PID" 2>/dev/null || true
+    kill "${DBUS_SESSION_BUS_PID:-}" 2>/dev/null || true
     kill "$XVFB_PID" 2>/dev/null || true
     wait
     echo "All processes stopped."
@@ -67,6 +69,15 @@ for i in $(seq 1 60); do
     sleep 0.2
 done
 
+# Set up XDG_RUNTIME_DIR and dbus session bus for OBS
+export XDG_RUNTIME_DIR=/tmp/runtime-root
+mkdir -p "$XDG_RUNTIME_DIR"
+chmod 0700 "$XDG_RUNTIME_DIR"
+eval $(dbus-launch --sh-syntax)
+if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+    echo "WARNING: dbus-launch failed to set DBUS_SESSION_BUS_ADDRESS"
+fi
+
 # 4. Pre-bake OBS config and start OBS Studio
 echo "Setting up OBS configuration..."
 OBS_CONFIG_DIR="$HOME/.config/obs-studio"
@@ -104,39 +115,56 @@ VBitrate=2500
 ABitrate=128
 PROFILEINI
 
-# Scene collection with screen capture source
+# Scene collection with screen capture source (OBS 30.x format)
 cat > "$OBS_CONFIG_DIR/basic/scenes/Untitled.json" <<'SCENEJSON'
 {
     "name": "Untitled",
     "current_scene": "Scene",
     "current_program_scene": "Scene",
+    "scene_order": [
+        {"name": "Scene"}
+    ],
     "sources": [
         {
+            "id": "scene",
+            "versioned_id": "scene",
+            "name": "Scene",
+            "enabled": true,
+            "flags": 0,
+            "volume": 1.0,
+            "mixers": 0,
+            "muted": false,
+            "settings": {
+                "custom_size": false,
+                "id_counter": 1,
+                "items": [
+                    {
+                        "name": "Screen",
+                        "id": 1,
+                        "visible": true
+                    }
+                ]
+            }
+        },
+        {
             "id": "xshm_input",
+            "versioned_id": "xshm_input",
             "name": "Screen",
+            "enabled": true,
+            "flags": 0,
+            "volume": 1.0,
+            "mixers": 255,
+            "muted": false,
             "settings": {
                 "screen": 0,
                 "show_cursor": false,
                 "advanced": false
-            },
-            "enabled": true
+            }
         }
     ],
-    "scene_order": [
-        {"name": "Scene"}
-    ],
-    "scenes": [
-        {
-            "name": "Scene",
-            "items": [
-                {
-                    "name": "Screen",
-                    "source_name": "Screen",
-                    "visible": true
-                }
-            ]
-        }
-    ]
+    "groups": [],
+    "transitions": [],
+    "transition_duration": 300
 }
 SCENEJSON
 
@@ -151,10 +179,32 @@ for i in $(seq 1 60); do
         echo "OBS WebSocket ready."
         break
     fi
+    if ! kill -0 "$OBS_PID" 2>/dev/null; then
+        echo "ERROR: OBS process died during startup."
+        exit 1
+    fi
     sleep 0.5
 done
 
-# 5. Start Node.js server
+# 6. Start HLS preview pipeline
+echo "Starting HLS preview..."
+mkdir -p /tmp/hls
+ffmpeg -loglevel warning -f x11grab -video_size ${SCREEN_WIDTH}x${SCREEN_HEIGHT} -framerate 30 -i :99 \
+    -c:v libx264 -preset ultrafast -tune zerolatency -g 30 \
+    -f hls -hls_time 1 -hls_list_size 5 -hls_flags delete_segments+append_list \
+    -hls_segment_filename '/tmp/hls/seg%03d.ts' /tmp/hls/stream.m3u8 &
+FFMPEG_PID=$!
+
+# Wait briefly for ffmpeg to start producing segments
+for i in $(seq 1 10); do
+    if [ -f /tmp/hls/stream.m3u8 ]; then
+        echo "HLS preview ready."
+        break
+    fi
+    sleep 0.5
+done
+
+# 7. Start Node.js server
 echo "Starting Node.js server..."
 cd /app
 node index.js &

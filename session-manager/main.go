@@ -37,7 +37,8 @@ var (
 	_ apiv1connect.SessionServiceHandler = (*sessionServer)(nil)
 	_ apiv1connect.ApiKeyServiceHandler  = (*apiKeyServer)(nil)
 	_ apiv1connect.StreamServiceHandler  = (*streamServer)(nil)
-	_ apiv1connect.UserServiceHandler    = (*userServer)(nil)
+	_ apiv1connect.UserServiceHandler     = (*userServer)(nil)
+	_ apiv1connect.EndpointServiceHandler = (*endpointServer)(nil)
 )
 
 type SessionStatus string
@@ -893,6 +894,13 @@ func main() {
 		connect.WithInterceptors(authInterceptor, clerkOnly),
 	)
 	mux.Handle(userPath, corsMiddleware(userHandler))
+
+	// EndpointService — Clerk JWT only
+	endpointPath, endpointHandler := apiv1connect.NewEndpointServiceHandler(
+		&endpointServer{mgr: mgr},
+		connect.WithInterceptors(authInterceptor, clerkOnly),
+	)
+	mux.Handle(endpointPath, corsMiddleware(endpointHandler))
 
 	// CDP auto-provisioning endpoint
 	mux.Handle("/cdp/", corsMiddleware(http.HandlerFunc(mgr.handleCDP)))
