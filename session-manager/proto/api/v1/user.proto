@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package api.v1;
+
+option go_package = "github.com/browser-streamer/session-manager/gen/api/v1;apiv1";
+
+service UserService {
+  rpc GetProfile(GetProfileRequest) returns (GetProfileResponse);
+}
+
+message GetProfileRequest {}
+
+message GetProfileResponse {
+  string user_id = 1;
+  string email = 2;
+  string name = 3;
+  int32 session_count = 4;
+  int32 api_key_count = 5;
+}

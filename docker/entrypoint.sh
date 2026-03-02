@@ -4,6 +4,7 @@ set -euo pipefail
 cleanup() {
     echo "Shutting down..."
     kill "$NODE_PID" 2>/dev/null || true
+    kill "$OBS_PID" 2>/dev/null || true
     kill "$CHROME_PID" 2>/dev/null || true
     kill "$PULSE_PID" 2>/dev/null || true
     kill "$XVFB_PID" 2>/dev/null || true
@@ -66,7 +67,94 @@ for i in $(seq 1 60); do
     sleep 0.2
 done
 
-# 4. Start Node.js server
+# 4. Pre-bake OBS config and start OBS Studio
+echo "Setting up OBS configuration..."
+OBS_CONFIG_DIR="$HOME/.config/obs-studio"
+mkdir -p "$OBS_CONFIG_DIR/basic/scenes" "$OBS_CONFIG_DIR/basic/profiles/Default"
+
+# Global config: enable WebSocket on port 4455, no auth
+cat > "$OBS_CONFIG_DIR/global.ini" <<'OBSINI'
+[OBSWebSocket]
+ServerEnabled=true
+ServerPort=4455
+AuthRequired=false
+OBSINI
+
+# Default profile
+cat > "$OBS_CONFIG_DIR/basic/profiles/Default/basic.ini" <<PROFILEINI
+[General]
+Name=Default
+
+[Video]
+BaseCX=${SCREEN_WIDTH}
+BaseCY=${SCREEN_HEIGHT}
+OutputCX=${SCREEN_WIDTH}
+OutputCY=${SCREEN_HEIGHT}
+FPSType=0
+FPSCommon=30
+
+[Output]
+Mode=Simple
+
+[SimpleOutput]
+StreamEncoder=x264
+RecQuality=Stream
+RecEncoder=x264
+VBitrate=2500
+ABitrate=128
+PROFILEINI
+
+# Scene collection with screen capture source
+cat > "$OBS_CONFIG_DIR/basic/scenes/Untitled.json" <<'SCENEJSON'
+{
+    "name": "Untitled",
+    "current_scene": "Scene",
+    "current_program_scene": "Scene",
+    "sources": [
+        {
+            "id": "xshm_input",
+            "name": "Screen",
+            "settings": {
+                "screen": 0,
+                "show_cursor": false,
+                "advanced": false
+            },
+            "enabled": true
+        }
+    ],
+    "scene_order": [
+        {"name": "Scene"}
+    ],
+    "scenes": [
+        {
+            "name": "Scene",
+            "items": [
+                {
+                    "name": "Screen",
+                    "source_name": "Screen",
+                    "visible": true
+                }
+            ]
+        }
+    ]
+}
+SCENEJSON
+
+echo "Starting OBS Studio..."
+obs --minimize-to-tray --disable-shutdown-check --display=:99 &
+OBS_PID=$!
+
+# Wait for OBS WebSocket to be ready
+echo "Waiting for OBS WebSocket (port 4455)..."
+for i in $(seq 1 60); do
+    if curl -s http://localhost:4455 > /dev/null 2>&1 || nc -z localhost 4455 2>/dev/null; then
+        echo "OBS WebSocket ready."
+        break
+    fi
+    sleep 0.5
+done
+
+# 5. Start Node.js server
 echo "Starting Node.js server..."
 cd /app
 node index.js &

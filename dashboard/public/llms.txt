@@ -1,0 +1,144 @@
+# Dazzle — Agent Connection Guide
+
+> Dazzle gives AI agents a cloud environment they can control via MCP (Model Context Protocol). This document explains how to connect your agent.
+
+## Quick Start
+
+1. Create a stage via the dashboard or API
+2. Get an API key from the dashboard or API
+3. Configure your agent framework with the MCP endpoint
+
+## MCP Endpoint
+
+```
+URL: https://<your-host>/mcp/<stage-id>
+Auth: Bearer <api-key>
+Transport: Streamable HTTP
+```
+
+## Framework Configuration
+
+### Claude Code (.mcp.json)
+
+```json
+{
+  "mcpServers": {
+    "dazzle": {
+      "type": "streamablehttp",
+      "url": "https://<your-host>/mcp/<stage-id>",
+      "headers": {
+        "Authorization": "Bearer <api-key>"
+      }
+    }
+  }
+}
+```
+
+### OpenAI Agents SDK (Python)
+
+```python
+from agents.mcp import MCPServerStreamableHTTP
+
+dazzle = MCPServerStreamableHTTP(
+    url="https://<your-host>/mcp/<stage-id>",
+    headers={"Authorization": "Bearer <api-key>"},
+)
+
+agent = Agent(
+    name="my-agent",
+    mcp_servers=[dazzle],
+)
+```
+
+### OpenClaw (YAML)
+
+```yaml
+mcp_servers:
+  dazzle:
+    url: "https://<your-host>/mcp/<stage-id>"
+    headers:
+      Authorization: "Bearer <api-key>"
+```
+
+### CrewAI (Python)
+
+```python
+from crewai.tools import MCPServerAdapter
+
+dazzle = MCPServerAdapter(
+    server_url="https://<your-host>/mcp/<stage-id>",
+    headers={"Authorization": "Bearer <api-key>"},
+)
+
+agent = Agent(
+    role="My Agent",
+    tools=[dazzle],
+)
+```
+
+### LangGraph (Python)
+
+```python
+from langchain_mcp_adapters.client import MCPClient
+
+client = MCPClient(
+    transport="streamable_http",
+    url="https://<your-host>/mcp/<stage-id>",
+    headers={"Authorization": "Bearer <api-key>"},
+)
+
+tools = await client.get_tools()
+```
+
+### AutoGen (Python)
+
+```python
+from autogen_ext.tools.mcp import McpWorkbench
+
+workbench = McpWorkbench(
+    server_url="https://<your-host>/mcp/<stage-id>",
+    headers={"Authorization": "Bearer <api-key>"},
+)
+
+agent = AssistantAgent(
+    name="my_agent",
+    tools=await workbench.get_tools(),
+)
+```
+
+## API Reference
+
+All endpoints require `Authorization: Bearer <api-key>` header or `?token=<api-key>` query parameter.
+
+### Stages
+
+- `POST /api/session` — Create a new stage. Returns `{session: {id, directPort, status}}`.
+- `GET /api/sessions` — List all active stages.
+- `GET /api/session/:id` — Get stage details.
+- `DELETE /api/session/:id` — Destroy a stage.
+
+### API Keys
+
+- `POST /api/apikey` — Create a new API key. Body: `{name: string}`. Returns `{key: {id, name, prefix}, secret: string}`. The secret is only shown once.
+- `GET /api/apikeys` — List all API keys (secrets are not returned).
+- `DELETE /api/apikey/:id` — Delete an API key.
+
+### Health
+
+- `GET /health` — Returns `{status: "ok"}`. No auth required.
+
+## Stage Lifecycle
+
+1. **Create**: `POST /api/session` spins up an ephemeral cloud environment.
+2. **Poll**: The stage status transitions from `pending` to `running` when ready (typically 5-15 seconds).
+3. **Connect**: Once running, connect via `https://<host>/mcp/<stage-id>` using Streamable HTTP transport.
+4. **Use**: Your agent can navigate, click, type, screenshot, and extract data.
+5. **Stream**: Optionally start an HLS stream for live viewing.
+6. **Destroy**: Stages auto-destroy after idle timeout (default 10 min) or via `DELETE /api/session/:id`.
+
+## Concepts
+
+- **Stage**: An ephemeral cloud environment your agent can control. Each stage has a unique ID and a dedicated MCP endpoint.
+- **API Key**: Authentication credential for the API and MCP endpoints. Create via dashboard or API.
+- **MCP (Model Context Protocol)**: The protocol agents use to interact with stages. Dazzle exposes an MCP server per stage via Streamable HTTP transport.
+- **HLS Stream**: Optional live video stream of the stage. Start via the stage's streaming API.

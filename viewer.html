@@ -7,268 +7,36 @@
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #111; color: #eee; padding: 20px; }
-    .controls { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; }
-    input, button, select { padding: 8px 12px; border: 1px solid #444; border-radius: 4px; background: #222; color: #eee; font-size: 14px; }
-    input { flex: 1; min-width: 150px; }
-    button { cursor: pointer; background: #2563eb; border-color: #2563eb; white-space: nowrap; }
-    button:hover { background: #1d4ed8; }
-    button.danger { background: #dc2626; border-color: #dc2626; }
-    button.danger:hover { background: #b91c1c; }
-    button.success { background: #16a34a; border-color: #16a34a; }
-    button.success:hover { background: #15803d; }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
-    video { width: 1280px; height: 720px; background: #000; border-radius: 4px; }
-    .status { margin: 10px 0; font-size: 13px; color: #888; }
-    .nav-row { display: flex; gap: 10px; margin-bottom: 15px; }
-    #log { margin-top: 15px; font-family: monospace; font-size: 12px; color: #666; max-height: 200px; overflow-y: auto; }
-    .log-entry { padding: 2px 0; }
-    .session-panel { background: #1a1a1a; border: 1px solid #333; border-radius: 6px; padding: 15px; margin-bottom: 15px; }
-    .session-panel h3 { margin-bottom: 10px; font-size: 15px; color: #ccc; }
-    .session-list { margin-top: 10px; }
-    .session-item { display: flex; align-items: center; gap: 10px; padding: 8px; background: #222; border-radius: 4px; margin-bottom: 6px; font-size: 13px; }
-    .session-item .id { font-family: monospace; color: #60a5fa; }
-    .session-item .port { font-family: monospace; color: #34d399; }
-    .session-item .sess-status { padding: 2px 8px; border-radius: 3px; font-size: 11px; text-transform: uppercase; }
-    .sess-status.starting { background: #854d0e; color: #fef08a; }
-    .sess-status.running { background: #166534; color: #86efac; }
-    .sess-status.stopping { background: #7f1d1d; color: #fca5a5; }
-    .session-item .actions { margin-left: auto; display: flex; gap: 6px; }
-    .session-item button { padding: 4px 10px; font-size: 12px; }
-    .direct-info { font-size: 11px; color: #888; font-family: monospace; margin-top: 4px; }
+    body { background: #000; overflow: hidden; }
+    video { width: 100vw; height: 100vh; display: block; }
 </style>
 </head>
 <body>
-<h2 style="margin-bottom: 15px;">Browser Streamer</h2>
-
-<div class="controls">
-    <input id="host" type="text" placeholder="Host (default: current)" />
-    <input id="token" type="text" placeholder="Token" />
-</div>
-
-<div class="session-panel">
-    <h3>Sessions</h3>
-    <div class="controls">
-        <button class="success" onclick="createSession()">New Session</button>
-        <button onclick="refreshSessions()">Refresh</button>
-    </div>
-    <div id="sessionList" class="session-list"></div>
-</div>
-
-<div id="streamControls" style="display:none;">
-    <div class="controls">
-        <span style="color:#888;font-size:13px;">Active: <span id="activeSession" style="color:#60a5fa;font-family:monospace;"></span></span>
-        <button onclick="startStream()">Start Stream</button>
-        <button class="danger" onclick="stopStream()">Stop Stream</button>
-    </div>
-    <div class="nav-row">
-        <input id="navUrl" type="text" placeholder="URL to navigate to (e.g. https://youtube.com)" />
-        <button onclick="navigate()">Navigate</button>
-    </div>
-    <video id="video" controls muted></video>
-</div>
-
-<div class="status" id="status">Not connected</div>
-<div id="log"></div>
-
+<video id="video" autoplay muted></video>
 <script>
-let hls = null;
-let activeSessionId = null;
-let pollTimer = null;
+const params = new URLSearchParams(window.location.search);
+const token = params.get('token');
+const session = params.get('session');
 
-function getBase() {
-    const host = document.getElementById('host').value.trim() || window.location.host;
-    return `${window.location.protocol}//${host}`;
-}
-
-function getToken() {
-    return document.getElementById('token').value.trim();
-}
-
-function log(msg) {
-    const el = document.getElementById('log');
-    const entry = document.createElement('div');
-    entry.className = 'log-entry';
-    entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-    el.prepend(entry);
-    while (el.children.length > 50) el.removeChild(el.lastChild);
-}
-
-function setStatus(msg) {
-    document.getElementById('status').textContent = msg;
-}
-
-async function managerCall(method, path, body) {
-    const url = `${getBase()}${path}${path.includes('?') ? '&' : '?'}token=${encodeURIComponent(getToken())}`;
-    const opts = { method, headers: { 'Content-Type': 'application/json' } };
-    if (body) opts.body = JSON.stringify(body);
-    const res = await fetch(url, opts);
-    return res.json();
-}
-
-async function sessionCall(method, path, body) {
-    const url = `${getBase()}/session/${activeSessionId}${path}${path.includes('?') ? '&' : '?'}token=${encodeURIComponent(getToken())}`;
-    const opts = { method, headers: { 'Content-Type': 'application/json' } };
-    if (body) opts.body = JSON.stringify(body);
-    const res = await fetch(url, opts);
-    return res.json();
-}
-
-async function createSession() {
-    try {
-        log('Creating new session...');
-        const result = await managerCall('POST', '/api/session');
-        if (result.error) {
-            log(`Error: ${result.error}`);
-            return;
-        }
-        log(`Session created: ${result.id} (port=${result.directPort}, status=${result.status})`);
-        pollForReady(result.id);
-        refreshSessions();
-    } catch (err) {
-        log(`Error: ${err.message}`);
-    }
-}
-
-function pollForReady(sessionId) {
-    if (pollTimer) clearInterval(pollTimer);
-    let attempts = 0;
-    setStatus(`Waiting for session ${sessionId.slice(0,8)} to be ready...`);
-    pollTimer = setInterval(async () => {
-        attempts++;
-        try {
-            const sessions = await managerCall('GET', '/api/sessions');
-            const sess = sessions.find(s => s.id === sessionId);
-            if (!sess) {
-                clearInterval(pollTimer);
-                setStatus('Session not found');
-                return;
-            }
-            if (sess.status === 'running') {
-                clearInterval(pollTimer);
-                log(`Session ${sessionId.slice(0,8)} is ready`);
-                setStatus('Session ready');
-                selectSession(sessionId);
-                refreshSessions();
-                return;
-            }
-            if (attempts > 60) {
-                clearInterval(pollTimer);
-                setStatus('Session start timed out');
-            }
-        } catch (err) {
-            // keep polling
-        }
-    }, 3000);
-}
-
-async function deleteSession(id) {
-    try {
-        log(`Deleting session ${id.slice(0,8)}...`);
-        await managerCall('DELETE', `/api/session/${id}`);
-        if (activeSessionId === id) {
-            activeSessionId = null;
-            document.getElementById('streamControls').style.display = 'none';
-            if (hls) { hls.destroy(); hls = null; }
-        }
-        refreshSessions();
-    } catch (err) {
-        log(`Error: ${err.message}`);
-    }
-}
-
-function selectSession(id) {
-    activeSessionId = id;
-    document.getElementById('activeSession').textContent = id.slice(0, 8);
-    document.getElementById('streamControls').style.display = 'block';
-    log(`Selected session ${id.slice(0,8)}`);
-}
-
-async function refreshSessions() {
-    try {
-        const sessions = await managerCall('GET', '/api/sessions');
-        const list = document.getElementById('sessionList');
-        if (!sessions.length) {
-            list.innerHTML = '<div style="color:#666;font-size:13px;">No active sessions</div>';
-            return;
-        }
-        const host = document.getElementById('host').value.trim().split(':')[0];
-        list.innerHTML = sessions.map(s => `
-            <div class="session-item">
-                <span class="id">${s.id.slice(0,8)}</span>
-                <span class="sess-status ${s.status}">${s.status}</span>
-                <span class="port">:${s.directPort}</span>
-                <div class="actions">
-                    <button onclick="selectSession('${s.id}')" ${s.status !== 'running' ? 'disabled' : ''}>Use</button>
-                    <button class="danger" onclick="deleteSession('${s.id}')">Delete</button>
-                </div>
-            </div>
-            <div class="direct-info">Direct: ws://${host}:${s.directPort}?token=... | http://${host}:${s.directPort}/hls/stream.m3u8?token=...</div>
-        `).join('');
-    } catch (err) {
-        log(`Refresh error: ${err.message}`);
-    }
-}
-
-async function startStream() {
-    if (!activeSessionId) { log('No session selected'); return; }
-    try {
-        log('Starting ffmpeg stream...');
-        const result = await sessionCall('POST', '/api/stream/start');
-        log(`Stream: ${result.status}`);
-        setStatus('Waiting for HLS segments...');
-        waitForSegmentsThenConnect();
-    } catch (err) {
-        log(`Error: ${err.message}`);
-        setStatus(`Error: ${err.message}`);
-    }
-}
-
-async function waitForSegmentsThenConnect() {
-    for (let i = 0; i < 15; i++) {
-        try {
-            const url = `${getBase()}/session/${activeSessionId}/hls/stream.m3u8?token=${encodeURIComponent(getToken())}`;
-            const res = await fetch(url);
-            if (res.ok) {
-                const text = await res.text();
-                // Only connect once there are actual .ts segments listed
-                if (text.includes('.ts')) {
-                    log('HLS segments ready, connecting player...');
-                    connectPlayer();
-                    return;
-                }
-            }
-        } catch (e) { /* keep polling */ }
-        await new Promise(r => setTimeout(r, 1000));
-    }
-    log('Timed out waiting for segments, trying to connect anyway...');
-    connectPlayer();
-}
-
-async function stopStream() {
-    if (!activeSessionId) return;
-    try {
-        if (hls) { hls.destroy(); hls = null; }
-        const result = await sessionCall('POST', '/api/stream/stop');
-        log(`Stop: ${result.status}`);
-        setStatus('Stream stopped');
-    } catch (err) {
-        log(`Error: ${err.message}`);
-    }
-}
-
-function connectPlayer() {
-    if (!activeSessionId) return;
+if (!token || !session) {
+    document.body.style.background = '#111';
+    document.body.style.color = '#eee';
+    document.body.style.fontFamily = 'system-ui';
+    document.body.style.padding = '40px';
+    document.body.style.overflow = 'auto';
+    document.body.innerHTML = '<h2>Missing required query params</h2><p style="margin-top:10px;color:#888;">Usage: <code>/?token=...&session=...</code></p>';
+} else {
+    const base = `${window.location.protocol}//${window.location.host}`;
+    const hlsUrl = `${base}/session/${session}/hls/stream.m3u8?token=${encodeURIComponent(token)}`;
     const video = document.getElementById('video');
-    const hlsUrl = `${getBase()}/session/${activeSessionId}/hls/stream.m3u8?token=${encodeURIComponent(getToken())}`;
-
-    if (hls) { hls.destroy(); hls = null; }
 
     if (Hls.isSupported()) {
-        hls = new Hls({
-            xhrSetup: (xhr) => {
-                const token = getToken();
-                if (token) xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+        const hls = new Hls({
+            xhrSetup: (xhr, url) => {
+                if (!url.includes('token=')) {
+                    const sep = url.includes('?') ? '&' : '?';
+                    xhr.open('GET', url + sep + 'token=' + encodeURIComponent(token), true);
+                }
             },
             liveSyncDurationCount: 3,
             liveMaxLatencyDurationCount: 6,
@@ -287,64 +55,24 @@ function connectPlayer() {
                 }
             },
         });
-
         hls.loadSource(hlsUrl);
         hls.attachMedia(video);
-
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            log('HLS manifest loaded, starting playback');
-            setStatus('Playing');
-            video.play().catch(() => {});
-        });
-
-        hls.on(Hls.Events.ERROR, (event, data) => {
-            if (data.fatal) {
-                log(`HLS fatal error: ${data.type} - ${data.details}`);
-                if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-                    setStatus('Reconnecting...');
-                    hls.destroy();
-                    hls = null;
-                    setTimeout(connectPlayer, 2000);
-                } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-                    setStatus('Recovering...');
-                    hls.recoverMediaError();
-                } else {
-                    setStatus(`Error: ${data.details}`);
-                }
-            } else if (data.details === 'fragLoadError') {
-                // Segment was deleted before we could fetch it - skip to live edge
-                if (hls.liveSyncPosition) {
-                    video.currentTime = hls.liveSyncPosition;
-                }
+        hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
+        hls.on(Hls.Events.ERROR, (_, data) => {
+            if (data.fatal && data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                hls.destroy();
+                setTimeout(() => location.reload(), 2000);
+            } else if (data.fatal && data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+                hls.recoverMediaError();
+            } else if (data.details === 'fragLoadError' && hls.liveSyncPosition) {
+                video.currentTime = hls.liveSyncPosition;
             }
         });
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = hlsUrl;
-        video.addEventListener('loadedmetadata', () => {
-            video.play().catch(() => {});
-            setStatus('Playing (native HLS)');
-        });
-    } else {
-        setStatus('HLS not supported in this browser');
+        video.addEventListener('loadedmetadata', () => video.play().catch(() => {}));
     }
 }
-
-async function navigate() {
-    if (!activeSessionId) { log('No session selected'); return; }
-    const url = document.getElementById('navUrl').value.trim();
-    if (!url) return;
-    try {
-        log(`Navigating to: ${url}`);
-        const result = await sessionCall('POST', '/api/navigate', { url });
-        log(`Navigate: ${result.status}`);
-    } catch (err) {
-        log(`Navigate error: ${err.message}`);
-    }
-}
-
-document.getElementById('navUrl').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') navigate();
-});
 </script>
 </body>
 </html>

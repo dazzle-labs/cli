@@ -29,6 +29,14 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
     wget \
     unclutter \
+    software-properties-common \
+    netcat-openbsd \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install OBS Studio (28+ includes obs-websocket built-in)
+RUN add-apt-repository ppa:obsproject/obs-studio \
+    && apt-get update \
+    && apt-get install -y obs-studio \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Chromium from the official Google Chrome stable channel (real .deb, not snap)
@@ -58,9 +66,6 @@ COPY docker/pulse-default.pa /etc/pulse/default.pa
 # Copy entrypoint
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
-
-# Create HLS output directory
-RUN mkdir -p /tmp/hls
 
 ENV DISPLAY=:99
 ENV PULSE_SERVER=unix:/tmp/pulse/native

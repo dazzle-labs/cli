@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: session-manager
+  namespace: browser-streamer
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - stream.dazzle.fm
+      secretName: stream-dazzle-fm-tls
+  rules:
+    - host: stream.dazzle.fm
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: session-manager
+                port:
+                  number: 8080
