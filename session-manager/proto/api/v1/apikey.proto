@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package api.v1;
+
+option go_package = "github.com/browser-streamer/session-manager/gen/api/v1;apiv1";
+
+import "google/protobuf/timestamp.proto";
+
+service ApiKeyService {
+  rpc CreateApiKey(CreateApiKeyRequest) returns (CreateApiKeyResponse);
+  rpc ListApiKeys(ListApiKeysRequest) returns (ListApiKeysResponse);
+  rpc DeleteApiKey(DeleteApiKeyRequest) returns (DeleteApiKeyResponse);
+}
+
+message ApiKey {
+  string id = 1;
+  string name = 2;
+  string prefix = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp last_used_at = 5;
+}
+
+message CreateApiKeyRequest {
+  string name = 1;
+}
+
+message CreateApiKeyResponse {
+  ApiKey key = 1;
+  string secret = 2;
+}
+
+message ListApiKeysRequest {}
+
+message ListApiKeysResponse {
+  repeated ApiKey keys = 1;
+}
+
+message DeleteApiKeyRequest {
+  string id = 1;
+}
+
+message DeleteApiKeyResponse {}

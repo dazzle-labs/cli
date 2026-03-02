@@ -17,7 +17,7 @@ echo "==> Token: ${TOKEN}"
 
 # Step 1: Install k3s
 echo "==> Installing k3s..."
-${SSH} "curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC='--disable=traefik' sh -"
+${SSH} "curl -sfL https://get.k3s.io | sh -"
 
 # Wait for k3s to be ready
 echo "==> Waiting for k3s node to be ready..."
@@ -99,7 +99,20 @@ ${SSH} "k3s kubectl apply -f -" < k8s/session-manager-service.yaml
 echo "==> Waiting for session-manager to be ready..."
 ${SSH} "k3s kubectl rollout status deployment/session-manager -n browser-streamer --timeout=120s"
 
-# Step 12: Verify
+# Step 12: Install cert-manager
+echo "==> Installing cert-manager..."
+${SSH} "k3s kubectl apply -f https://github.com/cert-manager/cert-manager/releases/latest/download/cert-manager.yaml"
+${SSH} "k3s kubectl rollout status deployment/cert-manager -n cert-manager --timeout=120s"
+${SSH} "k3s kubectl rollout status deployment/cert-manager-webhook -n cert-manager --timeout=120s"
+${SSH} "k3s kubectl rollout status deployment/cert-manager-cainjector -n cert-manager --timeout=120s"
+
+# Step 13: Setup TLS (Traefik config, ClusterIssuer, Ingress)
+echo "==> Setting up TLS..."
+${SSH} "k3s kubectl apply -f -" < k8s/traefik-config.yaml
+${SSH} "k3s kubectl apply -f -" < k8s/cluster-issuer.yaml
+${SSH} "k3s kubectl apply -f -" < k8s/ingress.yaml
+
+# Step 14: Verify
 echo "==> Verifying..."
 echo ""
 echo "Pods:"
@@ -110,16 +123,11 @@ ${SSH} "k3s kubectl get svc -n browser-streamer"
 echo ""
 echo "==> Done!"
 echo ""
-echo "Browserless:"
-echo "  CDP:  ws://${HOST}:30000?token=${TOKEN}"
-echo "  HTTP: http://${HOST}:30000?token=${TOKEN}"
+echo "Session Manager (via Traefik + TLS):"
+echo "  Health:      curl https://stream.dazzle.fm/health"
+echo "  New session: curl -X POST https://stream.dazzle.fm/api/session?token=${TOKEN}"
+echo "  Sessions:    curl https://stream.dazzle.fm/api/sessions?token=${TOKEN}"
+echo "  Dashboard:   https://stream.dazzle.fm/"
 echo ""
-echo "Session Manager:"
-echo "  Health:      curl http://${HOST}:30080/health"
-echo "  New session: curl -X POST http://${HOST}:30080/api/session?token=${TOKEN}"
-echo "  Sessions:    curl http://${HOST}:30080/api/sessions?token=${TOKEN}"
-echo "  Viewer:      http://${HOST}:30080/"
-echo ""
-echo "Direct access (after creating a session):"
-echo "  CDP:  ws://${HOST}:<directPort>?token=${TOKEN}"
-echo "  HLS:  http://${HOST}:<directPort>/hls/stream.m3u8?token=${TOKEN}"
+echo "NOTE: Ensure DNS A record for stream.dazzle.fm points to ${HOST}"
+echo "      Certificate will be auto-provisioned by cert-manager on first request."

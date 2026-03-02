@@ -4,10 +4,9 @@ metadata:
   name: session-manager
   namespace: browser-streamer
 spec:
-  type: NodePort
+  type: ClusterIP
   selector:
     app: session-manager
   ports:
     - port: 8080
       targetPort: 8080
-      nodePort: 30080

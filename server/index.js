@@ -1,21 +1,14 @@
 const express = require('express');
 const http = require('http');
-const { spawn } = require('child_process');
-const path = require('path');
-const fs = require('fs');
 const httpProxy = require('http-proxy');
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 
 const PORT = process.env.PORT || 8080;
 const TOKEN = process.env.TOKEN;
-const HLS_DIR = '/tmp/hls';
 const CDP_HOST = 'localhost';
 const CDP_PORT = 9222;
-
-// Ensure HLS directory exists
-fs.mkdirSync(HLS_DIR, { recursive: true });
 
 // CDP WebSocket proxy
 const cdpProxy = httpProxy.createProxyServer({ ws: true, target: `http://${CDP_HOST}:${CDP_PORT}` });
@@ -29,9 +22,6 @@ function auth(req, res, next) {
     next();
 }
 
-// Track ffmpeg process
-let ffmpegProcess = null;
-
 // Activity tracking for session manager GC
 let lastActivity = Date.now();
 
@@ -43,113 +33,101 @@ app.use((req, res, next) => {
 
 // Health check (no auth)
 app.get('/health', (req, res) => {
-    res.json({ status: 'ok', streaming: ffmpegProcess !== null, lastActivity, uptime: process.uptime() });
+    res.json({ status: 'ok', lastActivity, uptime: process.uptime() });
 });
 
-// Start streaming
-app.post('/api/stream/start', auth, (req, res) => {
-    if (ffmpegProcess) {
-        return res.json({ status: 'already_streaming' });
+// CDP discovery endpoints — proxy to Chrome and rewrite WebSocket URLs
+async function cdpDiscovery(req, res, cdpPath) {
+    try {
+        const cdpRes = await fetch(`http://${CDP_HOST}:${CDP_PORT}${cdpPath}`);
+        const body = await cdpRes.text();
+        const extHost = req.headers.host || `${CDP_HOST}:${PORT}`;
+        // Rewrite ws://localhost:9222 → ws://<external host>/devtools
+        const rewritten = body.replace(/ws:\/\/localhost:9222/g, `ws://${extHost}`);
+        const contentType = cdpRes.headers.get('content-type') || 'application/json';
+        res.setHeader('Content-Type', contentType);
+        res.send(rewritten);
+    } catch (err) {
+        console.error('CDP discovery error:', err.message);
+        res.status(502).json({ error: 'CDP not available' });
     }
+}
 
-    // Clean old segments
-    const files = fs.readdirSync(HLS_DIR);
-    for (const f of files) {
-        fs.unlinkSync(path.join(HLS_DIR, f));
+app.get('/json', auth, (req, res) => cdpDiscovery(req, res, '/json'));
+app.get('/json/version', auth, (req, res) => cdpDiscovery(req, res, '/json/version'));
+app.get('/json/list', auth, (req, res) => cdpDiscovery(req, res, '/json/list'));
+
+// Template storage for HTML rendering
+let currentTemplate = '';
+
+// Store HTML template and navigate Chrome to render it
+app.post('/api/template', auth, async (req, res) => {
+    const { html } = req.body;
+    if (!html) return res.status(400).json({ error: 'html required' });
+
+    currentTemplate = html;
+
+    try {
+        // Navigate Chrome to our template endpoint
+        const tabsRes = await fetch(`http://${CDP_HOST}:${CDP_PORT}/json`);
+        const tabs = await tabsRes.json();
+        if (!tabs.length) return res.status(500).json({ error: 'no browser tabs' });
+
+        const tabId = tabs[0].id;
+        const templateUrl = `http://localhost:${PORT}/template`;
+        await fetch(`http://${CDP_HOST}:${CDP_PORT}/json/navigate?url=${encodeURIComponent(templateUrl)}&id=${tabId}`);
+
+        res.json({ status: 'ok', length: html.length });
+    } catch (err) {
+        console.error('Template error:', err);
+        res.status(500).json({ error: err.message });
     }
-
-    const args = [
-        // Video input: X11 screen capture
-        '-f', 'x11grab',
-        '-framerate', '30',
-        '-video_size', `${process.env.SCREEN_WIDTH || 1280}x${process.env.SCREEN_HEIGHT || 720}`,
-        '-i', ':99',
-        // Audio input: PulseAudio monitor
-        '-f', 'pulse',
-        '-i', 'virtual_out.monitor',
-        // Video codec (yuv420p + high profile required for browser compatibility)
-        '-c:v', 'libx264',
-        '-preset', 'ultrafast',
-        '-tune', 'zerolatency',
-        '-pix_fmt', 'yuv420p',
-        '-profile:v', 'high',
-        '-level', '4.1',
-        '-crf', '23',
-        // Audio codec
-        '-c:a', 'aac',
-        '-b:a', '128k',
-        // Keyframe interval (1 per second at 30fps)
-        '-g', '30',
-        '-keyint_min', '30',
-        // HLS output
-        '-f', 'hls',
-        '-hls_time', '1',
-        '-hls_list_size', '10',
-        '-hls_flags', 'delete_segments+independent_segments',
-        path.join(HLS_DIR, 'stream.m3u8'),
-    ];
-
-    ffmpegProcess = spawn('ffmpeg', args, { stdio: ['pipe', 'pipe', 'pipe'] });
-
-    ffmpegProcess.stderr.on('data', (data) => {
-        const line = data.toString().trim();
-        if (line) console.log('[ffmpeg]', line);
-    });
-
-    ffmpegProcess.on('close', (code) => {
-        console.log(`ffmpeg exited with code ${code}`);
-        ffmpegProcess = null;
-    });
-
-    ffmpegProcess.on('error', (err) => {
-        console.error('ffmpeg spawn error:', err);
-        ffmpegProcess = null;
-    });
-
-    res.json({ status: 'started' });
 });
 
-// Stop streaming
-app.post('/api/stream/stop', auth, (req, res) => {
-    if (!ffmpegProcess) {
-        return res.json({ status: 'not_streaming' });
-    }
-
-    ffmpegProcess.kill('SIGTERM');
-    ffmpegProcess = null;
-    res.json({ status: 'stopped' });
+// Get current HTML template
+app.get('/api/template', auth, (req, res) => {
+    res.json({ html: currentTemplate });
 });
 
-// Serve HLS segments with appropriate headers
-app.get('/hls/:file', auth, (req, res) => {
-    const filePath = path.join(HLS_DIR, req.params.file);
-
-    if (!fs.existsSync(filePath)) {
-        return res.status(404).json({ error: 'not found' });
-    }
-
-    // CORS headers
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Authorization');
-
-    if (req.params.file.endsWith('.m3u8')) {
-        res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
-        res.setHeader('Cache-Control', 'no-cache, no-store');
-    } else if (req.params.file.endsWith('.ts')) {
-        res.setHeader('Content-Type', 'video/mp2t');
-        res.setHeader('Cache-Control', 'max-age=60');
-    }
-
-    res.sendFile(filePath);
+// Serve template to Chrome (no auth — localhost only)
+app.get('/template', (req, res) => {
+    res.setHeader('Content-Type', 'text/html');
+    res.send(currentTemplate || '<html><body></body></html>');
 });
 
-// CORS preflight for HLS
-app.options('/hls/:file', (req, res) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Authorization');
-    res.sendStatus(204);
+// Edit current HTML template (find and replace)
+app.post('/api/template/edit', auth, async (req, res) => {
+    const { old_string, new_string } = req.body;
+    if (old_string === undefined) return res.status(400).json({ error: 'old_string required' });
+    if (new_string === undefined) return res.status(400).json({ error: 'new_string required' });
+
+    if (!currentTemplate.includes(old_string)) {
+        return res.status(400).json({ error: 'old_string not found in current HTML' });
+    }
+
+    // Check for uniqueness — only replace if it appears exactly once
+    const count = currentTemplate.split(old_string).length - 1;
+    if (count > 1) {
+        return res.status(400).json({ error: `old_string found ${count} times, must be unique` });
+    }
+
+    currentTemplate = currentTemplate.replace(old_string, new_string);
+
+    try {
+        // Re-navigate Chrome to refresh the template
+        const tabsRes = await fetch(`http://${CDP_HOST}:${CDP_PORT}/json`);
+        const tabs = await tabsRes.json();
+        if (tabs.length) {
+            const tabId = tabs[0].id;
+            const templateUrl = `http://localhost:${PORT}/template`;
+            await fetch(`http://${CDP_HOST}:${CDP_PORT}/json/navigate?url=${encodeURIComponent(templateUrl)}&id=${tabId}`);
+        }
+
+        res.json({ status: 'ok', length: currentTemplate.length });
+    } catch (err) {
+        console.error('Template edit error:', err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Navigate Chrome via CDP
@@ -164,15 +142,6 @@ app.post('/api/navigate', auth, async (req, res) => {
         if (!tabs.length) return res.status(500).json({ error: 'no browser tabs' });
 
         const tabId = tabs[0].id;
-
-        // Navigate
-        const navRes = await fetch(`http://${CDP_HOST}:${CDP_PORT}/json/navigate?${tabId}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-        });
-
-        // Use CDP HTTP endpoint to navigate
-        const wsUrl = tabs[0].webSocketDebuggerUrl;
 
         // Use direct CDP command via HTTP
         await fetch(`http://${CDP_HOST}:${CDP_PORT}/json/navigate?url=${encodeURIComponent(url)}&id=${tabId}`);
@@ -201,7 +170,9 @@ server.on('upgrade', (req, socket, head) => {
 
     lastActivity = Date.now();
 
-    // Proxy to Chrome CDP, rewriting the path
+    // Proxy to Chrome CDP
+    // For /devtools/* paths, forward as-is (Playwright uses these)
+    // For other paths (legacy root WS), also proxy to CDP
     cdpProxy.ws(req, socket, head, {
         target: `ws://${CDP_HOST}:${CDP_PORT}`,
     });
@@ -209,6 +180,5 @@ server.on('upgrade', (req, socket, head) => {
 
 server.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
-    console.log(`HLS directory: ${HLS_DIR}`);
     console.log(`Auth: ${TOKEN ? 'enabled' : 'disabled'}`);
 });

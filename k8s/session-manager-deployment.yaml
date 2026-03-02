@@ -23,23 +23,40 @@ spec:
           ports:
             - containerPort: 8080
           env:
-            - name: TOKEN
+            - name: POD_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: browserless-auth
                   key: token
+            - name: CLERK_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: clerk-auth
+                  key: secret-key
+            - name: ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: encryption-key
+                  key: key
+            - name: DB_HOST
+              value: postgres
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: browser_streamer
+            - name: DB_USER
+              value: browser_streamer
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth
+                  key: password
             - name: NAMESPACE
               value: browser-streamer
             - name: STREAMER_IMAGE
               value: browser-streamer:latest
             - name: MAX_SESSIONS
               value: "3"
-            - name: IDLE_TIMEOUT
-              value: "10"
-            - name: PORT_RANGE_START
-              value: "31000"
-            - name: PORT_RANGE_END
-              value: "31099"
           resources:
             requests:
               cpu: 100m

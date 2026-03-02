@@ -1,0 +1,11 @@
+.git
+.claude
+.playwright-mcp
+*.png
+node_modules
+dashboard/node_modules
+dashboard/dist
+.env.local
+.env*.local
+.sops.yaml
+k8s/
