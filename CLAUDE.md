@@ -8,11 +8,11 @@ Session-based browser streaming platform on k3s. Three components:
 
 1. **Session Manager** (`session-manager/main.go`) — Go control plane on NodePort 30080. Creates/destroys ephemeral streamer pods, reverse-proxies traffic by session ID, manages port allocation (HostPort range 31000-31099), runs idle GC every 5s.
 
-2. **Streamer Pod** (`server/index.js` + `docker/entrypoint.sh`) — Ephemeral k8s pod per session. Runs Xvfb + PulseAudio + Chrome + Node.js. Captures screen via ffmpeg → HLS. Proxies Chrome CDP WebSocket on port 9222.
+2. **Streamer Pod** (`server/index.js` + `docker/entrypoint.sh`) — Ephemeral k8s pod per session. Runs Xvfb + PulseAudio + Chrome + OBS Studio + Node.js. OBS captures screen via xshm_input and handles streaming. Proxies Chrome CDP WebSocket on port 9222. OBS WebSocket on port 4455.
 
 3. **Viewer** (`viewer.html`) — Vanilla JS + HLS.js. Session management UI, HLS player, Chrome navigation control. Served by the session manager at `/`.
 
-**Data flow:** Client → Session Manager (creates pod) → `/session/:id/*` reverse proxy → Streamer Pod (Chrome + ffmpeg + HLS). Clients can also connect directly via `ws://host:<directPort>` for CDP.
+**Data flow:** Client → Session Manager (creates pod) → `/session/:id/*` reverse proxy → Streamer Pod (Chrome + OBS). Clients can also connect directly via `ws://host:<directPort>` for CDP.
 
 ## Build & Deploy
 
@@ -87,4 +87,4 @@ Streamer pods created by the session manager (in `main.go createSession()`):
 
 ## Streamer Internals
 
-The entrypoint starts processes sequentially: Xvfb → PulseAudio → Chrome (with `--user-data-dir=/tmp/chrome-data --remote-debugging-port=9222`) → Node server. ffmpeg is started on-demand via `/api/stream/start` (H.264 ultrafast + AAC → 1s HLS segments, 5-segment playlist).
+The entrypoint starts processes sequentially: Xvfb → PulseAudio → Chrome (with `--user-data-dir=/tmp/chrome-data --remote-debugging-port=9222`) → OBS Studio (with xshm_input screen capture, WebSocket on port 4455) → Node server. OBS handles all screen capture and streaming.
