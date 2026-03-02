@@ -13,7 +13,7 @@ export const FRAMEWORKS: Framework[] = [
     language: "Shell",
     description: "Anthropic's CLI coding agent",
     getSnippet: (mcpUrl) =>
-      `claude mcp add --transport http \\\n  -H "Authorization: Bearer $DAZZLE_API_KEY" \\\n  dazzle ${mcpUrl}`,
+      `claude mcp add dazzle ${mcpUrl} \\\n  --transport http \\\n  --header "Authorization: Bearer $DAZZLE_API_KEY"`,
   },
   {
     id: "openai-agents",

@@ -20,6 +20,8 @@ export function Dashboard() {
   const [profile, setProfile] = useState<GetProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [panelMounted, setPanelMounted] = useState(false);
   const [activeFramework, setActiveFramework] = useState(FRAMEWORKS[0].id);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -53,9 +55,23 @@ export function Dashboard() {
     };
   }, []);
 
+  // Open panel: mount first, then animate in on next frame
+  function openPanel(id: string) {
+    setSelectedSessionId(id);
+    setPanelMounted(true);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setPanelOpen(true));
+    });
+  }
+
+  // Close panel: animate out, then unmount after transition
   const closePanel = useCallback(() => {
-    setSelectedSessionId(null);
+    setPanelOpen(false);
     setConfirmingDelete(false);
+    setTimeout(() => {
+      setSelectedSessionId(null);
+      setPanelMounted(false);
+    }, 200);
   }, []);
 
   // Close panel if selected session disappears from list
@@ -65,22 +81,22 @@ export function Dashboard() {
     }
   }, [sessions, selectedSessionId, closePanel]);
 
-  // Body scroll lock when panel is open
+  // Body scroll lock when panel is mounted
   useEffect(() => {
-    if (!selectedSessionId) return;
+    if (!panelMounted) return;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
-  }, [selectedSessionId]);
+  }, [panelMounted]);
 
   // Escape key handler for slide-over
   useEffect(() => {
-    if (!selectedSessionId) return;
+    if (!panelMounted) return;
     function handleKey(e: KeyboardEvent) {
       if (e.key === "Escape") closePanel();
     }
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
-  }, [selectedSessionId, closePanel]);
+  }, [panelMounted, closePanel]);
 
   async function handleDelete(id: string) {
     try {
@@ -227,7 +243,7 @@ export function Dashboard() {
               <button
                 type="button"
                 key={s.id}
-                onClick={() => setSelectedSessionId(s.id)}
+                onClick={() => openPanel(s.id)}
                 className="w-full flex items-center justify-between px-4 py-3 rounded-lg border border-white/[0.06] bg-white/[0.02] hover:border-emerald-500/15 hover:bg-emerald-500/[0.02] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500/50 transition-all cursor-pointer"
               >
                 <div className="flex items-center gap-3">
@@ -251,14 +267,14 @@ export function Dashboard() {
       )}
 
       {/* Slide-over panel */}
-      {selectedSessionId && selected && createPortal(
+      {panelMounted && selected && createPortal(
         <div
-          className="fixed inset-0 z-50 backdrop-blur-sm bg-zinc-950/80"
+          className={`fixed inset-0 z-50 transition-all duration-200 ${panelOpen ? "backdrop-blur-sm bg-zinc-950/80" : "bg-zinc-950/0"}`}
           onClick={(e) => {
             if (e.target === e.currentTarget) closePanel();
           }}
         >
-          <div className="fixed right-0 top-0 h-full w-[480px] max-w-full bg-zinc-900 border-l border-white/[0.06] overflow-y-auto p-6 z-50">
+          <div className={`fixed right-0 top-0 h-full w-[480px] max-w-full bg-zinc-900 border-l border-white/[0.06] overflow-y-auto p-6 z-50 transition-transform duration-200 ease-out ${panelOpen ? "translate-x-0" : "translate-x-full"}`}>
             {/* Close button */}
             <button
               onClick={closePanel}
@@ -405,7 +421,7 @@ export function Dashboard() {
                       size="sm"
                       className="text-red-400 hover:bg-red-500/10"
                       onClick={() => {
-                        const id = selectedSessionId;
+                        const id = selectedSessionId!;
                         closePanel();
                         handleDelete(id);
                       }}
