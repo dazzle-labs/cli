@@ -10,6 +10,7 @@ import { Layout } from "./components/Layout.js";
 import { Dashboard } from "./pages/Dashboard.js";
 import { GetStarted } from "./pages/GetStarted.js";
 import { ApiKeys } from "./pages/ApiKeys.js";
+import { Docs } from "./pages/Docs.js";
 import { LandingPage } from "./pages/LandingPage.js";
 
 function AuthSetup() {
@@ -33,6 +34,7 @@ export function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/get-started" element={<GetStarted />} />
             <Route path="/api-keys" element={<ApiKeys />} />
+            <Route path="/docs" element={<Docs />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Layout>

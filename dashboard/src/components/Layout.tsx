@@ -1,6 +1,6 @@
 import { UserButton } from "@clerk/clerk-react";
 import { Link, useLocation } from "react-router-dom";
-import { Monitor, Key, Rocket } from "lucide-react";
+import { Monitor, Key, Rocket, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 
@@ -8,6 +8,7 @@ const navItems = [
   { path: "/get-started", label: "Get Started", icon: Rocket },
   { path: "/", label: "Endpoints", icon: Monitor },
   { path: "/api-keys", label: "API Keys", icon: Key },
+  { path: "/docs", label: "Docs", icon: BookOpen },
 ];
 
 export function Layout({ children }: { children: ReactNode }) {
