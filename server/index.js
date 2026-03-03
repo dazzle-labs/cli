@@ -249,6 +249,7 @@ function panelUrl(panelName) { return `http://localhost:${PORT}/@panel/${panelNa
 let currentChromeUrl = null;
 
 async function ensureXshmSource() {
+    // Create if not exists (601 = already exists, ignore)
     try {
         await obs.request('CreateInput', {
             sceneName: 'Scene',
@@ -256,23 +257,26 @@ async function ensureXshmSource() {
             inputKind: 'xshm_input',
             inputSettings: { screen: 0, show_cursor: false, advanced: false },
         });
-        // Set transform to fill the canvas
-        const { sceneItemId } = await obs.request('GetSceneItemId', {
-            sceneName: 'Scene', sourceName: 'Screen',
-        });
-        await obs.request('SetSceneItemTransform', {
-            sceneName: 'Scene', sceneItemId,
-            sceneItemTransform: {
-                positionX: 0, positionY: 0,
-                boundsType: 'OBS_BOUNDS_STRETCH',
-                boundsWidth: SCREEN_WIDTH, boundsHeight: SCREEN_HEIGHT,
-                boundsAlignment: 0,
-            },
-        });
     } catch (err) {
         if (!err.message.includes('601')) throw err;
-        // Already exists — fine
     }
+
+    // Always set transform and enable — idempotent
+    const { sceneItemId } = await obs.request('GetSceneItemId', {
+        sceneName: 'Scene', sourceName: 'Screen',
+    });
+    await obs.request('SetSceneItemTransform', {
+        sceneName: 'Scene', sceneItemId,
+        sceneItemTransform: {
+            positionX: 0, positionY: 0,
+            boundsType: 'OBS_BOUNDS_STRETCH',
+            boundsWidth: SCREEN_WIDTH, boundsHeight: SCREEN_HEIGHT,
+            boundsAlignment: 0,
+        },
+    });
+    await obs.request('SetSceneItemEnabled', {
+        sceneName: 'Scene', sceneItemId, sceneItemEnabled: true,
+    });
 }
 
 async function applyLayout(specs) {
