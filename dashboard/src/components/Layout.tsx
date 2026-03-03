@@ -2,7 +2,9 @@ import { UserButton } from "@clerk/clerk-react";
 import { Link, useLocation } from "react-router-dom";
 import { Monitor, Key, Rocket, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 import type { ReactNode } from "react";
+import { OnboardingWizard } from "./onboarding/OnboardingWizard";
 
 const navItems = [
   { path: "/", label: "Endpoints", icon: Monitor },
@@ -12,6 +14,7 @@ const navItems = [
 
 export function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
+  const [wizardOpen, setWizardOpen] = useState(false);
 
   return (
     <div className="flex min-h-screen" style={{ fontFamily: "'Outfit', sans-serif" }}>
@@ -37,7 +40,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <div className="px-3 mb-2">
           <button
             type="button"
-            onClick={() => window.dispatchEvent(new CustomEvent("dazzle:open-wizard"))}
+            onClick={() => setWizardOpen(true)}
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-semibold bg-emerald-500 text-zinc-950 hover:bg-emerald-400 transition-all duration-200 cursor-pointer"
           >
             <Rocket className="h-4 w-4" />
@@ -84,6 +87,8 @@ export function Layout({ children }: { children: ReactNode }) {
           {children}
         </div>
       </main>
+
+      <OnboardingWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />
     </div>
   );
 }
