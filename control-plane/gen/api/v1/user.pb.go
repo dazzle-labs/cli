@@ -62,7 +62,7 @@ type GetProfileResponse struct {
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Email         string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
 	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
-	SessionCount  int32                  `protobuf:"varint,4,opt,name=session_count,json=sessionCount,proto3" json:"session_count,omitempty"`
+	StageCount    int32                  `protobuf:"varint,4,opt,name=stage_count,json=stageCount,proto3" json:"stage_count,omitempty"`
 	ApiKeyCount   int32                  `protobuf:"varint,5,opt,name=api_key_count,json=apiKeyCount,proto3" json:"api_key_count,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -119,9 +119,9 @@ func (x *GetProfileResponse) GetName() string {
 	return ""
 }
 
-func (x *GetProfileResponse) GetSessionCount() int32 {
+func (x *GetProfileResponse) GetStageCount() int32 {
 	if x != nil {
-		return x.SessionCount
+		return x.StageCount
 	}
 	return 0
 }
@@ -138,16 +138,17 @@ var File_api_v1_user_proto protoreflect.FileDescriptor
 const file_api_v1_user_proto_rawDesc = "" +
 	"\n" +
 	"\x11api/v1/user.proto\x12\x06api.v1\"\x13\n" +
-	"\x11GetProfileRequest\"\xa0\x01\n" +
+	"\x11GetProfileRequest\"\x9c\x01\n" +
 	"\x12GetProfileResponse\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x12\x12\n" +
-	"\x04name\x18\x03 \x01(\tR\x04name\x12#\n" +
-	"\rsession_count\x18\x04 \x01(\x05R\fsessionCount\x12\"\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\x12\x1f\n" +
+	"\vstage_count\x18\x04 \x01(\x05R\n" +
+	"stageCount\x12\"\n" +
 	"\rapi_key_count\x18\x05 \x01(\x05R\vapiKeyCount2R\n" +
 	"\vUserService\x12C\n" +
 	"\n" +
-	"GetProfile\x12\x19.api.v1.GetProfileRequest\x1a\x1a.api.v1.GetProfileResponseB>Z<github.com/browser-streamer/control-plane/gen/api/v1;apiv1b\x06proto3"
+	"GetProfile\x12\x19.api.v1.GetProfileRequest\x1a\x1a.api.v1.GetProfileResponseB<Z:github.com/browser-streamer/control-plane/gen/api/v1;apiv1b\x06proto3"
 
 var (
 	file_api_v1_user_proto_rawDescOnce sync.Once

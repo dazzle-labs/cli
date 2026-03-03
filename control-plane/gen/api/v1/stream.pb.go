@@ -244,7 +244,7 @@ func (x *CreateStreamDestinationResponse) GetDestination() *StreamDestination {
 
 type ListStreamDestinationsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -279,9 +279,9 @@ func (*ListStreamDestinationsRequest) Descriptor() ([]byte, []int) {
 	return file_api_v1_stream_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *ListStreamDestinationsRequest) GetSessionId() string {
+func (x *ListStreamDestinationsRequest) GetStageId() string {
 	if x != nil {
-		return x.SessionId
+		return x.StageId
 	}
 	return ""
 }
@@ -563,10 +563,9 @@ const file_api_v1_stream_proto_rawDesc = "" +
 	"stream_key\x18\x04 \x01(\tR\tstreamKey\x12\x18\n" +
 	"\aenabled\x18\x05 \x01(\bR\aenabled\"^\n" +
 	"\x1fCreateStreamDestinationResponse\x12;\n" +
-	"\vdestination\x18\x01 \x01(\v2\x19.api.v1.StreamDestinationR\vdestination\">\n" +
-	"\x1dListStreamDestinationsRequest\x12\x1d\n" +
-	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\"_\n" +
+	"\vdestination\x18\x01 \x01(\v2\x19.api.v1.StreamDestinationR\vdestination\":\n" +
+	"\x1dListStreamDestinationsRequest\x12\x19\n" +
+	"\bstage_id\x18\x01 \x01(\tR\astageId\"_\n" +
 	"\x1eListStreamDestinationsResponse\x12=\n" +
 	"\fdestinations\x18\x01 \x03(\v2\x19.api.v1.StreamDestinationR\fdestinations\"\xb4\x01\n" +
 	"\x1eUpdateStreamDestinationRequest\x12\x0e\n" +
@@ -586,7 +585,7 @@ const file_api_v1_stream_proto_rawDesc = "" +
 	"\x17CreateStreamDestination\x12&.api.v1.CreateStreamDestinationRequest\x1a'.api.v1.CreateStreamDestinationResponse\x12g\n" +
 	"\x16ListStreamDestinations\x12%.api.v1.ListStreamDestinationsRequest\x1a&.api.v1.ListStreamDestinationsResponse\x12j\n" +
 	"\x17UpdateStreamDestination\x12&.api.v1.UpdateStreamDestinationRequest\x1a'.api.v1.UpdateStreamDestinationResponse\x12j\n" +
-	"\x17DeleteStreamDestination\x12&.api.v1.DeleteStreamDestinationRequest\x1a'.api.v1.DeleteStreamDestinationResponseB>Z<github.com/browser-streamer/control-plane/gen/api/v1;apiv1b\x06proto3"
+	"\x17DeleteStreamDestination\x12&.api.v1.DeleteStreamDestinationRequest\x1a'.api.v1.DeleteStreamDestinationResponseB<Z:github.com/browser-streamer/control-plane/gen/api/v1;apiv1b\x06proto3"
 
 var (
 	file_api_v1_stream_proto_rawDescOnce sync.Once

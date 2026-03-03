@@ -104,12 +104,12 @@ func dbUpsertUser(db *sql.DB, id, email, name string) error {
 	return err
 }
 
-func dbGetUserProfile(db *sql.DB, userID string) (email, name string, sessionCount, apiKeyCount int, err error) {
+func dbGetUserProfile(db *sql.DB, userID string) (email, name string, stageCount, apiKeyCount int, err error) {
 	err = db.QueryRow(`
 		SELECT u.email, u.name,
-			(SELECT COUNT(*) FROM session_log WHERE user_id=$1 AND ended_at IS NULL),
+			(SELECT COUNT(*) FROM stages WHERE user_id=$1 AND status != 'inactive'),
 			(SELECT COUNT(*) FROM api_keys WHERE user_id=$1)
-		FROM users u WHERE u.id=$1`, userID).Scan(&email, &name, &sessionCount, &apiKeyCount)
+		FROM users u WHERE u.id=$1`, userID).Scan(&email, &name, &stageCount, &apiKeyCount)
 	return
 }
 
@@ -264,80 +264,78 @@ func dbDeleteStreamDest(db *sql.DB, id, userID string) error {
 	return nil
 }
 
-// --- Endpoint queries ---
+// --- Stage queries ---
 
-type endpointRow struct {
+type stageRow struct {
 	ID        string
 	UserID    string
 	Name      string
+	Status    string
+	PodName   sql.NullString
+	PodIP     sql.NullString
 	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
-func dbCreateEndpoint(db *sql.DB, userID, name string) (string, error) {
+func dbCreateStage(db *sql.DB, userID, name string) (string, error) {
 	var id string
 	err := db.QueryRow(`
-		INSERT INTO endpoints (user_id, name)
-		VALUES ($1, $2)
+		INSERT INTO stages (user_id, name, status)
+		VALUES ($1, $2, 'inactive')
 		RETURNING id`, userID, name).Scan(&id)
 	return id, err
 }
 
-func dbListEndpoints(db *sql.DB, userID string) ([]endpointRow, error) {
+func dbListStages(db *sql.DB, userID string) ([]stageRow, error) {
 	rows, err := db.Query(`
-		SELECT id, user_id, name, created_at
-		FROM endpoints WHERE user_id=$1 ORDER BY created_at`, userID)
+		SELECT id, user_id, name, status, pod_name, pod_ip, created_at, updated_at
+		FROM stages WHERE user_id=$1 ORDER BY created_at`, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var endpoints []endpointRow
+	var stages []stageRow
 	for rows.Next() {
-		var e endpointRow
-		if err := rows.Scan(&e.ID, &e.UserID, &e.Name, &e.CreatedAt); err != nil {
+		var s stageRow
+		if err := rows.Scan(&s.ID, &s.UserID, &s.Name, &s.Status, &s.PodName, &s.PodIP, &s.CreatedAt, &s.UpdatedAt); err != nil {
 			return nil, err
 		}
-		endpoints = append(endpoints, e)
+		stages = append(stages, s)
 	}
-	return endpoints, rows.Err()
+	return stages, rows.Err()
 }
 
-func dbGetEndpoint(db *sql.DB, id string) (*endpointRow, error) {
-	var e endpointRow
+func dbGetStage(db *sql.DB, id string) (*stageRow, error) {
+	var s stageRow
 	err := db.QueryRow(`
-		SELECT id, user_id, name, created_at
-		FROM endpoints WHERE id=$1`, id).Scan(&e.ID, &e.UserID, &e.Name, &e.CreatedAt)
+		SELECT id, user_id, name, status, pod_name, pod_ip, created_at, updated_at
+		FROM stages WHERE id=$1`, id).Scan(&s.ID, &s.UserID, &s.Name, &s.Status, &s.PodName, &s.PodIP, &s.CreatedAt, &s.UpdatedAt)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, err
 	}
-	return &e, nil
+	return &s, nil
 }
 
-func dbDeleteEndpoint(db *sql.DB, id, userID string) error {
-	res, err := db.Exec("DELETE FROM endpoints WHERE id=$1 AND user_id=$2", id, userID)
+func dbDeleteStage(db *sql.DB, id, userID string) error {
+	res, err := db.Exec("DELETE FROM stages WHERE id=$1 AND user_id=$2", id, userID)
 	if err != nil {
 		return err
 	}
 	n, _ := res.RowsAffected()
 	if n == 0 {
-		return fmt.Errorf("endpoint not found")
+		return fmt.Errorf("stage not found")
 	}
 	return nil
 }
 
-// --- Session log queries ---
-
-func dbLogSessionCreate(db *sql.DB, id, userID, podName string) error {
+func dbUpdateStageStatus(db *sql.DB, id, status, podName, podIP string) error {
 	_, err := db.Exec(`
-		INSERT INTO session_log (id, user_id, pod_name)
-		VALUES ($1, $2, $3)`, id, userID, podName)
+		UPDATE stages SET status=$2, pod_name=$3, pod_ip=$4, updated_at=NOW()
+		WHERE id=$1`, id, status, sql.NullString{String: podName, Valid: podName != ""}, sql.NullString{String: podIP, Valid: podIP != ""})
 	return err
-}
-
-func dbLogSessionEnd(db *sql.DB, id, reason string) {
-	db.Exec("UPDATE session_log SET ended_at=NOW(), end_reason=$2 WHERE id=$1", id, reason)
 }
 
 // --- Encryption helpers ---

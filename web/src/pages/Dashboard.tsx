@@ -1,8 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { sessionClient, endpointClient, userClient, streamClient } from "../client.js";
-import type { Session } from "../gen/api/v1/session_pb.js";
-import type { Endpoint } from "../gen/api/v1/endpoint_pb.js";
+import { stageClient, userClient, streamClient } from "../client.js";
+import type { Stage } from "../gen/api/v1/stage_pb.js";
 import type { StreamDestination } from "../gen/api/v1/stream_pb.js";
 import type { GetProfileResponse } from "../gen/api/v1/user_pb.js";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
@@ -16,17 +15,16 @@ import { StreamPreview } from "@/components/StreamPreview";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 
 export function Dashboard() {
-  const [endpoints, setEndpoints] = useState<Endpoint[]>([]);
-  const [sessions, setSessions] = useState<Session[]>([]);
+  const [stages, setStages] = useState<Stage[]>([]);
   const [destinations, setDestinations] = useState<StreamDestination[]>([]);
   const [profile, setProfile] = useState<GetProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const [creatingEndpoint, setCreatingEndpoint] = useState(false);
+  const [creatingStage, setCreatingStage] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
 
   // Panel state
-  const [selectedEndpointId, setSelectedEndpointId] = useState<string | null>(null);
+  const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [panelMounted, setPanelMounted] = useState(false);
   const [activeFramework, setActiveFramework] = useState(FRAMEWORKS[0].id);
@@ -41,19 +39,17 @@ export function Dashboard() {
 
   async function refresh() {
     try {
-      const [epResp, sessResp, profResp, streamResp] = await Promise.all([
-        endpointClient.listEndpoints({}),
-        sessionClient.listSessions({}),
+      const [stageResp, profResp, streamResp] = await Promise.all([
+        stageClient.listStages({}),
         userClient.getProfile({}),
         streamClient.listStreamDestinations({}),
       ]);
-      setEndpoints(epResp.endpoints);
-      setSessions(sessResp.sessions);
+      setStages(stageResp.stages);
       setProfile(profResp);
       setDestinations(streamResp.destinations);
-      return { endpoints: epResp.endpoints, sessions: sessResp.sessions, ok: true };
+      return { stages: stageResp.stages, ok: true };
     } catch {
-      return { endpoints: [], sessions: [], ok: false };
+      return { stages: [], ok: false };
     } finally {
       setLoading(false);
     }
@@ -72,7 +68,7 @@ export function Dashboard() {
   }, []);
 
   function openPanel(id: string) {
-    setSelectedEndpointId(id);
+    setSelectedStageId(id);
     setPanelMounted(true);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => setPanelOpen(true));
@@ -83,7 +79,7 @@ export function Dashboard() {
     setPanelOpen(false);
     setConfirmingDelete(false);
     setTimeout(() => {
-      setSelectedEndpointId(null);
+      setSelectedStageId(null);
       setPanelMounted(false);
     }, 200);
   }, []);
@@ -103,9 +99,9 @@ export function Dashboard() {
     return () => document.removeEventListener("keydown", handleKey);
   }, [panelMounted, closePanel]);
 
-  async function handleDeleteEndpoint(id: string) {
+  async function handleDeleteStage(id: string) {
     try {
-      await endpointClient.deleteEndpoint({ id });
+      await stageClient.deleteStage({ id });
     } catch {
       // ignore
     }
@@ -154,10 +150,6 @@ export function Dashboard() {
     }
   }
 
-  function getSessionForEndpoint(endpointId: string): Session | undefined {
-    return sessions.find((s) => s.id === endpointId);
-  }
-
   async function handleCopy(text: string, id: string) {
     if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
     try {
@@ -183,33 +175,31 @@ export function Dashboard() {
     );
   }
 
-  // ─── Dashboard (endpoint-centric) ───────────────────────
-
-  async function handleCreateEndpoint() {
-    setCreatingEndpoint(true);
+  async function handleCreateStage() {
+    setCreatingStage(true);
     try {
-      const resp = await endpointClient.createEndpoint({ name: "" });
+      const resp = await stageClient.createStage({ name: "" });
       await refresh();
-      if (resp.endpoint) {
-        openPanel(resp.endpoint.id);
+      if (resp.stage) {
+        openPanel(resp.stage.id);
       }
     } catch {
       // ignore
     } finally {
-      setCreatingEndpoint(false);
+      setCreatingStage(false);
     }
   }
-  const hasActiveSessions = sessions.length > 0;
+
+  const activeStageCount = stages.filter((s) => s.status !== "inactive").length;
   const hasStreamDests = destinations.length > 0;
-  const showStreamBanner = hasActiveSessions && !hasStreamDests && !bannerDismissed;
+  const showStreamBanner = activeStageCount > 0 && !hasStreamDests && !bannerDismissed;
 
   // Panel data
-  const selectedEp = endpoints.find((e) => e.id === selectedEndpointId);
-  const selectedSession = selectedEndpointId ? getSessionForEndpoint(selectedEndpointId) : undefined;
+  const selectedStage = stages.find((s) => s.id === selectedStageId);
   const selectedDest = destinations.length > 0 ? destinations[0] : undefined;
-  const mcpUrl = selectedEndpointId ? `${window.location.origin}/stage/${selectedEndpointId}/mcp` : "";
+  const mcpUrl = selectedStageId ? `${window.location.origin}/stage/${selectedStageId}/mcp` : "";
   const activeFw = FRAMEWORKS.find((fw) => fw.id === activeFramework) ?? FRAMEWORKS[0];
-  const snippet = selectedEndpointId ? activeFw.getSnippet(mcpUrl, "") : "";
+  const snippet = selectedStageId ? activeFw.getSnippet(mcpUrl, "") : "";
 
   return (
     <div>
@@ -227,7 +217,7 @@ export function Dashboard() {
               size="sm"
               className="bg-emerald-500 text-zinc-950 hover:bg-emerald-400 font-semibold text-xs"
               onClick={() => {
-                if (endpoints.length > 0) openPanel(endpoints[0].id);
+                if (stages.length > 0) openPanel(stages[0].id);
               }}
             >
               Set up streaming
@@ -253,19 +243,19 @@ export function Dashboard() {
           </h1>
           {profile && (
             <p className="text-sm text-zinc-500">
-              {sessions.length} active{sessions.length !== 1 ? " stages" : " stage"} &middot; {profile.apiKeyCount} API key{profile.apiKeyCount !== 1 ? "s" : ""}
+              {stages.length} stage{stages.length !== 1 ? "s" : ""} &middot; {profile.apiKeyCount} API key{profile.apiKeyCount !== 1 ? "s" : ""}
             </p>
           )}
         </div>
-        {endpoints.length > 0 && (
+        {stages.length > 0 && (
           <Button
-            onClick={handleCreateEndpoint}
-            disabled={creatingEndpoint}
+            onClick={handleCreateStage}
+            disabled={creatingStage}
             variant="ghost"
             size="sm"
             className="text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10"
           >
-            {creatingEndpoint ? (
+            {creatingStage ? (
               <Loader2 className="h-4 w-4 animate-spin mr-1" />
             ) : null}
             New stage
@@ -282,8 +272,8 @@ export function Dashboard() {
         }}
       />
 
-      {/* Endpoints list */}
-      {endpoints.length === 0 ? (
+      {/* Stages list */}
+      {stages.length === 0 ? (
         <div className="text-center py-16">
           <p className="text-zinc-500 text-sm mb-4">No stages yet. Create one to get started.</p>
           <Button
@@ -295,37 +285,30 @@ export function Dashboard() {
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {endpoints.map((ep) => {
-            const sess = getSessionForEndpoint(ep.id);
-            return (
-              <button
-                type="button"
-                key={ep.id}
-                onClick={() => openPanel(ep.id)}
-                className="w-full flex items-center justify-between px-4 py-3 rounded-lg border border-white/[0.06] bg-white/[0.02] hover:border-emerald-500/15 hover:bg-emerald-500/[0.02] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500/50 transition-all cursor-pointer"
-              >
-                <div className="flex items-center gap-3">
-                  <code className="text-sm font-mono text-zinc-300">{ep.id.slice(0, 8)}</code>
-                  {ep.name && ep.name !== "default" && (
-                    <span className="text-xs text-zinc-500">{ep.name}</span>
-                  )}
-                  {sess ? (
-                    <Badge variant={sess.status === "running" ? "success" : "warning"}>
-                      {sess.status === "running" ? "active" : sess.status}
-                    </Badge>
-                  ) : (
-                    <Badge variant="default">inactive</Badge>
-                  )}
-                </div>
-                <ChevronRight className="h-4 w-4 text-zinc-600" />
-              </button>
-            );
-          })}
+          {stages.map((stage) => (
+            <button
+              type="button"
+              key={stage.id}
+              onClick={() => openPanel(stage.id)}
+              className="w-full flex items-center justify-between px-4 py-3 rounded-lg border border-white/[0.06] bg-white/[0.02] hover:border-emerald-500/15 hover:bg-emerald-500/[0.02] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500/50 transition-all cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <code className="text-sm font-mono text-zinc-300">{stage.id.slice(0, 8)}</code>
+                {stage.name && stage.name !== "default" && (
+                  <span className="text-xs text-zinc-500">{stage.name}</span>
+                )}
+                <Badge variant={stage.status === "running" ? "success" : stage.status === "starting" ? "warning" : "default"}>
+                  {stage.status === "running" ? "active" : stage.status || "inactive"}
+                </Badge>
+              </div>
+              <ChevronRight className="h-4 w-4 text-zinc-600" />
+            </button>
+          ))}
         </div>
       )}
 
       {/* Slide-over panel */}
-      {panelMounted && selectedEp && createPortal(
+      {panelMounted && selectedStage && createPortal(
         <div
           className={`fixed inset-0 z-50 transition-all duration-200 ${panelOpen ? "backdrop-blur-sm bg-zinc-950/80" : "bg-zinc-950/0"}`}
           onClick={(e) => {
@@ -344,35 +327,31 @@ export function Dashboard() {
             {/* Section 1: Header */}
             <div className="flex items-center gap-3 pr-8">
               <code className="text-sm font-mono text-zinc-300 bg-white/[0.04] px-2 py-0.5 rounded">
-                {selectedEp.id}
+                {selectedStage.id}
               </code>
-              {selectedSession ? (
-                <Badge variant={selectedSession.status === "running" ? "success" : "warning"}>
-                  {selectedSession.status === "running" ? "active" : selectedSession.status}
-                </Badge>
-              ) : (
-                <Badge variant="default">inactive</Badge>
-              )}
+              <Badge variant={selectedStage.status === "running" ? "success" : selectedStage.status === "starting" ? "warning" : "default"}>
+                {selectedStage.status === "running" ? "active" : selectedStage.status || "inactive"}
+              </Badge>
             </div>
 
             {/* Section 2: Details */}
             <div className="border-t border-white/[0.06] pt-4 mt-4">
               <div className="flex flex-col gap-2">
-                {selectedSession && (
-                  <>
-                    <div className="flex items-center gap-2 text-xs text-zinc-500">
-                      <Cpu className="h-3.5 w-3.5" />
-                      <span className="font-mono">{selectedSession.podName}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-zinc-500">
-                      <Globe className="h-3.5 w-3.5" />
-                      <span>Port {selectedSession.directPort}</span>
-                    </div>
-                  </>
+                {selectedStage.podName && (
+                  <div className="flex items-center gap-2 text-xs text-zinc-500">
+                    <Cpu className="h-3.5 w-3.5" />
+                    <span className="font-mono">{selectedStage.podName}</span>
+                  </div>
+                )}
+                {selectedStage.directPort > 0 && (
+                  <div className="flex items-center gap-2 text-xs text-zinc-500">
+                    <Globe className="h-3.5 w-3.5" />
+                    <span>Port {selectedStage.directPort}</span>
+                  </div>
                 )}
                 <div className="flex items-center gap-2 text-xs text-zinc-500">
                   <span className="text-zinc-600 w-[52px]">Created</span>
-                  <span>{selectedEp.createdAt ? timestampDate(selectedEp.createdAt).toLocaleDateString() : "—"}</span>
+                  <span>{selectedStage.createdAt ? timestampDate(selectedStage.createdAt).toLocaleDateString() : "—"}</span>
                 </div>
               </div>
             </div>
@@ -381,8 +360,8 @@ export function Dashboard() {
             <div className="border-t border-white/[0.06] pt-4 mt-4">
               <p className="text-xs font-medium text-zinc-400 mb-3">Preview</p>
               <StreamPreview
-                sessionId={selectedEndpointId!}
-                status={selectedSession?.status === "running" ? "running" : selectedSession?.status === "starting" ? "starting" : "stopped"}
+                stageId={selectedStageId!}
+                status={selectedStage.status === "running" ? "running" : selectedStage.status === "starting" ? "starting" : "stopped"}
               />
             </div>
 
@@ -413,7 +392,7 @@ export function Dashboard() {
                 </p>
               )}
               <StreamDestinationForm
-                key={selectedEndpointId}
+                key={selectedStageId}
                 compact
                 initial={
                   selectedDest
@@ -433,7 +412,7 @@ export function Dashboard() {
               />
             </div>
 
-            {/* Section 4: Connect */}
+            {/* Section 5: Connect */}
             <div className="border-t border-white/[0.06] pt-4 mt-4">
               <p className="text-xs font-medium text-zinc-400 mb-3">Connect</p>
               <div className="flex gap-1 mb-3 overflow-x-auto">
@@ -465,7 +444,7 @@ export function Dashboard() {
               </div>
             </div>
 
-            {/* Section 5: Danger Zone */}
+            {/* Section 6: Danger Zone */}
             <div className="border-t border-red-500/10 pt-4 mt-6">
               {!confirmingDelete ? (
                 <Button
@@ -480,7 +459,7 @@ export function Dashboard() {
               ) : (
                 <div>
                   <p className="text-sm text-zinc-400 mb-3">
-                    Delete this stage? If active, it will be deactivated.
+                    Delete this stage? If active, it will be stopped.
                   </p>
                   <div className="flex items-center gap-2">
                     <Button
@@ -496,9 +475,9 @@ export function Dashboard() {
                       size="sm"
                       className="text-red-400 hover:bg-red-500/10"
                       onClick={() => {
-                        const id = selectedEndpointId!;
+                        const id = selectedStageId!;
                         closePanel();
-                        handleDeleteEndpoint(id);
+                        handleDeleteStage(id);
                       }}
                     >
                       <Trash2 className="h-3.5 w-3.5 mr-1" />

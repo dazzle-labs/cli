@@ -381,7 +381,7 @@ const file_api_v1_apikey_proto_rawDesc = "" +
 	"\rApiKeyService\x12I\n" +
 	"\fCreateApiKey\x12\x1b.api.v1.CreateApiKeyRequest\x1a\x1c.api.v1.CreateApiKeyResponse\x12F\n" +
 	"\vListApiKeys\x12\x1a.api.v1.ListApiKeysRequest\x1a\x1b.api.v1.ListApiKeysResponse\x12I\n" +
-	"\fDeleteApiKey\x12\x1b.api.v1.DeleteApiKeyRequest\x1a\x1c.api.v1.DeleteApiKeyResponseB>Z<github.com/browser-streamer/control-plane/gen/api/v1;apiv1b\x06proto3"
+	"\fDeleteApiKey\x12\x1b.api.v1.DeleteApiKeyRequest\x1a\x1c.api.v1.DeleteApiKeyResponseB<Z:github.com/browser-streamer/control-plane/gen/api/v1;apiv1b\x06proto3"
 
 var (
 	file_api_v1_apikey_proto_rawDescOnce sync.Once

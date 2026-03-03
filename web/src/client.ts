@@ -1,10 +1,9 @@
 import { createConnectTransport } from "@connectrpc/connect-web";
 import { createClient } from "@connectrpc/connect";
-import { SessionService } from "./gen/api/v1/session_pb.js";
+import { StageService } from "./gen/api/v1/stage_pb.js";
 import { ApiKeyService } from "./gen/api/v1/apikey_pb.js";
 import { StreamService } from "./gen/api/v1/stream_pb.js";
 import { UserService } from "./gen/api/v1/user_pb.js";
-import { EndpointService } from "./gen/api/v1/endpoint_pb.js";
 
 let getToken: (() => Promise<string | null>) | null = null;
 
@@ -27,8 +26,7 @@ const transport = createConnectTransport({
   ],
 });
 
-export const sessionClient = createClient(SessionService, transport);
+export const stageClient = createClient(StageService, transport);
 export const apiKeyClient = createClient(ApiKeyService, transport);
 export const streamClient = createClient(StreamService, transport);
 export const userClient = createClient(UserService, transport);
-export const endpointClient = createClient(EndpointService, transport);

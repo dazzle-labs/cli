@@ -34,42 +34,43 @@ import (
 
 // Ensure compile-time interface satisfaction.
 var (
-	_ apiv1connect.SessionServiceHandler = (*sessionServer)(nil)
-	_ apiv1connect.ApiKeyServiceHandler  = (*apiKeyServer)(nil)
-	_ apiv1connect.StreamServiceHandler  = (*streamServer)(nil)
-	_ apiv1connect.UserServiceHandler     = (*userServer)(nil)
-	_ apiv1connect.EndpointServiceHandler = (*endpointServer)(nil)
+	_ apiv1connect.StageServiceHandler  = (*stageServer)(nil)
+	_ apiv1connect.ApiKeyServiceHandler = (*apiKeyServer)(nil)
+	_ apiv1connect.StreamServiceHandler = (*streamServer)(nil)
+	_ apiv1connect.UserServiceHandler   = (*userServer)(nil)
 )
 
-type SessionStatus string
+type StageStatus string
 
 const (
-	StatusStarting SessionStatus = "starting"
-	StatusRunning  SessionStatus = "running"
-	StatusStopping SessionStatus = "stopping"
+	StatusInactive StageStatus = "inactive"
+	StatusStarting StageStatus = "starting"
+	StatusRunning  StageStatus = "running"
+	StatusStopping StageStatus = "stopping"
 )
 
-type Session struct {
-	ID           string        `json:"id"`
-	PodName      string        `json:"podName"`
-	PodIP        string        `json:"podIP,omitempty"`
-	DirectPort   int32         `json:"directPort"`
-	CreatedAt    time.Time     `json:"createdAt"`
-	Status       SessionStatus `json:"status"`
-	OwnerUserID  string        `json:"ownerUserId,omitempty"`
+type Stage struct {
+	ID          string      `json:"id"`
+	Name        string      `json:"name"`
+	PodName     string      `json:"podName"`
+	PodIP       string      `json:"podIP,omitempty"`
+	DirectPort  int32       `json:"directPort"`
+	CreatedAt   time.Time   `json:"createdAt"`
+	Status      StageStatus `json:"status"`
+	OwnerUserID string      `json:"ownerUserId,omitempty"`
 }
 
 type Manager struct {
-	mu             sync.RWMutex
-	sessions       map[string]*Session
-	clientset      *kubernetes.Clientset
-	namespace      string
-	streamerImage  string
-	podToken       string // internal token for streamer pod auth
-	maxSessions    int
-	db             *sql.DB
-	auth           *authenticator
-	encryptionKey  []byte
+	mu            sync.RWMutex
+	stages        map[string]*Stage
+	clientset     *kubernetes.Clientset
+	namespace     string
+	streamerImage string
+	podToken      string // internal token for streamer pod auth
+	maxStages     int
+	db            *sql.DB
+	auth          *authenticator
+	encryptionKey []byte
 }
 
 func envOrDefault(key, def string) string {
@@ -122,28 +123,29 @@ func NewManager() (*Manager, error) {
 	}
 
 	m := &Manager{
-		sessions:       make(map[string]*Session),
-		clientset:      clientset,
-		namespace:      envOrDefault("NAMESPACE", "browser-streamer"),
-		streamerImage:  envOrDefault("STREAMER_IMAGE", "browser-streamer:latest"),
-		podToken:       os.Getenv("POD_TOKEN"),
-		maxSessions:    envIntOrDefault("MAX_SESSIONS", 3),
-		db:             db,
-		auth:           newAuthenticator(db, clerkSecretKey),
+		stages:        make(map[string]*Stage),
+		clientset:     clientset,
+		namespace:     envOrDefault("NAMESPACE", "browser-streamer"),
+		streamerImage: envOrDefault("STREAMER_IMAGE", "browser-streamer:latest"),
+		podToken:      os.Getenv("POD_TOKEN"),
+		maxStages:     envIntOrDefault("MAX_STAGES", 3),
+		db:            db,
+		auth:          newAuthenticator(db, clerkSecretKey),
 		encryptionKey: encKey,
 	}
 
-	if err := m.recoverSessions(); err != nil {
-		log.Printf("WARN: session recovery: %v", err)
+	if err := m.recoverStages(); err != nil {
+		log.Printf("WARN: stage recovery: %v", err)
 	}
 
 	return m, nil
 }
 
-// recoverSessions rebuilds state from existing pods on manager restart.
-func (m *Manager) recoverSessions() error {
+// recoverStages rebuilds in-memory state from actual k8s pods on restart.
+// Any DB stage marked non-inactive that has no corresponding running pod is reset to inactive.
+func (m *Manager) recoverStages() error {
 	pods, err := m.clientset.CoreV1().Pods(m.namespace).List(context.Background(), metav1.ListOptions{
-		LabelSelector: "app=streamer-session",
+		LabelSelector: "app=streamer-stage",
 	})
 	if err != nil {
 		return err
@@ -151,8 +153,8 @@ func (m *Manager) recoverSessions() error {
 
 	for i := range pods.Items {
 		pod := &pods.Items[i]
-		sessionID := pod.Labels["session-id"]
-		if sessionID == "" {
+		stageID := pod.Labels["stage-id"]
+		if stageID == "" {
 			continue
 		}
 
@@ -165,49 +167,60 @@ func (m *Manager) recoverSessions() error {
 			}
 		}
 
-		sess := &Session{
-			ID:        sessionID,
+		stage := &Stage{
+			ID:        stageID,
 			PodName:   pod.Name,
 			PodIP:     pod.Status.PodIP,
 			CreatedAt: pod.CreationTimestamp.Time,
 			Status:    status,
 		}
 
-		// Recover owner from session_log in DB
+		// Look up name and owner from DB
 		if m.db != nil {
-			var userID string
-			var directPort int32
-			err := m.db.QueryRow(
-				"SELECT user_id, direct_port FROM session_log WHERE id=$1 AND ended_at IS NULL",
-				sessionID,
-			).Scan(&userID, &directPort)
-			if err == nil {
-				sess.OwnerUserID = userID
-				sess.DirectPort = directPort
+			if row, err := dbGetStage(m.db, stageID); err == nil && row != nil {
+				stage.Name = row.Name
+				stage.OwnerUserID = row.UserID
 			}
 		}
 
-		m.sessions[sessionID] = sess
-		log.Printf("Recovered session %s (pod=%s, status=%s, owner=%s)", sessionID, pod.Name, status, sess.OwnerUserID)
+		m.stages[stageID] = stage
+		log.Printf("Recovered stage %s (pod=%s, status=%s, owner=%s)", stageID, pod.Name, status, stage.OwnerUserID)
 	}
 
-	log.Printf("Recovered %d sessions", len(m.sessions))
+	// Reset any DB stages that appear non-inactive but have no running pod
+	if m.db != nil {
+		rows, err := m.db.Query(`SELECT id FROM stages WHERE status != 'inactive'`)
+		if err == nil {
+			defer rows.Close()
+			for rows.Next() {
+				var id string
+				if rows.Scan(&id) == nil {
+					if _, ok := m.stages[id]; !ok {
+						dbUpdateStageStatus(m.db, id, "inactive", "", "")
+						log.Printf("Reset stale stage %s to inactive (no pod found)", id)
+					}
+				}
+			}
+		}
+	}
+
+	log.Printf("Recovered %d active stages", len(m.stages))
 	return nil
 }
 
-func (m *Manager) createSession(requestedID string) (*Session, error) {
+func (m *Manager) createStage(requestedID string) (*Stage, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if len(m.sessions) >= m.maxSessions {
-		return nil, fmt.Errorf("max sessions (%d) reached", m.maxSessions)
+	if len(m.stages) >= m.maxStages {
+		return nil, fmt.Errorf("max stages (%d) reached", m.maxStages)
 	}
 
 	id := requestedID
 	if id == "" {
 		id = uuid.New().String()
-	} else if _, exists := m.sessions[id]; exists {
-		return nil, fmt.Errorf("session %s already exists", id)
+	} else if _, exists := m.stages[id]; exists {
+		return nil, fmt.Errorf("stage %s already exists", id)
 	}
 	podName := "streamer-" + id[:8]
 
@@ -216,9 +229,9 @@ func (m *Manager) createSession(requestedID string) (*Session, error) {
 			Name:      podName,
 			Namespace: m.namespace,
 			Labels: map[string]string{
-				"app":          "streamer-session",
-				"session-id":   id,
-				"managed-by":   "session-manager",
+				"app":        "streamer-stage",
+				"stage-id":   id,
+				"managed-by": "control-plane",
 			},
 		},
 		Spec: corev1.PodSpec{
@@ -291,87 +304,139 @@ func (m *Manager) createSession(requestedID string) (*Session, error) {
 	}
 
 	now := time.Now()
-	sess := &Session{
-		ID:           id,
-		PodName:      podName,
-		CreatedAt:    now,
-		Status:       StatusStarting,
+	stage := &Stage{
+		ID:        id,
+		PodName:   podName,
+		CreatedAt: now,
+		Status:    StatusStarting,
 	}
-	m.sessions[id] = sess
+	m.stages[id] = stage
 
-	log.Printf("Created session %s (pod=%s)", id, podName)
-	return sess, nil
+	if m.db != nil {
+		dbUpdateStageStatus(m.db, id, "starting", podName, "")
+	}
+
+	log.Printf("Created stage %s (pod=%s)", id, podName)
+	return stage, nil
 }
 
 func resourcePtr(r resource.Quantity) *resource.Quantity {
 	return &r
 }
 
-func (m *Manager) deleteSession(id string) error {
+// deleteStage removes the pod (if active) and the DB record.
+func (m *Manager) deleteStage(id string) error {
 	m.mu.Lock()
-	sess, ok := m.sessions[id]
-	if !ok {
-		m.mu.Unlock()
-		return fmt.Errorf("session %s not found", id)
+	stage, ok := m.stages[id]
+	if ok {
+		stage.Status = StatusStopping
 	}
-	sess.Status = StatusStopping
 	m.mu.Unlock()
 
-	err := m.clientset.CoreV1().Pods(m.namespace).Delete(context.Background(), sess.PodName, metav1.DeleteOptions{})
-	if err != nil {
-		log.Printf("WARN: delete pod %s: %v", sess.PodName, err)
+	if ok && stage.PodName != "" {
+		err := m.clientset.CoreV1().Pods(m.namespace).Delete(context.Background(), stage.PodName, metav1.DeleteOptions{})
+		if err != nil {
+			log.Printf("WARN: delete pod %s: %v", stage.PodName, err)
+		}
 	}
 
 	m.mu.Lock()
-	delete(m.sessions, id)
+	delete(m.stages, id)
 	m.mu.Unlock()
 
-	if m.db != nil {
-		dbLogSessionEnd(m.db, id, "deleted")
-	}
-	log.Printf("Deleted session %s (pod=%s)", id, sess.PodName)
+	log.Printf("Deleted stage %s", id)
 	return nil
 }
 
-func (m *Manager) getSession(id string) (*Session, bool) {
+// deactivateStage tears down the pod but keeps the DB record as inactive.
+func (m *Manager) deactivateStage(id string) error {
+	m.mu.Lock()
+	stage, ok := m.stages[id]
+	if ok {
+		stage.Status = StatusStopping
+	}
+	m.mu.Unlock()
+
+	if ok && stage.PodName != "" {
+		err := m.clientset.CoreV1().Pods(m.namespace).Delete(context.Background(), stage.PodName, metav1.DeleteOptions{})
+		if err != nil {
+			log.Printf("WARN: delete pod %s: %v", stage.PodName, err)
+		}
+	}
+
+	m.mu.Lock()
+	delete(m.stages, id)
+	m.mu.Unlock()
+
+	if m.db != nil {
+		dbUpdateStageStatus(m.db, id, "inactive", "", "")
+	}
+	log.Printf("Deactivated stage %s", id)
+	return nil
+}
+
+// activateStage creates a pod for an existing inactive stage record.
+func (m *Manager) activateStage(ctx context.Context, id, userID string) (*Stage, error) {
+	// Check if already active
+	if stage, ok := m.getStage(id); ok {
+		if stage.Status == StatusRunning && stage.PodIP != "" {
+			return stage, nil
+		}
+		if stage.Status == StatusStarting {
+			return m.waitForStage(ctx, id)
+		}
+	}
+
+	stage, err := m.createStage(id)
+	if err != nil {
+		if strings.Contains(err.Error(), "already exists") {
+			return m.waitForStage(ctx, id)
+		}
+		return nil, err
+	}
+	stage.OwnerUserID = userID
+	return m.waitForStage(ctx, id)
+}
+
+func (m *Manager) getStage(id string) (*Stage, bool) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	s, ok := m.sessions[id]
+	s, ok := m.stages[id]
 	return s, ok
 }
 
-func (m *Manager) listSessions() []*Session {
+func (m *Manager) listStages() []*Stage {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	out := make([]*Session, 0, len(m.sessions))
-	for _, s := range m.sessions {
+	out := make([]*Stage, 0, len(m.stages))
+	for _, s := range m.stages {
 		out = append(out, s)
 	}
 	return out
 }
 
-// gc cleans up sessions stuck in starting state.
+// gc cleans up stages stuck in starting state.
 func (m *Manager) gc() {
 	m.mu.Lock()
 	var toDelete []string
 	now := time.Now()
-	for id, sess := range m.sessions {
-		if sess.Status == StatusStarting && now.Sub(sess.CreatedAt) > 3*time.Minute {
-			log.Printf("GC: session %s stuck starting for %v, deleting", id, now.Sub(sess.CreatedAt))
+	for id, stage := range m.stages {
+		if stage.Status == StatusStarting && now.Sub(stage.CreatedAt) > 3*time.Minute {
+			log.Printf("GC: stage %s stuck starting for %v, deleting", id, now.Sub(stage.CreatedAt))
 			toDelete = append(toDelete, id)
 		}
 	}
 	m.mu.Unlock()
 
 	for _, id := range toDelete {
-		_ = m.deleteSession(id)
+		_ = m.deleteStage(id)
 	}
 }
 
 // refreshPodStatuses updates pod IPs and statuses from k8s.
 func (m *Manager) refreshPodStatuses() {
 	pods, err := m.clientset.CoreV1().Pods(m.namespace).List(context.Background(), metav1.ListOptions{
-		LabelSelector: "app=streamer-session",
+		LabelSelector: "app=streamer-stage",
 	})
 	if err != nil {
 		log.Printf("WARN: refresh pods: %v", err)
@@ -386,89 +451,83 @@ func (m *Manager) refreshPodStatuses() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	for _, sess := range m.sessions {
-		pod, ok := podMap[sess.PodName]
+	for _, stage := range m.stages {
+		pod, ok := podMap[stage.PodName]
 		if !ok {
 			continue
 		}
-		sess.PodIP = pod.Status.PodIP
+		prevStatus := stage.Status
+		stage.PodIP = pod.Status.PodIP
 		if pod.Status.Phase == corev1.PodRunning {
 			for _, cond := range pod.Status.Conditions {
 				if cond.Type == corev1.PodReady && cond.Status == corev1.ConditionTrue {
-					sess.Status = StatusRunning
+					stage.Status = StatusRunning
 				}
 			}
 		}
 		if pod.Status.Phase == corev1.PodFailed || pod.Status.Phase == corev1.PodSucceeded {
-			sess.Status = StatusStopping
+			stage.Status = StatusStopping
+		}
+		if m.db != nil && stage.Status != prevStatus && stage.Status == StatusRunning {
+			dbUpdateStageStatus(m.db, stage.ID, "running", stage.PodName, stage.PodIP)
 		}
 	}
 }
 
-// createSessionForUser creates a session owned by a user.
-func (m *Manager) createSessionForUser(userID string) (*Session, error) {
-	sess, err := m.createSession("")
+// createStageRecord creates a stage DB record (status=inactive) without provisioning a pod.
+func (m *Manager) createStageRecord(userID, name string) (*Stage, error) {
+	if m.db == nil {
+		return nil, fmt.Errorf("database not available")
+	}
+	id, err := dbCreateStage(m.db, userID, name)
 	if err != nil {
 		return nil, err
 	}
-	sess.OwnerUserID = userID
-	if m.db != nil {
-		dbLogSessionCreate(m.db, sess.ID, userID, sess.PodName)
-	}
-	return sess, nil
-}
-
-// listSessionsForUser returns sessions owned by a specific user.
-func (m *Manager) listSessionsForUser(userID string) []*Session {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	var out []*Session
-	for _, s := range m.sessions {
-		if s.OwnerUserID == userID {
-			out = append(out, s)
-		}
-	}
-	return out
+	return &Stage{
+		ID:          id,
+		Name:        name,
+		Status:      StatusInactive,
+		OwnerUserID: userID,
+		CreatedAt:   time.Now(),
+	}, nil
 }
 
 func (m *Manager) handleHealth(w http.ResponseWriter, r *http.Request) {
 	resp := map[string]any{"status": "ok"}
-	// Authenticated callers get session details
+	// Authenticated callers get stage details
 	token := extractBearerToken(r)
 	if token != "" {
 		if info, err := m.auth.authenticate(r.Context(), token); err == nil && info != nil {
 			m.mu.RLock()
-			resp["sessions"] = len(m.sessions)
-			resp["maxSessions"] = m.maxSessions
+			resp["stages"] = len(m.stages)
+			resp["maxStages"] = m.maxStages
 			m.mu.RUnlock()
 		}
 	}
 	writeJSON(w, http.StatusOK, resp)
 }
 
-func (m *Manager) handleSessionProxy(w http.ResponseWriter, r *http.Request) {
-	// Parse: /session/:id/api/* or /session/:id/workspace/*
-	parts := strings.SplitN(strings.TrimPrefix(r.URL.Path, "/session/"), "/", 2)
+func (m *Manager) handleStageProxy(w http.ResponseWriter, r *http.Request) {
+	// Parse: /stage/:id/api/* or /stage/:id/workspace/*
+	parts := strings.SplitN(strings.TrimPrefix(r.URL.Path, "/stage/"), "/", 2)
 	if len(parts) < 2 {
-		http.Error(w, "invalid session path", http.StatusBadRequest)
+		http.Error(w, "invalid stage path", http.StatusBadRequest)
 		return
 	}
-	sessionID := parts[0]
+	stageID := parts[0]
 	remainder := "/" + parts[1]
 
-	sess, ok := m.getSession(sessionID)
+	stage, ok := m.getStage(stageID)
 	if !ok {
-		writeJSON(w, http.StatusNotFound, map[string]any{"error": "session not found"})
+		writeJSON(w, http.StatusNotFound, map[string]any{"error": "stage not found"})
 		return
 	}
-	if sess.PodIP == "" || sess.Status != StatusRunning {
-		writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "session not ready", "status": string(sess.Status)})
+	if stage.PodIP == "" || stage.Status != StatusRunning {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "stage not ready", "status": string(stage.Status)})
 		return
 	}
 
-
-
-	target, _ := url.Parse(fmt.Sprintf("http://%s:8080", sess.PodIP))
+	target, _ := url.Parse(fmt.Sprintf("http://%s:8080", stage.PodIP))
 	proxy := httputil.NewSingleHostReverseProxy(target)
 	r.URL.Path = remainder
 	r.Host = target.Host
@@ -478,11 +537,11 @@ func (m *Manager) handleSessionProxy(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Manager) handleWebSocketUpgrade(w http.ResponseWriter, r *http.Request) {
-	// Parse session ID from /session/:id path
-	path := strings.TrimPrefix(r.URL.Path, "/session/")
-	sessionID := strings.SplitN(path, "/", 2)[0]
-	if sessionID == "" {
-		http.Error(w, "session id required", http.StatusBadRequest)
+	// Parse stage ID from /stage/:id path
+	path := strings.TrimPrefix(r.URL.Path, "/stage/")
+	stageID := strings.SplitN(path, "/", 2)[0]
+	if stageID == "" {
+		http.Error(w, "stage id required", http.StatusBadRequest)
 		return
 	}
 
@@ -494,22 +553,20 @@ func (m *Manager) handleWebSocketUpgrade(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	sess, ok := m.getSession(sessionID)
+	stage, ok := m.getStage(stageID)
 	if !ok {
-		http.Error(w, "session not found", http.StatusNotFound)
+		http.Error(w, "stage not found", http.StatusNotFound)
 		return
 	}
-	if sess.PodIP == "" || sess.Status != StatusRunning {
-		http.Error(w, "session not ready", http.StatusServiceUnavailable)
+	if stage.PodIP == "" || stage.Status != StatusRunning {
+		http.Error(w, "stage not ready", http.StatusServiceUnavailable)
 		return
 	}
-
-
 
 	// Proxy WebSocket to pod's CDP port
-	target, _ := url.Parse(fmt.Sprintf("http://%s:8080", sess.PodIP))
+	target, _ := url.Parse(fmt.Sprintf("http://%s:8080", stage.PodIP))
 	proxy := httputil.NewSingleHostReverseProxy(target)
-	// Strip the /session/:id prefix, forward the rest (or just /)
+	// Strip the /stage/:id prefix, forward the rest (or just /)
 	parts := strings.SplitN(path, "/", 2)
 	if len(parts) > 1 {
 		r.URL.Path = "/" + parts[1]
@@ -523,58 +580,33 @@ func (m *Manager) handleWebSocketUpgrade(w http.ResponseWriter, r *http.Request)
 	proxy.ServeHTTP(w, r)
 }
 
-// waitForSession polls until the session is running with a PodIP, or context expires.
-func (m *Manager) waitForSession(ctx context.Context, id string) (*Session, error) {
+// waitForStage polls until the stage is running with a PodIP, or context expires.
+func (m *Manager) waitForStage(ctx context.Context, id string) (*Stage, error) {
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
 	for {
 		m.refreshPodStatuses()
-		sess, ok := m.getSession(id)
+		stage, ok := m.getStage(id)
 		if !ok {
-			return nil, fmt.Errorf("session %s disappeared", id)
+			return nil, fmt.Errorf("stage %s disappeared", id)
 		}
-		if sess.Status == StatusStopping {
-			return nil, fmt.Errorf("session %s is stopping", id)
+		if stage.Status == StatusStopping {
+			return nil, fmt.Errorf("stage %s is stopping", id)
 		}
-		if sess.Status == StatusRunning && sess.PodIP != "" {
-			return sess, nil
+		if stage.Status == StatusRunning && stage.PodIP != "" {
+			return stage, nil
 		}
 		select {
 		case <-ctx.Done():
-			return nil, fmt.Errorf("timeout waiting for session %s to become ready", id)
+			return nil, fmt.Errorf("timeout waiting for stage %s to become ready", id)
 		case <-ticker.C:
 		}
 	}
 }
 
-// ensureSession returns a running session for the given ID, creating it if necessary.
-func (m *Manager) ensureSession(ctx context.Context, id string) (*Session, error) {
-	sess, ok := m.getSession(id)
-	if ok {
-		if sess.Status == StatusRunning && sess.PodIP != "" {
-			return sess, nil
-		}
-		if sess.Status == StatusStarting {
-			return m.waitForSession(ctx, id)
-		}
-		return nil, fmt.Errorf("session %s in unexpected state: %s", id, sess.Status)
-	}
-
-	// Create new session with the requested ID
-	_, err := m.createSession(id)
-	if err != nil {
-		// Race: another request already created it
-		if strings.Contains(err.Error(), "already exists") {
-			return m.waitForSession(ctx, id)
-		}
-		return nil, err
-	}
-	return m.waitForSession(ctx, id)
-}
-
 // resolveChromeWSURL fetches /json/version from the pod and returns Chrome's actual webSocketDebuggerUrl.
-func (m *Manager) resolveChromeWSURL(sess *Session) (string, error) {
-	resp, err := http.Get(fmt.Sprintf("http://%s:8080/json/version?token=%s", sess.PodIP, url.QueryEscape(m.podToken)))
+func (m *Manager) resolveChromeWSURL(stage *Stage) (string, error) {
+	resp, err := http.Get(fmt.Sprintf("http://%s:8080/json/version?token=%s", stage.PodIP, url.QueryEscape(m.podToken)))
 	if err != nil {
 		return "", fmt.Errorf("fetch /json/version from pod: %w", err)
 	}
@@ -591,8 +623,8 @@ func (m *Manager) resolveChromeWSURL(sess *Session) (string, error) {
 }
 
 // proxyCDPDiscovery proxies /json/* requests to the pod, rewriting webSocketDebuggerUrl.
-func (m *Manager) proxyCDPDiscovery(w http.ResponseWriter, r *http.Request, sess *Session, subPath string) {
-	podURL := fmt.Sprintf("http://%s:8080%s?token=%s", sess.PodIP, subPath, url.QueryEscape(m.podToken))
+func (m *Manager) proxyCDPDiscovery(w http.ResponseWriter, r *http.Request, stage *Stage, subPath string) {
+	podURL := fmt.Sprintf("http://%s:8080%s?token=%s", stage.PodIP, subPath, url.QueryEscape(m.podToken))
 	resp, err := http.Get(podURL)
 	if err != nil {
 		writeJSON(w, http.StatusBadGateway, map[string]any{"error": fmt.Sprintf("pod request failed: %v", err)})
@@ -611,7 +643,7 @@ func (m *Manager) proxyCDPDiscovery(w http.ResponseWriter, r *http.Request, sess
 	if r.Header.Get("X-Forwarded-Proto") == "https" || r.TLS != nil {
 		wsScheme = "wss"
 	}
-	deterministicWS := fmt.Sprintf("%s://%s/cdp/%s", wsScheme, extHost, sess.ID)
+	deterministicWS := fmt.Sprintf("%s://%s/cdp/%s", wsScheme, extHost, stage.ID)
 
 	// Replace any webSocketDebuggerUrl value in the JSON
 	bodyStr := string(body)
@@ -661,9 +693,9 @@ func (m *Manager) handleCDP(w http.ResponseWriter, r *http.Request) {
 	// Parse: /cdp/<uuid> or /cdp/<uuid>/json/...
 	trimmed := strings.TrimPrefix(r.URL.Path, "/cdp/")
 	parts := strings.SplitN(trimmed, "/", 2)
-	sessionID := parts[0]
-	if sessionID == "" {
-		http.Error(w, `{"error":"session id required"}`, http.StatusBadRequest)
+	stageID := parts[0]
+	if stageID == "" {
+		http.Error(w, `{"error":"stage id required"}`, http.StatusBadRequest)
 		return
 	}
 
@@ -688,21 +720,19 @@ func (m *Manager) handleCDP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Auto-provision session
-	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
-	defer cancel()
-
-	sess, err := m.ensureSession(ctx, sessionID)
-	if err != nil {
-		writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": err.Error()})
+	stage, ok := m.getStage(stageID)
+	if !ok || stage.PodIP == "" || stage.Status != StatusRunning {
+		status := "inactive"
+		if ok {
+			status = string(stage.Status)
+		}
+		writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "stage not active — call start first", "status": status})
 		return
 	}
 
-
-
 	if isWS {
 		// WebSocket: resolve Chrome's real WS URL and proxy to it
-		chromeWSURL, err := m.resolveChromeWSURL(sess)
+		chromeWSURL, err := m.resolveChromeWSURL(stage)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadGateway)
 			return
@@ -715,7 +745,7 @@ func (m *Manager) handleCDP(w http.ResponseWriter, r *http.Request) {
 	if subPath == "" {
 		subPath = "/json/version"
 	}
-	m.proxyCDPDiscovery(w, r, sess, subPath)
+	m.proxyCDPDiscovery(w, r, stage, subPath)
 }
 
 // proxyCDPWebSocket proxies a WebSocket connection to Chrome's CDP endpoint.
@@ -867,12 +897,12 @@ func main() {
 	authInterceptor := newAuthInterceptor(mgr.auth)
 	clerkOnly := newClerkOnlyInterceptor()
 
-	// SessionService — Clerk JWT or API key
-	sessionPath, sessionHandler := apiv1connect.NewSessionServiceHandler(
-		&sessionServer{mgr: mgr},
+	// StageService — Clerk JWT or API key
+	stagePath, stageHandler := apiv1connect.NewStageServiceHandler(
+		&stageServer{mgr: mgr},
 		connect.WithInterceptors(authInterceptor),
 	)
-	mux.Handle(sessionPath, corsMiddleware(sessionHandler))
+	mux.Handle(stagePath, corsMiddleware(stageHandler))
 
 	// ApiKeyService — Clerk JWT only
 	apiKeyPath, apiKeyHandler := apiv1connect.NewApiKeyServiceHandler(
@@ -895,18 +925,12 @@ func main() {
 	)
 	mux.Handle(userPath, corsMiddleware(userHandler))
 
-	// EndpointService — Clerk JWT only
-	endpointPath, endpointHandler := apiv1connect.NewEndpointServiceHandler(
-		&endpointServer{mgr: mgr},
-		connect.WithInterceptors(authInterceptor, clerkOnly),
-	)
-	mux.Handle(endpointPath, corsMiddleware(endpointHandler))
-
-	// CDP auto-provisioning endpoint
+	// CDP endpoint — returns 503 if stage is not active
 	mux.Handle("/cdp/", corsMiddleware(http.HandlerFunc(mgr.handleCDP)))
 
-	// Session proxy (API, workspace, WebSocket)
-	mux.HandleFunc("/session/", func(w http.ResponseWriter, r *http.Request) {
+	// Stage handler: MCP uses /stage/<uuid>/mcp/..., proxy uses other /stage/<uuid>/* paths
+	mcpHandler := mgr.mcpMiddleware(mgr.setupMCP())
+	mux.HandleFunc("/stage/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
@@ -914,16 +938,17 @@ func main() {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
+		// MCP requests contain /mcp/ in the path
+		if strings.Contains(r.URL.Path, "/mcp") {
+			mcpHandler.ServeHTTP(w, r)
+			return
+		}
 		if isWebSocketUpgrade(r) {
 			mgr.handleWebSocketUpgrade(w, r)
 			return
 		}
-		mgr.auth.authMiddlewareHTTP(http.HandlerFunc(mgr.handleSessionProxy)).ServeHTTP(w, r)
+		mgr.auth.authMiddlewareHTTP(http.HandlerFunc(mgr.handleStageProxy)).ServeHTTP(w, r)
 	})
-
-	// MCP server (StreamableHTTP) — /stage/<uuid>/mcp/...
-	mcpHandler := mgr.mcpMiddleware(mgr.setupMCP())
-	mux.Handle("/stage/", mcpHandler)
 
 	// Web SPA (fallback route)
 	mux.Handle("/", spaFileServer("web"))
@@ -961,8 +986,8 @@ func main() {
 		server.Shutdown(context.Background())
 	}()
 
-	log.Printf("Session manager listening on :%s (max=%d)",
-		port, mgr.maxSessions)
+	log.Printf("Control plane listening on :%s (max=%d)",
+		port, mgr.maxStages)
 	if err := server.ListenAndServe(); err != http.ErrServerClosed {
 		log.Fatalf("Server error: %v", err)
 	}

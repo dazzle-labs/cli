@@ -16,16 +16,16 @@ type userServer struct {
 func (s *userServer) GetProfile(ctx context.Context, req *connect.Request[apiv1.GetProfileRequest]) (*connect.Response[apiv1.GetProfileResponse], error) {
 	info := mustAuth(ctx)
 
-	email, name, sessionCount, apiKeyCount, err := dbGetUserProfile(s.mgr.db, info.UserID)
+	email, name, stageCount, apiKeyCount, err := dbGetUserProfile(s.mgr.db, info.UserID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	return connect.NewResponse(&apiv1.GetProfileResponse{
-		UserId:       info.UserID,
-		Email:        email,
-		Name:         name,
-		SessionCount: int32(sessionCount),
-		ApiKeyCount:  int32(apiKeyCount),
+		UserId:      info.UserID,
+		Email:       email,
+		Name:        name,
+		StageCount:  int32(stageCount),
+		ApiKeyCount: int32(apiKeyCount),
 	}), nil
 }

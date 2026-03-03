@@ -211,29 +211,29 @@ func (m *Manager) mcpMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// Ensure user exists in DB for session tracking
+		// Ensure user exists in DB for stage tracking
 		if m.db != nil && info.Method == authMethodClerk {
 			dbUpsertUser(m.db, info.UserID, "", "")
 		}
 
-		// Validate endpoint UUID exists and belongs to the authenticated user
+		// Validate stage UUID exists and belongs to the authenticated user
 		if m.db != nil {
-			endpoint, err := dbGetEndpoint(m.db, agentID)
+			stage, err := dbGetStage(m.db, agentID)
 			if err != nil {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusInternalServerError)
 				w.Write([]byte(`{"error":"internal error"}`))
 				return
 			}
-			if endpoint == nil {
+			if stage == nil {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusNotFound)
-				w.Write([]byte(`{"error":"endpoint not found"}`))
+				w.Write([]byte(`{"error":"stage not found"}`))
 				return
-			} else if endpoint.UserID != info.UserID {
+			} else if stage.UserID != info.UserID {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusNotFound)
-				w.Write([]byte(`{"error":"endpoint not found"}`))
+				w.Write([]byte(`{"error":"stage not found"}`))
 				return
 			}
 		}
@@ -253,17 +253,17 @@ func (m *Manager) mcpMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// requireRunningSession resolves the agent's session and verifies it is running.
-func (m *Manager) requireRunningSession(ctx context.Context, agentID string) (*Session, error) {
-	sess, ok := m.getSession(agentID)
+// requireRunningStage resolves the agent's stage and verifies it is running.
+func (m *Manager) requireRunningStage(ctx context.Context, agentID string) (*Stage, error) {
+	stage, ok := m.getStage(agentID)
 	if !ok {
-		return nil, fmt.Errorf("no session for agent %s — call create_stage first", agentID)
+		return nil, fmt.Errorf("no stage for agent %s — call start first", agentID)
 	}
-	if sess.PodIP == "" || sess.Status != StatusRunning {
-		return nil, fmt.Errorf("session %s not ready (status: %s)", agentID, sess.Status)
+	if stage.PodIP == "" || stage.Status != StatusRunning {
+		return nil, fmt.Errorf("stage %s not ready (status: %s)", agentID, stage.Status)
 	}
 
-	return sess, nil
+	return stage, nil
 }
 
 func (m *Manager) handleMCPCreateStage(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -272,56 +272,20 @@ func (m *Manager) handleMCPCreateStage(ctx context.Context, req mcp.CallToolRequ
 		return mcp.NewToolResultError("agent ID not found in request context"), nil
 	}
 
-	// Check if session already exists and is running
-	if sess, ok := m.getSession(agentID); ok {
-		if sess.Status == StatusRunning && sess.PodIP != "" {
-			result, _ := json.Marshal(map[string]any{
-				"status":  "already_running",
-				"message": "session is already running",
-			})
-			return mcp.NewToolResultText(string(result)), nil
-		}
-		if sess.Status == StatusStarting {
-			// Wait for existing starting session
-			waitCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
-			defer cancel()
-			readySess, err := m.waitForSession(waitCtx, agentID)
-			if err != nil {
-				return mcp.NewToolResultError(fmt.Sprintf("session starting but not ready: %v", err)), nil
-			}
-			result, _ := json.Marshal(map[string]any{
-				"status": string(readySess.Status),
-			})
-			return mcp.NewToolResultText(string(result)), nil
-		}
-	}
-
-	sess, err := m.createSession(agentID)
-	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to create session: %v", err)), nil
-	}
-
-	// Log session to DB for recovery across deploys
-	userID := userIDFromCtx(ctx)
-	sess.OwnerUserID = userID
-	if m.db != nil && userID != "" {
-		dbLogSessionCreate(m.db, sess.ID, userID, sess.PodName)
-	}
-
-	// Wait for session to be ready (up to 60s)
 	waitCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
 
-	readySess, err := m.waitForSession(waitCtx, sess.ID)
+	userID := userIDFromCtx(ctx)
+	readyStage, err := m.activateStage(waitCtx, agentID, userID)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("session created but not ready: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("failed to activate stage: %v", err)), nil
 	}
 
 	// Configure OBS with user's stream destinations
-	m.configureOBSStream(readySess, userIDFromCtx(ctx))
+	m.configureOBSStream(readyStage, userID)
 
 	result, _ := json.Marshal(map[string]any{
-		"status": string(readySess.Status),
+		"status": string(readyStage.Status),
 	})
 	return mcp.NewToolResultText(string(result)), nil
 }
@@ -330,7 +294,7 @@ const defaultRTMPURL = "rtmps://fa723fc1b171.global-contribute.live-video.net"
 
 // configureOBSStream sets OBS stream settings from the user's first enabled stream destination.
 // Falls back to the default RTMP URL (without a key) if no destinations are configured.
-func (m *Manager) configureOBSStream(sess *Session, userID string) {
+func (m *Manager) configureOBSStream(stage *Stage, userID string) {
 	var rtmpURL, streamKey string
 
 	if m.db != nil && userID != "" {
@@ -347,7 +311,7 @@ func (m *Manager) configureOBSStream(sess *Session, userID string) {
 					} else {
 						streamKey = key
 					}
-					log.Printf("Configuring OBS stream for session %s (dest=%s, platform=%s)", sess.ID, dests[i].Name, dests[i].Platform)
+					log.Printf("Configuring OBS stream for stage %s (dest=%s, platform=%s)", stage.ID, dests[i].Name, dests[i].Platform)
 					break
 				}
 			}
@@ -356,11 +320,11 @@ func (m *Manager) configureOBSStream(sess *Session, userID string) {
 
 	if rtmpURL == "" {
 		rtmpURL = defaultRTMPURL
-		log.Printf("Configuring OBS stream for session %s with default RTMP URL", sess.ID)
+		log.Printf("Configuring OBS stream for stage %s with default RTMP URL", stage.ID)
 	}
 
 	args := []string{
-		"--host", sess.PodIP, "--port", "4455",
+		"--host", stage.PodIP, "--port", "4455",
 		"settings", "stream-service", "rtmp_custom",
 		"--server", rtmpURL,
 	}
@@ -382,15 +346,15 @@ func (m *Manager) handleMCPDestroyStage(ctx context.Context, req mcp.CallToolReq
 		return mcp.NewToolResultError("agent ID not found in request context"), nil
 	}
 
-	if _, ok := m.getSession(agentID); !ok {
-		return mcp.NewToolResultText(`{"status":"already_stopped"}`), nil
+	if _, ok := m.getStage(agentID); !ok {
+		return mcp.NewToolResultText(`{"status":"inactive"}`), nil
 	}
 
-	if err := m.deleteSession(agentID); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to stop session: %v", err)), nil
+	if err := m.deactivateStage(agentID); err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("failed to stop stage: %v", err)), nil
 	}
 
-	return mcp.NewToolResultText(`{"status":"stopped"}`), nil
+	return mcp.NewToolResultText(`{"status":"inactive"}`), nil
 }
 
 func (m *Manager) handleMCPStageStatus(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -399,16 +363,16 @@ func (m *Manager) handleMCPStageStatus(ctx context.Context, req mcp.CallToolRequ
 		return mcp.NewToolResultError("agent ID not found in request context"), nil
 	}
 
-	sess, ok := m.getSession(agentID)
+	stage, ok := m.getStage(agentID)
 	if !ok {
 		result, _ := json.Marshal(map[string]any{
-			"status": "stopped",
+			"status": "inactive",
 		})
 		return mcp.NewToolResultText(string(result)), nil
 	}
 
 	result, _ := json.Marshal(map[string]any{
-		"status": string(sess.Status),
+		"status": string(stage.Status),
 	})
 	return mcp.NewToolResultText(string(result)), nil
 }
@@ -420,13 +384,13 @@ func (m *Manager) handleMCPSetScript(ctx context.Context, req mcp.CallToolReques
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	sess, err := m.requireRunningSession(ctx, agentID)
+	stage, err := m.requireRunningStage(ctx, agentID)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
 	body, _ := json.Marshal(map[string]string{"script": script})
-	podURL := fmt.Sprintf("http://%s:8080/api/panel/main?token=%s", sess.PodIP, url.QueryEscape(m.podToken))
+	podURL := fmt.Sprintf("http://%s:8080/api/panel/main?token=%s", stage.PodIP, url.QueryEscape(m.podToken))
 	resp, err := http.Post(podURL, "application/json", bytes.NewReader(body))
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("failed to set template: %v", err)), nil
@@ -444,12 +408,12 @@ func (m *Manager) handleMCPSetScript(ctx context.Context, req mcp.CallToolReques
 func (m *Manager) handleMCPGetScript(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	agentID := agentIDFromCtx(ctx)
 
-	sess, err := m.requireRunningSession(ctx, agentID)
+	stage, err := m.requireRunningStage(ctx, agentID)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	podURL := fmt.Sprintf("http://%s:8080/api/panel/main?token=%s", sess.PodIP, url.QueryEscape(m.podToken))
+	podURL := fmt.Sprintf("http://%s:8080/api/panel/main?token=%s", stage.PodIP, url.QueryEscape(m.podToken))
 	resp, err := http.Get(podURL)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("failed to get template: %v", err)), nil
@@ -471,13 +435,13 @@ func (m *Manager) handleMCPEditScript(ctx context.Context, req mcp.CallToolReque
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	sess, err := m.requireRunningSession(ctx, agentID)
+	stage, err := m.requireRunningStage(ctx, agentID)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
 	body, _ := json.Marshal(map[string]string{"old_string": oldString, "new_string": newString})
-	podURL := fmt.Sprintf("http://%s:8080/api/panel/main/edit?token=%s", sess.PodIP, url.QueryEscape(m.podToken))
+	podURL := fmt.Sprintf("http://%s:8080/api/panel/main/edit?token=%s", stage.PodIP, url.QueryEscape(m.podToken))
 	resp, err := http.Post(podURL, "application/json", bytes.NewReader(body))
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("failed to edit template: %v", err)), nil
@@ -509,13 +473,13 @@ func (m *Manager) handleMCPEmitEvent(ctx context.Context, req mcp.CallToolReques
 		return mcp.NewToolResultError(fmt.Sprintf("data must be a valid JSON object: %v", err)), nil
 	}
 
-	sess, err := m.requireRunningSession(ctx, agentID)
+	stage, err := m.requireRunningStage(ctx, agentID)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
 	body, _ := json.Marshal(map[string]any{"event": eventName, "data": dataObj})
-	podURL := fmt.Sprintf("http://%s:8080/api/panel/main/event?token=%s", sess.PodIP, url.QueryEscape(m.podToken))
+	podURL := fmt.Sprintf("http://%s:8080/api/panel/main/event?token=%s", stage.PodIP, url.QueryEscape(m.podToken))
 	resp, err := http.Post(podURL, "application/json", bytes.NewReader(body))
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("failed to emit event: %v", err)), nil
@@ -533,12 +497,12 @@ func (m *Manager) handleMCPEmitEvent(ctx context.Context, req mcp.CallToolReques
 func (m *Manager) handleMCPScreenshot(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	agentID := agentIDFromCtx(ctx)
 
-	sess, err := m.requireRunningSession(ctx, agentID)
+	stage, err := m.requireRunningStage(ctx, agentID)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	base64PNG, err := obsScreenshot(sess.PodIP)
+	base64PNG, err := obsScreenshot(stage.PodIP)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("screenshot failed: %v", err)), nil
 	}
@@ -780,14 +744,14 @@ func (m *Manager) handleMCPGobs(ctx context.Context, req mcp.CallToolRequest) (*
 		return mcp.NewToolResultError("access denied: stream service settings contain credentials and cannot be read. Stream configuration is managed automatically."), nil
 	}
 
-	sess, err := m.requireRunningSession(ctx, agentID)
+	stage, err := m.requireRunningStage(ctx, agentID)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
 	// Build gobs-cli command: prepend --host and --port, then user args
-	cmdArgs := append([]string{"--host", sess.PodIP, "--port", "4455"}, args...)
-	log.Printf("MCP gobs: session=%s cmd=gobs-cli %v", sess.ID, cmdArgs)
+	cmdArgs := append([]string{"--host", stage.PodIP, "--port", "4455"}, args...)
+	log.Printf("MCP gobs: stage=%s cmd=gobs-cli %v", stage.ID, cmdArgs)
 
 	cmd := exec.CommandContext(ctx, "gobs-cli", cmdArgs...)
 	var stdout, stderr bytes.Buffer

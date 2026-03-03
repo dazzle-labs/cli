@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { endpointClient, apiKeyClient } from "../../client.js";
-import type { Endpoint } from "../../gen/api/v1/endpoint_pb.js";
+import { stageClient, apiKeyClient } from "../../client.js";
+import type { Stage } from "../../gen/api/v1/stage_pb.js";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Loader2 } from "lucide-react";
 
 interface EndpointCreatorProps {
-  onCreated: (endpoint: Endpoint, apiKey: string | null) => void;
+  onCreated: (stage: Stage, apiKey: string | null) => void;
   verbose?: boolean;
   /** Skip API key creation (experienced users already have one) */
   skipApiKey?: boolean;
@@ -13,7 +13,7 @@ interface EndpointCreatorProps {
 
 export function EndpointCreator({ onCreated, verbose, skipApiKey }: EndpointCreatorProps) {
   const [status, setStatus] = useState<"creating" | "ready" | "error">("creating");
-  const [endpoint, setEndpoint] = useState<Endpoint | null>(null);
+  const [stage, setStage] = useState<Stage | null>(null);
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const started = useRef(false);
@@ -36,18 +36,14 @@ export function EndpointCreator({ onCreated, verbose, skipApiKey }: EndpointCrea
           }
         }
 
-        const promises: [Promise<any>, Promise<any> | null] = [
-          endpointClient.createEndpoint({ name: "" }),
-          shouldCreateKey ? apiKeyClient.createApiKey({ name: `onboarding-${Date.now()}` }) : null,
-        ];
+        const stageResp = await stageClient.createStage({ name: "" });
+        const keyResp = shouldCreateKey
+          ? await apiKeyClient.createApiKey({ name: `onboarding-${Date.now()}` })
+          : null;
 
-        const [epResp, keyResp] = await Promise.all(
-          promises.filter(Boolean) as Promise<any>[]
-        );
-
-        const ep = epResp.endpoint!;
+        const st = stageResp.stage!;
         const secret = keyResp?.secret ?? null;
-        setEndpoint(ep);
+        setStage(st);
         setApiKey(secret);
         setStatus("ready");
       } catch (err) {
@@ -90,19 +86,19 @@ export function EndpointCreator({ onCreated, verbose, skipApiKey }: EndpointCrea
           </div>
         )}
 
-        {status === "ready" && endpoint && (
+        {status === "ready" && stage && (
           <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.05] p-6 flex flex-col gap-3">
             <p className="text-sm font-medium text-emerald-400">Stage ready</p>
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-zinc-500">Stage ID</span>
                 <code className="font-mono text-zinc-300 bg-white/[0.04] px-2 py-0.5 rounded">
-                  {endpoint.id.slice(0, 12)}
+                  {stage.id.slice(0, 12)}
                 </code>
               </div>
             </div>
             <Button
-              onClick={() => onCreated(endpoint, apiKey)}
+              onClick={() => onCreated(stage, apiKey)}
               className="mt-2 bg-emerald-500 text-zinc-950 hover:bg-emerald-400 font-semibold w-full"
             >
               Continue

@@ -25,27 +25,27 @@ export interface EndpointGroup {
 
 export const ENDPOINT_GROUPS: EndpointGroup[] = [
   {
-    id: "session",
-    name: "SessionService",
+    id: "stage",
+    name: "StageService",
     description:
-      "Manage browser sessions. Accepts Clerk JWT or API key authentication.",
+      "Manage browser stages. Accepts Clerk JWT or API key authentication.",
     endpoints: [
       {
-        id: "create-session",
+        id: "create-stage",
         method: "POST",
-        path: "/api.v1.SessionService/CreateSession",
+        path: "/api.v1.StageService/CreateStage",
         description:
-          "Activate a stage. Provisions the environment so it's ready to render content and stream.",
+          "Create a stage record. Returns immediately with status 'inactive' — no pod is provisioned yet. The agent calls the 'start' MCP tool to activate it.",
         auth: "Clerk JWT or API Key",
-        params: [],
+        params: [
+          { name: "name", type: "string", required: false, description: "Display name for the stage" },
+        ],
         responseExample: JSON.stringify(
           {
-            session: {
+            stage: {
               id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-              podName: "streamer-a1b2c3d4",
-              podIp: "",
-              directPort: 31042,
-              status: "starting",
+              name: "my-stage",
+              status: "inactive",
               ownerUserId: "user_abc123",
             },
           },
@@ -53,38 +53,38 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
           2,
         ),
         notes:
-          "Returns ResourceExhausted if capacity limit reached. Pod IP is empty until status becomes 'running'.",
+          "Stage is inactive until an agent connects to /stage/<id>/mcp and calls the 'start' tool.",
       },
       {
-        id: "list-sessions",
+        id: "list-stages",
         method: "POST",
-        path: "/api.v1.SessionService/ListSessions",
-        description: "List all sessions owned by the authenticated user.",
+        path: "/api.v1.StageService/ListStages",
+        description: "List all stages owned by the authenticated user. Includes inactive stages.",
         auth: "Clerk JWT or API Key",
         params: [],
         responseExample: JSON.stringify(
-          { sessions: [{ id: "a1b2c3d4-...", status: "running" }] },
+          { stages: [{ id: "a1b2c3d4-...", name: "my-stage", status: "inactive" }] },
           null,
           2,
         ),
       },
       {
-        id: "get-session",
+        id: "get-stage",
         method: "POST",
-        path: "/api.v1.SessionService/GetSession",
-        description: "Get details of a specific session by ID.",
+        path: "/api.v1.StageService/GetStage",
+        description: "Get details of a specific stage by ID.",
         auth: "Clerk JWT or API Key",
         params: [
           {
             name: "id",
             type: "string",
             required: true,
-            description: "Session UUID",
+            description: "Stage UUID",
           },
         ],
         responseExample: JSON.stringify(
           {
-            session: {
+            stage: {
               id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
               status: "running",
               podIp: "10.42.0.15",
@@ -95,17 +95,17 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
         ),
       },
       {
-        id: "delete-session",
+        id: "delete-stage",
         method: "POST",
-        path: "/api.v1.SessionService/DeleteSession",
-        description: "Delete and stop a session by ID.",
+        path: "/api.v1.StageService/DeleteStage",
+        description: "Delete a stage by ID. If the stage is active, the pod is stopped first.",
         auth: "Clerk JWT or API Key",
         params: [
           {
             name: "id",
             type: "string",
             required: true,
-            description: "Session UUID",
+            description: "Stage UUID",
           },
         ],
         responseExample: "{}",
@@ -223,7 +223,7 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
           "List stream destinations. Stream keys are masked (first 4 chars + ***).",
         auth: "Clerk JWT only",
         params: [
-          { name: "session_id", type: "string", required: true, description: "Session UUID" },
+          { name: "stage_id", type: "string", required: true, description: "Stage UUID" },
         ],
         responseExample: JSON.stringify(
           {
@@ -274,7 +274,7 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
         method: "POST",
         path: "/api.v1.UserService/GetProfile",
         description:
-          "Get the authenticated user's profile including session and API key counts.",
+          "Get the authenticated user's profile including stage and API key counts.",
         auth: "Clerk JWT only",
         params: [],
         responseExample: JSON.stringify(
@@ -282,7 +282,7 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
             userId: "user_abc123",
             email: "dev@example.com",
             name: "Jane Dev",
-            sessionCount: 2,
+            stageCount: 2,
             apiKeyCount: 1,
           },
           null,
@@ -294,17 +294,17 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
   {
     id: "http",
     name: "HTTP Endpoints",
-    description: "Standard HTTP endpoints for health checks, CDP access, and session proxying.",
+    description: "Standard HTTP endpoints for health checks, CDP access, and stage proxying.",
     endpoints: [
       {
         id: "health",
         method: "GET",
         path: "/health",
         description:
-          'Returns server health status. Authenticated requests also get session counts.',
+          'Returns server health status. Authenticated requests also get stage counts.',
         auth: "Optional",
         params: [],
-        responseExample: JSON.stringify({ status: "ok", sessions: 2, maxSessions: 10 }, null, 2),
+        responseExample: JSON.stringify({ status: "ok", stages: 2, maxStages: 10 }, null, 2),
         notes: "Unauthenticated requests only return { status: \"ok\" }.",
       },
       {
@@ -312,7 +312,7 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
         method: "GET",
         path: "/cdp/<uuid>",
         description:
-          "CDP auto-provisioning endpoint. Creates a session if one doesn't exist for the UUID, waits up to 60s for it to be ready, and returns Chrome DevTools Protocol discovery info with rewritten WebSocket URLs.",
+          "CDP endpoint. Returns Chrome DevTools Protocol discovery info with rewritten WebSocket URLs. Requires the stage to be active (call the 'start' MCP tool first). Returns 503 if stage is not active.",
         auth: "Clerk JWT or API Key",
         params: [],
         responseExample: JSON.stringify(
@@ -327,15 +327,15 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
           "Also supports /cdp/<uuid>/json/version and /cdp/<uuid>/json for Chrome target listing. WebSocket connections to /cdp/<uuid> are proxied directly to Chrome port 9222.",
       },
       {
-        id: "session-proxy",
+        id: "stage-proxy",
         method: "ANY",
-        path: "/session/<id>/*",
+        path: "/stage/<id>/*",
         description:
-          "Reverse proxy to an active stage. Strips the /session/<id> prefix and forwards requests. Supports both HTTP and WebSocket.",
+          "Reverse proxy to an active stage. Strips the /stage/<id> prefix and forwards requests. Supports both HTTP and WebSocket.",
         auth: "Clerk JWT or API Key",
         params: [],
         notes:
-          "Returns 404 if session not found, 503 if session is not ready yet. All headers and query parameters are forwarded.",
+          "Returns 404 if stage not found, 503 if stage is not ready yet. All headers and query parameters are forwarded.",
       },
     ],
   },

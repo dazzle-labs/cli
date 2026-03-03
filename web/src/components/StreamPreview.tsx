@@ -3,11 +3,11 @@ import { useAuth } from "@clerk/clerk-react";
 import Hls from "hls.js";
 
 interface StreamPreviewProps {
-  sessionId: string;
+  stageId: string;
   status: "starting" | "running" | "stopped";
 }
 
-export function StreamPreview({ sessionId, status }: StreamPreviewProps) {
+export function StreamPreview({ stageId, status }: StreamPreviewProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -27,7 +27,7 @@ export function StreamPreview({ sessionId, status }: StreamPreviewProps) {
   useEffect(() => {
     if (status !== "running" || !videoRef.current) return;
 
-    const hlsUrl = `/session/${sessionId}/hls/stream.m3u8`;
+    const hlsUrl = `/stage/${stageId}/hls/stream.m3u8`;
 
     if (!Hls.isSupported()) {
       // Safari native HLS — no custom headers possible, best-effort
@@ -82,7 +82,7 @@ export function StreamPreview({ sessionId, status }: StreamPreviewProps) {
     initHls();
 
     return destroyHls;
-  }, [sessionId, status, getToken, destroyHls]);
+  }, [stageId, status, getToken, destroyHls]);
 
   if (status !== "running") {
     return (

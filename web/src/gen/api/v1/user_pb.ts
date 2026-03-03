@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file api/v1/user.proto.
  */
 export const file_api_v1_user: GenFile = /*@__PURE__*/
-  fileDesc("ChFhcGkvdjEvdXNlci5wcm90bxIGYXBpLnYxIhMKEUdldFByb2ZpbGVSZXF1ZXN0InAKEkdldFByb2ZpbGVSZXNwb25zZRIPCgd1c2VyX2lkGAEgASgJEg0KBWVtYWlsGAIgASgJEgwKBG5hbWUYAyABKAkSFQoNc2Vzc2lvbl9jb3VudBgEIAEoBRIVCg1hcGlfa2V5X2NvdW50GAUgASgFMlIKC1VzZXJTZXJ2aWNlEkMKCkdldFByb2ZpbGUSGS5hcGkudjEuR2V0UHJvZmlsZVJlcXVlc3QaGi5hcGkudjEuR2V0UHJvZmlsZVJlc3BvbnNlQj5aPGdpdGh1Yi5jb20vYnJvd3Nlci1zdHJlYW1lci9zZXNzaW9uLW1hbmFnZXIvZ2VuL2FwaS92MTthcGl2MWIGcHJvdG8z");
+  fileDesc("ChFhcGkvdjEvdXNlci5wcm90bxIGYXBpLnYxIhMKEUdldFByb2ZpbGVSZXF1ZXN0Im4KEkdldFByb2ZpbGVSZXNwb25zZRIPCgd1c2VyX2lkGAEgASgJEg0KBWVtYWlsGAIgASgJEgwKBG5hbWUYAyABKAkSEwoLc3RhZ2VfY291bnQYBCABKAUSFQoNYXBpX2tleV9jb3VudBgFIAEoBTJSCgtVc2VyU2VydmljZRJDCgpHZXRQcm9maWxlEhkuYXBpLnYxLkdldFByb2ZpbGVSZXF1ZXN0GhouYXBpLnYxLkdldFByb2ZpbGVSZXNwb25zZUI8WjpnaXRodWIuY29tL2Jyb3dzZXItc3RyZWFtZXIvY29udHJvbC1wbGFuZS9nZW4vYXBpL3YxO2FwaXYxYgZwcm90bzM");
 
 /**
  * @generated from message api.v1.GetProfileRequest
@@ -45,9 +45,9 @@ export type GetProfileResponse = Message<"api.v1.GetProfileResponse"> & {
   name: string;
 
   /**
-   * @generated from field: int32 session_count = 4;
+   * @generated from field: int32 stage_count = 4;
    */
-  sessionCount: number;
+  stageCount: number;
 
   /**
    * @generated from field: int32 api_key_count = 5;
