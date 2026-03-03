@@ -13,7 +13,7 @@
 ```
 Traefik Ingress (HTTPS :443)
     │
-    └── stream.dazzle.fm → session-manager:8080
+    └── stream.dazzle.fm → control-plane:8080
                                 │
                                 ├── Dashboard SPA (static files)
                                 ├── ConnectRPC API
@@ -31,7 +31,7 @@ Browserless Chromium Pool (HPA: 1-6 replicas)
 
 | Resource | Type | Namespace | Image |
 |----------|------|-----------|-------|
-| session-manager | Deployment (1 replica) | browser-streamer | session-manager:latest |
+| control-plane | Deployment (1 replica) | browser-streamer | control-plane:latest |
 | browserless | Deployment (HPA 1-6) | browser-streamer | ghcr.io/browserless/chromium |
 | postgres | StatefulSet (1 replica) | browser-streamer | postgres:16-alpine |
 | streamer pods | Pod (ephemeral) | browser-streamer | browser-streamer:latest |
@@ -82,7 +82,7 @@ ssh root@HOST "k3s ctr images import /tmp/browser-streamer.tar"
 
 # Session manager image (includes dashboard build)
 ssh root@HOST "buildctl build --opt build-arg:VITE_CLERK_PUBLISHABLE_KEY=..."
-ssh root@HOST "k3s ctr images import /tmp/session-manager.tar"
+ssh root@HOST "k3s ctr images import /tmp/control-plane.tar"
 ```
 
 Both images use `imagePullPolicy: Never` (pre-loaded into containerd).
@@ -97,16 +97,16 @@ make build deploy
 ### Full Deploy Breakdown
 ```bash
 make build-streamer           # Build streamer image
-make build-session-manager    # Build session-manager + dashboard
+make build-control-plane    # Build control-plane + dashboard
 make deploy                   # Apply manifests + restart
 ```
 
 `make deploy` runs:
 1. Apply postgres.yaml
-2. Apply session-manager RBAC
-3. Apply session-manager deployment + service
+2. Apply control-plane RBAC
+3. Apply control-plane deployment + service
 4. Apply ingress
-5. Rollout restart session-manager
+5. Rollout restart control-plane
 6. Wait for ready (60s timeout)
 
 ### Fresh Infrastructure
@@ -114,16 +114,16 @@ make deploy                   # Apply manifests + restart
 make provision HOST=x.x.x.x TOKEN=<secret>
 ```
 
-Provisions: k3s → namespace → secrets → browserless → images → session-manager → cert-manager → TLS
+Provisions: k3s → namespace → secrets → browserless → images → control-plane → cert-manager → TLS
 
 ## Networking
 
 | Service | Type | Port | External |
 |---------|------|------|----------|
-| session-manager | ClusterIP | 8080 | Via Traefik ingress |
+| control-plane | ClusterIP | 8080 | Via Traefik ingress |
 | browserless | NodePort | 3000 → 30000 | Direct NodePort |
 | postgres | ClusterIP | 5432 | Internal only |
-| Streamer pods | ClusterIP | 8080 | Via session-manager proxy |
+| Streamer pods | ClusterIP | 8080 | Via control-plane proxy |
 
 ## TLS Configuration
 

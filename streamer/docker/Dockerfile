@@ -58,11 +58,11 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
 # Create app directory
 WORKDIR /app
 
-# Copy server code and install dependencies
-COPY server/package.json server/package-lock.json* ./
+# Copy streamer code and install dependencies
+COPY streamer/package.json streamer/package-lock.json* ./
 RUN npm install
 
-COPY server/index.js server/shell.html server/prelude.js server/vite-init.mjs ./
+COPY streamer/index.js streamer/shell.html streamer/prelude.js streamer/vite-init.mjs ./
 
 RUN mkdir -p /tmp/content
 

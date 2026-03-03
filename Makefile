@@ -3,51 +3,36 @@ CLERK_PK ?= pk_live_Y2xlcmsuZGF6emxlLmZtJA
 SSH      := ssh root@$(HOST)
 NS       := browser-streamer
 
-.PHONY: help build-streamer build-session-manager build deploy restart \
-        logs-sm logs-session sessions create-session status provision clean \
-        proto dashboard-build secrets install-cert-manager setup-tls
+.PHONY: help proto build-streamer build-control-plane build deploy restart \
+        logs-cp logs-session status sessions create-session provision clean \
+        secrets install-cert-manager setup-tls \
+        control-plane/% streamer/% web/%
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  \033[36m%-24s\033[0m %s\n", $$1, $$2}'
+	@echo ""
+	@echo "  Nested component targets: make <component>/<target>"
+	@echo "    make control-plane/build   # Build control-plane"
+	@echo "    make control-plane/deploy  # Deploy control-plane"
+	@echo "    make control-plane/logs    # Tail control-plane logs"
+	@echo "    make streamer/build        # Build streamer"
+	@echo "    make web/build             # Build web"
+	@echo "    make web/dev               # Run web dev server"
 
 # ── Code generation ───────────────────────────────────
 
 proto: ## Generate protobuf code (Go + TypeScript)
-	cd session-manager/proto && buf generate
-
-dashboard-build: ## Build dashboard (Vite + React)
-	cd dashboard && . ~/.nvm/nvm.sh && nvm use && npm run build
+	$(MAKE) -C control-plane proto
 
 # ── Build ──────────────────────────────────────────────
 
 build-streamer: ## Build streamer image on remote host
-	$(SSH) "rm -rf /tmp/browser-streamer-build && mkdir -p /tmp/browser-streamer-build"
-	scp -r docker/ server/ root@$(HOST):/tmp/browser-streamer-build/
-	$(SSH) "cd /tmp/browser-streamer-build && buildctl build \
-		--frontend=dockerfile.v0 \
-		--local context=. \
-		--local dockerfile=docker \
-		--opt filename=Dockerfile \
-		--output type=oci,dest=/tmp/browser-streamer.tar,name=docker.io/library/browser-streamer:latest"
-	$(SSH) "k3s ctr images import /tmp/browser-streamer.tar"
+	$(MAKE) -C streamer build
 
-build-session-manager: ## Build session-manager image on remote host
-	$(SSH) "rm -rf /tmp/session-manager-build && mkdir -p /tmp/session-manager-build"
-	rsync -a --exclude='node_modules' --exclude='.env' --exclude='.env.*' --exclude='dist' \
-		session-manager/ root@$(HOST):/tmp/session-manager-build/session-manager/
-	rsync -a --exclude='node_modules' --exclude='.env' --exclude='.env.*' --exclude='dist' \
-		dashboard/ root@$(HOST):/tmp/session-manager-build/dashboard/
-	scp docker/Dockerfile.session-manager root@$(HOST):/tmp/session-manager-build/Dockerfile
-	$(SSH) "cd /tmp/session-manager-build && buildctl build \
-		--frontend=dockerfile.v0 \
-		--local context=. \
-		--local dockerfile=. \
-		--opt filename=Dockerfile \
-		--opt build-arg:VITE_CLERK_PUBLISHABLE_KEY=$(CLERK_PK) \
-		--output type=oci,dest=/tmp/session-manager.tar,name=docker.io/library/session-manager:latest"
-	$(SSH) "k3s ctr images import /tmp/session-manager.tar"
+build-control-plane: ## Build control-plane image on remote host
+	$(MAKE) -C control-plane build
 
-build: build-streamer build-session-manager ## Build all images
+build: build-streamer build-control-plane ## Build all images
 
 # ── Secrets ────────────────────────────────────────────
 
@@ -71,23 +56,19 @@ setup-tls: ## Apply Traefik config, ClusterIssuer, and Ingress for TLS
 
 # ── Deploy ─────────────────────────────────────────────
 
-deploy: ## Apply all k8s manifests and restart session-manager
+deploy: ## Apply all k8s manifests and restart control-plane
 	$(SSH) "k3s kubectl apply -f -" < k8s/postgres.yaml
-	$(SSH) "k3s kubectl apply -f -" < k8s/session-manager-rbac.yaml
-	$(SSH) "k3s kubectl apply -f -" < k8s/session-manager-deployment.yaml
-	$(SSH) "k3s kubectl apply -f -" < k8s/session-manager-service.yaml
+	$(MAKE) -C control-plane deploy
 	$(SSH) "k3s kubectl apply -f -" < k8s/ingress.yaml
-	$(SSH) "k3s kubectl rollout restart deployment/session-manager -n $(NS)"
-	$(SSH) "k3s kubectl rollout status deployment/session-manager -n $(NS) --timeout=60s"
+	$(MAKE) -C control-plane restart
 
-restart: ## Restart session-manager pod (picks up new image)
-	$(SSH) "k3s kubectl rollout restart deployment/session-manager -n $(NS)"
-	$(SSH) "k3s kubectl rollout status deployment/session-manager -n $(NS) --timeout=60s"
+restart: ## Restart control-plane pod (picks up new image)
+	$(MAKE) -C control-plane restart
 
 # ── Observe ────────────────────────────────────────────
 
-logs-sm: ## Tail session-manager logs
-	$(SSH) "k3s kubectl logs -f deployment/session-manager -n $(NS)"
+logs-cp: ## Tail control-plane logs
+	$(MAKE) -C control-plane logs
 
 logs-session: ## Tail logs for a session pod (usage: make logs-session POD=streamer-abc12345)
 	$(SSH) "k3s kubectl logs -f $(POD) -n $(NS)"
@@ -120,3 +101,14 @@ provision: ## Full provision from scratch (usage: make provision HOST=x.x.x.x [T
 
 clean: ## Delete all session pods
 	$(SSH) "k3s kubectl delete pods -n $(NS) -l app=streamer-session --ignore-not-found"
+
+# ── Nested component targets ───────────────────────────────
+
+control-plane/%:
+	$(MAKE) -C control-plane $*
+
+streamer/%:
+	$(MAKE) -C streamer $*
+
+web/%:
+	$(MAKE) -C web $*

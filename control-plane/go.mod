@@ -1,4 +1,4 @@
-module github.com/browser-streamer/session-manager
+module github.com/browser-streamer/control-plane
 
 go 1.24.0
 

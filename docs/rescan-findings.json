@@ -1,0 +1,632 @@
+{
+  "scan_date": "2026-03-03T14:15:00Z",
+  "scan_scope": ["session-manager", "server", "dashboard"],
+  "baseline_date": "2026-03-02T00:00:00Z",
+  "summary": {
+    "total_commits_since_baseline": 13,
+    "components_modified": 3,
+    "key_changes_detected": 11,
+    "last_major_update": "2026-03-03T14:09:48Z"
+  },
+  "components": {
+    "session-manager": {
+      "language": "Go",
+      "path": "/Users/johnsabath/projects/browser-streamer/session-manager",
+      "last_modified": "2026-03-03T11:00:16Z",
+      "status": "actively developed",
+      "version_info": {
+        "go_version": "1.24.0",
+        "toolchain": "1.24.5"
+      },
+      "key_dependencies": [
+        {
+          "name": "connectrpc.com/connect",
+          "version": "v1.19.1"
+        },
+        {
+          "name": "github.com/clerk/clerk-sdk-go/v2",
+          "version": "v2.5.1"
+        },
+        {
+          "name": "k8s.io/client-go",
+          "version": "v0.29.3"
+        },
+        {
+          "name": "github.com/mark3labs/mcp-go",
+          "version": "v0.44.1"
+        },
+        {
+          "name": "github.com/gorilla/websocket",
+          "version": "v1.5.3"
+        }
+      ],
+      "recent_changes": [
+        {
+          "commit": "ee5aefe",
+          "date": "2026-03-03T13:29:47Z",
+          "message": "Add React, Zustand, and Tailwind to content pipeline",
+          "files_modified": ["mcp.go"],
+          "impact": "simplified MCP tool descriptions and registration"
+        },
+        {
+          "commit": "029e18a",
+          "date": "2026-03-03T12:08:55Z",
+          "message": "Switch from OBS browser_source to xshm_input + Chrome CDP navigation",
+          "files_modified": ["mcp.go"],
+          "impact": "updated screen capture architecture"
+        },
+        {
+          "commit": "6148e5f",
+          "date": "2026-03-03T11:25:10Z",
+          "message": "Rename MCP tools to start/stop/status, use active/inactive terminology",
+          "files_modified": ["mcp.go"],
+          "impact": "renamed stage lifecycle tools from create/destroy/status"
+        },
+        {
+          "commit": "fcaf9b3",
+          "date": "2026-03-03T11:03:06Z",
+          "message": "Rename endpoints/sessions to stages, fix API key onboarding, fix OBS GPU crash",
+          "files_modified": ["main.go", "mcp.go"],
+          "impact": "terminology change (sessions → stages), OBS GPU crash fix with software rendering"
+        },
+        {
+          "commit": "faba1a5",
+          "date": "2026-03-03T10:29:48Z",
+          "message": "Add emit_event MCP tool for Elm-style state events via Vite HMR",
+          "files_modified": ["mcp.go"],
+          "impact": "new Elm-style state-driven architecture via WebSocket"
+        }
+      ],
+      "database": {
+        "type": "PostgreSQL",
+        "migrations_count": 3,
+        "tables": [
+          "users",
+          "api_keys",
+          "stream_destinations",
+          "session_log",
+          "endpoints"
+        ],
+        "recent_migration": {
+          "version": "003",
+          "date": "2026-02-16T16:48:00Z",
+          "name": "endpoints",
+          "description": "Added endpoints table for persistent MCP endpoint configuration",
+          "creates_table": "endpoints",
+          "schema": {
+            "id": "UUID PRIMARY KEY",
+            "user_id": "TEXT NOT NULL FOREIGN KEY",
+            "name": "TEXT",
+            "created_at": "TIMESTAMPTZ"
+          }
+        }
+      },
+      "proto_services": [
+        "SessionService",
+        "ApiKeyService",
+        "StreamService",
+        "UserService",
+        "EndpointService"
+      ],
+      "mcp_tools": [
+        {
+          "name": "start",
+          "description": "Activate stage (create/start streamer pod)",
+          "params": []
+        },
+        {
+          "name": "stop",
+          "description": "Deactivate stage (destroy streamer pod)",
+          "params": []
+        },
+        {
+          "name": "status",
+          "description": "Get stage status (active/inactive/starting)",
+          "params": []
+        },
+        {
+          "name": "set_script",
+          "description": "Set JavaScript/JSX content to render",
+          "params": ["script: string"]
+        },
+        {
+          "name": "get_script",
+          "description": "Get current JavaScript content",
+          "params": []
+        },
+        {
+          "name": "edit_script",
+          "description": "Edit JavaScript via find/replace",
+          "params": ["old_string: string", "new_string: string"]
+        },
+        {
+          "name": "emit_event",
+          "description": "Push state updates via WebSocket (Elm-style events)",
+          "params": ["event: string", "data: object"]
+        },
+        {
+          "name": "screenshot",
+          "description": "Capture PNG screenshot of stage output",
+          "params": []
+        },
+        {
+          "name": "gobs",
+          "description": "Run OBS commands via gobs-cli",
+          "params": ["args: string[]"]
+        }
+      ]
+    },
+    "server": {
+      "language": "Node.js",
+      "path": "/Users/johnsabath/projects/browser-streamer/server",
+      "last_modified": "2026-03-03T14:06:54Z",
+      "status": "actively developed",
+      "version_info": {
+        "node_version": "^18.0.0",
+        "package_version": "1.0.0"
+      },
+      "key_dependencies": [
+        {
+          "name": "express",
+          "version": "^4.18.2"
+        },
+        {
+          "name": "react",
+          "version": "^19.1.0"
+        },
+        {
+          "name": "vite",
+          "version": "^6.2.0"
+        },
+        {
+          "name": "zustand",
+          "version": "^5.0.5"
+        },
+        {
+          "name": "ws",
+          "version": "^8.19.0"
+        },
+        {
+          "name": "tailwindcss",
+          "version": "^4.1.4"
+        }
+      ],
+      "recent_changes": [
+        {
+          "commit": "ee5aefe",
+          "date": "2026-03-03T13:29:47Z",
+          "message": "Add React, Zustand, and Tailwind to content pipeline",
+          "files_modified": ["index.js", "package.json", "prelude.js", "shell.html", "vite-init.mjs"],
+          "impact": "major: added React/Zustand/Tailwind as globals, Vite HMR integration"
+        },
+        {
+          "commit": "c5a0c1e",
+          "date": "2026-03-03T12:38:09Z",
+          "message": "Fix xshm scene item: always enable and set transform on startup",
+          "files_modified": ["index.js"],
+          "impact": "fixed OBS scene item configuration"
+        },
+        {
+          "commit": "faba1a5",
+          "date": "2026-03-03T10:29:48Z",
+          "message": "Add emit_event MCP tool for Elm-style state events via Vite HMR",
+          "files_modified": ["index.js", "package.json", "shell.html", "vite-init.mjs"],
+          "impact": "added state event WebSocket handling, Vite HMR setup"
+        },
+        {
+          "commit": "19058ca",
+          "date": "2026-03-03T08:49:12Z",
+          "message": "Expose multi-panel layout via MCP tools and streamer API",
+          "files_modified": ["index.js", "package.json"],
+          "impact": "added multi-panel support (panels map, panel state)"
+        }
+      ],
+      "architecture_notes": {
+        "runtime": "Node.js 20 in Docker container",
+        "screen_resolution": "1280x720 (configurable via env: SCREEN_WIDTH, SCREEN_HEIGHT)",
+        "port": 8080,
+        "key_features": [
+          "Express HTTP server",
+          "Vite dev server (middleware mode) for HMR",
+          "WebSocket proxy to Chrome CDP (port 9222)",
+          "WebSocket proxy to OBS Studio (port 4455)",
+          "Multi-panel content system with state persistence",
+          "Elm-style state event architecture via emit_event"
+        ]
+      },
+      "new_files": [
+        {
+          "name": "prelude.js",
+          "added": "2026-03-03",
+          "description": "Global React/Zustand setup for all panels"
+        },
+        {
+          "name": "vite-init.mjs",
+          "added": "2026-03-03",
+          "description": "Vite dev server factory with HMR config"
+        }
+      ]
+    },
+    "dashboard": {
+      "language": "TypeScript + React",
+      "path": "/Users/johnsabath/projects/browser-streamer/dashboard",
+      "last_modified": "2026-03-03T07:26:51Z",
+      "status": "actively developed",
+      "version_info": {
+        "react_version": "^19.0.0",
+        "typescript_version": "^5.6.0"
+      },
+      "key_dependencies": [
+        {
+          "name": "@connectrpc/connect-web",
+          "version": "^2.0.0"
+        },
+        {
+          "name": "@clerk/clerk-react",
+          "version": "^5.0.0"
+        },
+        {
+          "name": "react",
+          "version": "^19.0.0"
+        },
+        {
+          "name": "react-router-dom",
+          "version": "^7.0.0"
+        },
+        {
+          "name": "tailwindcss",
+          "version": "^4.2.1"
+        },
+        {
+          "name": "hls.js",
+          "version": "^1.6.15"
+        }
+      ],
+      "recent_changes": [
+        {
+          "commit": "6148e5f",
+          "date": "2026-03-03T11:25:10Z",
+          "message": "Rename MCP tools to start/stop/status, use active/inactive terminology",
+          "files_modified": ["mcp-tools.ts", "Dashboard.tsx", "PathSelector.tsx", "api-endpoints.ts"],
+          "impact": "renamed stage lifecycle tools in UI and docs"
+        },
+        {
+          "commit": "fcaf9b3",
+          "date": "2026-03-03T11:03:06Z",
+          "message": "Rename endpoints/sessions to stages, terminology change",
+          "files_modified": ["multiple onboarding components", "LandingPage.tsx", "Docs.tsx"],
+          "impact": "major: sessions → stages naming throughout UI"
+        },
+        {
+          "commit": "c241d21",
+          "date": "2026-03-03T08:02:02Z",
+          "message": "Hoist onboarding wizard to Layout so sidebar button works on any page",
+          "files_modified": ["Layout.tsx", "Dashboard.tsx"],
+          "impact": "improved onboarding UX"
+        }
+      ],
+      "mcp_tools_documented": 8,
+      "api_endpoints_documented": [
+        "CreateEndpoint",
+        "ListEndpoints",
+        "DeleteEndpoint",
+        "StartStage",
+        "StopStage",
+        "StageStatus",
+        "SetScript",
+        "EditScript",
+        "EmitEvent",
+        "Screenshot",
+        "GobsCommand"
+      ],
+      "pages": [
+        "LandingPage",
+        "Dashboard",
+        "Docs",
+        "StreamConfig"
+      ],
+      "components": {
+        "onboarding": [
+          "OnboardingWizard",
+          "EndpointCreator",
+          "PathSelector",
+          "ConnectionDetails",
+          "StreamDestinationForm",
+          "FrameworkSelector"
+        ],
+        "ui_library": [
+          "card", "button", "input", "alert", "badge", "table", "overlay"
+        ]
+      }
+    }
+  },
+  "data_models": {
+    "user": {
+      "fields": ["id (TEXT)", "email", "name", "created_at", "updated_at"],
+      "status": "unchanged"
+    },
+    "api_key": {
+      "fields": ["id", "user_id", "name", "prefix", "key_hash", "created_at", "last_used_at"],
+      "status": "unchanged"
+    },
+    "stream_destination": {
+      "fields": ["id", "user_id", "name", "platform", "rtmp_url", "stream_key", "enabled", "created_at", "updated_at"],
+      "status": "unchanged"
+    },
+    "session_log": {
+      "fields": ["id", "user_id", "pod_name", "direct_port (nullable)", "created_at", "ended_at", "end_reason"],
+      "status": "minor update (direct_port made nullable in 002_nullable_direct_port)"
+    },
+    "endpoint": {
+      "fields": ["id (UUID)", "user_id", "name", "created_at"],
+      "status": "NEW - added 2026-02-16 in migration 003"
+    }
+  },
+  "deployment_changes": {
+    "docker": {
+      "base_image_old": "ubuntu:22.04",
+      "base_image_new": "ubuntu:24.04",
+      "changed_date": "2026-03-03T07:47:38Z",
+      "impact": "Updated system libraries, node from 18 to 20"
+    },
+    "entrypoint": {
+      "changes": [
+        {
+          "date": "2026-03-03T07:45:54Z",
+          "message": "Fix OBS What's New dialog not being suppressed on startup",
+          "impact": "improved startup time and automation"
+        },
+        {
+          "date": "2026-03-03T07:30:47Z",
+          "message": "Add PulseAudio config updates",
+          "files": ["pulse-default.pa"]
+        }
+      ]
+    },
+    "process_startup_order": [
+      "Xvfb (virtual display, :99)",
+      "PulseAudio (audio daemon)",
+      "Chrome (kiosk mode, CDP on 9222)",
+      "OBS Studio (xshm_input screen capture)",
+      "Node.js server (Express + Vite, port 8080)",
+      "FFmpeg (HLS preview pipeline)"
+    ]
+  },
+  "architecture_changes": {
+    "screen_capture": {
+      "old": "OBS browser_source (embedded Chrome)",
+      "new": "xshm_input (Linux X11 screen capture from Xvfb)",
+      "date": "2026-03-03T12:08:55Z",
+      "impact": "decoupled OBS from Chrome, improved stability"
+    },
+    "content_rendering": {
+      "old": "Static HTML files or browser_source",
+      "new": "React + Zustand + Tailwind via Vite HMR + Elm-style state events",
+      "date": "2026-03-03T13:29:47Z",
+      "impact": "hot-reload support, reactive state management"
+    },
+    "panel_system": {
+      "old": "single-panel only",
+      "new": "multi-panel layout with per-panel state",
+      "date": "2026-03-03T08:49:12Z",
+      "impact": "supports complex layouts"
+    },
+    "mcp_tool_lifecycle": {
+      "old": "create/destroy/status endpoints",
+      "new": "start/stop/status (stage terminology)",
+      "date": "2026-03-03T11:25:10Z",
+      "impact": "clearer API naming"
+    },
+    "state_management": {
+      "old": "per-panel state via query params",
+      "new": "Elm-style event-driven state via emit_event WebSocket",
+      "date": "2026-03-03T10:29:48Z",
+      "impact": "decoupled state from view, better performance"
+    }
+  },
+  "api_contracts": {
+    "protocol": "Connect RPC over HTTP/2",
+    "services": [
+      {
+        "name": "SessionService",
+        "rpcs": [
+          "CreateSession",
+          "GetSession",
+          "ListSessions",
+          "DeleteSession"
+        ]
+      },
+      {
+        "name": "EndpointService",
+        "rpcs": [
+          "CreateEndpoint",
+          "ListEndpoints",
+          "DeleteEndpoint"
+        ],
+        "added": "2026-02-16"
+      },
+      {
+        "name": "ApiKeyService",
+        "rpcs": [
+          "CreateApiKey",
+          "ListApiKeys",
+          "DeleteApiKey"
+        ]
+      },
+      {
+        "name": "StreamService",
+        "rpcs": [
+          "CreateStream",
+          "UpdateStream",
+          "GetStream",
+          "ListStreams",
+          "DeleteStream"
+        ]
+      },
+      {
+        "name": "UserService",
+        "rpcs": [
+          "GetUser",
+          "UpdateUser"
+        ]
+      }
+    ]
+  },
+  "key_changes_since_march_2": [
+    {
+      "priority": "critical",
+      "category": "architecture",
+      "change": "OBS screen capture switched from browser_source to xshm_input",
+      "date": "2026-03-03T12:08:55Z",
+      "files_affected": ["docker/entrypoint.sh", "server/index.js", "session-manager/mcp.go", "dashboard/src/components/onboarding/mcp-tools.ts"],
+      "rationale": "xshm_input avoids OBS embedding Chrome, improves stability"
+    },
+    {
+      "priority": "high",
+      "category": "dependencies",
+      "change": "React, Zustand, Tailwind CSS added to server/package.json",
+      "date": "2026-03-03T13:29:47Z",
+      "files_affected": ["server/package.json", "server/prelude.js", "server/vite-init.mjs"],
+      "rationale": "enable rich interactive content rendering with hot-reload"
+    },
+    {
+      "priority": "high",
+      "category": "terminology",
+      "change": "Renamed sessions → stages throughout UI and API",
+      "date": "2026-03-03T11:03:06Z",
+      "files_affected": ["session-manager/main.go", "mcp.go", "dashboard (10+ files)"],
+      "rationale": "clearer naming for MCP stage lifecycle"
+    },
+    {
+      "priority": "high",
+      "category": "mcp_tools",
+      "change": "Renamed MCP tools: create → start, destroy → stop",
+      "date": "2026-03-03T11:25:10Z",
+      "files_affected": ["session-manager/mcp.go", "dashboard/src/components/onboarding/mcp-tools.ts"],
+      "rationale": "active/inactive terminology"
+    },
+    {
+      "priority": "medium",
+      "category": "state_management",
+      "change": "Added emit_event MCP tool for Elm-style state events",
+      "date": "2026-03-03T10:29:48Z",
+      "files_affected": ["session-manager/mcp.go", "server/index.js"],
+      "rationale": "decouple state from content view, enable reactive UX"
+    },
+    {
+      "priority": "medium",
+      "category": "database",
+      "change": "New endpoints table for persistent MCP configuration",
+      "date": "2026-02-16T16:48:00Z",
+      "files_affected": ["session-manager/migrations/003_endpoints.up.sql"],
+      "rationale": "persist user-created MCP endpoints"
+    },
+    {
+      "priority": "medium",
+      "category": "infrastructure",
+      "change": "Docker base image upgraded from Ubuntu 22.04 to 24.04",
+      "date": "2026-03-03T07:47:38Z",
+      "files_affected": ["docker/Dockerfile", "docker/entrypoint.sh"],
+      "rationale": "newer system libraries, Node.js 20"
+    },
+    {
+      "priority": "low",
+      "category": "bugfix",
+      "change": "Fixed OBS What's New dialog suppression on startup",
+      "date": "2026-03-03T07:45:54Z",
+      "files_affected": ["docker/entrypoint.sh"],
+      "impact": "faster startup in headless mode"
+    },
+    {
+      "priority": "low",
+      "category": "bugfix",
+      "change": "Fixed xshm scene item transform on startup",
+      "date": "2026-03-03T12:38:09Z",
+      "files_affected": ["server/index.js"],
+      "impact": "correct screen capture positioning"
+    },
+    {
+      "priority": "low",
+      "category": "ui_ux",
+      "change": "Hoisted onboarding wizard to Layout component for global access",
+      "date": "2026-03-03T08:02:02Z",
+      "files_affected": ["dashboard/src/components/Layout.tsx"],
+      "impact": "better UX for getting started"
+    },
+    {
+      "priority": "cleanup",
+      "category": "codebase",
+      "change": "Removed dead code: orphaned k8s manifests and old HTML files",
+      "date": "2026-03-03T14:09:48Z",
+      "files_affected": ["k8s/browserless-*.yaml", "example.html", "viewer.html"],
+      "rationale": "cleanup of legacy artifacts"
+    }
+  ],
+  "documentation_update_recommendations": [
+    {
+      "file": "docs/architecture-streamer.md",
+      "reason": "OBS screen capture method changed from browser_source to xshm_input",
+      "sections": ["Screen Capture", "OBS Configuration", "Architecture Diagram"]
+    },
+    {
+      "file": "docs/architecture-session-manager.md",
+      "reason": "MCP tools renamed (start/stop vs create/destroy) and new emit_event tool",
+      "sections": ["MCP Tools Reference", "Stage Lifecycle"]
+    },
+    {
+      "file": "docs/integration-architecture.md",
+      "reason": "React/Zustand/Tailwind added to content pipeline, Elm-style state events",
+      "sections": ["Content Rendering", "State Management", "Inter-component Communication"]
+    },
+    {
+      "file": "docs/deployment-guide.md",
+      "reason": "Docker base image upgraded to Ubuntu 24.04, PulseAudio config updated",
+      "sections": ["Container Build", "Entrypoint Configuration"]
+    },
+    {
+      "file": "docs/data-models.md",
+      "reason": "New endpoints table added for MCP endpoint persistence",
+      "sections": ["Database Schema", "Endpoint Model"]
+    },
+    {
+      "file": "CLAUDE.md",
+      "reason": "terminology change (sessions → stages), new Vite HMR architecture",
+      "sections": ["Session Manager API", "Streamer Internals"]
+    },
+    {
+      "file": "docs/api-contracts.md",
+      "reason": "New EndpointService added",
+      "sections": ["gRPC Services"]
+    }
+  ],
+  "breaking_changes": [
+    {
+      "component": "dashboard",
+      "breaking": true,
+      "change": "MCP tool names changed: create → start, destroy → stop",
+      "impact": "any external code calling MCP tools must use new names",
+      "date": "2026-03-03T11:25:10Z"
+    },
+    {
+      "component": "session-manager",
+      "breaking": true,
+      "change": "Renamed terminology: sessions → stages in MCP tools and docs",
+      "impact": "external documentation referencing 'sessions' should update",
+      "date": "2026-03-03T11:03:06Z"
+    }
+  ],
+  "integration_notes": {
+    "session_manager_to_streamer": "MCP WebSocket (port 4455 for OBS, 9222 for Chrome CDP), HTTP for content",
+    "streamer_to_dashboard": "gRPC/Connect for API calls, live stream preview via HLS",
+    "dashboard_to_session_manager": "gRPC/Connect for session/endpoint/api-key CRUD",
+    "content_pipeline": "client → session-manager API → pod creation → Xvfb + Chrome + OBS → HLS/streaming"
+  },
+  "test_coverage": "No automated test suite yet (noted in CLAUDE.md)",
+  "next_actions": [
+    "Update CLAUDE.md with new architecture details",
+    "Update docs/architecture-*.md files with xshm_input and React/Zustand details",
+    "Add examples of React/Zustand/Tailwind usage to onboarding docs",
+    "Document emit_event state management pattern",
+    "Update integration tests if they exist"
+  ]
+}

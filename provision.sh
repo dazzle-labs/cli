@@ -53,51 +53,51 @@ ${SSH} 'command -v buildkitd || {
 ${SSH} 'pgrep buildkitd || { buildkitd --addr unix:///run/buildkit/buildkitd.sock &>/var/log/buildkitd.log & sleep 2; }'
 
 # Step 7: Build streamer image
-echo "==> Building streamer image on server..."
+echo "==> Building streamer image on streamer..."
 ${SSH} "rm -rf /tmp/browser-streamer-build && mkdir -p /tmp/browser-streamer-build"
-scp -r docker/ server/ "root@${HOST}:/tmp/browser-streamer-build/"
+scp -r streamer/ "root@${HOST}:/tmp/browser-streamer-build/"
 ${SSH} "cd /tmp/browser-streamer-build && buildctl build \
     --frontend=dockerfile.v0 \
-    --local context=. \
-    --local dockerfile=docker \
+    --local context=streamer \
+    --local dockerfile=streamer/docker \
     --opt filename=Dockerfile \
     --output type=oci,dest=/tmp/browser-streamer.tar,name=docker.io/library/browser-streamer:latest"
 
 echo "==> Importing streamer image into k3s containerd..."
 ${SSH} "k3s ctr images import /tmp/browser-streamer.tar"
 
-# Step 8: Build session-manager image
-echo "==> Building session-manager image on server..."
-${SSH} "rm -rf /tmp/session-manager-build && mkdir -p /tmp/session-manager-build"
-scp -r session-manager/ viewer.html "root@${HOST}:/tmp/session-manager-build/"
-scp docker/Dockerfile.session-manager "root@${HOST}:/tmp/session-manager-build/Dockerfile"
-${SSH} "cd /tmp/session-manager-build && buildctl build \
+# Step 8: Build control-plane image
+echo "==> Building control-plane image on streamer..."
+${SSH} "rm -rf /tmp/control-plane-build && mkdir -p /tmp/control-plane-build"
+scp -r control-plane/ web/ "root@${HOST}:/tmp/control-plane-build/"
+scp control-plane/docker/Dockerfile "root@${HOST}:/tmp/control-plane-build/Dockerfile"
+${SSH} "cd /tmp/control-plane-build && buildctl build \
     --frontend=dockerfile.v0 \
     --local context=. \
     --local dockerfile=. \
     --opt filename=Dockerfile \
-    --output type=oci,dest=/tmp/session-manager.tar,name=docker.io/library/session-manager:latest"
+    --output type=oci,dest=/tmp/control-plane.tar,name=docker.io/library/control-plane:latest"
 
-echo "==> Importing session-manager image into k3s containerd..."
-${SSH} "k3s ctr images import /tmp/session-manager.tar"
+echo "==> Importing control-plane image into k3s containerd..."
+${SSH} "k3s ctr images import /tmp/control-plane.tar"
 
-# Step 9: Remove old streamer deployment (replaced by session-manager)
+# Step 9: Remove old streamer deployment (replaced by control-plane)
 echo "==> Cleaning up old streamer resources..."
 ${SSH} "k3s kubectl delete deployment streamer -n browser-streamer --ignore-not-found"
 ${SSH} "k3s kubectl delete service streamer -n browser-streamer --ignore-not-found"
 ${SSH} "k3s kubectl delete hpa streamer -n browser-streamer --ignore-not-found"
 
-# Step 10: Deploy session-manager with RBAC
-echo "==> Deploying session-manager RBAC..."
-${SSH} "k3s kubectl apply -f -" < k8s/session-manager-rbac.yaml
+# Step 10: Deploy control-plane with RBAC
+echo "==> Deploying control-plane RBAC..."
+${SSH} "k3s kubectl apply -f -" < control-plane/k8s/rbac.yaml
 
-echo "==> Deploying session-manager..."
-${SSH} "k3s kubectl apply -f -" < k8s/session-manager-deployment.yaml
-${SSH} "k3s kubectl apply -f -" < k8s/session-manager-service.yaml
+echo "==> Deploying control-plane..."
+${SSH} "k3s kubectl apply -f -" < control-plane/k8s/deployment.yaml
+${SSH} "k3s kubectl apply -f -" < control-plane/k8s/service.yaml
 
-# Step 11: Wait for session-manager to be ready
-echo "==> Waiting for session-manager to be ready..."
-${SSH} "k3s kubectl rollout status deployment/session-manager -n browser-streamer --timeout=120s"
+# Step 11: Wait for control-plane to be ready
+echo "==> Waiting for control-plane to be ready..."
+${SSH} "k3s kubectl rollout status deployment/control-plane -n browser-streamer --timeout=120s"
 
 # Step 12: Install cert-manager
 echo "==> Installing cert-manager..."

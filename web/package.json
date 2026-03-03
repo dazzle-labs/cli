@@ -1,5 +1,5 @@
 {
-  "name": "browser-streamer-dashboard",
+  "name": "browser-streamer-web",
   "private": true,
   "type": "module",
   "scripts": {

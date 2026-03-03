@@ -1,24 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: session-manager
+  name: control-plane
   namespace: browser-streamer
   labels:
-    app: session-manager
+    app: control-plane
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: session-manager
+      app: control-plane
   template:
     metadata:
       labels:
-        app: session-manager
+        app: control-plane
     spec:
-      serviceAccountName: session-manager
+      serviceAccountName: control-plane
       containers:
-        - name: session-manager
-          image: session-manager:latest
+        - name: control-plane
+          image: control-plane:latest
           imagePullPolicy: Never
           ports:
             - containerPort: 8080

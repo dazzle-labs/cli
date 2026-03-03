@@ -353,7 +353,7 @@ const file_api_v1_endpoint_proto_rawDesc = "" +
 	"\x0fEndpointService\x12O\n" +
 	"\x0eCreateEndpoint\x12\x1d.api.v1.CreateEndpointRequest\x1a\x1e.api.v1.CreateEndpointResponse\x12L\n" +
 	"\rListEndpoints\x12\x1c.api.v1.ListEndpointsRequest\x1a\x1d.api.v1.ListEndpointsResponse\x12O\n" +
-	"\x0eDeleteEndpoint\x12\x1d.api.v1.DeleteEndpointRequest\x1a\x1e.api.v1.DeleteEndpointResponseB>Z<github.com/browser-streamer/session-manager/gen/api/v1;apiv1b\x06proto3"
+	"\x0eDeleteEndpoint\x12\x1d.api.v1.DeleteEndpointRequest\x1a\x1e.api.v1.DeleteEndpointResponseB>Z<github.com/browser-streamer/control-plane/gen/api/v1;apiv1b\x06proto3"
 
 var (
 	file_api_v1_endpoint_proto_rawDescOnce sync.Once

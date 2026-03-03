@@ -5,7 +5,7 @@ import (
 
 	"connectrpc.com/connect"
 
-	apiv1 "github.com/browser-streamer/session-manager/gen/api/v1"
+	apiv1 "github.com/browser-streamer/control-plane/gen/api/v1"
 )
 
 // userServer implements apiv1connect.UserServiceHandler.

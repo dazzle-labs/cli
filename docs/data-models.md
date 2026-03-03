@@ -4,7 +4,7 @@
 
 Connection: `postgres://browser_streamer:<password>@postgres:5432/browser_streamer`
 
-Migrations tracked in `schema_migrations` table, applied from `session-manager/migrations/`.
+Migrations tracked in `schema_migrations` table, applied from `control-plane/migrations/`.
 
 ---
 

@@ -29,7 +29,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	apiv1connect "github.com/browser-streamer/session-manager/gen/api/v1/apiv1connect"
+	apiv1connect "github.com/browser-streamer/control-plane/gen/api/v1/apiv1connect"
 )
 
 // Ensure compile-time interface satisfaction.
@@ -822,7 +822,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// spaFileServer serves the dashboard SPA, falling back to index.html for client-side routes.
+// spaFileServer serves the web SPA, falling back to index.html for client-side routes.
 // Hashed assets (under /assets/) get long-lived cache headers; index.html is never cached.
 func spaFileServer(dir string) http.Handler {
 	fs := http.Dir(dir)
@@ -925,8 +925,8 @@ func main() {
 	mcpHandler := mgr.mcpMiddleware(mgr.setupMCP())
 	mux.Handle("/stage/", mcpHandler)
 
-	// Dashboard SPA (fallback route)
-	mux.Handle("/", spaFileServer("dashboard"))
+	// Web SPA (fallback route)
+	mux.Handle("/", spaFileServer("web"))
 
 	port := envOrDefault("PORT", "8080")
 	server := &http.Server{

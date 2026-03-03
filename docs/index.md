@@ -14,20 +14,20 @@
 #### Session Manager (Go Control Plane)
 - **Type:** Backend API
 - **Tech Stack:** Go 1.24, ConnectRPC, k8s client-go, Clerk, PostgreSQL, mcp-go
-- **Root:** `session-manager/`
-- **Entry Point:** `session-manager/main.go`
+- **Root:** `control-plane/`
+- **Entry Point:** `control-plane/main.go`
 
 #### Streamer (Ephemeral Pod)
 - **Type:** Backend Service
 - **Tech Stack:** Node.js 20, Express, Chrome, OBS Studio, Xvfb
-- **Root:** `server/` + `docker/`
-- **Entry Point:** `docker/entrypoint.sh` → `server/index.js`
+- **Root:** `streamer/` + `streamer/docker/`
+- **Entry Point:** `streamer/docker/entrypoint.sh` → `streamer/index.js`
 
 #### Dashboard (React Web App)
 - **Type:** Web Frontend
 - **Tech Stack:** React 19, TypeScript, Vite 6, Tailwind CSS 4, Clerk React, ConnectRPC
-- **Root:** `dashboard/`
-- **Entry Point:** `dashboard/src/main.tsx`
+- **Root:** `web/`
+- **Entry Point:** `web/src/main.tsx`
 
 ---
 
@@ -35,7 +35,7 @@
 
 ### Architecture
 - [Project Overview](./project-overview.md) — Executive summary, tech stack, key features
-- [Architecture — Session Manager](./architecture-session-manager.md) — Go control plane, API surface, auth, k8s pod management
+- [Architecture — Session Manager](./architecture-control-plane.md) — Go control plane, API surface, auth, k8s pod management
 - [Architecture — Streamer](./architecture-streamer.md) — Ephemeral pod internals, Chrome + OBS + Node.js
 - [Architecture — Dashboard](./architecture-dashboard.md) — React app, components, routing, design system
 - [Integration Architecture](./integration-architecture.md) — Part communication, data flow, shared dependencies
@@ -70,14 +70,14 @@
 
 ### For Feature Development
 1. Identify which part(s) the feature touches
-2. Read the relevant architecture doc (session-manager, streamer, or dashboard)
+2. Read the relevant architecture doc (control-plane, streamer, or dashboard)
 3. Check [API Contracts](./api-contracts.md) for existing endpoints
 4. Check [Data Models](./data-models.md) for schema considerations
 5. Review [Integration Architecture](./integration-architecture.md) for cross-part changes
 
 ### For AI-Assisted Development
 1. Point the PRD workflow to this index: `docs/index.md`
-2. For session management features: Reference [Architecture — Session Manager](./architecture-session-manager.md)
+2. For session management features: Reference [Architecture — Session Manager](./architecture-control-plane.md)
 3. For UI features: Reference [Architecture — Dashboard](./architecture-dashboard.md)
 4. For streaming features: Reference [Architecture — Streamer](./architecture-streamer.md)
 5. For cross-cutting features: Reference [Integration Architecture](./integration-architecture.md)

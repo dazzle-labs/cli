@@ -106,7 +106,7 @@ Exposed at `/mcp/<agent-uuid>/` via StreamableHTTP:
 ## Kubernetes Pod Management
 
 **Pod Lifecycle:**
-1. **Create** — `streamer-<uuid[:8]>`, labels: `app=streamer-session`, `session-id=<uuid>`, `managed-by=session-manager`
+1. **Create** — `streamer-<uuid[:8]>`, labels: `app=streamer-session`, `session-id=<uuid>`, `managed-by=control-plane`
 2. **Wait** — Polls pod status every 500ms until Running + PodIP populated (60s timeout)
 3. **Proxy** — Routes traffic via reverse proxy or CDP WebSocket tunnel
 4. **Delete** — Removes pod via k8s API, logs to `session_log` table

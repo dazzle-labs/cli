@@ -4,7 +4,7 @@ node_modules/
 .DS_Store
 .env
 agent/.env
-dashboard/dist/
+web/dist/
 .env.local
 .env*.local
 .age.key

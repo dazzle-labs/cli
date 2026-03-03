@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- **Go** 1.24+ (for session-manager)
+- **Go** 1.24+ (for control-plane)
 - **Node.js** 20+ (for streamer server) / 24+ (for dashboard, per .nvmrc)
 - **SSH access** to deployment host (for remote builds)
 - **SOPS + Age** (for secret management)
@@ -12,13 +12,14 @@
 
 ```
 browser-streamer/
-├── session-manager/    # Go control plane
-├── server/             # Node.js streamer pod
-├── dashboard/          # React web app
-├── docker/             # Container images
-├── k8s/                # Kubernetes manifests
-├── Makefile            # Build/deploy automation
-└── provision.sh        # Infrastructure setup
+├── control-plane/              # Go control plane
+│   └── docker/                 # Control plane container image
+├── streamer/                   # Node.js streamer pod
+│   └── docker/                 # Streamer container image
+├── web/                        # React web app (dashboard)
+├── k8s/                        # Kubernetes manifests
+├── Makefile                    # Build/deploy automation
+└── provision.sh                # Infrastructure setup
 ```
 
 ## Local Development
@@ -26,7 +27,7 @@ browser-streamer/
 ### Session Manager (Go)
 
 ```bash
-cd session-manager
+cd control-plane
 go build -o /dev/null .   # Compile check
 go vet ./...              # Lint
 ```
@@ -43,7 +44,7 @@ Environment variables needed for local run:
 ### Dashboard (React)
 
 ```bash
-cd dashboard
+cd web
 npm install
 npm run dev              # Starts Vite dev server with API proxy
 npm run build            # Production build: tsc -b && vite build
@@ -54,7 +55,7 @@ The Vite dev server proxies `/api.v1`, `/cdp`, `/session`, `/health` to `http://
 ### Streamer Server (Node.js)
 
 ```bash
-cd server
+cd streamer
 npm install
 node index.js            # Requires Chrome + Xvfb running locally
 ```
@@ -70,14 +71,14 @@ All builds happen remotely via SSH + BuildKit. No local Docker required.
 ```bash
 make build                  # Build both images on remote host
 make build-streamer         # Build only streamer image
-make build-session-manager  # Build only session-manager image (includes dashboard)
+make build-control-plane    # Build only control-plane image (includes web)
 ```
 
 ### Deploy Commands
 
 ```bash
-make deploy                 # Apply k8s manifests + restart session-manager
-make restart                # Restart session-manager (uses cached image)
+make deploy                 # Apply k8s manifests + restart control-plane
+make restart                # Restart control-plane (uses cached image)
 ```
 
 ### Typical Change Cycle
@@ -85,7 +86,7 @@ make restart                # Restart session-manager (uses cached image)
 ```bash
 # Edit code locally
 make build deploy           # Build + deploy in one step
-make logs-sm                # Watch session-manager logs
+make logs-sm                # Watch control-plane logs
 make status                 # Verify pods are running
 ```
 
@@ -93,7 +94,7 @@ make status                 # Verify pods are running
 
 ```bash
 make status                     # Pods + services
-make logs-sm                    # Tail session-manager logs
+make logs-sm                    # Tail control-plane logs
 make logs-session POD=<name>    # Tail a streamer pod
 make sessions TOKEN=...         # List sessions via API
 make create-session TOKEN=...   # Create a session via API
@@ -132,9 +133,9 @@ This installs k3s, cert-manager, builds images, deploys all services, and config
 
 ## Protobuf Code Generation
 
-Proto files are in `session-manager/proto/`. Generated code is in:
-- `session-manager/gen/` (Go)
-- `dashboard/src/gen/` (TypeScript)
+Proto files are in `control-plane/proto/`. Generated code is in:
+- `control-plane/gen/` (Go)
+- `web/src/gen/` (TypeScript)
 
 To regenerate (requires `protoc`, `protoc-gen-go`, `protoc-gen-connect-go`, `protoc-gen-es`):
 ```bash
@@ -156,8 +157,8 @@ No test suite exists yet. Current validation:
 
 | File | Purpose |
 |------|---------|
-| `k8s/session-manager-deployment.yaml` | Production env vars, resource limits |
-| `dashboard/.env` | Clerk publishable key |
-| `dashboard/vite.config.ts` | Dev server proxy config |
+| `k8s/control-plane-deployment.yaml` | Production env vars, resource limits |
+| `web/.env` | Clerk publishable key |
+| `web/vite.config.ts` | Dev server proxy config |
 | `.sops.yaml` | Secret encryption recipients |
 | `Makefile` | Build/deploy targets, HOST variable |

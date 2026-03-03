@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LIVE PULSE</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --accent: #ff3b3b;
+    --accent2: #00d4ff;
+    --accent3: #ffb800;
+    --text: #e8e8f0;
+    --text-dim: #6a6a80;
+    --green: #00e676;
+    --red: #ff3b3b;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    overflow: hidden;
+    width: 1920px;
+    height: 1080px;
+  }
+
+  .network-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 56px;
+    background: linear-gradient(180deg, #1a1a2e 0%, #12121a 100%);
+    display: flex;
+    align-items: center;
+    padding: 0 32px;
+    z-index: 100;
+    border-bottom: 2px solid var(--accent);
+  }
+
+  .network-logo {
+    font-weight: 900;
+    font-size: 28px;
+    letter-spacing: -1px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .network-logo .dot {
+    width: 10px; height: 10px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse-dot 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(255,59,59,0.7); }
+    50% { opacity: 0.8; box-shadow: 0 0 0 8px rgba(255,59,59,0); }
+  }
+
+  .network-logo span.accent { color: var(--accent); }
+
+  .network-time {
+    margin-left: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+
+  .network-label {
+    margin-left: 24px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .segment-bar {
+    position: fixed;
+    top: 56px; left: 0; right: 0;
+    height: 4px;
+    background: var(--surface2);
+    z-index: 100;
+  }
+
+  .segment-progress {
+    height: 100%;
+    background: var(--accent2);
+    transition: width 0.3s linear;
+    box-shadow: 0 0 12px rgba(0,212,255,0.5);
+  }
+
+  .main-content {
+    position: fixed;
+    top: 60px;
+    left: 0; right: 0; bottom: 80px;
+  }
+
+  .segment {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+    transition: opacity 0.5s ease;
+  }
+
+  .segment.active {
+    opacity: 1;
+    pointer-events: auto;
+    visibility: visible;
+  }
+
+  .segment-title {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--accent2);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .segment-title::before, .segment-title::after {
+    content: '';
+    width: 40px;
+    height: 1px;
+    background: var(--accent2);
+    opacity: 0.5;
+  }
+
+  /* ISS */
+  .iss-segment {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    padding: 40px;
+    width: 100%;
+    height: 100%;
+  }
+
+  .iss-map-container {
+    position: relative;
+    width: 1400px;
+    height: 650px;
+    background: var(--surface);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(0,212,255,0.15);
+  }
+
+  .iss-map-container svg { width: 100%; height: 100%; }
+
+  .iss-marker {
+    fill: var(--accent2);
+    filter: drop-shadow(0 0 8px rgba(0,212,255,0.8));
+    animation: iss-glow 2s ease-in-out infinite;
+  }
+
+  @keyframes iss-glow {
+    0%, 100% { filter: drop-shadow(0 0 8px rgba(0,212,255,0.8)); }
+    50% { filter: drop-shadow(0 0 20px rgba(0,212,255,1)); }
+  }
+
+  .iss-trail { fill: none; stroke: var(--accent2); stroke-width: 2; opacity: 0.3; }
+
+  .iss-stats { display: flex; gap: 48px; align-items: center; }
+  .iss-stat { text-align: center; }
+  .iss-stat-value { font-family: 'JetBrains Mono', monospace; font-size: 32px; font-weight: 700; color: #fff; }
+  .iss-stat-label { font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); margin-top: 4px; }
+
+  /* EARTHQUAKES */
+  .quake-segment { display: flex; flex-direction: column; align-items: center; padding: 32px 48px; width: 100%; height: 100%; gap: 20px; }
+  .quake-list { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 1400px; flex: 1; overflow: hidden; }
+  .quake-item { display: flex; align-items: center; gap: 20px; padding: 16px 24px; background: var(--surface); border-radius: 10px; border: 1px solid rgba(255,255,255,0.04); animation: slide-in 0.4s ease-out; }
+  @keyframes slide-in { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+  .quake-mag { font-family: 'JetBrains Mono', monospace; font-size: 36px; font-weight: 800; min-width: 100px; text-align: center; line-height: 1; }
+  .quake-mag.low { color: var(--green); }
+  .quake-mag.med { color: var(--accent3); }
+  .quake-mag.high { color: var(--accent); }
+  .quake-info { flex: 1; }
+  .quake-place { font-size: 20px; font-weight: 600; color: #fff; }
+  .quake-meta { font-size: 13px; color: var(--text-dim); margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
+  .quake-time { font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--text-dim); min-width: 120px; text-align: right; }
+  .quake-empty { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--text-dim); }
+
+  /* CRYPTO */
+  .crypto-segment { display: flex; flex-direction: column; align-items: center; padding: 40px; gap: 32px; width: 100%; height: 100%; }
+  .crypto-hero { display: flex; align-items: center; gap: 48px; }
+  .crypto-symbol { font-size: 80px; line-height: 1; }
+  .crypto-price { font-family: 'JetBrains Mono', monospace; font-size: 96px; font-weight: 800; color: #fff; line-height: 1; letter-spacing: -3px; }
+  .crypto-label { font-size: 14px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: var(--text-dim); margin-top: 8px; }
+  .crypto-chart { width: 1200px; height: 350px; position: relative; }
+  .crypto-chart canvas { width: 100%; height: 100%; }
+  .crypto-currencies { display: flex; gap: 48px; }
+  .crypto-cur { text-align: center; }
+  .crypto-cur-value { font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 700; color: #fff; }
+  .crypto-cur-label { font-size: 11px; font-weight: 600; letter-spacing: 2px; color: var(--text-dim); margin-top: 4px; }
+
+  /* SPACE */
+  .space-segment { display: flex; flex-direction: column; align-items: center; padding: 40px; gap: 32px; width: 100%; height: 100%; }
+  .space-count { font-family: 'JetBrains Mono', monospace; font-size: 140px; font-weight: 900; color: #fff; line-height: 1; text-shadow: 0 0 60px rgba(0,212,255,0.3); }
+  .space-subtitle { font-size: 18px; font-weight: 600; letter-spacing: 6px; text-transform: uppercase; color: var(--text-dim); margin-top: -8px; }
+  .space-people { display: flex; flex-wrap: wrap; gap: 16px; max-width: 1200px; justify-content: center; }
+  .space-person { background: var(--surface); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 20px 28px; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 180px; }
+  .space-person-icon { font-size: 32px; }
+  .space-person-name { font-size: 15px; font-weight: 600; color: #fff; text-align: center; }
+  .space-person-craft { font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--accent2); }
+
+  /* TICKER */
+  .ticker-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 80px; background: linear-gradient(0deg, #12121a 0%, #1a1a2e 100%); border-top: 2px solid var(--accent); display: flex; align-items: center; overflow: hidden; z-index: 100; }
+  .ticker-label { background: var(--accent); color: #fff; font-size: 12px; font-weight: 800; letter-spacing: 2px; padding: 8px 20px; text-transform: uppercase; height: 100%; display: flex; align-items: center; min-width: 140px; justify-content: center; z-index: 2; }
+  .ticker-content { flex: 1; overflow: hidden; position: relative; height: 100%; display: flex; align-items: center; }
+  .ticker-scroll { display: flex; align-items: center; gap: 60px; animation: ticker-scroll 45s linear infinite; white-space: nowrap; padding-left: 20px; }
+  @keyframes ticker-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+  .ticker-item { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 500; }
+  .ticker-item .sep { color: var(--accent); font-size: 8px; }
+
+  .segment-label-bar { position: fixed; bottom: 80px; left: 0; background: var(--accent2); color: #000; font-size: 11px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase; padding: 6px 24px; z-index: 100; }
+  .next-label { position: fixed; bottom: 80px; right: 0; background: var(--surface2); color: var(--text-dim); font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; padding: 6px 20px; z-index: 100; }
+</style>
+</head>
+<body>
+
+<div class="network-bar">
+  <div class="network-logo"><div class="dot"></div> LIVE<span class="accent">PULSE</span></div>
+  <div class="network-label">LIVE</div>
+  <div class="network-time" id="clock"></div>
+</div>
+
+<div class="segment-bar"><div class="segment-progress" id="segmentProgress"></div></div>
+
+<div class="main-content">
+  <div class="segment" id="seg-iss">
+    <div class="iss-segment">
+      <div class="segment-title">International Space Station &#8212; Live Position</div>
+      <div class="iss-map-container" id="issMap"></div>
+      <div class="iss-stats">
+        <div class="iss-stat"><div class="iss-stat-value" id="issLat">--</div><div class="iss-stat-label">Latitude</div></div>
+        <div class="iss-stat"><div class="iss-stat-value" id="issLon">--</div><div class="iss-stat-label">Longitude</div></div>
+        <div class="iss-stat"><div class="iss-stat-value">408 km</div><div class="iss-stat-label">Altitude</div></div>
+        <div class="iss-stat"><div class="iss-stat-value">27,600 km/h</div><div class="iss-stat-label">Velocity</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="segment" id="seg-quakes">
+    <div class="quake-segment">
+      <div class="segment-title">Seismic Activity &#8212; Past Hour</div>
+      <div class="quake-list" id="quakeList"></div>
+    </div>
+  </div>
+
+  <div class="segment" id="seg-crypto">
+    <div class="crypto-segment">
+      <div class="segment-title">Bitcoin &#8212; Live Price</div>
+      <div class="crypto-hero">
+        <div class="crypto-symbol">&#8383;</div>
+        <div class="crypto-price-block">
+          <div class="crypto-price" id="btcPrice">--</div>
+          <div class="crypto-label">US Dollars</div>
+        </div>
+      </div>
+      <div class="crypto-chart"><canvas id="btcChart"></canvas></div>
+      <div class="crypto-currencies">
+        <div class="crypto-cur"><div class="crypto-cur-value" id="btcEUR">--</div><div class="crypto-cur-label">Euro</div></div>
+        <div class="crypto-cur"><div class="crypto-cur-value" id="btcGBP">--</div><div class="crypto-cur-label">British Pound</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="segment" id="seg-space">
+    <div class="space-segment">
+      <div class="segment-title">Humans Currently in Orbit</div>
+      <div class="space-count" id="spaceCount">--</div>
+      <div class="space-subtitle">People in Space Right Now</div>
+      <div class="space-people" id="spacePeople"></div>
+    </div>
+  </div>
+</div>
+
+<div class="segment-label-bar" id="segmentLabel">ISS TRACKER</div>
+<div class="next-label" id="nextLabel">NEXT: SEISMIC ACTIVITY</div>
+
+<div class="ticker-bar">
+  <div class="ticker-label">UPDATES</div>
+  <div class="ticker-content"><div class="ticker-scroll" id="tickerScroll"></div></div>
+</div>
+
+<script>
+var SEGMENTS = [
+  { id: 'seg-iss',    label: 'ISS TRACKER',      duration: 20000 },
+  { id: 'seg-quakes', label: 'SEISMIC ACTIVITY',  duration: 18000 },
+  { id: 'seg-crypto', label: 'BITCOIN MARKETS',   duration: 15000 },
+  { id: 'seg-space',  label: 'HUMANS IN SPACE',   duration: 15000 },
+];
+
+var currentSegment = 0;
+var segmentStart = Date.now();
+var btcHistory = [];
+var issTrail = [];
+var tickerItems = [];
+
+function updateClock() {
+  var now = new Date();
+  var h = String(now.getUTCHours()).padStart(2, '0');
+  var m = String(now.getUTCMinutes()).padStart(2, '0');
+  var s = String(now.getUTCSeconds()).padStart(2, '0');
+  document.getElementById('clock').textContent = h + ':' + m + ':' + s + ' UTC';
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+function showSegment(index) {
+  document.querySelectorAll('.segment').forEach(function(s) { s.classList.remove('active'); });
+  document.getElementById(SEGMENTS[index].id).classList.add('active');
+  document.getElementById('segmentLabel').textContent = SEGMENTS[index].label;
+  var nextIdx = (index + 1) % SEGMENTS.length;
+  document.getElementById('nextLabel').textContent = 'NEXT: ' + SEGMENTS[nextIdx].label;
+  segmentStart = Date.now();
+}
+
+function updateProgress() {
+  var seg = SEGMENTS[currentSegment];
+  var elapsed = Date.now() - segmentStart;
+  var pct = Math.min((elapsed / seg.duration) * 100, 100);
+  document.getElementById('segmentProgress').style.width = pct + '%';
+  if (elapsed >= seg.duration) {
+    currentSegment = (currentSegment + 1) % SEGMENTS.length;
+    showSegment(currentSegment);
+  }
+  requestAnimationFrame(updateProgress);
+}
+
+showSegment(0);
+requestAnimationFrame(updateProgress);
+
+// MAP
+function initMap() {
+  var container = document.getElementById('issMap');
+  var w = 1400, h = 650;
+  var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+
+  var lon, lat, x, y, line;
+  for (lon = -180; lon <= 180; lon += 30) {
+    x = ((lon + 180) / 360) * w;
+    line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', x); line.setAttribute('y1', 0);
+    line.setAttribute('x2', x); line.setAttribute('y2', h);
+    line.setAttribute('stroke', '#1a1a2e'); line.setAttribute('stroke-width', '1');
+    svg.appendChild(line);
+  }
+  for (lat = -90; lat <= 90; lat += 30) {
+    y = ((90 - lat) / 180) * h;
+    line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', 0); line.setAttribute('y1', y);
+    line.setAttribute('x2', w); line.setAttribute('y2', y);
+    line.setAttribute('stroke', '#1a1a2e'); line.setAttribute('stroke-width', '1');
+    svg.appendChild(line);
+  }
+
+  var eq = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  eq.setAttribute('x1', 0); eq.setAttribute('y1', h/2);
+  eq.setAttribute('x2', w); eq.setAttribute('y2', h/2);
+  eq.setAttribute('stroke', '#2a2a3e'); eq.setAttribute('stroke-width', '1.5');
+  eq.setAttribute('stroke-dasharray', '8,4');
+  svg.appendChild(eq);
+
+  var continents = [
+    '340,100 340,160 280,200 260,260 300,280 380,240 440,180 480,140 440,100',
+    '360,320 340,360 320,440 340,500 380,520 400,460 400,380 380,320',
+    '660,100 640,140 660,180 700,180 740,160 740,120 720,100',
+    '660,200 640,260 640,340 660,400 700,420 740,380 760,300 740,220 700,200',
+    '760,80 740,120 760,160 800,200 860,220 940,200 1020,160 1060,120 1040,80 960,60 860,60 800,60',
+    '1020,360 1000,400 1020,440 1080,440 1120,400 1100,360'
+  ];
+
+  continents.forEach(function(pts) {
+    var poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    poly.setAttribute('points', pts);
+    poly.setAttribute('fill', '#1a1a2e');
+    poly.setAttribute('stroke', '#2a2a40');
+    poly.setAttribute('stroke-width', '1');
+    svg.appendChild(poly);
+  });
+
+  var trail = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+  trail.setAttribute('id', 'issTrail');
+  trail.setAttribute('class', 'iss-trail');
+  svg.appendChild(trail);
+
+  var marker = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  marker.setAttribute('id', 'issMarker');
+  marker.setAttribute('r', '8');
+  marker.setAttribute('class', 'iss-marker');
+  svg.appendChild(marker);
+
+  var ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  ring.setAttribute('id', 'issRing');
+  ring.setAttribute('r', '20');
+  ring.setAttribute('fill', 'none');
+  ring.setAttribute('stroke', 'rgba(0,212,255,0.3)');
+  ring.setAttribute('stroke-width', '2');
+  svg.appendChild(ring);
+
+  container.appendChild(svg);
+}
+initMap();
+
+function lonLatToXY(lon, lat) {
+  return {
+    x: ((parseFloat(lon) + 180) / 360) * 1400,
+    y: ((90 - parseFloat(lat)) / 180) * 650
+  };
+}
+
+// DATA FETCHERS
+async function fetchISS() {
+  try {
+    var res = await fetch('https://api.wheretheiss.at/v1/satellites/25544');
+    var data = await res.json();
+    var latitude = data.latitude;
+    var longitude = data.longitude;
+    document.getElementById('issLat').textContent = latitude.toFixed(4) + '\u00B0';
+    document.getElementById('issLon').textContent = longitude.toFixed(4) + '\u00B0';
+
+    var pos = lonLatToXY(longitude, latitude);
+    document.getElementById('issMarker').setAttribute('cx', pos.x);
+    document.getElementById('issMarker').setAttribute('cy', pos.y);
+    document.getElementById('issRing').setAttribute('cx', pos.x);
+    document.getElementById('issRing').setAttribute('cy', pos.y);
+
+    issTrail.push(pos.x + ',' + pos.y);
+    if (issTrail.length > 80) issTrail.shift();
+    document.getElementById('issTrail').setAttribute('points', issTrail.join(' '));
+
+    addTickerItem('ISS Position: ' + latitude.toFixed(2) + '\u00B0, ' + longitude.toFixed(2) + '\u00B0');
+  } catch (e) {
+    console.error('ISS fetch error', e);
+  }
+}
+
+async function fetchQuakes() {
+  try {
+    var res = await fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_hour.geojson');
+    var data = await res.json();
+    var list = document.getElementById('quakeList');
+    list.innerHTML = '';
+
+    if (data.features.length === 0) {
+      list.innerHTML = '<div class="quake-empty">No seismic activity in the past hour</div>';
+      addTickerItem('Seismic: No earthquakes in the past hour');
+      return;
+    }
+
+    var sorted = data.features.sort(function(a, b) { return b.properties.mag - a.properties.mag; }).slice(0, 8);
+    sorted.forEach(function(q) {
+      var mag = q.properties.mag;
+      var place = q.properties.place || 'Unknown';
+      var time = new Date(q.properties.time);
+      var ago = Math.round((Date.now() - time) / 60000);
+      var depth = q.geometry.coordinates[2];
+      var cls = mag >= 4 ? 'high' : mag >= 2 ? 'med' : 'low';
+
+      var item = document.createElement('div');
+      item.className = 'quake-item';
+      item.innerHTML = '<div class="quake-mag ' + cls + '">' + (mag !== null ? mag.toFixed(1) : '?') + '</div>' +
+        '<div class="quake-info"><div class="quake-place">' + place + '</div>' +
+        '<div class="quake-meta">Depth: ' + depth.toFixed(1) + ' km</div></div>' +
+        '<div class="quake-time">' + ago + 'm ago</div>';
+      list.appendChild(item);
+    });
+
+    var strongest = sorted[0];
+    addTickerItem('Strongest quake: M' + (strongest.properties.mag ? strongest.properties.mag.toFixed(1) : '?') + ' \u2014 ' + strongest.properties.place);
+  } catch (e) {
+    console.error('Quake fetch error', e);
+  }
+}
+
+async function fetchBTC() {
+  try {
+    var res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd,eur,gbp');
+    var data = await res.json();
+    var usd = data.bitcoin.usd;
+    var eur = data.bitcoin.eur;
+    var gbp = data.bitcoin.gbp;
+
+    document.getElementById('btcPrice').textContent = '$' + usd.toLocaleString('en-US', { maximumFractionDigits: 0 });
+    document.getElementById('btcEUR').textContent = '\u20AC' + eur.toLocaleString('en-US', { maximumFractionDigits: 0 });
+    document.getElementById('btcGBP').textContent = '\u00A3' + gbp.toLocaleString('en-US', { maximumFractionDigits: 0 });
+
+    btcHistory.push(usd);
+    if (btcHistory.length > 60) btcHistory.shift();
+    drawBTCChart();
+
+    addTickerItem('BTC: $' + usd.toLocaleString('en-US', { maximumFractionDigits: 0 }) + ' USD');
+  } catch (e) {
+    console.error('BTC fetch error', e);
+  }
+}
+
+function drawBTCChart() {
+  var canvas = document.getElementById('btcChart');
+  var ctx = canvas.getContext('2d');
+  canvas.width = 1200;
+  canvas.height = 350;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (btcHistory.length < 2) return;
+
+  var min = Math.min.apply(null, btcHistory) * 0.9999;
+  var max = Math.max.apply(null, btcHistory) * 1.0001;
+  var range = max - min || 1;
+
+  ctx.strokeStyle = '#1a1a2e';
+  ctx.lineWidth = 1;
+  for (var i = 0; i < 5; i++) {
+    var gy = (i / 4) * canvas.height;
+    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(canvas.width, gy); ctx.stroke();
+  }
+
+  var grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  grad.addColorStop(0, 'rgba(0,212,255,0.15)');
+  grad.addColorStop(1, 'rgba(0,212,255,0)');
+
+  ctx.beginPath();
+  ctx.moveTo(0, canvas.height);
+  btcHistory.forEach(function(v, i) {
+    var x = (i / (btcHistory.length - 1)) * canvas.width;
+    var y = canvas.height - ((v - min) / range) * canvas.height;
+    ctx.lineTo(x, y);
+  });
+  ctx.lineTo(canvas.width, canvas.height);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  ctx.beginPath();
+  btcHistory.forEach(function(v, i) {
+    var x = (i / (btcHistory.length - 1)) * canvas.width;
+    var y = canvas.height - ((v - min) / range) * canvas.height;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = '#00d4ff';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  var lastX = canvas.width;
+  var lastY = canvas.height - ((btcHistory[btcHistory.length - 1] - min) / range) * canvas.height;
+  ctx.beginPath();
+  ctx.arc(lastX, lastY, 6, 0, Math.PI * 2);
+  ctx.fillStyle = '#00d4ff';
+  ctx.fill();
+}
+
+async function fetchAstros() {
+  try {
+    var data;
+    try {
+      var res = await fetch('https://corquaid.github.io/international-space-station-APIs/JSON/people-in-space.json');
+      data = await res.json();
+    } catch (e1) {
+      var res2 = await fetch('http://api.open-notify.org/astros.json');
+      data = await res2.json();
+    }
+    document.getElementById('spaceCount').textContent = data.number;
+
+    var container = document.getElementById('spacePeople');
+    container.innerHTML = '';
+    data.people.forEach(function(p) {
+      var div = document.createElement('div');
+      div.className = 'space-person';
+      div.innerHTML = '<div class="space-person-icon">\uD83D\uDC68\u200D\uD83D\uDE80</div>' +
+        '<div class="space-person-name">' + p.name + '</div>' +
+        '<div class="space-person-craft">' + p.craft + '</div>';
+      container.appendChild(div);
+    });
+
+    var crafts = {};
+    data.people.forEach(function(p) { crafts[p.craft] = true; });
+    addTickerItem(data.number + ' humans currently in space across ' + Object.keys(crafts).length + ' spacecraft');
+  } catch (e) {
+    console.error('Astros fetch error', e);
+  }
+}
+
+// TICKER
+function addTickerItem(text) {
+  tickerItems.push(text);
+  if (tickerItems.length > 20) tickerItems.shift();
+  renderTicker();
+}
+
+function renderTicker() {
+  var scroll = document.getElementById('tickerScroll');
+  var doubled = tickerItems.concat(tickerItems);
+  scroll.innerHTML = doubled.map(function(t) {
+    return '<div class="ticker-item"><span class="sep">\u25CF</span> ' + t + '</div>';
+  }).join('');
+}
+
+// INIT
+fetchISS();
+fetchQuakes();
+fetchBTC();
+fetchAstros();
+
+setInterval(fetchISS, 5000);
+setInterval(fetchQuakes, 60000);
+setInterval(fetchBTC, 30000);
+setInterval(fetchAstros, 300000);
+</script>
+</body>
+</html>

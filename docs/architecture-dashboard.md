@@ -24,7 +24,7 @@ The Dazzle dashboard is a React 19 single-page application that provides session
 ## Project Structure
 
 ```
-dashboard/
+web/
 ├── index.html              # Dark mode root, title "Dazzle"
 ├── package.json            # Dependencies and scripts
 ├── vite.config.ts          # Vite + React + Tailwind, proxy config
@@ -43,7 +43,7 @@ dashboard/
     │   └── onboarding/     # Wizard steps (PathSelector, StepIndicator, etc.)
     ├── pages/
     │   ├── LandingPage.tsx # Marketing page with Clerk SignIn
-    │   ├── Dashboard.tsx   # Session grid + stream destinations
+    │   ├── Dashboard.tsx   # Stage grid + stream destinations
     │   ├── GetStarted.tsx  # Two-path onboarding wizard
     │   ├── ApiKeys.tsx     # API key CRUD
     │   ├── Docs.tsx        # Integration documentation + code snippets
@@ -167,6 +167,6 @@ export default defineConfig({
 
 ## Build
 
-- **Dev:** `vite` (with proxy to local session-manager)
-- **Production:** `tsc -b && vite build` → static files served by session-manager Go binary
-- **Clerk Key:** Injected as build arg `VITE_CLERK_PUBLISHABLE_KEY` during Docker build
+- **Dev:** `vite` (with proxy to local control-plane)
+- **Production:** `tsc -b && vite build` → static files served by control-plane Go binary
+- **Clerk Key:** Injected as build arg `VITE_CLERK_PUBLISHABLE_KEY` during Docker build (in `control-plane/docker/Dockerfile`)

@@ -16,9 +16,9 @@ Each session runs Chrome, OBS Studio, and a Node.js server inside an isolated Ku
 
 | Part | Path | Language | Framework | Purpose |
 |------|------|----------|-----------|---------|
-| **Session Manager** | `session-manager/` | Go 1.24 | ConnectRPC, k8s client-go | Control plane: pod lifecycle, auth, API, MCP server, reverse proxy |
-| **Streamer** | `server/` + `docker/` | Node.js 20, Bash | Express, http-proxy | Ephemeral pod: Chrome + OBS + ffmpeg, CDP proxy, HTML rendering |
-| **Dashboard** | `dashboard/` | TypeScript | React 19, Vite, Tailwind CSS 4 | Web UI: session management, onboarding, API key management |
+| **Session Manager** | `control-plane/` | Go 1.24 | ConnectRPC, k8s client-go | Control plane: pod lifecycle, auth, API, MCP server, reverse proxy |
+| **Streamer** | `streamer/` + `streamer/docker/` | Node.js 20, Bash | Express, http-proxy | Ephemeral pod: Chrome + OBS + ffmpeg, CDP proxy, HTML rendering |
+| **Dashboard** | `web/` | TypeScript | React 19, Vite, Tailwind CSS 4 | Web UI: session management, onboarding, API key management |
 
 ## Technology Stack Summary
 

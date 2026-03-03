@@ -3,8 +3,8 @@
 .playwright-mcp
 *.png
 node_modules
-dashboard/node_modules
-dashboard/dist
+web/node_modules
+web/dist
 .env.local
 .env*.local
 .sops.yaml

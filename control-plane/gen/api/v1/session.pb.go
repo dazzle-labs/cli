@@ -484,7 +484,7 @@ const file_api_v1_session_proto_rawDesc = "" +
 	"\fListSessions\x12\x1b.api.v1.ListSessionsRequest\x1a\x1c.api.v1.ListSessionsResponse\x12C\n" +
 	"\n" +
 	"GetSession\x12\x19.api.v1.GetSessionRequest\x1a\x1a.api.v1.GetSessionResponse\x12L\n" +
-	"\rDeleteSession\x12\x1c.api.v1.DeleteSessionRequest\x1a\x1d.api.v1.DeleteSessionResponseB>Z<github.com/browser-streamer/session-manager/gen/api/v1;apiv1b\x06proto3"
+	"\rDeleteSession\x12\x1c.api.v1.DeleteSessionRequest\x1a\x1d.api.v1.DeleteSessionResponseB>Z<github.com/browser-streamer/control-plane/gen/api/v1;apiv1b\x06proto3"
 
 var (
 	file_api_v1_session_proto_rawDescOnce sync.Once
