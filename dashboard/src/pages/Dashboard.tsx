@@ -64,6 +64,13 @@ export function Dashboard() {
     refresh();
   }, []);
 
+  // Listen for sidebar "Get Started" button
+  useEffect(() => {
+    function handleOpenWizard() { setWizardOpen(true); }
+    window.addEventListener("dazzle:open-wizard", handleOpenWizard);
+    return () => window.removeEventListener("dazzle:open-wizard", handleOpenWizard);
+  }, []);
+
   // Cleanup copy timeout on unmount
   useEffect(() => {
     return () => {

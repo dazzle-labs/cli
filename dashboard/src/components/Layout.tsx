@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 
 const navItems = [
-  { path: "/get-started", label: "Get Started", icon: Rocket },
   { path: "/", label: "Endpoints", icon: Monitor },
   { path: "/api-keys", label: "API Keys", icon: Key },
   { path: "/docs", label: "Docs", icon: BookOpen },
@@ -32,6 +31,18 @@ export function Layout({ children }: { children: ReactNode }) {
             Dazzle
           </span>
           <UserButton />
+        </div>
+
+        {/* Get Started button */}
+        <div className="px-3 mb-2">
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("dazzle:open-wizard"))}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-semibold bg-emerald-500 text-zinc-950 hover:bg-emerald-400 transition-all duration-200 cursor-pointer"
+          >
+            <Rocket className="h-4 w-4" />
+            Get Started
+          </button>
         </div>
 
         {/* Nav items */}
