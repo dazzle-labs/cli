@@ -28,6 +28,7 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
     wget \
     unclutter \
+    xdotool \
     software-properties-common \
     netcat-openbsd \
     tmux \

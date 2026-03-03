@@ -15,39 +15,47 @@ export interface McpTool {
 
 export const MCP_TOOLS: McpTool[] = [
   {
-    id: "start",
-    name: "start",
+    id: "create_stage",
+    name: "create_stage",
     description:
-      "Create and start the agent's browser streaming session. The session includes Chrome, OBS Studio, and a Node.js server. Returns status when ready.",
+      "Create and start the agent's stage — a browser streaming environment with Chrome, OBS Studio, and a Node.js server. You must create a stage before using any other tools. Returns status when ready.",
     params: [],
-    example: JSON.stringify({ name: "start", arguments: {} }, null, 2),
+    example: JSON.stringify({ name: "create_stage", arguments: {} }, null, 2),
   },
   {
-    id: "stop",
-    name: "stop",
-    description: "Stop and destroy the agent's streaming session.",
+    id: "destroy_stage",
+    name: "destroy_stage",
+    description:
+      "Tear down the agent's stage and all its processes. The stage cannot be used after this.",
     params: [],
-    example: JSON.stringify({ name: "stop", arguments: {} }, null, 2),
+    example: JSON.stringify({ name: "destroy_stage", arguments: {} }, null, 2),
   },
   {
-    id: "status",
-    name: "status",
+    id: "stage_status",
+    name: "stage_status",
     description:
-      "Get the current status of the agent's session (running/stopped/starting).",
+      "Get the current status of the agent's stage (running/stopped/starting).",
     params: [],
-    example: JSON.stringify({ name: "status", arguments: {} }, null, 2),
+    example: JSON.stringify({ name: "stage_status", arguments: {} }, null, 2),
   },
   {
     id: "set_html",
     name: "set_html",
     description:
-      "Set HTML content to render in the session's Chrome browser. Stores the HTML and navigates Chrome to display it. Requires a running session (call start first).",
+      "Set HTML content to render in the session's Chrome browser. Stores the HTML and navigates Chrome to display it. Requires an active stage (call create_stage first).",
     params: [
       {
         name: "html",
         type: "string",
         required: true,
         description: "HTML content to render",
+      },
+      {
+        name: "panel",
+        type: "string",
+        required: false,
+        description:
+          "Panel name (default: main). Use with layout tool to target specific panels in multi-panel layouts.",
       },
     ],
     example: JSON.stringify(
@@ -63,15 +71,23 @@ export const MCP_TOOLS: McpTool[] = [
     id: "get_html",
     name: "get_html",
     description:
-      "Get the current HTML content being rendered in the session's Chrome browser. Requires a running session.",
-    params: [],
+      "Get the current HTML content being rendered in the session's Chrome browser. Requires an active stage (call create_stage first).",
+    params: [
+      {
+        name: "panel",
+        type: "string",
+        required: false,
+        description:
+          "Panel name (default: main). Use with layout tool to target specific panels in multi-panel layouts.",
+      },
+    ],
     example: JSON.stringify({ name: "get_html", arguments: {} }, null, 2),
   },
   {
     id: "edit_html",
     name: "edit_html",
     description:
-      "Edit the current HTML content by finding and replacing a string. The old_string must exist exactly once in the current HTML. Requires a running session.",
+      "Edit the current HTML content by finding and replacing a string. The old_string must exist exactly once in the current HTML. Requires an active stage (call create_stage first).",
     params: [
       {
         name: "old_string",
@@ -84,6 +100,13 @@ export const MCP_TOOLS: McpTool[] = [
         type: "string",
         required: true,
         description: "The replacement string",
+      },
+      {
+        name: "panel",
+        type: "string",
+        required: false,
+        description:
+          "Panel name (default: main). Use with layout tool to target specific panels in multi-panel layouts.",
       },
     ],
     example: JSON.stringify(
@@ -99,10 +122,47 @@ export const MCP_TOOLS: McpTool[] = [
     ),
   },
   {
+    id: "layout",
+    name: "layout",
+    description:
+      'Get or set the multi-panel layout. Presets: "single" (main), "split" (left/right), "grid-2x2" (top-left/top-right/bottom-left/bottom-right), "pip" (main/pip). Use specs for custom positioning. Call with no params to read current layout.',
+    params: [
+      {
+        name: "preset",
+        type: "string",
+        required: false,
+        description:
+          "Layout preset: single, split, grid-2x2, or pip",
+      },
+      {
+        name: "names",
+        type: "string[]",
+        required: false,
+        description:
+          "Custom panel names for the preset slots",
+      },
+      {
+        name: "specs",
+        type: "string",
+        required: false,
+        description:
+          'JSON array of {name, x, y, width, height} for custom layouts (percentage-based positioning)',
+      },
+    ],
+    example: JSON.stringify(
+      {
+        name: "layout",
+        arguments: { preset: "split" },
+      },
+      null,
+      2,
+    ),
+  },
+  {
     id: "screenshot",
     name: "screenshot",
     description:
-      "Capture a screenshot of the OBS stream output as a PNG image. Requires a running session.",
+      "Capture a screenshot of the OBS stream output as a PNG image. Requires an active stage (call create_stage first).",
     params: [],
     example: JSON.stringify({ name: "screenshot", arguments: {} }, null, 2),
   },
@@ -110,7 +170,7 @@ export const MCP_TOOLS: McpTool[] = [
     id: "gobs",
     name: "gobs",
     description:
-      'Run OBS command via gobs-cli. Args passed directly (no shell). Requires a running session. Use shorthands to save tokens — e.g. "sc ls" to list scenes, "st s" to start streaming.',
+      'Run OBS command via gobs-cli. Args passed directly (no shell). Requires an active stage (call create_stage first). Use shorthands to save tokens — e.g. "sc ls" to list scenes, "st s" to start streaming.',
     params: [
       {
         name: "args",

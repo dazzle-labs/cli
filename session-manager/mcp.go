@@ -42,60 +42,86 @@ func (m *Manager) setupMCP() http.Handler {
 	)
 
 	s.AddTool(
-		mcp.NewTool("start",
-			mcp.WithDescription("Create and start the agent's browser streaming session. The session includes Chrome, OBS Studio, and a Node.js server. Returns status when ready."),
+		mcp.NewTool("create_stage",
+			mcp.WithDescription("Create and start the agent's stage — a browser streaming environment with Chrome, OBS Studio, and a Node.js server. You must create a stage before using any other tools. Returns status when ready."),
 		),
-		m.handleMCPStart,
+		m.handleMCPCreateStage,
 	)
 
 	s.AddTool(
-		mcp.NewTool("stop",
-			mcp.WithDescription("Stop and destroy the agent's streaming session."),
+		mcp.NewTool("destroy_stage",
+			mcp.WithDescription("Tear down the agent's stage and all its processes. The stage cannot be used after this."),
 		),
-		m.handleMCPStop,
+		m.handleMCPDestroyStage,
 	)
 
 	s.AddTool(
-		mcp.NewTool("status",
-			mcp.WithDescription("Get the current status of the agent's session (running/stopped/starting)."),
+		mcp.NewTool("stage_status",
+			mcp.WithDescription("Get the current status of the agent's stage (running/stopped/starting)."),
 		),
-		m.handleMCPStatus,
+		m.handleMCPStageStatus,
 	)
 
 	s.AddTool(
 		mcp.NewTool("set_html",
-			mcp.WithDescription("Set HTML content to render in the session's Chrome browser. Stores the HTML and navigates Chrome to display it. Requires a running session (call start first)."),
+			mcp.WithDescription("Set HTML content to render in the session's Chrome browser. Stores the HTML and navigates Chrome to display it. Requires an active stage (call create_stage first)."),
 			mcp.WithString("html", mcp.Required(), mcp.Description("HTML content to render")),
+			mcp.WithString("panel", mcp.Description("Panel name (default: main). Use with layout tool to target specific panels in multi-panel layouts.")),
 		),
 		m.handleMCPSetHTML,
 	)
 
 	s.AddTool(
 		mcp.NewTool("get_html",
-			mcp.WithDescription("Get the current HTML content being rendered in the session's Chrome browser. Requires a running session."),
+			mcp.WithDescription("Get the current HTML content being rendered in the session's Chrome browser. Requires an active stage (call create_stage first)."),
+			mcp.WithString("panel", mcp.Description("Panel name (default: main). Use with layout tool to target specific panels in multi-panel layouts.")),
 		),
 		m.handleMCPGetHTML,
 	)
 
 	s.AddTool(
 		mcp.NewTool("edit_html",
-			mcp.WithDescription("Edit the current HTML content by finding and replacing a string. The old_string must exist exactly once in the current HTML. Requires a running session."),
+			mcp.WithDescription("Edit the current HTML content by finding and replacing a string. The old_string must exist exactly once in the current HTML. Requires an active stage (call create_stage first)."),
 			mcp.WithString("old_string", mcp.Required(), mcp.Description("The exact string to find in the current HTML")),
 			mcp.WithString("new_string", mcp.Required(), mcp.Description("The replacement string")),
+			mcp.WithString("panel", mcp.Description("Panel name (default: main). Use with layout tool to target specific panels in multi-panel layouts.")),
 		),
 		m.handleMCPEditHTML,
 	)
 
 	s.AddTool(
+		mcp.NewTool("layout",
+			mcp.WithDescription(`Get or set the multi-panel layout. Requires an active stage (call create_stage first).
+
+Presets create named panels you can target with set_html/edit_html/get_html(panel: "<name>"):
+- "single" — one full-screen panel named "main" (the default layout)
+- "split" — two side-by-side panels named "left" and "right"
+- "grid-2x2" — four equal panels named "top-left", "top-right", "bottom-left", "bottom-right"
+- "pip" — large panel "main" with small overlay "pip" in the bottom-right corner
+
+You can override default panel names with the names param (e.g. preset="split", names=["code","preview"]).
+
+For fully custom layouts, pass specs as a JSON array of panel definitions with percentage-based positioning:
+[{"name":"cam","x":0,"y":0,"width":30,"height":100},{"name":"slides","x":30,"y":0,"width":70,"height":100}]
+
+Call with no params to read the current layout and see which panels are available.`),
+			mcp.WithString("preset", mcp.Description("Layout preset: single, split, grid-2x2, or pip")),
+			mcp.WithArray("names", mcp.Description("Custom panel names for the preset slots (e.g. [\"cam\", \"slides\"] for split)")),
+			mcp.WithString("specs", mcp.Description("JSON array of {name, x, y, width, height} for custom layouts (each value 0-100 as percentage)")),
+		),
+		m.handleMCPLayout,
+	)
+
+	s.AddTool(
 		mcp.NewTool("screenshot",
-			mcp.WithDescription("Capture a screenshot of the OBS stream output as a PNG image. Requires a running session."),
+			mcp.WithDescription("Capture a screenshot of the OBS stream output as a PNG image. Requires an active stage (call create_stage first)."),
 		),
 		m.handleMCPScreenshot,
 	)
 
 	s.AddTool(
 		mcp.NewTool("gobs",
-			mcp.WithDescription(`Run OBS command via gobs-cli. Args passed directly (no shell). Requires running session. Use shorthands to save tokens.
+			mcp.WithDescription(`Run OBS command via gobs-cli. Args passed directly (no shell). Requires an active stage (call create_stage first). Use shorthands to save tokens.
 
 sc ls — list scenes | sc c — current scene | sc sw <name> — switch scene
 si ls — list scene items | si sh/h/tg <name> — show/hide/toggle item | si t <name> — transform
@@ -205,7 +231,7 @@ func (m *Manager) mcpMiddleware(next http.Handler) http.Handler {
 func (m *Manager) requireRunningSession(ctx context.Context, agentID string) (*Session, error) {
 	sess, ok := m.getSession(agentID)
 	if !ok {
-		return nil, fmt.Errorf("no session for agent %s — call start first", agentID)
+		return nil, fmt.Errorf("no session for agent %s — call create_stage first", agentID)
 	}
 	if sess.PodIP == "" || sess.Status != StatusRunning {
 		return nil, fmt.Errorf("session %s not ready (status: %s)", agentID, sess.Status)
@@ -214,7 +240,7 @@ func (m *Manager) requireRunningSession(ctx context.Context, agentID string) (*S
 	return sess, nil
 }
 
-func (m *Manager) handleMCPStart(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (m *Manager) handleMCPCreateStage(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	agentID := agentIDFromCtx(ctx)
 	if agentID == "" {
 		return mcp.NewToolResultError("agent ID not found in request context"), nil
@@ -324,7 +350,7 @@ func (m *Manager) configureOBSStream(sess *Session, userID string) {
 	}
 }
 
-func (m *Manager) handleMCPStop(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (m *Manager) handleMCPDestroyStage(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	agentID := agentIDFromCtx(ctx)
 	if agentID == "" {
 		return mcp.NewToolResultError("agent ID not found in request context"), nil
@@ -341,7 +367,7 @@ func (m *Manager) handleMCPStop(ctx context.Context, req mcp.CallToolRequest) (*
 	return mcp.NewToolResultText(`{"status":"stopped"}`), nil
 }
 
-func (m *Manager) handleMCPStatus(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (m *Manager) handleMCPStageStatus(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	agentID := agentIDFromCtx(ctx)
 	if agentID == "" {
 		return mcp.NewToolResultError("agent ID not found in request context"), nil
@@ -361,21 +387,38 @@ func (m *Manager) handleMCPStatus(ctx context.Context, req mcp.CallToolRequest) 
 	return mcp.NewToolResultText(string(result)), nil
 }
 
+// panelEndpoint returns the pod URL path for HTML operations.
+// If panel is non-empty, uses /api/panel/:name; otherwise /api/template (backward compat).
+func panelEndpoint(panel, suffix string) string {
+	if panel != "" {
+		path := "/api/panel/" + url.PathEscape(panel)
+		if suffix != "" {
+			path += "/" + suffix
+		}
+		return path
+	}
+	path := "/api/template"
+	if suffix != "" {
+		path += "/" + suffix
+	}
+	return path
+}
+
 func (m *Manager) handleMCPSetHTML(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	agentID := agentIDFromCtx(ctx)
 	html, err := req.RequireString("html")
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
+	panel, _ := req.RequireString("panel")
 
 	sess, err := m.requireRunningSession(ctx, agentID)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	// POST to pod's /api/template endpoint
 	body, _ := json.Marshal(map[string]string{"html": html})
-	podURL := fmt.Sprintf("http://%s:8080/api/template?token=%s", sess.PodIP, url.QueryEscape(m.podToken))
+	podURL := fmt.Sprintf("http://%s:8080%s?token=%s", sess.PodIP, panelEndpoint(panel, ""), url.QueryEscape(m.podToken))
 	resp, err := http.Post(podURL, "application/json", bytes.NewReader(body))
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("failed to set template: %v", err)), nil
@@ -392,13 +435,14 @@ func (m *Manager) handleMCPSetHTML(ctx context.Context, req mcp.CallToolRequest)
 
 func (m *Manager) handleMCPGetHTML(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	agentID := agentIDFromCtx(ctx)
+	panel, _ := req.RequireString("panel")
 
 	sess, err := m.requireRunningSession(ctx, agentID)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	podURL := fmt.Sprintf("http://%s:8080/api/template?token=%s", sess.PodIP, url.QueryEscape(m.podToken))
+	podURL := fmt.Sprintf("http://%s:8080%s?token=%s", sess.PodIP, panelEndpoint(panel, ""), url.QueryEscape(m.podToken))
 	resp, err := http.Get(podURL)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("failed to get template: %v", err)), nil
@@ -419,6 +463,7 @@ func (m *Manager) handleMCPEditHTML(ctx context.Context, req mcp.CallToolRequest
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
+	panel, _ := req.RequireString("panel")
 
 	sess, err := m.requireRunningSession(ctx, agentID)
 	if err != nil {
@@ -426,10 +471,79 @@ func (m *Manager) handleMCPEditHTML(ctx context.Context, req mcp.CallToolRequest
 	}
 
 	body, _ := json.Marshal(map[string]string{"old_string": oldString, "new_string": newString})
-	podURL := fmt.Sprintf("http://%s:8080/api/template/edit?token=%s", sess.PodIP, url.QueryEscape(m.podToken))
+	podURL := fmt.Sprintf("http://%s:8080%s?token=%s", sess.PodIP, panelEndpoint(panel, "edit"), url.QueryEscape(m.podToken))
 	resp, err := http.Post(podURL, "application/json", bytes.NewReader(body))
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("failed to edit template: %v", err)), nil
+	}
+	defer resp.Body.Close()
+	respBody, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		return mcp.NewToolResultError(fmt.Sprintf("pod returned %d: %s", resp.StatusCode, string(respBody))), nil
+	}
+
+	return mcp.NewToolResultText(string(respBody)), nil
+}
+
+func (m *Manager) handleMCPLayout(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	agentID := agentIDFromCtx(ctx)
+
+	sess, err := m.requireRunningSession(ctx, agentID)
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	preset, _ := req.RequireString("preset")
+	specs, _ := req.RequireString("specs")
+
+	// Extract names array if provided
+	var names []string
+	if argsMap := req.GetArguments(); argsMap != nil {
+		if namesRaw, ok := argsMap["names"]; ok && namesRaw != nil {
+			if namesSlice, ok := namesRaw.([]interface{}); ok {
+				for _, n := range namesSlice {
+					if s, ok := n.(string); ok {
+						names = append(names, s)
+					}
+				}
+			}
+		}
+	}
+
+	baseURL := fmt.Sprintf("http://%s:8080/api/layout?token=%s", sess.PodIP, url.QueryEscape(m.podToken))
+
+	// If neither preset nor specs provided, GET current layout
+	if preset == "" && specs == "" {
+		resp, err := http.Get(baseURL)
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("failed to get layout: %v", err)), nil
+		}
+		defer resp.Body.Close()
+		respBody, _ := io.ReadAll(resp.Body)
+		return mcp.NewToolResultText(string(respBody)), nil
+	}
+
+	// Build POST body
+	payload := map[string]any{}
+	if preset != "" {
+		payload["preset"] = preset
+		if len(names) > 0 {
+			payload["names"] = names
+		}
+	} else if specs != "" {
+		// Parse specs JSON string into array
+		var specsArr []map[string]any
+		if err := json.Unmarshal([]byte(specs), &specsArr); err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("invalid specs JSON: %v", err)), nil
+		}
+		payload["specs"] = specsArr
+	}
+
+	body, _ := json.Marshal(payload)
+	resp, err := http.Post(baseURL, "application/json", bytes.NewReader(body))
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("failed to set layout: %v", err)), nil
 	}
 	defer resp.Body.Close()
 	respBody, _ := io.ReadAll(resp.Body)

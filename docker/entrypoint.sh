@@ -120,7 +120,7 @@ VBitrate=2500
 ABitrate=128
 PROFILEINI
 
-# Scene collection with screen capture source (OBS 30.x format)
+# Scene collection with empty scene (browser_source panels added dynamically by node server)
 cat > "$OBS_CONFIG_DIR/basic/scenes/Untitled.json" <<'SCENEJSON'
 {
     "name": "Untitled",
@@ -141,29 +141,8 @@ cat > "$OBS_CONFIG_DIR/basic/scenes/Untitled.json" <<'SCENEJSON'
             "muted": false,
             "settings": {
                 "custom_size": false,
-                "id_counter": 1,
-                "items": [
-                    {
-                        "name": "Screen",
-                        "id": 1,
-                        "visible": true
-                    }
-                ]
-            }
-        },
-        {
-            "id": "xshm_input",
-            "versioned_id": "xshm_input",
-            "name": "Screen",
-            "enabled": true,
-            "flags": 0,
-            "volume": 1.0,
-            "mixers": 255,
-            "muted": false,
-            "settings": {
-                "screen": 0,
-                "show_cursor": false,
-                "advanced": false
+                "id_counter": 0,
+                "items": []
             }
         }
     ],
@@ -189,6 +168,14 @@ for i in $(seq 1 60); do
         exit 1
     fi
     sleep 0.5
+done
+
+# Move OBS window off-screen so it doesn't appear in the screen capture
+# (no window manager in Xvfb, so windowminimize doesn't work)
+echo "Moving OBS off-screen..."
+sleep 1
+for wid in $(xdotool search --class obs 2>/dev/null); do
+    xdotool windowmove "$wid" 9999 9999 2>/dev/null || true
 done
 
 # 6. Start HLS preview pipeline
