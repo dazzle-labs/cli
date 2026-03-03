@@ -87,7 +87,7 @@ mkdir -p "$OBS_CONFIG_DIR/basic/scenes" "$OBS_CONFIG_DIR/basic/profiles/Default"
 cat > "$OBS_CONFIG_DIR/global.ini" <<'OBSINI'
 [General]
 FirstRun=false
-LastVersion=503841792
+LastVersion=603979776
 InfoIncrement=9999
 
 [OBSWebSocket]

@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -12,14 +12,14 @@ RUN apt-get update && apt-get install -y \
     curl \
     gnupg \
     fonts-liberation \
-    libasound2 \
+    libasound2t64 \
     libatk-bridge2.0-0 \
     libatk1.0-0 \
     libcups2 \
     libdbus-1-3 \
     libdrm2 \
     libgbm1 \
-    libgtk-3-0 \
+    libgtk-3-0t64 \
     libnspr4 \
     libnss3 \
     libxcomposite1 \
@@ -33,7 +33,7 @@ RUN apt-get update && apt-get install -y \
     tmux \
     && rm -rf /var/lib/apt/lists/*
 
-# Install OBS Studio (28+ includes obs-websocket built-in)
+# Install OBS Studio 32.x (includes obs-websocket built-in)
 RUN add-apt-repository ppa:obsproject/obs-studio \
     && apt-get update \
     && apt-get install -y obs-studio ffmpeg \
