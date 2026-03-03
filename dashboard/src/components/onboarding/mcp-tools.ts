@@ -39,16 +39,16 @@ export const MCP_TOOLS: McpTool[] = [
     example: JSON.stringify({ name: "status", arguments: {} }, null, 2),
   },
   {
-    id: "set_html",
-    name: "set_html",
+    id: "set_script",
+    name: "set_script",
     description:
       "Set JavaScript content to render in your stage's browser. Write vanilla JS that creates DOM elements and appends them to document.body. Changes are hot-swapped with no page reload. Requires an active stage (call start first).",
     params: [
       {
-        name: "html",
+        name: "script",
         type: "string",
         required: true,
-        description: "HTML content to render",
+        description: "JavaScript code to render",
       },
       {
         name: "panel",
@@ -60,16 +60,16 @@ export const MCP_TOOLS: McpTool[] = [
     ],
     example: JSON.stringify(
       {
-        name: "set_html",
-        arguments: { html: "<h1>Hello World</h1>" },
+        name: "set_script",
+        arguments: { script: "const el = document.createElement('h1'); el.textContent = 'Hello World'; document.body.appendChild(el);" },
       },
       null,
       2,
     ),
   },
   {
-    id: "get_html",
-    name: "get_html",
+    id: "get_script",
+    name: "get_script",
     description:
       "Get the current JavaScript content being rendered in your stage's browser. Requires an active stage (call start first).",
     params: [
@@ -81,11 +81,11 @@ export const MCP_TOOLS: McpTool[] = [
           "Panel name (default: main). Use with layout tool to target specific panels in multi-panel layouts.",
       },
     ],
-    example: JSON.stringify({ name: "get_html", arguments: {} }, null, 2),
+    example: JSON.stringify({ name: "get_script", arguments: {} }, null, 2),
   },
   {
-    id: "edit_html",
-    name: "edit_html",
+    id: "edit_script",
+    name: "edit_script",
     description:
       "Edit the current JavaScript content by finding and replacing a string. The old_string must exist exactly once in the current code. Changes are hot-swapped with no page reload. Requires an active stage (call start first).",
     params: [
@@ -93,7 +93,7 @@ export const MCP_TOOLS: McpTool[] = [
         name: "old_string",
         type: "string",
         required: true,
-        description: "The exact string to find in the current HTML",
+        description: "The exact string to find in the current code",
       },
       {
         name: "new_string",
@@ -111,10 +111,10 @@ export const MCP_TOOLS: McpTool[] = [
     ],
     example: JSON.stringify(
       {
-        name: "edit_html",
+        name: "edit_script",
         arguments: {
-          old_string: "<h1>Hello</h1>",
-          new_string: "<h1>Goodbye</h1>",
+          old_string: "Hello",
+          new_string: "Goodbye",
         },
       },
       null,

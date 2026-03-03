@@ -120,8 +120,8 @@ VBitrate=2500
 ABitrate=128
 PROFILEINI
 
-# Scene collection with empty scene (browser_source panels added dynamically by node server)
-cat > "$OBS_CONFIG_DIR/basic/scenes/Untitled.json" <<'SCENEJSON'
+# Scene collection with xshm_input screen capture (Chrome renders on Xvfb, OBS captures via xshm)
+cat > "$OBS_CONFIG_DIR/basic/scenes/Untitled.json" <<SCENEJSON
 {
     "name": "Untitled",
     "current_scene": "Scene",
@@ -131,9 +131,26 @@ cat > "$OBS_CONFIG_DIR/basic/scenes/Untitled.json" <<'SCENEJSON'
     ],
     "sources": [
         {
+            "id": "xshm_input",
+            "versioned_id": "xshm_input",
+            "name": "Screen",
+            "uuid": "00000000-0000-0000-0000-000000000001",
+            "enabled": true,
+            "flags": 0,
+            "volume": 1.0,
+            "mixers": 0,
+            "muted": false,
+            "settings": {
+                "screen": 0,
+                "show_cursor": false,
+                "advanced": false
+            }
+        },
+        {
             "id": "scene",
             "versioned_id": "scene",
             "name": "Scene",
+            "uuid": "00000000-0000-0000-0000-000000000002",
             "enabled": true,
             "flags": 0,
             "volume": 1.0,
@@ -141,8 +158,18 @@ cat > "$OBS_CONFIG_DIR/basic/scenes/Untitled.json" <<'SCENEJSON'
             "muted": false,
             "settings": {
                 "custom_size": false,
-                "id_counter": 0,
-                "items": []
+                "id_counter": 1,
+                "items": [
+                    {
+                        "name": "Screen",
+                        "source_uuid": "00000000-0000-0000-0000-000000000001",
+                        "id": 1,
+                        "pos": { "x": 0.0, "y": 0.0 },
+                        "bounds": { "x": ${SCREEN_WIDTH}.0, "y": ${SCREEN_HEIGHT}.0 },
+                        "bounds_type": 2,
+                        "bounds_align": 0
+                    }
+                ]
             }
         }
     ],

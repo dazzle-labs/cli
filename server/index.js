@@ -242,68 +242,36 @@ class OBSConnection {
 
 const obs = new OBSConnection();
 
-// Source name convention: panel-<name>
-function sourceName(panelName) { return `panel-${panelName}`; }
-
 // Panel URL now points to the Vite-served shell (which loads main.js via HMR)
 function panelUrl(panelName) { return `http://localhost:${PORT}/@panel/${panelName}/`; }
 
-async function createBrowserSource(name, url, width, height) {
+// Track what Chrome is currently navigated to, so we only navigate when needed
+let currentChromeUrl = null;
+
+async function ensureXshmSource() {
     try {
         await obs.request('CreateInput', {
             sceneName: 'Scene',
-            inputName: sourceName(name),
-            inputKind: 'browser_source',
-            inputSettings: {
-                url,
-                width,
-                height,
-                css: '',
-                shutdown: false,
-                restart_when_active: false,
-                reroute_audio: false,
-            },
+            inputName: 'Screen',
+            inputKind: 'xshm_input',
+            inputSettings: { screen: 0, show_cursor: false, advanced: false },
         });
-    } catch (err) {
-        if (err.message.includes('601')) {
-            await obs.request('SetInputSettings', {
-                inputName: sourceName(name),
-                inputSettings: { url, width, height, css: '' },
-            });
-        } else {
-            throw err;
-        }
-    }
-}
-
-async function removeBrowserSource(name) {
-    try {
-        await obs.request('RemoveInput', { inputName: sourceName(name) });
-    } catch {
-        // Ignore if doesn't exist
-    }
-}
-
-async function setSourceTransform(name, x, y, width, height) {
-    try {
+        // Set transform to fill the canvas
         const { sceneItemId } = await obs.request('GetSceneItemId', {
-            sceneName: 'Scene',
-            sourceName: sourceName(name),
+            sceneName: 'Scene', sourceName: 'Screen',
         });
         await obs.request('SetSceneItemTransform', {
-            sceneName: 'Scene',
-            sceneItemId,
+            sceneName: 'Scene', sceneItemId,
             sceneItemTransform: {
-                positionX: x,
-                positionY: y,
+                positionX: 0, positionY: 0,
                 boundsType: 'OBS_BOUNDS_STRETCH',
-                boundsWidth: width,
-                boundsHeight: height,
+                boundsWidth: SCREEN_WIDTH, boundsHeight: SCREEN_HEIGHT,
                 boundsAlignment: 0,
             },
         });
     } catch (err) {
-        console.error(`Failed to set transform for ${name}:`, err.message);
+        if (!err.message.includes('601')) throw err;
+        // Already exists — fine
     }
 }
 
@@ -313,60 +281,32 @@ async function applyLayout(specs) {
         return;
     }
 
-    const existingSources = new Set();
+    // Ensure xshm_input source exists
+    await ensureXshmSource();
+
+    // Remove any leftover browser_source inputs from previous versions
     try {
         const { inputs } = await obs.request('GetInputList', { inputKind: 'browser_source' });
-        for (const input of inputs || []) {
+        for (const input of (inputs || [])) {
             if (input.inputName.startsWith('panel-')) {
-                existingSources.add(input.inputName);
+                await obs.request('RemoveInput', { inputName: input.inputName });
             }
         }
-    } catch (err) {
-        console.error('Failed to list inputs:', err.message);
-    }
+    } catch { /* ignore */ }
 
-    const desiredSources = new Set(specs.map(s => sourceName(s.name)));
-
-    for (const existing of existingSources) {
-        if (!desiredSources.has(existing)) {
-            try {
-                await obs.request('RemoveInput', { inputName: existing });
-            } catch { /* ignore */ }
-        }
-    }
-
+    // Set up panel dirs and metadata
     for (const spec of specs) {
-        // Ensure panel dir exists on disk for Vite to serve
         ensurePanelDir(spec.name);
-
-        const sn = sourceName(spec.name);
-        if (!existingSources.has(sn)) {
-            await createBrowserSource(spec.name, panelUrl(spec.name), spec.width, spec.height);
-        } else {
-            await obs.request('SetInputSettings', {
-                inputName: sn,
-                inputSettings: { url: panelUrl(spec.name), width: spec.width, height: spec.height },
-            });
-        }
-
-        if (!panels.has(spec.name)) {
-            panels.set(spec.name, { width: spec.width, height: spec.height });
-        } else {
-            const p = panels.get(spec.name);
-            p.width = spec.width;
-            p.height = spec.height;
-        }
-
-        await setSourceTransform(spec.name, spec.x, spec.y, spec.width, spec.height);
+        panels.set(spec.name, { width: spec.width, height: spec.height });
     }
-}
 
-async function removeXshmSource() {
-    try {
-        await obs.request('RemoveInput', { inputName: 'Screen' });
-        console.log('Removed pre-existing Screen xshm_input source.');
-    } catch {
-        // Not present, fine
+    // Navigate Chrome to the first panel URL (xshm captures whatever Chrome shows)
+    if (specs.length > 0) {
+        const targetUrl = panelUrl(specs[0].name);
+        if (currentChromeUrl !== targetUrl) {
+            await cdpNavigate(targetUrl);
+            currentChromeUrl = targetUrl;
+        }
     }
 }
 
@@ -446,8 +386,8 @@ app.get('/json/list', auth, (req, res) => cdpDiscovery(req, res, '/json/list'));
 // Set content for a panel — writes JS to disk, Vite HMR delivers it
 app.post('/api/panel/:name', auth, async (req, res) => {
     const { name } = req.params;
-    const { html, width, height } = req.body;
-    if (html === undefined) return res.status(400).json({ error: 'html required' });
+    const { script, width, height } = req.body;
+    if (script === undefined) return res.status(400).json({ error: 'script required' });
 
     const existing = panels.get(name);
     panels.set(name, {
@@ -455,9 +395,18 @@ app.post('/api/panel/:name', auth, async (req, res) => {
         height: height || existing?.height || SCREEN_HEIGHT,
     });
 
-    writeUserCode(name, html);
+    writeUserCode(name, script);
 
-    res.json({ status: 'ok', panel: name, length: html.length });
+    // Navigate Chrome to this panel if it's not already showing it
+    const targetUrl = panelUrl(name);
+    if (currentChromeUrl !== targetUrl) {
+        try {
+            await cdpNavigate(targetUrl);
+            currentChromeUrl = targetUrl;
+        } catch { /* ignore — Chrome may not be ready yet */ }
+    }
+
+    res.json({ status: 'ok', panel: name, length: script.length });
 });
 
 // Get panel content (user code only, stripped of wrapper)
@@ -466,7 +415,7 @@ app.get('/api/panel/:name', auth, (req, res) => {
     const code = readUserCode(name);
     if (code === null) return res.status(404).json({ error: `panel '${name}' not found` });
     const panel = panels.get(name) || { width: SCREEN_WIDTH, height: SCREEN_HEIGHT };
-    res.json({ name, html: code, width: panel.width, height: panel.height });
+    res.json({ name, script: code, width: panel.width, height: panel.height });
 });
 
 // Edit panel content (find/replace in user code section)
@@ -533,10 +482,6 @@ app.delete('/api/panel/:name', auth, async (req, res) => {
         fs.rmSync(dir, { recursive: true });
     }
 
-    try {
-        await removeBrowserSource(name);
-    } catch { /* ignore */ }
-
     res.json({ status: 'ok', panel: name, deleted: true });
 });
 
@@ -553,8 +498,8 @@ app.get('/api/panels', auth, (req, res) => {
 // --- Backward Compat: /api/template → main panel ---
 
 app.post('/api/template', auth, async (req, res) => {
-    const { html } = req.body;
-    if (!html) return res.status(400).json({ error: 'html required' });
+    const { script } = req.body;
+    if (!script) return res.status(400).json({ error: 'script required' });
 
     const existing = panels.get('main');
     panels.set('main', {
@@ -562,14 +507,14 @@ app.post('/api/template', auth, async (req, res) => {
         height: existing?.height || SCREEN_HEIGHT,
     });
 
-    writeUserCode('main', html);
+    writeUserCode('main', script);
 
-    res.json({ status: 'ok', length: html.length });
+    res.json({ status: 'ok', length: script.length });
 });
 
 app.get('/api/template', auth, (req, res) => {
     const code = readUserCode('main');
-    res.json({ html: code || '' });
+    res.json({ script: code || '' });
 });
 
 app.post('/api/template/edit', auth, async (req, res) => {
@@ -713,7 +658,7 @@ async function start() {
         // Connect to OBS and set up default layout
         try {
             await obs.connect(30000);
-            await removeXshmSource();
+            await ensureXshmSource();
 
             const defaultSpecs = LAYOUT_PRESETS.single(['main']);
             currentLayout = { preset: 'single', specs: defaultSpecs };

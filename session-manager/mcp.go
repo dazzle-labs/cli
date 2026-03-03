@@ -63,7 +63,7 @@ func (m *Manager) setupMCP() http.Handler {
 	)
 
 	s.AddTool(
-		mcp.NewTool("set_html",
+		mcp.NewTool("set_script",
 			mcp.WithDescription(`Set JavaScript content to render in your stage's browser. Write vanilla JS that creates DOM elements (canvas, divs, etc.) and appends them to document.body. The page is full-viewport with a black background. Changes are hot-swapped with zero page reloads. Requires an active stage (call start first).
 
 Your code can listen for events pushed by emit_event — set up the view once, then drive it with state updates:
@@ -74,35 +74,35 @@ Your code can listen for events pushed by emit_event — set up the view once, t
   });
 
 Read window.__state at any time for accumulated state from all prior emit_event calls. An '__init' event fires on module load if state already exists.`),
-			mcp.WithString("html", mcp.Required(), mcp.Description("JavaScript code to render")),
+			mcp.WithString("script", mcp.Required(), mcp.Description("JavaScript code to render")),
 			mcp.WithString("panel", mcp.Description("Panel name (default: main). Use with layout tool to target specific panels in multi-panel layouts.")),
 		),
-		m.handleMCPSetHTML,
+		m.handleMCPSetScript,
 	)
 
 	s.AddTool(
-		mcp.NewTool("get_html",
+		mcp.NewTool("get_script",
 			mcp.WithDescription("Get the current JavaScript content being rendered in your stage's browser. Requires an active stage (call start first)."),
 			mcp.WithString("panel", mcp.Description("Panel name (default: main). Use with layout tool to target specific panels in multi-panel layouts.")),
 		),
-		m.handleMCPGetHTML,
+		m.handleMCPGetScript,
 	)
 
 	s.AddTool(
-		mcp.NewTool("edit_html",
+		mcp.NewTool("edit_script",
 			mcp.WithDescription("Edit the current JavaScript content by finding and replacing a string. The old_string must exist exactly once in the current code. Changes are hot-swapped with no page reload. Requires an active stage (call start first)."),
 			mcp.WithString("old_string", mcp.Required(), mcp.Description("The exact string to find in the current code")),
 			mcp.WithString("new_string", mcp.Required(), mcp.Description("The replacement string")),
 			mcp.WithString("panel", mcp.Description("Panel name (default: main). Use with layout tool to target specific panels in multi-panel layouts.")),
 		),
-		m.handleMCPEditHTML,
+		m.handleMCPEditScript,
 	)
 
 	s.AddTool(
 		mcp.NewTool("layout",
 			mcp.WithDescription(`Get or set the multi-panel layout. Requires an active stage (call start first).
 
-Presets create named panels you can target with set_html/edit_html/get_html(panel: "<name>"):
+Presets create named panels you can target with set_script/edit_script/get_script(panel: "<name>"):
 - "single" — one full-screen panel named "main" (the default layout)
 - "split" — two side-by-side panels named "left" and "right"
 - "grid-2x2" — four equal panels named "top-left", "top-right", "bottom-left", "bottom-right"
@@ -123,20 +123,20 @@ Call with no params to read the current layout and see which panels are availabl
 
 	s.AddTool(
 		mcp.NewTool("emit_event",
-			mcp.WithDescription(`Emit an event to the running panel without changing code. Use this with set_html to follow an Elm-style architecture:
+			mcp.WithDescription(`Emit an event to the running panel without changing code. Use this with set_script to follow an Elm-style architecture:
 
-1. set_html defines the VIEW and UPDATE logic once — rendering + event listeners
+1. set_script defines the VIEW and UPDATE logic once — rendering + event listeners
 2. emit_event pushes STATE into it — no code rewrite, no page reload
 
 The panel receives events as CustomEvent on window. Accumulated state is merged into window.__state.
 
 Example flow:
-  set_html: el = div; addEventListener('event', e => { if (e.detail.event === 'score') el.textContent = e.detail.data.points })
+  set_script: el = div; addEventListener('event', e => { if (e.detail.event === 'score') el.textContent = e.detail.data.points })
   emit_event: { event: "score", data: { points: 42 } }    → el shows "42"
   emit_event: { event: "score", data: { points: 99 } }    → el shows "99"
 
-Best practice: design your set_html code as a pure render function of state. Use emit_event to push new state — the view reacts. This avoids rewriting JS for every content change.`),
-			mcp.WithString("event", mcp.Required(), mcp.Description("Event name that your set_html code listens for (e.g. 'update', 'alert', 'theme-change')")),
+Best practice: design your set_script code as a pure render function of state. Use emit_event to push new state — the view reacts. This avoids rewriting JS for every content change.`),
+			mcp.WithString("event", mcp.Required(), mcp.Description("Event name that your set_script code listens for (e.g. 'update', 'alert', 'theme-change')")),
 			mcp.WithString("data", mcp.Required(), mcp.Description("JSON object with event payload — merged into window.__state and delivered as e.detail.data")),
 			mcp.WithString("panel", mcp.Description("Panel name (default: main)")),
 		),
@@ -446,9 +446,9 @@ func panelEndpoint(panel, suffix string) string {
 	return path
 }
 
-func (m *Manager) handleMCPSetHTML(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (m *Manager) handleMCPSetScript(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	agentID := agentIDFromCtx(ctx)
-	html, err := req.RequireString("html")
+	script, err := req.RequireString("script")
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
@@ -459,7 +459,7 @@ func (m *Manager) handleMCPSetHTML(ctx context.Context, req mcp.CallToolRequest)
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	body, _ := json.Marshal(map[string]string{"html": html})
+	body, _ := json.Marshal(map[string]string{"script": script})
 	podURL := fmt.Sprintf("http://%s:8080%s?token=%s", sess.PodIP, panelEndpoint(panel, ""), url.QueryEscape(m.podToken))
 	resp, err := http.Post(podURL, "application/json", bytes.NewReader(body))
 	if err != nil {
@@ -475,7 +475,7 @@ func (m *Manager) handleMCPSetHTML(ctx context.Context, req mcp.CallToolRequest)
 	return mcp.NewToolResultText(string(respBody)), nil
 }
 
-func (m *Manager) handleMCPGetHTML(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (m *Manager) handleMCPGetScript(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	agentID := agentIDFromCtx(ctx)
 	panel, _ := req.RequireString("panel")
 
@@ -495,7 +495,7 @@ func (m *Manager) handleMCPGetHTML(ctx context.Context, req mcp.CallToolRequest)
 	return mcp.NewToolResultText(string(respBody)), nil
 }
 
-func (m *Manager) handleMCPEditHTML(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (m *Manager) handleMCPEditScript(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	agentID := agentIDFromCtx(ctx)
 	oldString, err := req.RequireString("old_string")
 	if err != nil {
