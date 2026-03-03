@@ -11,7 +11,7 @@ All endpoints (except `GET /health` and dashboard static files) require authenti
 
 **Service-Level Restrictions:**
 - SessionService: Accepts both Clerk JWT and API key
-- ApiKeyService, StreamService, UserService: Clerk JWT only
+- ApiKeyService, StreamService, UserService, EndpointService: Clerk JWT only
 - MCP endpoints: Accepts both Clerk JWT and API key
 - HTTP proxy/CDP endpoints: Accepts both
 
@@ -148,6 +148,29 @@ Response: {
 }
 ```
 
+### EndpointService (Clerk JWT only)
+
+#### CreateEndpoint
+```
+POST /api.v1.EndpointService/CreateEndpoint
+Request: { name: string }
+Response: { endpoint: { id: string, name: string, created_at: Timestamp } }
+```
+
+#### ListEndpoints
+```
+POST /api.v1.EndpointService/ListEndpoints
+Request: {} (empty)
+Response: { endpoints: Endpoint[] }
+```
+
+#### DeleteEndpoint
+```
+POST /api.v1.EndpointService/DeleteEndpoint
+Request: { id: string }
+Response: {} (empty)
+```
+
 ---
 
 ## HTTP Endpoints
@@ -200,9 +223,10 @@ Auth: Required (Clerk JWT or API key)
 | `start` | (none) | `{"status": "running"}` or `{"status": "already_running"}` |
 | `stop` | (none) | `{"status": "stopped"}` or `{"status": "already_stopped"}` |
 | `status` | (none) | `{"status": "running\|stopped\|starting"}` |
-| `set_html` | `html: string` | Pod response JSON |
-| `get_html` | (none) | `{"html": "..."}` |
-| `edit_html` | `old_string: string, new_string: string` | Updated HTML JSON |
+| `set_script` | `script: string` | Pod response JSON |
+| `get_script` | (none) | `{"script": "..."}` |
+| `edit_script` | `old_string: string, new_string: string` | Updated script JSON |
+| `emit_event` | `event: string, data: JSON` | Pod response JSON |
 | `screenshot` | (none) | Base64 PNG image content |
 | `gobs` | `args: string[]` | OBS command output (redacted) |
 
@@ -216,9 +240,10 @@ Accessed via session proxy (`/session/:id/...`) or directly by session manager.
 |--------|------|------|---------|
 | GET | `/health` | None | Health/readiness check |
 | GET | `/json`, `/json/version`, `/json/list` | Token | CDP discovery |
-| POST | `/api/template` | Token | Set HTML (`{ html }`) |
-| GET | `/api/template` | Token | Get current HTML |
-| POST | `/api/template/edit` | Token | Edit HTML (`{ old_string, new_string }`) |
+| POST | `/api/panel/main` | Token | Set script (`{ script }`) |
+| GET | `/api/panel/main` | Token | Get current script |
+| POST | `/api/panel/main/edit` | Token | Edit script (`{ old_string, new_string }`) |
+| POST | `/api/panel/main/event` | Token | Emit event (`{ event, data }`) |
 | GET | `/template` | None | Serve HTML to Chrome |
 | POST | `/api/navigate` | Token | Navigate Chrome (`{ url }`) |
 | WS | `/*` | Token | CDP WebSocket proxy |
