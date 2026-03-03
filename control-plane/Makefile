@@ -34,9 +34,9 @@ build: ## Build control-plane image on remote host
 # ── Deploy ─────────────────────────────────────────────
 
 deploy: ## Apply control-plane k8s manifests
-	$(SSH) "k3s kubectl apply -f -" < k8s/rbac.yaml
-	$(SSH) "k3s kubectl apply -f -" < k8s/deployment.yaml
-	$(SSH) "k3s kubectl apply -f -" < k8s/service.yaml
+	$(SSH) "k3s kubectl apply -f -" < ../k8s/control-plane/rbac.yaml
+	$(SSH) "k3s kubectl apply -f -" < ../k8s/control-plane/deployment.yaml
+	$(SSH) "k3s kubectl apply -f -" < ../k8s/control-plane/service.yaml
 
 restart: ## Restart control-plane pod (picks up new image)
 	$(SSH) "k3s kubectl rollout restart deployment/control-plane -n $(NS)"
