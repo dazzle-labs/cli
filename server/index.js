@@ -436,54 +436,6 @@ app.get('/api/panels', auth, (req, res) => {
     res.json({ panels: list });
 });
 
-// --- Backward Compat: /api/template → main panel ---
-
-app.post('/api/template', auth, async (req, res) => {
-    const { script } = req.body;
-    if (!script) return res.status(400).json({ error: 'script required' });
-
-    const existing = panels.get('main');
-    panels.set('main', {
-        width: existing?.width || SCREEN_WIDTH,
-        height: existing?.height || SCREEN_HEIGHT,
-    });
-
-    writeUserCode('main', script);
-
-    res.json({ status: 'ok', length: script.length });
-});
-
-app.get('/api/template', auth, (req, res) => {
-    const code = readUserCode('main');
-    res.json({ script: code || '' });
-});
-
-app.post('/api/template/edit', auth, async (req, res) => {
-    const { old_string, new_string } = req.body;
-    if (old_string === undefined) return res.status(400).json({ error: 'old_string required' });
-    if (new_string === undefined) return res.status(400).json({ error: 'new_string required' });
-
-    const code = readUserCode('main');
-    if (!code) {
-        ensurePanelDir('main');
-        return res.status(400).json({ error: 'old_string not found in current content' });
-    }
-
-    if (!code.includes(old_string)) {
-        return res.status(400).json({ error: 'old_string not found in current content' });
-    }
-
-    const count = code.split(old_string).length - 1;
-    if (count > 1) {
-        return res.status(400).json({ error: `old_string found ${count} times, must be unique` });
-    }
-
-    const newCode = code.replace(old_string, new_string);
-    writeUserCode('main', newCode);
-
-    res.json({ status: 'ok', length: newCode.length });
-});
-
 // Navigate Chrome via CDP
 app.post('/api/navigate', auth, async (req, res) => {
     const { url } = req.body;
@@ -497,13 +449,6 @@ app.post('/api/navigate', auth, async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
-
-// Serve HLS preview segments
-app.use('/hls', auth, express.static('/tmp/hls', {
-    setHeaders: (res) => {
-        res.setHeader('Cache-Control', 'no-cache, no-store');
-    }
-}));
 
 // Create HTTP server
 const server = http.createServer(app);
