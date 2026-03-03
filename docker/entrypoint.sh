@@ -88,6 +88,7 @@ cat > "$OBS_CONFIG_DIR/global.ini" <<'OBSINI'
 [General]
 FirstRun=false
 LastVersion=503841792
+InfoIncrement=9999
 
 [OBSWebSocket]
 ServerEnabled=true
