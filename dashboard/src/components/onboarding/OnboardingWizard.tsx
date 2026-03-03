@@ -5,12 +5,12 @@ import { Overlay } from "@/components/ui/overlay";
 import { StepIndicator } from "./StepIndicator";
 import { PathSelector } from "./PathSelector";
 import { FrameworkSelector } from "./FrameworkSelector";
-import { SessionCreator } from "./SessionCreator";
+import { EndpointCreator } from "./EndpointCreator";
 import { ConnectionDetails } from "./ConnectionDetails";
 import { StreamDestinationForm } from "./StreamDestinationForm";
 import type { StreamDestinationData } from "./StreamDestinationForm";
 import type { Framework } from "./frameworks";
-import type { Session } from "../../gen/api/v1/session_pb.js";
+import type { Endpoint } from "../../gen/api/v1/endpoint_pb.js";
 import { streamClient } from "../../client.js";
 
 interface OnboardingWizardProps {
@@ -25,7 +25,7 @@ export function OnboardingWizard({ open, onClose }: OnboardingWizardProps) {
   const [started, setStarted] = useState(false);
   const [step, setStep] = useState(0);
   const [framework, setFramework] = useState<Framework | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [endpoint, setEndpoint] = useState<Endpoint | null>(null);
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [streamDest, setStreamDest] = useState<StreamDestinationData | null>(null);
 
@@ -33,7 +33,7 @@ export function OnboardingWizard({ open, onClose }: OnboardingWizardProps) {
     setStarted(false);
     setStep(0);
     setFramework(null);
-    setSession(null);
+    setEndpoint(null);
     setApiKey(null);
     setStreamDest(null);
   }, []);
@@ -94,9 +94,9 @@ export function OnboardingWizard({ open, onClose }: OnboardingWizardProps) {
         );
       case 2:
         return (
-          <SessionCreator
-            onCreated={async (sess, key) => {
-              setSession(sess);
+          <EndpointCreator
+            onCreated={async (ep, key) => {
+              setEndpoint(ep);
               setApiKey(key);
               if (streamDest) await createStreamDestination(streamDest);
               setStep(3);
@@ -104,10 +104,10 @@ export function OnboardingWizard({ open, onClose }: OnboardingWizardProps) {
           />
         );
       case 3:
-        return framework && session && apiKey ? (
+        return framework && endpoint && apiKey ? (
           <ConnectionDetails
             framework={framework}
-            sessionId={session.id}
+            endpointId={endpoint.id}
             apiKey={apiKey}
             onDone={handleDone}
           />

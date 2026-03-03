@@ -1,19 +1,19 @@
 import { useEffect, useRef, useState } from "react";
-import { sessionClient, apiKeyClient } from "../../client.js";
-import type { Session } from "../../gen/api/v1/session_pb.js";
+import { endpointClient, apiKeyClient } from "../../client.js";
+import type { Endpoint } from "../../gen/api/v1/endpoint_pb.js";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Loader2 } from "lucide-react";
 
-interface SessionCreatorProps {
-  onCreated: (session: Session, apiKey: string | null) => void;
+interface EndpointCreatorProps {
+  onCreated: (endpoint: Endpoint, apiKey: string | null) => void;
   verbose?: boolean;
   /** Skip API key creation (experienced users already have one) */
   skipApiKey?: boolean;
 }
 
-export function SessionCreator({ onCreated, verbose, skipApiKey }: SessionCreatorProps) {
-  const [status, setStatus] = useState<"creating" | "polling" | "ready" | "error">("creating");
-  const [session, setSession] = useState<Session | null>(null);
+export function EndpointCreator({ onCreated, verbose, skipApiKey }: EndpointCreatorProps) {
+  const [status, setStatus] = useState<"creating" | "ready" | "error">("creating");
+  const [endpoint, setEndpoint] = useState<Endpoint | null>(null);
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const started = useRef(false);
@@ -25,52 +25,19 @@ export function SessionCreator({ onCreated, verbose, skipApiKey }: SessionCreato
     async function create() {
       try {
         const promises: [Promise<any>, Promise<any> | null] = [
-          sessionClient.createSession({}),
+          endpointClient.createEndpoint({ name: "" }),
           skipApiKey ? null : apiKeyClient.createApiKey({ name: `onboarding-${Date.now()}` }),
         ];
 
-        const [sessResp, keyResp] = await Promise.all(
+        const [epResp, keyResp] = await Promise.all(
           promises.filter(Boolean) as Promise<any>[]
         );
 
-        const sess = sessResp.session!;
+        const ep = epResp.endpoint!;
         const secret = keyResp?.secret ?? null;
+        setEndpoint(ep);
         setApiKey(secret);
-
-        if (sess.status === "running") {
-          setSession(sess);
-          setStatus("ready");
-          return;
-        }
-
-        setStatus("polling");
-        let attempts = 0;
-        const maxAttempts = 30;
-
-        const poll = async () => {
-          attempts++;
-          try {
-            const resp = await sessionClient.getSession({ id: sess.id });
-            const updated = resp.session!;
-            if (updated.status === "running") {
-              setSession(updated);
-              setStatus("ready");
-              return;
-            }
-          } catch {
-            // ignore polling errors
-          }
-
-          if (attempts >= maxAttempts) {
-            setSession(sess);
-            setStatus("ready");
-            return;
-          }
-
-          setTimeout(poll, 2000);
-        };
-
-        setTimeout(poll, 2000);
+        setStatus("ready");
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to create endpoint");
         setStatus("error");
@@ -96,13 +63,11 @@ export function SessionCreator({ onCreated, verbose, skipApiKey }: SessionCreato
       )}
 
       <div className="w-full max-w-md mt-4">
-        {(status === "creating" || status === "polling") && (
+        {status === "creating" && (
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-6 flex flex-col items-center gap-3">
             <Loader2 className="h-8 w-8 text-emerald-400 animate-spin" />
             <p className="text-sm text-zinc-400">
-              {status === "creating"
-                ? skipApiKey ? "Creating endpoint..." : "Creating endpoint and API key..."
-                : "Waiting for endpoint to start..."}
+              {skipApiKey ? "Creating endpoint..." : "Creating endpoint and API key..."}
             </p>
           </div>
         )}
@@ -113,23 +78,19 @@ export function SessionCreator({ onCreated, verbose, skipApiKey }: SessionCreato
           </div>
         )}
 
-        {status === "ready" && session && (
+        {status === "ready" && endpoint && (
           <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.05] p-6 flex flex-col gap-3">
             <p className="text-sm font-medium text-emerald-400">Endpoint ready</p>
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-zinc-500">Endpoint ID</span>
                 <code className="font-mono text-zinc-300 bg-white/[0.04] px-2 py-0.5 rounded">
-                  {session.id.slice(0, 12)}
+                  {endpoint.id.slice(0, 12)}
                 </code>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-zinc-500">Status</span>
-                <span className="text-emerald-400">{session.status}</span>
               </div>
             </div>
             <Button
-              onClick={() => onCreated(session, apiKey)}
+              onClick={() => onCreated(endpoint, apiKey)}
               className="mt-2 bg-emerald-500 text-zinc-950 hover:bg-emerald-400 font-semibold w-full"
             >
               Continue

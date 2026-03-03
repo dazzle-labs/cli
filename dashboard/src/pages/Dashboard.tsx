@@ -13,6 +13,7 @@ import { StreamDestinationForm } from "@/components/onboarding/StreamDestination
 import type { StreamDestinationData } from "@/components/onboarding/StreamDestinationForm";
 import { FRAMEWORKS } from "@/components/onboarding/frameworks";
 import { StreamPreview } from "@/components/StreamPreview";
+import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 
 export function Dashboard() {
   const [endpoints, setEndpoints] = useState<Endpoint[]>([]);
@@ -22,6 +23,7 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   const [creatingEndpoint, setCreatingEndpoint] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
 
   // Panel state
   const [selectedEndpointId, setSelectedEndpointId] = useState<string | null>(null);
@@ -271,19 +273,24 @@ export function Dashboard() {
         )}
       </div>
 
+      {/* Onboarding wizard overlay */}
+      <OnboardingWizard
+        open={wizardOpen}
+        onClose={() => {
+          setWizardOpen(false);
+          refresh();
+        }}
+      />
+
       {/* Endpoints list */}
       {endpoints.length === 0 ? (
         <div className="text-center py-16">
           <p className="text-zinc-500 text-sm mb-4">No endpoints yet. Create one to get started.</p>
           <Button
-            onClick={handleCreateEndpoint}
-            disabled={creatingEndpoint}
+            onClick={() => setWizardOpen(true)}
             className="bg-emerald-500 text-zinc-950 hover:bg-emerald-400 font-semibold"
           >
-            {creatingEndpoint ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            ) : null}
-            Create Endpoint
+            Get Started
           </Button>
         </div>
       ) : (

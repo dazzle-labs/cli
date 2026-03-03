@@ -32,7 +32,6 @@ export function App() {
         <Layout>
           <Routes>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/get-started" element={<Navigate to="/" replace />} />
             <Route path="/api-keys" element={<ApiKeys />} />
             <Route path="/docs" element={<Docs />} />
             <Route path="*" element={<Navigate to="/" replace />} />

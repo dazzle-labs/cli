@@ -6,21 +6,21 @@ import { Copy, Check, PartyPopper, Plus, Loader2 } from "lucide-react";
 
 interface ConnectionDetailsProps {
   framework: Framework;
-  sessionId: string;
+  endpointId: string;
   /** Pre-created API key (from guided path). If null, we check for existing keys. */
   apiKey: string | null;
   onDone: () => void;
   verbose?: boolean;
 }
 
-export function ConnectionDetails({ framework, sessionId, apiKey: initialKey, onDone, verbose }: ConnectionDetailsProps) {
+export function ConnectionDetails({ framework, endpointId, apiKey: initialKey, onDone, verbose }: ConnectionDetailsProps) {
   const [copiedSnippet, setCopiedSnippet] = useState(false);
   const [copiedKey, setCopiedKey] = useState(false);
   const [activeKey, setActiveKey] = useState(initialKey);
   const [hasExistingKeys, setHasExistingKeys] = useState<boolean | null>(null);
   const [creatingKey, setCreatingKey] = useState(false);
 
-  const mcpUrl = `${window.location.origin}/mcp/${sessionId}`;
+  const mcpUrl = `${window.location.origin}/mcp/${endpointId}`;
 
   // If no key was provided, check if user has existing keys
   useEffect(() => {
