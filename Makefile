@@ -4,7 +4,7 @@ SSH      := ssh root@$(HOST)
 NS       := browser-streamer
 
 .PHONY: help proto build-streamer build-control-plane build deploy restart \
-        logs-cp logs-session status sessions create-session provision clean \
+        logs-cp status provision clean \
         secrets install-cert-manager setup-tls \
         control-plane/% streamer/% web/%
 
@@ -37,9 +37,9 @@ build: build-streamer build-control-plane ## Build all images
 # ── Secrets ────────────────────────────────────────────
 
 secrets: ## Decrypt and apply SOPS-encrypted secrets
-	sops -d k8s/postgres-auth.secrets.yaml | $(SSH) "k3s kubectl apply -f -"
-	sops -d k8s/clerk-auth.secrets.yaml | $(SSH) "k3s kubectl apply -f -"
-	sops -d k8s/encryption-key.secrets.yaml | $(SSH) "k3s kubectl apply -f -"
+	sops -d k8s/infrastructure/postgres-auth.secrets.yaml | $(SSH) "k3s kubectl apply -f -"
+	sops -d k8s/clerk/clerk-auth.secrets.yaml | $(SSH) "k3s kubectl apply -f -"
+	sops -d k8s/infrastructure/encryption-key.secrets.yaml | $(SSH) "k3s kubectl apply -f -"
 
 # ── TLS / cert-manager ────────────────────────────────
 
@@ -50,16 +50,16 @@ install-cert-manager: ## Install cert-manager on the cluster
 	$(SSH) "k3s kubectl rollout status deployment/cert-manager-cainjector -n cert-manager --timeout=120s"
 
 setup-tls: ## Apply Traefik config, ClusterIssuer, and Ingress for TLS
-	$(SSH) "k3s kubectl apply -f -" < k8s/traefik-config.yaml
-	$(SSH) "k3s kubectl apply -f -" < k8s/cluster-issuer.yaml
-	$(SSH) "k3s kubectl apply -f -" < k8s/ingress.yaml
+	$(SSH) "k3s kubectl apply -f -" < k8s/networking/traefik-config.yaml
+	$(SSH) "k3s kubectl apply -f -" < k8s/networking/cluster-issuer.yaml
+	$(SSH) "k3s kubectl apply -f -" < k8s/networking/ingress.yaml
 
 # ── Deploy ─────────────────────────────────────────────
 
 deploy: ## Apply all k8s manifests and restart control-plane
-	$(SSH) "k3s kubectl apply -f -" < k8s/postgres.yaml
+	$(SSH) "k3s kubectl apply -f -" < k8s/infrastructure/postgres.yaml
 	$(MAKE) -C control-plane deploy
-	$(SSH) "k3s kubectl apply -f -" < k8s/ingress.yaml
+	$(SSH) "k3s kubectl apply -f -" < k8s/networking/ingress.yaml
 	$(MAKE) -C control-plane restart
 
 restart: ## Restart control-plane pod (picks up new image)
@@ -69,9 +69,6 @@ restart: ## Restart control-plane pod (picks up new image)
 
 logs-cp: ## Tail control-plane logs
 	$(MAKE) -C control-plane logs
-
-logs-session: ## Tail logs for a session pod (usage: make logs-session POD=streamer-abc12345)
-	$(SSH) "k3s kubectl logs -f $(POD) -n $(NS)"
 
 status: ## Show pods and services
 	@echo "── Pods ──"
@@ -85,12 +82,6 @@ status: ## Show pods and services
 	@echo ""
 	@echo "── Certificates ──"
 	$(SSH) "k3s kubectl get certificate -n $(NS)"
-
-sessions: ## List active sessions via API
-	@curl -s "https://stream.dazzle.fm/api/sessions?token=$(TOKEN)" | python3 -m json.tool
-
-create-session: ## Create a new session
-	@curl -s -X POST "https://stream.dazzle.fm/api/session?token=$(TOKEN)" | python3 -m json.tool
 
 # ── Full provision ─────────────────────────────────────
 

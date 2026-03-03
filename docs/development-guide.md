@@ -94,10 +94,7 @@ make status                 # Verify pods are running
 
 ```bash
 make status                     # Pods + services
-make logs-sm                    # Tail control-plane logs
-make logs-session POD=<name>    # Tail a streamer pod
-make sessions TOKEN=...         # List sessions via API
-make create-session TOKEN=...   # Create a session via API
+make logs-cp                    # Tail control-plane logs
 make clean                      # Delete all session pods
 ```
 
@@ -106,10 +103,9 @@ make clean                      # Delete all session pods
 Secrets are encrypted with SOPS using Age encryption (4 recipients configured in `.sops.yaml`).
 
 Encrypted files in `k8s/`:
-- `clerk-auth.secrets.yaml` — Clerk API keys
-- `clerk-oauth.secrets.yaml` — OAuth client secret
-- `encryption-key.secrets.yaml` — AES encryption key
-- `postgres-auth.secrets.yaml` — Database password
+- `clerk/clerk-auth.secrets.yaml` — Clerk API keys
+- `infrastructure/encryption-key.secrets.yaml` — AES encryption key
+- `infrastructure/postgres-auth.secrets.yaml` — Database password
 
 To edit secrets:
 ```bash

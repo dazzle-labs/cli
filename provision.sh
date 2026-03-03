@@ -108,9 +108,9 @@ ${SSH} "k3s kubectl rollout status deployment/cert-manager-cainjector -n cert-ma
 
 # Step 13: Setup TLS (Traefik config, ClusterIssuer, Ingress)
 echo "==> Setting up TLS..."
-${SSH} "k3s kubectl apply -f -" < k8s/traefik-config.yaml
-${SSH} "k3s kubectl apply -f -" < k8s/cluster-issuer.yaml
-${SSH} "k3s kubectl apply -f -" < k8s/ingress.yaml
+${SSH} "k3s kubectl apply -f -" < k8s/networking/traefik-config.yaml
+${SSH} "k3s kubectl apply -f -" < k8s/networking/cluster-issuer.yaml
+${SSH} "k3s kubectl apply -f -" < k8s/networking/ingress.yaml
 
 # Step 14: Verify
 echo "==> Verifying..."

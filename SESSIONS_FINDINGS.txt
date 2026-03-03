@@ -1,0 +1,303 @@
+================================================================================
+SESSIONS TERMINOLOGY AUDIT - COMPLETE FINDINGS
+================================================================================
+
+Total References Found: 50+
+Files Affected: 15+
+Last Updated: 2026-03-03
+
+================================================================================
+SECTION 1: REMOVE (Delete Stale References)
+================================================================================
+
+1. Makefile
+   Location: /Users/johnsabath/projects/browser-streamer/Makefile
+   Line 7: .PHONY declaration
+   - Remove: "logs-session"
+   - Remove: "sessions"
+   - Remove: "create-session"
+
+   Line 73-74: Target definition
+   - DELETE ENTIRE TARGET: logs-session
+
+   Line 89-93: Target definitions
+   - DELETE ENTIRE TARGET: sessions (lines 89-90)
+   - DELETE ENTIRE TARGET: create-session (lines 92-93)
+
+   REASON: These Make targets call API endpoints that no longer exist or have been renamed
+
+2. provision.sh
+   Location: /Users/johnsabath/projects/browser-streamer/provision.sh
+   Line 128: "New session: curl -X POST https://stream.dazzle.fm/api/session?token=${TOKEN}"
+   Line 129: "Sessions:    curl https://stream.dazzle.fm/api/sessions?token=${TOKEN}"
+
+   ACTION: DELETE or REPLACE with updated endpoint references
+
+   REASON: These echo messages show users outdated API endpoints
+
+================================================================================
+SECTION 2: REPLACE (Update Documentation/Configuration)
+================================================================================
+
+1. CLAUDE.md
+   Location: /Users/johnsabath/projects/browser-streamer/CLAUDE.md
+
+   Line 37: "make logs-session POD=<pod> # Tail a session pod"
+   - DELETE or replace with equivalent endpoint management command
+
+   Line 38: "make sessions TOKEN=<token> # List active sessions via API"
+   - DELETE or replace with endpoint list command
+
+   Line 39: "make create-session TOKEN=<token> # Create a new session"
+   - DELETE or replace with endpoint create command
+
+   Line 44: "make clean                  # Delete all session pods"
+   - REPLACE: Update comment to say "endpoint pods" instead of "session pods"
+
+   REASON: These reference old/stale Make targets
+
+2. docs/development-guide.md
+   Location: /Users/johnsabath/projects/browser-streamer/docs/development-guide.md
+   Line 99: "make sessions TOKEN=...         # List sessions via API"
+   - DELETE or replace with current API command
+
+   REASON: References old/non-existent Make target
+
+3. docs/deployment-guide.md
+   Location: /Users/johnsabath/projects/browser-streamer/docs/deployment-guide.md
+   Line 143: "make sessions        # Active sessions"
+   - DELETE or replace with current API command
+
+   REASON: References old/non-existent Make target
+
+================================================================================
+SECTION 3: KEEP (Do NOT Modify - Technical API Contracts)
+================================================================================
+
+1. Proto Message Types & Services
+   Location: /Users/johnsabath/projects/browser-streamer/control-plane/proto/api/v1/session.proto
+
+   KEEP ALL OF:
+   - service SessionService { ... }
+   - rpc CreateSession(CreateSessionRequest) returns (CreateSessionResponse)
+   - rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse)
+   - rpc GetSession(GetSessionRequest) returns (GetSessionResponse)
+   - rpc DeleteSession(DeleteSessionRequest) returns (DeleteSessionResponse)
+   - message Session { ... }
+   - All request/response message types
+
+   REASON: These are part of the RPC API contract. Changing them would break
+   client compatibility.
+
+2. Generated Protobuf Code
+   Locations:
+   - /Users/johnsabath/projects/browser-streamer/control-plane/gen/api/v1/session.pb.go
+   - /Users/johnsabath/projects/browser-streamer/control-plane/gen/api/v1/apiv1connect/session.connect.go
+
+   KEEP ALL:
+   - These are auto-generated from .proto files
+   - Any changes should be made to the .proto source
+   - They will be regenerated when proto definitions change
+
+   REASON: Auto-generated code should not be manually edited
+
+3. Go Implementation Types
+   Location: /Users/johnsabath/projects/browser-streamer/control-plane/main.go
+
+   KEEP ALL OF:
+   - type SessionStatus string (line 44)
+   - type Session struct (lines 52-60)
+   - type sessionServer struct (lines 12-15)
+   - const statements for StatusStarting, StatusRunning, StatusStopping
+
+   Location: /Users/johnsabath/projects/browser-streamer/control-plane/connect_session.go
+
+   KEEP ALL OF:
+   - func (s *sessionServer) CreateSession(...)
+   - func (s *sessionServer) ListSessions(...)
+   - func (s *sessionServer) GetSession(...)
+   - func (s *sessionServer) DeleteSession(...)
+   - func sessionToProto(s *Session) *apiv1.Session
+
+   Location: /Users/johnsabath/projects/browser-streamer/control-plane/db.go
+
+   KEEP ALL OF:
+   - createSession(...) function
+   - getSession(...) function
+   - listSessionsForUser(...) function
+   - deleteSession(...) function
+   - All related database operations
+
+   REASON: These are implementation details tied to the proto contract
+
+4. Database Schema
+   Location: /Users/johnsabath/projects/browser-streamer/docs/data-models.md
+
+   KEEP ALL OF:
+   - session_log table definition
+   - session_id field references
+   - All Session struct documentation
+
+   REASON: Changing would require database migration
+
+================================================================================
+SECTION 4: REVIEW/CLARIFY (Architecture Documentation - No Changes Needed)
+================================================================================
+
+These files are technically correct but could be enhanced with terminology notes.
+No removal necessary, but consider adding clarification about terminology mapping.
+
+1. docs/api-contracts.md
+   - Lines 13, 24, 26: "SessionService" references
+   - Line 42: "Errors: ResourceExhausted (max sessions)"
+   - Line 49: "Response: { sessions: Session[] }"
+   - Line 183: "sessions: int, maxSessions: int"
+
+   RECOMMENDATION: Keep as-is (accurate RPC API description)
+   OPTIONAL: Add glossary note explaining "Session" = internal term, "Stage/Endpoint" = user-facing
+
+2. docs/architecture-session-manager.md
+   - Line 28: "connect_session.go | ConnectRPC SessionService handlers"
+   - Lines 42-46: Description of SessionService CRUD operations
+
+   RECOMMENDATION: Keep as-is (accurate component description)
+   NOTE: "Session Manager" is the actual component name - keep it
+
+3. docs/architecture-dashboard.md
+   - Line 83: "sessionClient → SessionService (CRUD sessions)"
+   - Line 92-93: SessionService method descriptions
+   - Line 138: "Session Creation & Polling"
+
+   RECOMMENDATION: Keep as-is
+   OPTIONAL: Add note about Session/Stage terminology mapping
+
+4. docs/data-models.md
+   - Line 86-94: "Session" struct documentation
+   - Line 103: "sessions map[string]*Session"
+
+   RECOMMENDATION: Keep as-is (internal data structure documentation)
+
+5. docs/integration-architecture.md
+   - Multiple references to "Session Manager", "SessionService", "session creation"
+
+   RECOMMENDATION: Keep as-is (architecture is accurate)
+
+6. docs/project-overview.md
+   - Line 19: "Session Manager" (component name)
+   - Line 47: "Session Manager (Go)" (in architecture)
+   - Lines 64-70: "control browser sessions", "create sessions", "session recovery"
+
+   RECOMMENDATION: Review user-facing references (lines 64-70) - these could be
+   updated to "endpoint" or "stage" terminology for consistency
+
+================================================================================
+SECTION 5: REFERENCE - All Locations by Category
+================================================================================
+
+REMOVE (5 locations in 2 files):
+├─ Makefile
+│  ├─ Line 7: .PHONY declaration (remove 3 targets)
+│  ├─ Line 73-74: logs-session target (delete)
+│  └─ Line 89-93: sessions and create-session targets (delete)
+└─ provision.sh
+   ├─ Line 128: API endpoint reference
+   └─ Line 129: API endpoint reference
+
+REPLACE (7+ locations in 3 files):
+├─ CLAUDE.md
+│  ├─ Line 37: logs-session reference
+│  ├─ Line 38: sessions reference
+│  ├─ Line 39: create-session reference
+│  └─ Line 44: session pods → endpoint pods
+├─ docs/development-guide.md
+│  └─ Line 99: sessions Make target reference
+└─ docs/deployment-guide.md
+   └─ Line 143: sessions Make target reference
+
+KEEP (30+ locations across 10+ files):
+├─ control-plane/proto/api/v1/session.proto (all)
+├─ control-plane/gen/api/v1/*.pb.go (auto-generated)
+├─ control-plane/gen/api/v1/apiv1connect/*.connect.go (auto-generated)
+├─ control-plane/main.go (Session struct, sessionServer)
+├─ control-plane/connect_session.go (all handlers)
+├─ control-plane/db.go (session operations)
+├─ docs/data-models.md (Session documentation)
+└─ Generated code and schema references
+
+REVIEW (15+ locations across 6 files):
+├─ docs/api-contracts.md
+├─ docs/architecture-session-manager.md
+├─ docs/architecture-dashboard.md
+├─ docs/data-models.md
+├─ docs/integration-architecture.md
+└─ docs/project-overview.md
+
+================================================================================
+SECTION 6: ACTION PLAN BY PRIORITY
+================================================================================
+
+PRIORITY 1 (Critical - Prevents User Errors):
+├─ Delete Makefile targets (logs-session, sessions, create-session)
+│  Reason: Users cannot run non-existent Make targets
+│  Est. Time: 5 minutes
+│  Files: Makefile
+│
+└─ Update CLAUDE.md Make references
+   Reason: Project instructions must be accurate
+   Est. Time: 10 minutes
+   Files: CLAUDE.md
+
+PRIORITY 2 (High - Breaks Provisioning):
+├─ Update provision.sh API endpoint references
+│  Reason: New operators follow these examples
+│  Est. Time: 10 minutes
+│  Files: provision.sh
+│
+└─ Update development/deployment guide references
+   Reason: Consistency across documentation
+   Est. Time: 15 minutes
+   Files: docs/development-guide.md, docs/deployment-guide.md
+
+PRIORITY 3 (Medium - Nice to Have):
+└─ Add terminology glossary to architecture docs
+   Reason: Clarifies mapping between internal "Session" and user-facing "Stage"/"Endpoint"
+   Est. Time: 30 minutes
+   Files: Multiple architecture doc files
+
+TOTAL ESTIMATED TIME: 70 minutes
+
+================================================================================
+SECTION 7: VALIDATION CHECKLIST
+================================================================================
+
+After making changes, verify:
+
+[ ] Makefile
+    - [ ] .PHONY line no longer contains: logs-session, sessions, create-session
+    - [ ] logs-session, sessions, create-session targets are deleted
+    - [ ] `make help` doesn't show deleted targets
+    - [ ] Existing targets still work (make build, make deploy, etc)
+
+[ ] provision.sh
+    - [ ] API endpoint references are updated or removed
+    - [ ] Script still runs without errors
+    - [ ] Echo messages show correct endpoints
+
+[ ] CLAUDE.md
+    - [ ] Make command references are updated or removed
+    - [ ] Examples are accurate
+    - [ ] No references to non-existent targets
+
+[ ] Documentation Files
+    - [ ] development-guide.md has no stale Make target references
+    - [ ] deployment-guide.md has no stale Make target references
+    - [ ] All architecture docs are still accurate
+
+[ ] Git
+    - [ ] Changes can be reviewed with: git diff
+    - [ ] Proto files were not modified
+    - [ ] Generated code was not manually edited
+
+================================================================================
+END OF REPORT
+================================================================================

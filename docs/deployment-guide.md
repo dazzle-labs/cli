@@ -139,8 +139,7 @@ Traefik configured with HTTP→HTTPS redirect.
 
 ```bash
 make status          # All resources
-make logs-sm         # Session manager logs
-make sessions        # Active sessions
+make logs-cp         # Control-plane logs
 ```
 
 Session manager logs include:

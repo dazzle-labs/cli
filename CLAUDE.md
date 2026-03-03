@@ -34,9 +34,6 @@ make setup-tls              # Apply Traefik config, ClusterIssuer, Ingress
 ```bash
 make status                 # Show pods, services, ingress, certificates
 make logs-cp                # Tail control-plane logs
-make logs-session POD=<pod> # Tail a session pod
-make sessions TOKEN=<token> # List active sessions via API
-make create-session TOKEN=<token> # Create a new session
 ```
 
 ### Cleanup

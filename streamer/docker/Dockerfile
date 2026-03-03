@@ -59,10 +59,10 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
 WORKDIR /app
 
 # Copy streamer code and install dependencies
-COPY streamer/package.json streamer/package-lock.json* ./
+COPY package.json package-lock.json* ./
 RUN npm install
 
-COPY streamer/index.js streamer/shell.html streamer/prelude.js streamer/vite-init.mjs ./
+COPY index.js shell.html prelude.js vite-init.mjs ./
 
 RUN mkdir -p /tmp/content
 
