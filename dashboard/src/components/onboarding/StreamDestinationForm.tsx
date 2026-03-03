@@ -82,8 +82,8 @@ export function StreamDestinationForm({
           <div className="flex items-center gap-1.5 mb-6">
             <p className="text-sm text-zinc-500 text-center">
               {verbose
-                ? "Where should your endpoint stream to? You can skip this for now."
-                : "Configure where your endpoint streams to."}
+                ? "Where should your stage stream to? You can skip this for now."
+                : "Configure where your stage streams to."}
             </p>
             <button
               type="button"
@@ -99,7 +99,7 @@ export function StreamDestinationForm({
               <p className="text-xs text-zinc-400 leading-relaxed">
                 <span className="font-medium text-zinc-300">RTMP</span> is the standard protocol for live streaming.
                 Your streaming platform (Twitch, YouTube, etc.) gives you an RTMP URL and a stream key.
-                Dazzle uses these to send your endpoint's screen to that platform in real time — so viewers can watch
+                Dazzle uses these to send your stage's screen to that platform in real time — so viewers can watch
                 your agent work live.
               </p>
             </div>

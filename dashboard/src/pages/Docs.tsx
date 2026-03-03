@@ -4,7 +4,7 @@ import { FRAMEWORKS } from "@/components/onboarding/frameworks";
 import { MCP_TOOLS } from "@/components/onboarding/mcp-tools";
 import { ENDPOINT_GROUPS } from "@/components/onboarding/api-endpoints";
 
-const MCP_URL = `${window.location.origin}/mcp/YOUR_UUID`;
+const MCP_URL = `${window.location.origin}/stage/YOUR_UUID/mcp`;
 
 export function Docs() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -56,12 +56,12 @@ export function Docs() {
 
       {/* Endpoint format */}
       <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 mb-4">
-        <p className="text-xs font-medium text-zinc-400 mb-3">MCP endpoint format</p>
+        <p className="text-xs font-medium text-zinc-400 mb-3">MCP stage URL format</p>
         <code className="block text-sm font-mono text-zinc-300 bg-zinc-950/50 rounded-lg px-4 py-2.5 border border-white/[0.06]">
-          {window.location.origin}/mcp/<span className="text-emerald-400">&lt;agent-uuid&gt;</span>
+          {window.location.origin}/stage/<span className="text-emerald-400">&lt;uuid&gt;</span>/mcp
         </code>
         <p className="text-xs text-zinc-600 mt-3">
-          Each UUID maps to an isolated streaming environment. Use different UUIDs to run separate agents or projects in parallel.
+          Each UUID maps to an isolated stage. Use different UUIDs to run separate agents or projects in parallel.
         </p>
       </div>
 
@@ -142,7 +142,7 @@ export function Docs() {
           )}
           <div>
             <p className="text-sm font-medium text-zinc-300">Per-project and multi-agent setups</p>
-            <p className="text-xs text-zinc-600">How to scope sessions to different projects or agents</p>
+            <p className="text-xs text-zinc-600">How to scope stages to different projects or agents</p>
           </div>
         </button>
         {showScoping && (
@@ -153,7 +153,7 @@ export function Docs() {
                 <p className="text-xs text-zinc-500 leading-relaxed">
                   The UUID in the MCP URL determines which environment your agent connects to.
                   Use a consistent UUID per project so the same agent always reconnects to the same workspace.
-                  Environments persist until you explicitly stop them.
+                  Stages persist until you explicitly stop them.
                 </p>
               </div>
               <div>
@@ -163,10 +163,10 @@ export function Docs() {
                   giving each a different UUID. For example, scope by project:
                 </p>
                 <pre className="mt-2 text-xs font-mono text-zinc-400 bg-zinc-950/50 rounded-lg px-4 py-2.5 border border-white/[0.06] overflow-x-auto leading-relaxed">{`# Project A — always uses the same environment
-/mcp/a1b2c3d4-e5f6-7890-abcd-ef1234567890
+/stage/a1b2c3d4-e5f6-7890-abcd-ef1234567890/mcp
 
-# Project B — separate environment
-/mcp/f9e8d7c6-b5a4-3210-fedc-ba0987654321`}</pre>
+# Project B — separate stage
+/stage/f9e8d7c6-b5a4-3210-fedc-ba0987654321/mcp`}</pre>
               </div>
               <div>
                 <p className="text-xs font-medium text-zinc-400 mb-1.5">Project-scoped config</p>
@@ -179,7 +179,7 @@ export function Docs() {
               <div>
                 <p className="text-xs font-medium text-zinc-400 mb-1.5">Shared API key</p>
                 <p className="text-xs text-zinc-500 leading-relaxed">
-                  A single API key works across all your sessions. Or create separate keys per project or
+                  A single API key works across all your stages. Or create separate keys per project or
                   team member for easier auditing — revoke one without affecting others.
                 </p>
               </div>

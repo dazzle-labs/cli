@@ -18,7 +18,7 @@ interface OnboardingWizardProps {
   onClose: () => void;
 }
 
-const EXPERIENCED_STEPS = ["Choose tool", "Stream to", "Create endpoint", "Connect"];
+const EXPERIENCED_STEPS = ["Choose tool", "Stream to", "Create stage", "Connect"];
 
 export function OnboardingWizard({ open, onClose }: OnboardingWizardProps) {
   const navigate = useNavigate();
@@ -104,7 +104,7 @@ export function OnboardingWizard({ open, onClose }: OnboardingWizardProps) {
           />
         );
       case 3:
-        return framework && endpoint && apiKey ? (
+        return framework && endpoint ? (
           <ConnectionDetails
             framework={framework}
             endpointId={endpoint.id}

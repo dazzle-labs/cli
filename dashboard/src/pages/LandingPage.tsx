@@ -17,7 +17,7 @@ const VALUE_PROPS = [
   {
     icon: Plug,
     title: "One line to connect",
-    body: "Add your MCP endpoint to any agent framework. Claude Code, OpenAI, CrewAI, and more.",
+    body: "Add your MCP stage to any agent framework. Claude Code, OpenAI, CrewAI, and more.",
   },
 ];
 
@@ -133,7 +133,7 @@ export function LandingPage() {
               style={{ fontFamily: "'Outfit', sans-serif" }}
               onClick={() => setShowSignIn(true)}
             >
-              Launch a session
+              Launch a stage
               <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
           </div>
@@ -192,7 +192,7 @@ export function LandingPage() {
             className="text-xl md:text-2xl text-white mb-3"
             style={{ fontFamily: "'DM Serif Display', serif" }}
           >
-            One MCP endpoint. Every agent framework.
+            One MCP stage. Every agent framework.
           </h3>
           <p
             className="text-xs uppercase tracking-[0.2em] text-zinc-500 mb-6"

@@ -153,7 +153,13 @@ cat > "$OBS_CONFIG_DIR/basic/scenes/Untitled.json" <<'SCENEJSON'
 SCENEJSON
 
 echo "Starting OBS Studio..."
-obs --minimize-to-tray --disable-shutdown-check --display=:99 &
+# Force software rendering — OBS 32.x's CEF crashes in headless Xvfb without this.
+# LIBGL_ALWAYS_SOFTWARE + GALLIUM_DRIVER=llvmpipe gives CEF a usable software GPU.
+export LIBGL_ALWAYS_SOFTWARE=1
+export GALLIUM_DRIVER=llvmpipe
+export QT_XCB_GL_INTEGRATION=none
+export MESA_GL_VERSION_OVERRIDE=4.5
+obs --minimize-to-tray --disable-shutdown-check --display=:99 --disable-gpu &
 OBS_PID=$!
 
 # Wait for OBS WebSocket to be ready

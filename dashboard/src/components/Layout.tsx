@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 import { OnboardingWizard } from "./onboarding/OnboardingWizard";
 
 const navItems = [
-  { path: "/", label: "Endpoints", icon: Monitor },
+  { path: "/", label: "Stages", icon: Monitor },
   { path: "/api-keys", label: "API Keys", icon: Key },
   { path: "/docs", label: "Docs", icon: BookOpen },
 ];

@@ -921,9 +921,9 @@ func main() {
 		mgr.auth.authMiddlewareHTTP(http.HandlerFunc(mgr.handleSessionProxy)).ServeHTTP(w, r)
 	})
 
-	// MCP server (StreamableHTTP) — /mcp/<agent-uuid>/...
+	// MCP server (StreamableHTTP) — /stage/<uuid>/mcp/...
 	mcpHandler := mgr.mcpMiddleware(mgr.setupMCP())
-	mux.Handle("/mcp/", mcpHandler)
+	mux.Handle("/stage/", mcpHandler)
 
 	// Dashboard SPA (fallback route)
 	mux.Handle("/", spaFileServer("dashboard"))

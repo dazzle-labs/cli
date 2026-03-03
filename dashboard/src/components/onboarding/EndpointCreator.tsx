@@ -24,9 +24,21 @@ export function EndpointCreator({ onCreated, verbose, skipApiKey }: EndpointCrea
 
     async function create() {
       try {
+        // Check if user already has API keys — only create one on first onboarding
+        let shouldCreateKey = !skipApiKey;
+        if (shouldCreateKey) {
+          try {
+            const existing = await apiKeyClient.listApiKeys({});
+            if (existing.keys.length > 0) shouldCreateKey = false;
+          } catch {
+            // If check fails, skip key creation to be safe
+            shouldCreateKey = false;
+          }
+        }
+
         const promises: [Promise<any>, Promise<any> | null] = [
           endpointClient.createEndpoint({ name: "" }),
-          skipApiKey ? null : apiKeyClient.createApiKey({ name: `onboarding-${Date.now()}` }),
+          shouldCreateKey ? apiKeyClient.createApiKey({ name: `onboarding-${Date.now()}` }) : null,
         ];
 
         const [epResp, keyResp] = await Promise.all(
@@ -39,7 +51,7 @@ export function EndpointCreator({ onCreated, verbose, skipApiKey }: EndpointCrea
         setApiKey(secret);
         setStatus("ready");
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to create endpoint");
+        setError(err instanceof Error ? err.message : "Failed to create stage");
         setStatus("error");
       }
     }
@@ -53,11 +65,11 @@ export function EndpointCreator({ onCreated, verbose, skipApiKey }: EndpointCrea
         className="text-2xl tracking-[-0.02em] text-white mb-2"
         style={{ fontFamily: "'DM Serif Display', serif" }}
       >
-        {verbose ? "Create an endpoint" : "Setting up your endpoint"}
+        {verbose ? "Create a stage" : "Setting up your stage"}
       </h2>
       {verbose && (
         <p className="text-sm text-zinc-500 mb-6 max-w-md text-center">
-          An endpoint is a production environment your agent can drive.
+          A stage is a production environment your agent can drive.
           We're spinning one up for you now.
         </p>
       )}
@@ -67,7 +79,7 @@ export function EndpointCreator({ onCreated, verbose, skipApiKey }: EndpointCrea
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-6 flex flex-col items-center gap-3">
             <Loader2 className="h-8 w-8 text-emerald-400 animate-spin" />
             <p className="text-sm text-zinc-400">
-              {skipApiKey ? "Creating endpoint..." : "Creating endpoint and API key..."}
+              Creating stage...
             </p>
           </div>
         )}
@@ -80,10 +92,10 @@ export function EndpointCreator({ onCreated, verbose, skipApiKey }: EndpointCrea
 
         {status === "ready" && endpoint && (
           <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.05] p-6 flex flex-col gap-3">
-            <p className="text-sm font-medium text-emerald-400">Endpoint ready</p>
+            <p className="text-sm font-medium text-emerald-400">Stage ready</p>
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-zinc-500">Endpoint ID</span>
+                <span className="text-zinc-500">Stage ID</span>
                 <code className="font-mono text-zinc-300 bg-white/[0.04] px-2 py-0.5 rounded">
                   {endpoint.id.slice(0, 12)}
                 </code>

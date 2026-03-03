@@ -186,24 +186,34 @@ Use ["<cmd>", "--help"] for flags on any command.`),
 }
 
 // mcpMiddleware validates auth, extracts the agent UUID from the URL path,
-// strips the /<uuid> prefix so the MCP handler sees /mcp/..., and stores
+// strips the prefix so the MCP handler sees /mcp/..., and stores
 // the UUID in request context.
+// Path format: /stage/<uuid>/mcp or /stage/<uuid>/mcp/...
 func (m *Manager) mcpMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Path format: /mcp/<uuid> or /mcp/<uuid>/...
-		trimmed := strings.TrimPrefix(r.URL.Path, "/mcp/")
+		trimmed := strings.TrimPrefix(r.URL.Path, "/stage/")
 		if trimmed == r.URL.Path {
-			// No /mcp/ prefix — reject
 			http.NotFound(w, r)
 			return
 		}
 
+		// trimmed = "<uuid>/mcp/..." or "<uuid>/mcp" or "<uuid>"
 		parts := strings.SplitN(trimmed, "/", 2)
 		agentID := parts[0]
 		if agentID == "" {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(`{"error":"agent UUID required in path: /mcp/<uuid>"}`))
+			w.Write([]byte(`{"error":"stage UUID required in path: /stage/<uuid>/mcp"}`))
+			return
+		}
+
+		// Require /mcp suffix
+		rest := ""
+		if len(parts) > 1 {
+			rest = parts[1]
+		}
+		if !strings.HasPrefix(rest, "mcp") {
+			http.NotFound(w, r)
 			return
 		}
 
@@ -244,11 +254,12 @@ func (m *Manager) mcpMiddleware(next http.Handler) http.Handler {
 			}
 		}
 
-		// Rewrite path: strip the /<uuid> segment so MCP handler sees /mcp or /mcp/...
-		if len(parts) > 1 {
-			r.URL.Path = "/mcp/" + parts[1]
-		} else {
+		// Rewrite path: strip /stage/<uuid>/ so MCP handler sees /mcp or /mcp/...
+		mcpRest := strings.TrimPrefix(rest, "mcp")
+		if mcpRest == "" || mcpRest == "/" {
 			r.URL.Path = "/mcp"
+		} else {
+			r.URL.Path = "/mcp" + mcpRest
 		}
 
 		// Store agent ID and user ID in context

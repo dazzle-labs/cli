@@ -32,6 +32,9 @@ RUN apt-get update && apt-get install -y \
     software-properties-common \
     netcat-openbsd \
     tmux \
+    mesa-utils \
+    libgl1-mesa-dri \
+    libegl-mesa0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install OBS Studio 32.x (includes obs-websocket built-in)

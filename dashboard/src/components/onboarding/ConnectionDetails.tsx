@@ -20,7 +20,7 @@ export function ConnectionDetails({ framework, endpointId, apiKey: initialKey, o
   const [hasExistingKeys, setHasExistingKeys] = useState<boolean | null>(null);
   const [creatingKey, setCreatingKey] = useState(false);
 
-  const mcpUrl = `${window.location.origin}/mcp/${endpointId}`;
+  const mcpUrl = `${window.location.origin}/stage/${endpointId}/mcp`;
 
   // If no key was provided, check if user has existing keys
   useEffect(() => {
@@ -182,7 +182,7 @@ export function ConnectionDetails({ framework, endpointId, apiKey: initialKey, o
             <div className="flex flex-col gap-1.5 text-xs">
               <div className="flex items-start gap-2">
                 <code className="text-emerald-400 bg-white/[0.04] px-1.5 py-0.5 rounded shrink-0">url</code>
-                <span className="text-zinc-500">MCP URL for this endpoint — routes commands to your cloud environment</span>
+                <span className="text-zinc-500">MCP endpoint URL — routes commands to your stage</span>
               </div>
               <div className="flex items-start gap-2">
                 <code className="text-emerald-400 bg-white/[0.04] px-1.5 py-0.5 rounded shrink-0">DAZZLE_API_KEY</code>

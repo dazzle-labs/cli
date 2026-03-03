@@ -178,7 +178,7 @@ export function Dashboard() {
     return (
       <div className="flex items-center gap-2 text-zinc-500 text-sm pt-12">
         <div className="h-4 w-4 border-2 border-zinc-600 border-t-emerald-400 rounded-full animate-spin" />
-        Loading endpoints...
+        Loading stages...
       </div>
     );
   }
@@ -207,7 +207,7 @@ export function Dashboard() {
   const selectedEp = endpoints.find((e) => e.id === selectedEndpointId);
   const selectedSession = selectedEndpointId ? getSessionForEndpoint(selectedEndpointId) : undefined;
   const selectedDest = destinations.length > 0 ? destinations[0] : undefined;
-  const mcpUrl = selectedEndpointId ? `${window.location.origin}/mcp/${selectedEndpointId}` : "";
+  const mcpUrl = selectedEndpointId ? `${window.location.origin}/stage/${selectedEndpointId}/mcp` : "";
   const activeFw = FRAMEWORKS.find((fw) => fw.id === activeFramework) ?? FRAMEWORKS[0];
   const snippet = selectedEndpointId ? activeFw.getSnippet(mcpUrl, "") : "";
 
@@ -249,11 +249,11 @@ export function Dashboard() {
             className="text-3xl tracking-[-0.02em] text-white mb-1"
             style={{ fontFamily: "'DM Serif Display', serif" }}
           >
-            Endpoints
+            Stages
           </h1>
           {profile && (
             <p className="text-sm text-zinc-500">
-              {sessions.length} active session{sessions.length !== 1 ? "s" : ""} &middot; {profile.apiKeyCount} API key{profile.apiKeyCount !== 1 ? "s" : ""}
+              {sessions.length} active stage{sessions.length !== 1 ? "s" : ""} &middot; {profile.apiKeyCount} API key{profile.apiKeyCount !== 1 ? "s" : ""}
             </p>
           )}
         </div>
@@ -268,7 +268,7 @@ export function Dashboard() {
             {creatingEndpoint ? (
               <Loader2 className="h-4 w-4 animate-spin mr-1" />
             ) : null}
-            New Endpoint
+            New Stage
           </Button>
         )}
       </div>
@@ -285,7 +285,7 @@ export function Dashboard() {
       {/* Endpoints list */}
       {endpoints.length === 0 ? (
         <div className="text-center py-16">
-          <p className="text-zinc-500 text-sm mb-4">No endpoints yet. Create one to get started.</p>
+          <p className="text-zinc-500 text-sm mb-4">No stages yet. Create one to get started.</p>
           <Button
             onClick={() => setWizardOpen(true)}
             className="bg-emerald-500 text-zinc-950 hover:bg-emerald-400 font-semibold"
@@ -475,12 +475,12 @@ export function Dashboard() {
                   onClick={() => setConfirmingDelete(true)}
                 >
                   <Trash2 className="h-3.5 w-3.5 mr-1" />
-                  Delete endpoint
+                  Delete stage
                 </Button>
               ) : (
                 <div>
                   <p className="text-sm text-zinc-400 mb-3">
-                    Delete this endpoint? Any running session will be terminated.
+                    Delete this stage? Any running stage will be terminated.
                   </p>
                   <div className="flex items-center gap-2">
                     <Button
