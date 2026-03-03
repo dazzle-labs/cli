@@ -35,7 +35,7 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
         method: "POST",
         path: "/api.v1.SessionService/CreateSession",
         description:
-          "Create a new browser session. Spins up an isolated pod with Chrome, OBS Studio, and a Node.js server.",
+          "Activate a stage. Provisions the environment so it's ready to render content and stream.",
         auth: "Clerk JWT or API Key",
         params: [],
         responseExample: JSON.stringify(
@@ -53,7 +53,7 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
           2,
         ),
         notes:
-          "Returns ResourceExhausted if max sessions reached. Pod IP is empty until status becomes 'running'.",
+          "Returns ResourceExhausted if capacity limit reached. Pod IP is empty until status becomes 'running'.",
       },
       {
         id: "list-sessions",
@@ -331,7 +331,7 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
         method: "ANY",
         path: "/session/<id>/*",
         description:
-          "Reverse proxy to a running session's pod. Strips the /session/<id> prefix and forwards to http://<podIP>:8080. Supports both HTTP and WebSocket.",
+          "Reverse proxy to an active stage. Strips the /session/<id> prefix and forwards requests. Supports both HTTP and WebSocket.",
         auth: "Clerk JWT or API Key",
         params: [],
         notes:

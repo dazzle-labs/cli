@@ -65,12 +65,12 @@ export function EndpointCreator({ onCreated, verbose, skipApiKey }: EndpointCrea
         className="text-2xl tracking-[-0.02em] text-white mb-2"
         style={{ fontFamily: "'DM Serif Display', serif" }}
       >
-        {verbose ? "Create a stage" : "Setting up your stage"}
+        {verbose ? "Set up your stage" : "Setting up your stage"}
       </h2>
       {verbose && (
         <p className="text-sm text-zinc-500 mb-6 max-w-md text-center">
-          A stage is a production environment your agent can drive.
-          We're spinning one up for you now.
+          A stage is a persistent environment your agent can drive.
+          We're setting one up for you now.
         </p>
       )}
 

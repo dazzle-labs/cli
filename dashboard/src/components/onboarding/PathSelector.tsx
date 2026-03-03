@@ -29,7 +29,7 @@ export function PathSelector({ onSelect }: PathSelectorProps) {
             I've used MCP before
           </h3>
           <p className="text-xs text-zinc-500 leading-relaxed">
-            Quick setup in 3 steps. Pick your framework, create a stage, and connect.
+            Quick setup in 3 steps. Pick your framework, set up a stage, and connect.
           </p>
         </button>
 

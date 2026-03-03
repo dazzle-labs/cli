@@ -253,7 +253,7 @@ export function Dashboard() {
           </h1>
           {profile && (
             <p className="text-sm text-zinc-500">
-              {sessions.length} active stage{sessions.length !== 1 ? "s" : ""} &middot; {profile.apiKeyCount} API key{profile.apiKeyCount !== 1 ? "s" : ""}
+              {sessions.length} active{sessions.length !== 1 ? " stages" : " stage"} &middot; {profile.apiKeyCount} API key{profile.apiKeyCount !== 1 ? "s" : ""}
             </p>
           )}
         </div>
@@ -268,7 +268,7 @@ export function Dashboard() {
             {creatingEndpoint ? (
               <Loader2 className="h-4 w-4 animate-spin mr-1" />
             ) : null}
-            New Stage
+            New stage
           </Button>
         )}
       </div>
@@ -311,10 +311,10 @@ export function Dashboard() {
                   )}
                   {sess ? (
                     <Badge variant={sess.status === "running" ? "success" : "warning"}>
-                      {sess.status}
+                      {sess.status === "running" ? "active" : sess.status}
                     </Badge>
                   ) : (
-                    <Badge variant="default">idle</Badge>
+                    <Badge variant="default">inactive</Badge>
                   )}
                 </div>
                 <ChevronRight className="h-4 w-4 text-zinc-600" />
@@ -348,10 +348,10 @@ export function Dashboard() {
               </code>
               {selectedSession ? (
                 <Badge variant={selectedSession.status === "running" ? "success" : "warning"}>
-                  {selectedSession.status}
+                  {selectedSession.status === "running" ? "active" : selectedSession.status}
                 </Badge>
               ) : (
-                <Badge variant="default">idle</Badge>
+                <Badge variant="default">inactive</Badge>
               )}
             </div>
 
@@ -480,7 +480,7 @@ export function Dashboard() {
               ) : (
                 <div>
                   <p className="text-sm text-zinc-400 mb-3">
-                    Delete this stage? Any running stage will be terminated.
+                    Delete this stage? If active, it will be deactivated.
                   </p>
                   <div className="flex items-center gap-2">
                     <Button

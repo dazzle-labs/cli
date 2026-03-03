@@ -18,7 +18,7 @@ interface OnboardingWizardProps {
   onClose: () => void;
 }
 
-const EXPERIENCED_STEPS = ["Choose tool", "Stream to", "Create stage", "Connect"];
+const EXPERIENCED_STEPS = ["Choose tool", "Stream to", "Set up stage", "Connect"];
 
 export function OnboardingWizard({ open, onClose }: OnboardingWizardProps) {
   const navigate = useNavigate();

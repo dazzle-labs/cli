@@ -15,34 +15,34 @@ export interface McpTool {
 
 export const MCP_TOOLS: McpTool[] = [
   {
-    id: "create_stage",
-    name: "create_stage",
+    id: "start",
+    name: "start",
     description:
-      "Create and start the agent's stage — a browser streaming environment with Chrome, OBS Studio, and a Node.js server. You must create a stage before using any other tools. Returns status when ready.",
+      "Activate your stage. Call this before using any other tools. Returns status when ready. Your stage gives you a browser you can render content in, capture screenshots, and stream live.",
     params: [],
-    example: JSON.stringify({ name: "create_stage", arguments: {} }, null, 2),
+    example: JSON.stringify({ name: "start", arguments: {} }, null, 2),
   },
   {
-    id: "destroy_stage",
-    name: "destroy_stage",
+    id: "stop",
+    name: "stop",
     description:
-      "Tear down the agent's stage and all its processes. The stage cannot be used after this.",
+      "Deactivate your stage. It can be reactivated later with start.",
     params: [],
-    example: JSON.stringify({ name: "destroy_stage", arguments: {} }, null, 2),
+    example: JSON.stringify({ name: "stop", arguments: {} }, null, 2),
   },
   {
-    id: "stage_status",
-    name: "stage_status",
+    id: "status",
+    name: "status",
     description:
-      "Get the current status of the agent's stage (running/stopped/starting).",
+      "Get the current status of your stage (active/inactive/starting).",
     params: [],
-    example: JSON.stringify({ name: "stage_status", arguments: {} }, null, 2),
+    example: JSON.stringify({ name: "status", arguments: {} }, null, 2),
   },
   {
     id: "set_html",
     name: "set_html",
     description:
-      "Set HTML content to render in the session's Chrome browser. Stores the HTML and navigates Chrome to display it. Requires an active stage (call create_stage first).",
+      "Set JavaScript content to render in your stage's browser. Write vanilla JS that creates DOM elements and appends them to document.body. Changes are hot-swapped with no page reload. Requires an active stage (call start first).",
     params: [
       {
         name: "html",
@@ -71,7 +71,7 @@ export const MCP_TOOLS: McpTool[] = [
     id: "get_html",
     name: "get_html",
     description:
-      "Get the current HTML content being rendered in the session's Chrome browser. Requires an active stage (call create_stage first).",
+      "Get the current JavaScript content being rendered in your stage's browser. Requires an active stage (call start first).",
     params: [
       {
         name: "panel",
@@ -87,7 +87,7 @@ export const MCP_TOOLS: McpTool[] = [
     id: "edit_html",
     name: "edit_html",
     description:
-      "Edit the current HTML content by finding and replacing a string. The old_string must exist exactly once in the current HTML. Requires an active stage (call create_stage first).",
+      "Edit the current JavaScript content by finding and replacing a string. The old_string must exist exactly once in the current code. Changes are hot-swapped with no page reload. Requires an active stage (call start first).",
     params: [
       {
         name: "old_string",
@@ -162,7 +162,7 @@ export const MCP_TOOLS: McpTool[] = [
     id: "screenshot",
     name: "screenshot",
     description:
-      "Capture a screenshot of the OBS stream output as a PNG image. Requires an active stage (call create_stage first).",
+      "Capture a screenshot of your stage's current output as a PNG image. Requires an active stage (call start first).",
     params: [],
     example: JSON.stringify({ name: "screenshot", arguments: {} }, null, 2),
   },
@@ -170,7 +170,7 @@ export const MCP_TOOLS: McpTool[] = [
     id: "gobs",
     name: "gobs",
     description:
-      'Run OBS command via gobs-cli. Args passed directly (no shell). Requires an active stage (call create_stage first). Use shorthands to save tokens — e.g. "sc ls" to list scenes, "st s" to start streaming.',
+      'Run OBS command via gobs-cli. Requires an active stage (call start first). Use shorthands to save tokens — e.g. "sc ls" to list scenes, "st s" to start streaming.',
     params: [
       {
         name: "args",

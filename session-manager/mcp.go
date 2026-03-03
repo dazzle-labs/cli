@@ -42,39 +42,39 @@ func (m *Manager) setupMCP() http.Handler {
 	)
 
 	s.AddTool(
-		mcp.NewTool("create_stage",
-			mcp.WithDescription("Create and start the agent's stage — a browser streaming environment with Chrome, OBS Studio, and a Node.js server. You must create a stage before using any other tools. Returns status when ready."),
+		mcp.NewTool("start",
+			mcp.WithDescription("Activate your stage. Call this before using any other tools. Returns status when ready. Your stage gives you a browser you can render content in, capture screenshots, and stream live to platforms like Twitch and YouTube."),
 		),
 		m.handleMCPCreateStage,
 	)
 
 	s.AddTool(
-		mcp.NewTool("destroy_stage",
-			mcp.WithDescription("Tear down the agent's stage and all its processes. The stage cannot be used after this."),
+		mcp.NewTool("stop",
+			mcp.WithDescription("Deactivate your stage. It can be reactivated later with start."),
 		),
 		m.handleMCPDestroyStage,
 	)
 
 	s.AddTool(
-		mcp.NewTool("stage_status",
-			mcp.WithDescription("Get the current status of the agent's stage (running/stopped/starting)."),
+		mcp.NewTool("status",
+			mcp.WithDescription("Get the current status of your stage (active/inactive/starting)."),
 		),
 		m.handleMCPStageStatus,
 	)
 
 	s.AddTool(
 		mcp.NewTool("set_html",
-			mcp.WithDescription(`Set JavaScript content to render in the session's browser. The code runs as an ES module inside a full-viewport shell page (black background, no margin). Changes are hot-swapped via Vite HMR with zero page reloads — no visible glitch to viewers. Write vanilla JS that creates DOM elements (canvas, divs, etc.) and appends them to document.body. Requires an active stage (call create_stage first).
+			mcp.WithDescription(`Set JavaScript content to render in your stage's browser. Write vanilla JS that creates DOM elements (canvas, divs, etc.) and appends them to document.body. The page is full-viewport with a black background. Changes are hot-swapped with zero page reloads. Requires an active stage (call start first).
 
-Your code can listen for events pushed by emit_event — this lets you set up the view once and then drive it with state updates, no code rewrites needed:
+Your code can listen for events pushed by emit_event — set up the view once, then drive it with state updates:
 
   window.addEventListener('event', (e) => {
     const { event, data } = e.detail;
     if (event === 'update') el.textContent = data.msg;
   });
 
-Read window.__state at any time for the accumulated state from all prior emit_event calls. An '__init' event fires automatically on module load if state already exists.`),
-			mcp.WithString("html", mcp.Required(), mcp.Description("JavaScript code to render (runs as ES module in a shell page)")),
+Read window.__state at any time for accumulated state from all prior emit_event calls. An '__init' event fires on module load if state already exists.`),
+			mcp.WithString("html", mcp.Required(), mcp.Description("JavaScript code to render")),
 			mcp.WithString("panel", mcp.Description("Panel name (default: main). Use with layout tool to target specific panels in multi-panel layouts.")),
 		),
 		m.handleMCPSetHTML,
@@ -82,7 +82,7 @@ Read window.__state at any time for the accumulated state from all prior emit_ev
 
 	s.AddTool(
 		mcp.NewTool("get_html",
-			mcp.WithDescription("Get the current JavaScript content being rendered in the session's browser. Returns the user code without the HMR wrapper. Requires an active stage (call create_stage first)."),
+			mcp.WithDescription("Get the current JavaScript content being rendered in your stage's browser. Requires an active stage (call start first)."),
 			mcp.WithString("panel", mcp.Description("Panel name (default: main). Use with layout tool to target specific panels in multi-panel layouts.")),
 		),
 		m.handleMCPGetHTML,
@@ -90,7 +90,7 @@ Read window.__state at any time for the accumulated state from all prior emit_ev
 
 	s.AddTool(
 		mcp.NewTool("edit_html",
-			mcp.WithDescription("Edit the current JavaScript content by finding and replacing a string. The old_string must exist exactly once in the current code. Changes are hot-swapped via HMR — no page reload. Requires an active stage (call create_stage first)."),
+			mcp.WithDescription("Edit the current JavaScript content by finding and replacing a string. The old_string must exist exactly once in the current code. Changes are hot-swapped with no page reload. Requires an active stage (call start first)."),
 			mcp.WithString("old_string", mcp.Required(), mcp.Description("The exact string to find in the current code")),
 			mcp.WithString("new_string", mcp.Required(), mcp.Description("The replacement string")),
 			mcp.WithString("panel", mcp.Description("Panel name (default: main). Use with layout tool to target specific panels in multi-panel layouts.")),
@@ -100,7 +100,7 @@ Read window.__state at any time for the accumulated state from all prior emit_ev
 
 	s.AddTool(
 		mcp.NewTool("layout",
-			mcp.WithDescription(`Get or set the multi-panel layout. Requires an active stage (call create_stage first).
+			mcp.WithDescription(`Get or set the multi-panel layout. Requires an active stage (call start first).
 
 Presets create named panels you can target with set_html/edit_html/get_html(panel: "<name>"):
 - "single" — one full-screen panel named "main" (the default layout)
@@ -145,14 +145,14 @@ Best practice: design your set_html code as a pure render function of state. Use
 
 	s.AddTool(
 		mcp.NewTool("screenshot",
-			mcp.WithDescription("Capture a screenshot of the OBS stream output as a PNG image. Requires an active stage (call create_stage first)."),
+			mcp.WithDescription("Capture a screenshot of your stage's current output as a PNG image. Requires an active stage (call start first)."),
 		),
 		m.handleMCPScreenshot,
 	)
 
 	s.AddTool(
 		mcp.NewTool("gobs",
-			mcp.WithDescription(`Run OBS command via gobs-cli. Args passed directly (no shell). Requires an active stage (call create_stage first). Use shorthands to save tokens.
+			mcp.WithDescription(`Run OBS command via gobs-cli. Args passed directly (no shell). Requires an active stage (call start first). Use shorthands to save tokens.
 
 sc ls — list scenes | sc c — current scene | sc sw <name> — switch scene
 si ls — list scene items | si sh/h/tg <name> — show/hide/toggle item | si t <name> — transform
