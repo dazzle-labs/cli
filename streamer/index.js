@@ -16,7 +16,7 @@ const CDP_PORT = 9222;
 const SCREEN_WIDTH = parseInt(process.env.SCREEN_WIDTH || '1280', 10);
 const SCREEN_HEIGHT = parseInt(process.env.SCREEN_HEIGHT || '720', 10);
 
-const CONTENT_ROOT = '/tmp/content';
+const CONTENT_ROOT = '/app/content';
 const SHELL_HTML = fs.readFileSync(path.join(__dirname, 'shell.html'), 'utf8');
 const PRELUDE_JS = fs.readFileSync(path.join(__dirname, 'prelude.js'), 'utf8');
 
@@ -321,6 +321,34 @@ async function cdpDiscovery(req, res, cdpPath) {
 app.get('/json', auth, (req, res) => cdpDiscovery(req, res, '/json'));
 app.get('/json/version', auth, (req, res) => cdpDiscovery(req, res, '/json/version'));
 app.get('/json/list', auth, (req, res) => cdpDiscovery(req, res, '/json/list'));
+
+// --- Panel HTML serving (Vite middleware mode doesn't serve HTML, we do it) ---
+
+// Serve panel HTML — Vite middleware mode only handles transforms, not HTML serving
+app.get('/@panel/:name', async (req, res, next) => {
+    const { name } = req.params;
+    ensurePanelDir(name);
+    const htmlPath = path.join(panelDir(name), 'index.html');
+    try {
+        let html = fs.readFileSync(htmlPath, 'utf8');
+        if (vite) html = await vite.transformIndexHtml(req.url, html);
+        res.setHeader('Content-Type', 'text/html');
+        res.send(html);
+    } catch (err) { next(err); }
+});
+
+// Also handle trailing slash: /@panel/main/
+app.get('/@panel/:name/', async (req, res, next) => {
+    const { name } = req.params;
+    ensurePanelDir(name);
+    const htmlPath = path.join(panelDir(name), 'index.html');
+    try {
+        let html = fs.readFileSync(htmlPath, 'utf8');
+        if (vite) html = await vite.transformIndexHtml(req.url, html);
+        res.setHeader('Content-Type', 'text/html');
+        res.send(html);
+    } catch (err) { next(err); }
+});
 
 // --- Panel API (file-based, Vite HMR) ---
 

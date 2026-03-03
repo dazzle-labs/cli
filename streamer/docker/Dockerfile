@@ -64,7 +64,7 @@ RUN npm install
 
 COPY index.js shell.html prelude.js vite-init.mjs ./
 
-RUN mkdir -p /tmp/content
+RUN mkdir -p /app/content
 
 # Copy PulseAudio config
 COPY docker/pulse-default.pa /etc/pulse/default.pa
