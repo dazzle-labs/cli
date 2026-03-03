@@ -42,26 +42,19 @@ export const MCP_TOOLS: McpTool[] = [
     id: "set_script",
     name: "set_script",
     description:
-      "Set JavaScript content to render in your stage's browser. Write vanilla JS that creates DOM elements and appends them to document.body. Changes are hot-swapped with no page reload. Requires an active stage (call start first).",
+      "Set JavaScript or JSX content to render in your stage's browser. Write vanilla JS (append to document.body) or React JSX (define const App and it auto-mounts). React hooks, Zustand, and Tailwind CSS are available as globals — no imports needed. Changes are hot-swapped with no page reload. Requires an active stage (call start first).",
     params: [
       {
         name: "script",
         type: "string",
         required: true,
-        description: "JavaScript code to render",
-      },
-      {
-        name: "panel",
-        type: "string",
-        required: false,
-        description:
-          "Panel name (default: main). Use with layout tool to target specific panels in multi-panel layouts.",
+        description: "JavaScript or JSX code to render",
       },
     ],
     example: JSON.stringify(
       {
         name: "set_script",
-        arguments: { script: "const el = document.createElement('h1'); el.textContent = 'Hello World'; document.body.appendChild(el);" },
+        arguments: { script: 'const App = () => <div className="text-4xl font-bold text-white flex items-center justify-center h-screen">Hello World</div>' },
       },
       null,
       2,
@@ -72,15 +65,7 @@ export const MCP_TOOLS: McpTool[] = [
     name: "get_script",
     description:
       "Get the current JavaScript content being rendered in your stage's browser. Requires an active stage (call start first).",
-    params: [
-      {
-        name: "panel",
-        type: "string",
-        required: false,
-        description:
-          "Panel name (default: main). Use with layout tool to target specific panels in multi-panel layouts.",
-      },
-    ],
+    params: [],
     example: JSON.stringify({ name: "get_script", arguments: {} }, null, 2),
   },
   {
@@ -101,13 +86,6 @@ export const MCP_TOOLS: McpTool[] = [
         required: true,
         description: "The replacement string",
       },
-      {
-        name: "panel",
-        type: "string",
-        required: false,
-        description:
-          "Panel name (default: main). Use with layout tool to target specific panels in multi-panel layouts.",
-      },
     ],
     example: JSON.stringify(
       {
@@ -116,43 +94,6 @@ export const MCP_TOOLS: McpTool[] = [
           old_string: "Hello",
           new_string: "Goodbye",
         },
-      },
-      null,
-      2,
-    ),
-  },
-  {
-    id: "layout",
-    name: "layout",
-    description:
-      'Get or set the multi-panel layout. Presets: "single" (main), "split" (left/right), "grid-2x2" (top-left/top-right/bottom-left/bottom-right), "pip" (main/pip). Use specs for custom positioning. Call with no params to read current layout.',
-    params: [
-      {
-        name: "preset",
-        type: "string",
-        required: false,
-        description:
-          "Layout preset: single, split, grid-2x2, or pip",
-      },
-      {
-        name: "names",
-        type: "string[]",
-        required: false,
-        description:
-          "Custom panel names for the preset slots",
-      },
-      {
-        name: "specs",
-        type: "string",
-        required: false,
-        description:
-          'JSON array of {name, x, y, width, height} for custom layouts (percentage-based positioning)',
-      },
-    ],
-    example: JSON.stringify(
-      {
-        name: "layout",
-        arguments: { preset: "split" },
       },
       null,
       2,

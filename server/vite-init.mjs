@@ -1,4 +1,6 @@
 import { createServer } from 'vite';
+import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 
 /**
  * Create a Vite dev server in middleware mode for HMR.
@@ -11,6 +13,7 @@ export async function initVite(contentRoot, httpServer) {
         root: contentRoot,
         base: '/@panel/',
         appType: 'mpa',
+        plugins: [react(), tailwindcss()],
         server: {
             middlewareMode: true,
             hmr: { server: httpServer },
@@ -21,8 +24,9 @@ export async function initVite(contentRoot, httpServer) {
         },
         // Suppress most logging — we only care about HMR
         logLevel: 'warn',
-        // No optimizeDeps needed — user code is vanilla JS
-        optimizeDeps: { noDiscovery: true },
+        optimizeDeps: {
+            include: ['react', 'react-dom/client', 'zustand', 'zustand/middleware'],
+        },
     });
 
     return vite;

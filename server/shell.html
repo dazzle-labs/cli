@@ -2,6 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
+<style>@import "tailwindcss";</style>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { width: 100vw; height: 100vh; overflow: hidden; background: #000; }
@@ -9,6 +10,7 @@
 </style>
 </head>
 <body>
+<div id="root"></div>
 <script>
 // Track all timing handles so HMR dispose can cancel them
 (function() {
@@ -61,11 +63,24 @@
     _timeouts.clear();
     for (const id of _intervals) _origCI(id);
     _intervals.clear();
-    // Clear all DOM content added by user code
-    document.body.innerHTML = '';
+    // Unmount React root if present
+    if (window.__reactRoot) {
+      window.__reactRoot.unmount();
+      window.__reactRoot = null;
+    }
+    // Clear root element content
+    const rootEl = document.getElementById('root');
+    if (rootEl) rootEl.innerHTML = '';
+    // Clear all other DOM content added by user code
+    const body = document.body;
+    for (let i = body.children.length - 1; i >= 0; i--) {
+      const child = body.children[i];
+      if (child.id !== 'root') body.removeChild(child);
+    }
   };
 })();
 </script>
-<script type="module" src="./main.js"></script>
+<script type="module" src="./prelude.js"></script>
+<script type="module" src="./main.jsx"></script>
 </body>
 </html>

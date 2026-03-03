@@ -52,6 +52,8 @@ google-chrome-stable \
     --remote-debugging-address=0.0.0.0 \
     --user-data-dir=/tmp/chrome-data \
     --kiosk \
+    --window-size=${SCREEN_WIDTH},${SCREEN_HEIGHT} \
+    --window-position=0,0 \
     --display=:99 \
     --disable-background-timer-throttling \
     --disable-backgrounding-occluded-windows \

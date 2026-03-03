@@ -62,7 +62,7 @@ WORKDIR /app
 COPY server/package.json server/package-lock.json* ./
 RUN npm install
 
-COPY server/index.js server/shell.html server/vite-init.mjs ./
+COPY server/index.js server/shell.html server/prelude.js server/vite-init.mjs ./
 
 RUN mkdir -p /tmp/content
 

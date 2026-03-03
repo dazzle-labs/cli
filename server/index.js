@@ -18,6 +18,7 @@ const SCREEN_HEIGHT = parseInt(process.env.SCREEN_HEIGHT || '720', 10);
 
 const CONTENT_ROOT = '/tmp/content';
 const SHELL_HTML = fs.readFileSync(path.join(__dirname, 'shell.html'), 'utf8');
+const PRELUDE_JS = fs.readFileSync(path.join(__dirname, 'prelude.js'), 'utf8');
 
 // --- Panel metadata (dimensions only — content lives on disk) ---
 // Map<string, { width: number, height: number }>
@@ -30,54 +31,13 @@ const panelState = new Map();
 // Vite dev server instance (set during startup)
 let vite = null;
 
-// --- Layout State ---
-let currentLayout = { preset: 'single', specs: [] };
-
-const LAYOUT_PRESETS = {
-    single: (names) => {
-        const name = names[0] || 'main';
-        return [{ name, x: 0, y: 0, width: SCREEN_WIDTH, height: SCREEN_HEIGHT }];
-    },
-    split: (names) => {
-        const half = Math.floor(SCREEN_WIDTH / 2);
-        const left = names[0] || 'left';
-        const right = names[1] || 'right';
-        return [
-            { name: left, x: 0, y: 0, width: half, height: SCREEN_HEIGHT },
-            { name: right, x: half, y: 0, width: SCREEN_WIDTH - half, height: SCREEN_HEIGHT },
-        ];
-    },
-    'grid-2x2': (names) => {
-        const hw = Math.floor(SCREEN_WIDTH / 2);
-        const hh = Math.floor(SCREEN_HEIGHT / 2);
-        const n = [names[0] || 'top-left', names[1] || 'top-right', names[2] || 'bottom-left', names[3] || 'bottom-right'];
-        return [
-            { name: n[0], x: 0, y: 0, width: hw, height: hh },
-            { name: n[1], x: hw, y: 0, width: SCREEN_WIDTH - hw, height: hh },
-            { name: n[2], x: 0, y: hh, width: hw, height: SCREEN_HEIGHT - hh },
-            { name: n[3], x: hw, y: hh, width: SCREEN_WIDTH - hw, height: SCREEN_HEIGHT - hh },
-        ];
-    },
-    pip: (names) => {
-        const mainName = names[0] || 'main';
-        const pipName = names[1] || 'pip';
-        const pipW = Math.floor(SCREEN_WIDTH * 0.3);
-        const pipH = Math.floor(SCREEN_HEIGHT * 0.3);
-        const margin = 20;
-        return [
-            { name: mainName, x: 0, y: 0, width: SCREEN_WIDTH, height: SCREEN_HEIGHT },
-            { name: pipName, x: SCREEN_WIDTH - pipW - margin, y: SCREEN_HEIGHT - pipH - margin, width: pipW, height: pipH },
-        ];
-    },
-};
-
 // --- Content helpers (file-based for Vite HMR) ---
 
 const USER_CODE_START = '// --- USER CODE START ---';
 const USER_CODE_END = '// --- USER CODE END ---';
 
 function panelDir(name) { return path.join(CONTENT_ROOT, name); }
-function panelMainJs(name) { return path.join(CONTENT_ROOT, name, 'main.js'); }
+function panelMainJs(name) { return path.join(CONTENT_ROOT, name, 'main.jsx'); }
 
 function ensurePanelDir(name) {
     const dir = panelDir(name);
@@ -86,6 +46,11 @@ function ensurePanelDir(name) {
     const htmlPath = path.join(dir, 'index.html');
     if (!fs.existsSync(htmlPath)) {
         fs.writeFileSync(htmlPath, SHELL_HTML);
+    }
+
+    const preludePath = path.join(dir, 'prelude.js');
+    if (!fs.existsSync(preludePath)) {
+        fs.writeFileSync(preludePath, PRELUDE_JS);
     }
 
     const jsPath = panelMainJs(name);
@@ -111,6 +76,13 @@ function wrapUserCode(code) {
 ${USER_CODE_START}
 ${code}
 ${USER_CODE_END}
+
+// Auto-mount: if user defined App, render it into #root
+if (typeof App !== 'undefined') {
+  const _root = window.createRoot(document.getElementById('root'));
+  window.__reactRoot = _root;
+  _root.render(window.React.createElement(App));
+}
 
 // Fire synthetic init event so user code can read accumulated state
 if (Object.keys(window.__state).length > 0) {
@@ -242,7 +214,7 @@ class OBSConnection {
 
 const obs = new OBSConnection();
 
-// Panel URL now points to the Vite-served shell (which loads main.js via HMR)
+// Panel URL now points to the Vite-served shell (which loads main.jsx via HMR)
 function panelUrl(panelName) { return `http://localhost:${PORT}/@panel/${panelName}/`; }
 
 // Track what Chrome is currently navigated to, so we only navigate when needed
@@ -277,41 +249,6 @@ async function ensureXshmSource() {
     await obs.request('SetSceneItemEnabled', {
         sceneName: 'Scene', sceneItemId, sceneItemEnabled: true,
     });
-}
-
-async function applyLayout(specs) {
-    if (!obs.connected) {
-        console.warn('OBS not connected, skipping layout apply');
-        return;
-    }
-
-    // Ensure xshm_input source exists
-    await ensureXshmSource();
-
-    // Remove any leftover browser_source inputs from previous versions
-    try {
-        const { inputs } = await obs.request('GetInputList', { inputKind: 'browser_source' });
-        for (const input of (inputs || [])) {
-            if (input.inputName.startsWith('panel-')) {
-                await obs.request('RemoveInput', { inputName: input.inputName });
-            }
-        }
-    } catch { /* ignore */ }
-
-    // Set up panel dirs and metadata
-    for (const spec of specs) {
-        ensurePanelDir(spec.name);
-        panels.set(spec.name, { width: spec.width, height: spec.height });
-    }
-
-    // Navigate Chrome to the first panel URL (xshm captures whatever Chrome shows)
-    if (specs.length > 0) {
-        const targetUrl = panelUrl(specs[0].name);
-        if (currentChromeUrl !== targetUrl) {
-            await cdpNavigate(targetUrl);
-            currentChromeUrl = targetUrl;
-        }
-    }
 }
 
 // --- CDP Navigate ---
@@ -496,7 +433,7 @@ app.get('/api/panels', auth, (req, res) => {
         const code = readUserCode(name);
         list.push({ name, width: panel.width, height: panel.height, codeLength: code?.length || 0 });
     }
-    res.json({ panels: list, layout: currentLayout });
+    res.json({ panels: list });
 });
 
 // --- Backward Compat: /api/template → main panel ---
@@ -545,48 +482,6 @@ app.post('/api/template/edit', auth, async (req, res) => {
     writeUserCode('main', newCode);
 
     res.json({ status: 'ok', length: newCode.length });
-});
-
-// --- Layout API ---
-
-app.post('/api/layout', auth, async (req, res) => {
-    const { preset, names, specs } = req.body;
-
-    let layoutSpecs;
-
-    if (preset) {
-        const presetFn = LAYOUT_PRESETS[preset];
-        if (!presetFn) {
-            return res.status(400).json({ error: `unknown preset: ${preset}`, available: Object.keys(LAYOUT_PRESETS) });
-        }
-        layoutSpecs = presetFn(names || []);
-    } else if (specs) {
-        if (!Array.isArray(specs) || specs.length === 0) {
-            return res.status(400).json({ error: 'specs must be a non-empty array' });
-        }
-        for (const s of specs) {
-            if (!s.name || s.x === undefined || s.y === undefined || !s.width || !s.height) {
-                return res.status(400).json({ error: 'each spec needs: name, x, y, width, height' });
-            }
-        }
-        layoutSpecs = specs;
-    } else {
-        return res.status(400).json({ error: 'provide preset or specs' });
-    }
-
-    currentLayout = { preset: preset || null, specs: layoutSpecs };
-
-    try {
-        await applyLayout(layoutSpecs);
-        res.json({ status: 'ok', layout: currentLayout });
-    } catch (err) {
-        console.error('Layout error:', err);
-        res.status(500).json({ error: err.message });
-    }
-});
-
-app.get('/api/layout', auth, (req, res) => {
-    res.json(currentLayout);
 });
 
 // Navigate Chrome via CDP
@@ -659,18 +554,18 @@ async function start() {
         console.log(`Server listening on port ${PORT}`);
         console.log(`Auth: ${TOKEN ? 'enabled' : 'disabled'}`);
 
-        // Connect to OBS and set up default layout
+        // Connect to OBS and set up xshm screen capture
         try {
             await obs.connect(30000);
             await ensureXshmSource();
-
-            const defaultSpecs = LAYOUT_PRESETS.single(['main']);
-            currentLayout = { preset: 'single', specs: defaultSpecs };
-            await applyLayout(defaultSpecs);
-            console.log('Default layout applied (single panel).');
+            ensurePanelDir('main');
+            panels.set('main', { width: SCREEN_WIDTH, height: SCREEN_HEIGHT });
+            // Best-effort navigation — set_script will retry if this doesn't stick
+            try { await cdpNavigate(panelUrl('main')); } catch {}
+            console.log('OBS xshm source ready.');
         } catch (err) {
-            console.error('OBS startup setup error:', err.message);
-            console.log('Server running without OBS connection. Panels will work when OBS connects.');
+            console.error('OBS startup error:', err.message);
+            console.log('Server running without OBS. Panels will work when OBS connects.');
         }
     });
 }
