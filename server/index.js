@@ -2,6 +2,8 @@ const express = require('express');
 const http = require('http');
 const httpProxy = require('http-proxy');
 const WebSocket = require('ws');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 app.use(express.json({ limit: '5mb' }));
@@ -14,12 +16,21 @@ const CDP_PORT = 9222;
 const SCREEN_WIDTH = parseInt(process.env.SCREEN_WIDTH || '1280', 10);
 const SCREEN_HEIGHT = parseInt(process.env.SCREEN_HEIGHT || '720', 10);
 
-// --- Panel Storage ---
-// Map<string, { html: string, width: number, height: number }>
+const CONTENT_ROOT = '/tmp/content';
+const SHELL_HTML = fs.readFileSync(path.join(__dirname, 'shell.html'), 'utf8');
+
+// --- Panel metadata (dimensions only — content lives on disk) ---
+// Map<string, { width: number, height: number }>
 const panels = new Map();
 
+// --- Per-panel accumulated state (for emit_event) ---
+// Map<string, object>
+const panelState = new Map();
+
+// Vite dev server instance (set during startup)
+let vite = null;
+
 // --- Layout State ---
-// Current layout: { preset: string|null, specs: [{name, x, y, width, height}] }
 let currentLayout = { preset: 'single', specs: [] };
 
 const LAYOUT_PRESETS = {
@@ -60,12 +71,78 @@ const LAYOUT_PRESETS = {
     },
 };
 
+// --- Content helpers (file-based for Vite HMR) ---
+
+const USER_CODE_START = '// --- USER CODE START ---';
+const USER_CODE_END = '// --- USER CODE END ---';
+
+function panelDir(name) { return path.join(CONTENT_ROOT, name); }
+function panelMainJs(name) { return path.join(CONTENT_ROOT, name, 'main.js'); }
+
+function ensurePanelDir(name) {
+    const dir = panelDir(name);
+    fs.mkdirSync(dir, { recursive: true });
+
+    const htmlPath = path.join(dir, 'index.html');
+    if (!fs.existsSync(htmlPath)) {
+        fs.writeFileSync(htmlPath, SHELL_HTML);
+    }
+
+    const jsPath = panelMainJs(name);
+    if (!fs.existsSync(jsPath)) {
+        fs.writeFileSync(jsPath, wrapUserCode('// empty'));
+    }
+}
+
+function wrapUserCode(code) {
+    return `if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    if (typeof window.__hmrCleanup === 'function') window.__hmrCleanup();
+  });
+  import.meta.hot.accept();
+  import.meta.hot.on('state-event', (payload) => {
+    if (payload.data && typeof payload.data === 'object') {
+      Object.assign(window.__state, payload.data);
+    }
+    window.dispatchEvent(new CustomEvent('event', { detail: payload }));
+  });
+}
+
+${USER_CODE_START}
+${code}
+${USER_CODE_END}
+
+// Fire synthetic init event so user code can read accumulated state
+if (Object.keys(window.__state).length > 0) {
+  window.dispatchEvent(new CustomEvent('event', { detail: { event: '__init', data: window.__state } }));
+}
+`;
+}
+
+function extractUserCode(fileContent) {
+    const startIdx = fileContent.indexOf(USER_CODE_START);
+    const endIdx = fileContent.indexOf(USER_CODE_END);
+    if (startIdx === -1 || endIdx === -1) return fileContent;
+    return fileContent.slice(startIdx + USER_CODE_START.length + 1, endIdx).trimEnd();
+}
+
+function writeUserCode(name, code) {
+    ensurePanelDir(name);
+    fs.writeFileSync(panelMainJs(name), wrapUserCode(code));
+}
+
+function readUserCode(name) {
+    const jsPath = panelMainJs(name);
+    if (!fs.existsSync(jsPath)) return null;
+    return extractUserCode(fs.readFileSync(jsPath, 'utf8'));
+}
+
 // --- OBS WebSocket v5 Client ---
 class OBSConnection {
     constructor() {
         this.ws = null;
         this.requestId = 0;
-        this.pending = new Map(); // id -> {resolve, reject, timer}
+        this.pending = new Map();
         this.connected = false;
         this.connecting = false;
     }
@@ -102,13 +179,11 @@ class OBSConnection {
             ws.on('message', (data) => {
                 const msg = JSON.parse(data.toString());
 
-                // Hello message — respond with Identify
                 if (msg.op === 0) {
                     ws.send(JSON.stringify({ op: 1, d: { rpcVersion: 1 } }));
                     return;
                 }
 
-                // Identified — connection ready
                 if (msg.op === 2) {
                     this.ws = ws;
                     this.connected = true;
@@ -116,7 +191,6 @@ class OBSConnection {
                     return;
                 }
 
-                // RequestResponse
                 if (msg.op === 7) {
                     const id = msg.d.requestId;
                     const p = this.pending.get(id);
@@ -140,7 +214,6 @@ class OBSConnection {
             ws.on('close', () => {
                 this.connected = false;
                 this.ws = null;
-                // Reject all pending requests
                 for (const [, p] of this.pending) {
                     clearTimeout(p.timer);
                     p.reject(new Error('OBS WebSocket closed'));
@@ -171,7 +244,9 @@ const obs = new OBSConnection();
 
 // Source name convention: panel-<name>
 function sourceName(panelName) { return `panel-${panelName}`; }
-function panelUrl(panelName) { return `http://localhost:${PORT}/panel/${panelName}`; }
+
+// Panel URL now points to the Vite-served shell (which loads main.js via HMR)
+function panelUrl(panelName) { return `http://localhost:${PORT}/@panel/${panelName}/`; }
 
 async function createBrowserSource(name, url, width, height) {
     try {
@@ -190,7 +265,6 @@ async function createBrowserSource(name, url, width, height) {
             },
         });
     } catch (err) {
-        // Source may already exist — update settings instead
         if (err.message.includes('601')) {
             await obs.request('SetInputSettings', {
                 inputName: sourceName(name),
@@ -233,33 +307,12 @@ async function setSourceTransform(name, x, y, width, height) {
     }
 }
 
-async function refreshPanel(name) {
-    try {
-        await obs.request('PressInputPropertiesButton', {
-            inputName: sourceName(name),
-            propertyName: 'refreshnocache',
-        });
-    } catch {
-        // Fallback: update URL with cache buster
-        try {
-            const url = `${panelUrl(name)}?_=${Date.now()}`;
-            await obs.request('SetInputSettings', {
-                inputName: sourceName(name),
-                inputSettings: { url },
-            });
-        } catch (err) {
-            console.error(`Failed to refresh panel ${name}:`, err.message);
-        }
-    }
-}
-
 async function applyLayout(specs) {
     if (!obs.connected) {
         console.warn('OBS not connected, skipping layout apply');
         return;
     }
 
-    // Get existing panel-* sources
     const existingSources = new Set();
     try {
         const { inputs } = await obs.request('GetInputList', { inputKind: 'browser_source' });
@@ -274,7 +327,6 @@ async function applyLayout(specs) {
 
     const desiredSources = new Set(specs.map(s => sourceName(s.name)));
 
-    // Remove sources not in new layout
     for (const existing of existingSources) {
         if (!desiredSources.has(existing)) {
             try {
@@ -283,22 +335,22 @@ async function applyLayout(specs) {
         }
     }
 
-    // Create/update sources and set transforms
     for (const spec of specs) {
+        // Ensure panel dir exists on disk for Vite to serve
+        ensurePanelDir(spec.name);
+
         const sn = sourceName(spec.name);
         if (!existingSources.has(sn)) {
             await createBrowserSource(spec.name, panelUrl(spec.name), spec.width, spec.height);
         } else {
-            // Update dimensions
             await obs.request('SetInputSettings', {
                 inputName: sn,
                 inputSettings: { url: panelUrl(spec.name), width: spec.width, height: spec.height },
             });
         }
 
-        // Ensure panel exists in storage
         if (!panels.has(spec.name)) {
-            panels.set(spec.name, { html: '', width: spec.width, height: spec.height });
+            panels.set(spec.name, { width: spec.width, height: spec.height });
         } else {
             const p = panels.get(spec.name);
             p.width = spec.width;
@@ -318,7 +370,7 @@ async function removeXshmSource() {
     }
 }
 
-// --- CDP Navigate (kept for backward compat) ---
+// --- CDP Navigate ---
 async function cdpNavigate(url) {
     const tabsRes = await fetch(`http://${CDP_HOST}:${CDP_PORT}/json`);
     const tabs = await tabsRes.json();
@@ -389,9 +441,9 @@ app.get('/json', auth, (req, res) => cdpDiscovery(req, res, '/json'));
 app.get('/json/version', auth, (req, res) => cdpDiscovery(req, res, '/json/version'));
 app.get('/json/list', auth, (req, res) => cdpDiscovery(req, res, '/json/list'));
 
-// --- Panel API ---
+// --- Panel API (file-based, Vite HMR) ---
 
-// Set HTML for a panel
+// Set content for a panel — writes JS to disk, Vite HMR delivers it
 app.post('/api/panel/:name', auth, async (req, res) => {
     const { name } = req.params;
     const { html, width, height } = req.body;
@@ -399,59 +451,87 @@ app.post('/api/panel/:name', auth, async (req, res) => {
 
     const existing = panels.get(name);
     panels.set(name, {
-        html,
         width: width || existing?.width || SCREEN_WIDTH,
         height: height || existing?.height || SCREEN_HEIGHT,
     });
 
-    // Refresh OBS browser source if it exists
-    try {
-        await refreshPanel(name);
-    } catch { /* source may not exist yet */ }
+    writeUserCode(name, html);
 
     res.json({ status: 'ok', panel: name, length: html.length });
 });
 
-// Get panel HTML
+// Get panel content (user code only, stripped of wrapper)
 app.get('/api/panel/:name', auth, (req, res) => {
     const { name } = req.params;
-    const panel = panels.get(name);
-    if (!panel) return res.status(404).json({ error: `panel '${name}' not found` });
-    res.json({ name, html: panel.html, width: panel.width, height: panel.height });
+    const code = readUserCode(name);
+    if (code === null) return res.status(404).json({ error: `panel '${name}' not found` });
+    const panel = panels.get(name) || { width: SCREEN_WIDTH, height: SCREEN_HEIGHT };
+    res.json({ name, html: code, width: panel.width, height: panel.height });
 });
 
-// Edit panel HTML (find/replace)
+// Edit panel content (find/replace in user code section)
 app.post('/api/panel/:name/edit', auth, async (req, res) => {
     const { name } = req.params;
     const { old_string, new_string } = req.body;
     if (old_string === undefined) return res.status(400).json({ error: 'old_string required' });
     if (new_string === undefined) return res.status(400).json({ error: 'new_string required' });
 
-    const panel = panels.get(name);
-    if (!panel) return res.status(404).json({ error: `panel '${name}' not found` });
+    const code = readUserCode(name);
+    if (code === null) return res.status(404).json({ error: `panel '${name}' not found` });
 
-    if (!panel.html.includes(old_string)) {
-        return res.status(400).json({ error: 'old_string not found in panel HTML' });
+    if (!code.includes(old_string)) {
+        return res.status(400).json({ error: 'old_string not found in panel content' });
     }
 
-    const count = panel.html.split(old_string).length - 1;
+    const count = code.split(old_string).length - 1;
     if (count > 1) {
         return res.status(400).json({ error: `old_string found ${count} times, must be unique` });
     }
 
-    panel.html = panel.html.replace(old_string, new_string);
+    const newCode = code.replace(old_string, new_string);
+    writeUserCode(name, newCode);
 
-    try {
-        await refreshPanel(name);
-    } catch { /* ignore */ }
+    res.json({ status: 'ok', panel: name, length: newCode.length });
+});
 
-    res.json({ status: 'ok', panel: name, length: panel.html.length });
+// Emit event to a panel (pushes via Vite HMR WebSocket — no page reload)
+app.post('/api/panel/:name/event', auth, (req, res) => {
+    const { name } = req.params;
+    const { event, data } = req.body;
+    if (!event) return res.status(400).json({ error: 'event required' });
+
+    // Merge data into accumulated panel state
+    if (data && typeof data === 'object') {
+        const state = panelState.get(name) || {};
+        Object.assign(state, data);
+        panelState.set(name, state);
+    }
+
+    // Push to browser via Vite custom HMR event
+    if (vite) {
+        vite.ws.send({ type: 'custom', event: 'state-event', data: { event, data } });
+    }
+
+    res.json({ status: 'ok', event });
+});
+
+// Get accumulated state for a panel
+app.get('/api/panel/:name/state', auth, (req, res) => {
+    const { name } = req.params;
+    res.json(panelState.get(name) || {});
 });
 
 // Delete a panel
 app.delete('/api/panel/:name', auth, async (req, res) => {
     const { name } = req.params;
     panels.delete(name);
+    panelState.delete(name);
+
+    // Remove content dir
+    const dir = panelDir(name);
+    if (fs.existsSync(dir)) {
+        fs.rmSync(dir, { recursive: true });
+    }
 
     try {
         await removeBrowserSource(name);
@@ -464,17 +544,58 @@ app.delete('/api/panel/:name', auth, async (req, res) => {
 app.get('/api/panels', auth, (req, res) => {
     const list = [];
     for (const [name, panel] of panels) {
-        list.push({ name, width: panel.width, height: panel.height, htmlLength: panel.html.length });
+        const code = readUserCode(name);
+        list.push({ name, width: panel.width, height: panel.height, codeLength: code?.length || 0 });
     }
     res.json({ panels: list, layout: currentLayout });
 });
 
-// Serve panel HTML to OBS browser_source (no auth — localhost only)
-app.get('/panel/:name', (req, res) => {
-    const { name } = req.params;
-    const panel = panels.get(name);
-    res.setHeader('Content-Type', 'text/html');
-    res.send(panel?.html || '<html><body></body></html>');
+// --- Backward Compat: /api/template → main panel ---
+
+app.post('/api/template', auth, async (req, res) => {
+    const { html } = req.body;
+    if (!html) return res.status(400).json({ error: 'html required' });
+
+    const existing = panels.get('main');
+    panels.set('main', {
+        width: existing?.width || SCREEN_WIDTH,
+        height: existing?.height || SCREEN_HEIGHT,
+    });
+
+    writeUserCode('main', html);
+
+    res.json({ status: 'ok', length: html.length });
+});
+
+app.get('/api/template', auth, (req, res) => {
+    const code = readUserCode('main');
+    res.json({ html: code || '' });
+});
+
+app.post('/api/template/edit', auth, async (req, res) => {
+    const { old_string, new_string } = req.body;
+    if (old_string === undefined) return res.status(400).json({ error: 'old_string required' });
+    if (new_string === undefined) return res.status(400).json({ error: 'new_string required' });
+
+    const code = readUserCode('main');
+    if (!code) {
+        ensurePanelDir('main');
+        return res.status(400).json({ error: 'old_string not found in current content' });
+    }
+
+    if (!code.includes(old_string)) {
+        return res.status(400).json({ error: 'old_string not found in current content' });
+    }
+
+    const count = code.split(old_string).length - 1;
+    if (count > 1) {
+        return res.status(400).json({ error: `old_string found ${count} times, must be unique` });
+    }
+
+    const newCode = code.replace(old_string, new_string);
+    writeUserCode('main', newCode);
+
+    res.json({ status: 'ok', length: newCode.length });
 });
 
 // --- Layout API ---
@@ -491,7 +612,6 @@ app.post('/api/layout', auth, async (req, res) => {
         }
         layoutSpecs = presetFn(names || []);
     } else if (specs) {
-        // Custom layout: validate specs
         if (!Array.isArray(specs) || specs.length === 0) {
             return res.status(400).json({ error: 'specs must be a non-empty array' });
         }
@@ -520,65 +640,6 @@ app.get('/api/layout', auth, (req, res) => {
     res.json(currentLayout);
 });
 
-// --- Backward Compat: /api/template → main panel ---
-
-app.post('/api/template', auth, async (req, res) => {
-    const { html } = req.body;
-    if (!html) return res.status(400).json({ error: 'html required' });
-
-    panels.set('main', {
-        html,
-        width: panels.get('main')?.width || SCREEN_WIDTH,
-        height: panels.get('main')?.height || SCREEN_HEIGHT,
-    });
-
-    try {
-        await refreshPanel('main');
-    } catch { /* ignore */ }
-
-    res.json({ status: 'ok', length: html.length });
-});
-
-app.get('/api/template', auth, (req, res) => {
-    const panel = panels.get('main');
-    res.json({ html: panel?.html || '' });
-});
-
-app.get('/template', (req, res) => {
-    const panel = panels.get('main');
-    res.setHeader('Content-Type', 'text/html');
-    res.send(panel?.html || '<html><body></body></html>');
-});
-
-app.post('/api/template/edit', auth, async (req, res) => {
-    const { old_string, new_string } = req.body;
-    if (old_string === undefined) return res.status(400).json({ error: 'old_string required' });
-    if (new_string === undefined) return res.status(400).json({ error: 'new_string required' });
-
-    const panel = panels.get('main');
-    if (!panel) {
-        panels.set('main', { html: '', width: SCREEN_WIDTH, height: SCREEN_HEIGHT });
-        return res.status(400).json({ error: 'old_string not found in current HTML' });
-    }
-
-    if (!panel.html.includes(old_string)) {
-        return res.status(400).json({ error: 'old_string not found in current HTML' });
-    }
-
-    const count = panel.html.split(old_string).length - 1;
-    if (count > 1) {
-        return res.status(400).json({ error: `old_string found ${count} times, must be unique` });
-    }
-
-    panel.html = panel.html.replace(old_string, new_string);
-
-    try {
-        await refreshPanel('main');
-    } catch { /* ignore */ }
-
-    res.json({ status: 'ok', length: panel.html.length });
-});
-
 // Navigate Chrome via CDP
 app.post('/api/navigate', auth, async (req, res) => {
     const { url } = req.body;
@@ -603,8 +664,13 @@ app.use('/hls', auth, express.static('/tmp/hls', {
 // Create HTTP server
 const server = http.createServer(app);
 
-// WebSocket upgrade: proxy to Chrome CDP
+// WebSocket upgrade: let Vite HMR through, proxy everything else to CDP
 server.on('upgrade', (req, socket, head) => {
+    // Vite HMR WebSocket — let Vite handle it (it registered its own listener)
+    if (req.url.startsWith('/@panel/') || req.url.includes('__vite')) {
+        return; // Vite's own upgrade listener handles this
+    }
+
     const urlParams = new URL(req.url, 'http://localhost').searchParams;
     const token = urlParams.get('token');
 
@@ -621,22 +687,43 @@ server.on('upgrade', (req, socket, head) => {
     });
 });
 
-server.listen(PORT, async () => {
-    console.log(`Server listening on port ${PORT}`);
-    console.log(`Auth: ${TOKEN ? 'enabled' : 'disabled'}`);
+// --- Startup ---
 
-    // Connect to OBS and set up default layout
+async function start() {
+    // Ensure content root exists
+    fs.mkdirSync(CONTENT_ROOT, { recursive: true });
+
+    // Initialize Vite dev server (ESM dynamic import)
     try {
-        await obs.connect(30000);
-        await removeXshmSource();
+        const { initVite } = await import('./vite-init.mjs');
+        vite = await initVite(CONTENT_ROOT, server);
+        console.log('Vite HMR server initialized.');
 
-        // Apply default single layout with main panel
-        const defaultSpecs = LAYOUT_PRESETS.single(['main']);
-        currentLayout = { preset: 'single', specs: defaultSpecs };
-        await applyLayout(defaultSpecs);
-        console.log('Default layout applied (single panel).');
+        // Mount Vite middleware at root — Vite only handles paths matching its base (/@panel/)
+        app.use(vite.middlewares);
     } catch (err) {
-        console.error('OBS startup setup error:', err.message);
-        console.log('Server running without OBS connection. Panels will work when OBS connects.');
+        console.error('Failed to initialize Vite:', err);
+        console.log('Falling back without HMR support.');
     }
-});
+
+    server.listen(PORT, async () => {
+        console.log(`Server listening on port ${PORT}`);
+        console.log(`Auth: ${TOKEN ? 'enabled' : 'disabled'}`);
+
+        // Connect to OBS and set up default layout
+        try {
+            await obs.connect(30000);
+            await removeXshmSource();
+
+            const defaultSpecs = LAYOUT_PRESETS.single(['main']);
+            currentLayout = { preset: 'single', specs: defaultSpecs };
+            await applyLayout(defaultSpecs);
+            console.log('Default layout applied (single panel).');
+        } catch (err) {
+            console.error('OBS startup setup error:', err.message);
+            console.log('Server running without OBS connection. Panels will work when OBS connects.');
+        }
+    });
+}
+
+start();

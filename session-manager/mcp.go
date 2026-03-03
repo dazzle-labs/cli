@@ -64,8 +64,17 @@ func (m *Manager) setupMCP() http.Handler {
 
 	s.AddTool(
 		mcp.NewTool("set_html",
-			mcp.WithDescription("Set HTML content to render in the session's Chrome browser. Stores the HTML and navigates Chrome to display it. Requires an active stage (call create_stage first)."),
-			mcp.WithString("html", mcp.Required(), mcp.Description("HTML content to render")),
+			mcp.WithDescription(`Set JavaScript content to render in the session's browser. The code runs as an ES module inside a full-viewport shell page (black background, no margin). Changes are hot-swapped via Vite HMR with zero page reloads — no visible glitch to viewers. Write vanilla JS that creates DOM elements (canvas, divs, etc.) and appends them to document.body. Requires an active stage (call create_stage first).
+
+Your code can listen for events pushed by emit_event — this lets you set up the view once and then drive it with state updates, no code rewrites needed:
+
+  window.addEventListener('event', (e) => {
+    const { event, data } = e.detail;
+    if (event === 'update') el.textContent = data.msg;
+  });
+
+Read window.__state at any time for the accumulated state from all prior emit_event calls. An '__init' event fires automatically on module load if state already exists.`),
+			mcp.WithString("html", mcp.Required(), mcp.Description("JavaScript code to render (runs as ES module in a shell page)")),
 			mcp.WithString("panel", mcp.Description("Panel name (default: main). Use with layout tool to target specific panels in multi-panel layouts.")),
 		),
 		m.handleMCPSetHTML,
@@ -73,7 +82,7 @@ func (m *Manager) setupMCP() http.Handler {
 
 	s.AddTool(
 		mcp.NewTool("get_html",
-			mcp.WithDescription("Get the current HTML content being rendered in the session's Chrome browser. Requires an active stage (call create_stage first)."),
+			mcp.WithDescription("Get the current JavaScript content being rendered in the session's browser. Returns the user code without the HMR wrapper. Requires an active stage (call create_stage first)."),
 			mcp.WithString("panel", mcp.Description("Panel name (default: main). Use with layout tool to target specific panels in multi-panel layouts.")),
 		),
 		m.handleMCPGetHTML,
@@ -81,8 +90,8 @@ func (m *Manager) setupMCP() http.Handler {
 
 	s.AddTool(
 		mcp.NewTool("edit_html",
-			mcp.WithDescription("Edit the current HTML content by finding and replacing a string. The old_string must exist exactly once in the current HTML. Requires an active stage (call create_stage first)."),
-			mcp.WithString("old_string", mcp.Required(), mcp.Description("The exact string to find in the current HTML")),
+			mcp.WithDescription("Edit the current JavaScript content by finding and replacing a string. The old_string must exist exactly once in the current code. Changes are hot-swapped via HMR — no page reload. Requires an active stage (call create_stage first)."),
+			mcp.WithString("old_string", mcp.Required(), mcp.Description("The exact string to find in the current code")),
 			mcp.WithString("new_string", mcp.Required(), mcp.Description("The replacement string")),
 			mcp.WithString("panel", mcp.Description("Panel name (default: main). Use with layout tool to target specific panels in multi-panel layouts.")),
 		),
@@ -110,6 +119,28 @@ Call with no params to read the current layout and see which panels are availabl
 			mcp.WithString("specs", mcp.Description("JSON array of {name, x, y, width, height} for custom layouts (each value 0-100 as percentage)")),
 		),
 		m.handleMCPLayout,
+	)
+
+	s.AddTool(
+		mcp.NewTool("emit_event",
+			mcp.WithDescription(`Emit an event to the running panel without changing code. Use this with set_html to follow an Elm-style architecture:
+
+1. set_html defines the VIEW and UPDATE logic once — rendering + event listeners
+2. emit_event pushes STATE into it — no code rewrite, no page reload
+
+The panel receives events as CustomEvent on window. Accumulated state is merged into window.__state.
+
+Example flow:
+  set_html: el = div; addEventListener('event', e => { if (e.detail.event === 'score') el.textContent = e.detail.data.points })
+  emit_event: { event: "score", data: { points: 42 } }    → el shows "42"
+  emit_event: { event: "score", data: { points: 99 } }    → el shows "99"
+
+Best practice: design your set_html code as a pure render function of state. Use emit_event to push new state — the view reacts. This avoids rewriting JS for every content change.`),
+			mcp.WithString("event", mcp.Required(), mcp.Description("Event name that your set_html code listens for (e.g. 'update', 'alert', 'theme-change')")),
+			mcp.WithString("data", mcp.Required(), mcp.Description("JSON object with event payload — merged into window.__state and delivered as e.detail.data")),
+			mcp.WithString("panel", mcp.Description("Panel name (default: main)")),
+		),
+		m.handleMCPEmitEvent,
 	)
 
 	s.AddTool(
@@ -475,6 +506,48 @@ func (m *Manager) handleMCPEditHTML(ctx context.Context, req mcp.CallToolRequest
 	resp, err := http.Post(podURL, "application/json", bytes.NewReader(body))
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("failed to edit template: %v", err)), nil
+	}
+	defer resp.Body.Close()
+	respBody, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		return mcp.NewToolResultError(fmt.Sprintf("pod returned %d: %s", resp.StatusCode, string(respBody))), nil
+	}
+
+	return mcp.NewToolResultText(string(respBody)), nil
+}
+
+func (m *Manager) handleMCPEmitEvent(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	agentID := agentIDFromCtx(ctx)
+	eventName, err := req.RequireString("event")
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+	dataStr, err := req.RequireString("data")
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+	panel, _ := req.RequireString("panel")
+	if panel == "" {
+		panel = "main"
+	}
+
+	// Validate data is valid JSON
+	var dataObj map[string]any
+	if err := json.Unmarshal([]byte(dataStr), &dataObj); err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("data must be a valid JSON object: %v", err)), nil
+	}
+
+	sess, err := m.requireRunningSession(ctx, agentID)
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	body, _ := json.Marshal(map[string]any{"event": eventName, "data": dataObj})
+	podURL := fmt.Sprintf("http://%s:8080%s?token=%s", sess.PodIP, panelEndpoint(panel, "event"), url.QueryEscape(m.podToken))
+	resp, err := http.Post(podURL, "application/json", bytes.NewReader(body))
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("failed to emit event: %v", err)), nil
 	}
 	defer resp.Body.Close()
 	respBody, _ := io.ReadAll(resp.Body)

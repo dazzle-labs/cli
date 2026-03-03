@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100vw; height: 100vh; overflow: hidden; background: #000; }
+  canvas { width: 100%; height: 100%; display: block; }
+</style>
+</head>
+<body>
+<script>
+// Track all timing handles so HMR dispose can cancel them
+(function() {
+  const _rafs = new Set();
+  const _timeouts = new Set();
+  const _intervals = new Set();
+
+  const _origRAF = window.requestAnimationFrame.bind(window);
+  const _origCAF = window.cancelAnimationFrame.bind(window);
+  const _origST = window.setTimeout.bind(window);
+  const _origCT = window.clearTimeout.bind(window);
+  const _origSI = window.setInterval.bind(window);
+  const _origCI = window.clearInterval.bind(window);
+
+  window.requestAnimationFrame = function(cb) {
+    const id = _origRAF(function(t) { _rafs.delete(id); cb(t); });
+    _rafs.add(id);
+    return id;
+  };
+  window.cancelAnimationFrame = function(id) {
+    _rafs.delete(id);
+    _origCAF(id);
+  };
+  window.setTimeout = function(cb, ms, ...args) {
+    const id = _origST(function() { _timeouts.delete(id); cb(...args); }, ms);
+    _timeouts.add(id);
+    return id;
+  };
+  window.clearTimeout = function(id) {
+    _timeouts.delete(id);
+    _origCT(id);
+  };
+  window.setInterval = function(cb, ms, ...args) {
+    const id = _origSI(cb, ms, ...args);
+    _intervals.add(id);
+    return id;
+  };
+  window.clearInterval = function(id) {
+    _intervals.delete(id);
+    _origCI(id);
+  };
+
+  // Accumulated state from emit_event — persists across HMR swaps
+  window.__state = window.__state || {};
+
+  window.__hmrCleanup = function() {
+    for (const id of _rafs) _origCAF(id);
+    _rafs.clear();
+    for (const id of _timeouts) _origCT(id);
+    _timeouts.clear();
+    for (const id of _intervals) _origCI(id);
+    _intervals.clear();
+    // Clear all DOM content added by user code
+    document.body.innerHTML = '';
+  };
+})();
+</script>
+<script type="module" src="./main.js"></script>
+</body>
+</html>

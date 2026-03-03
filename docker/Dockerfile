@@ -57,9 +57,11 @@ WORKDIR /app
 
 # Copy server code and install dependencies
 COPY server/package.json server/package-lock.json* ./
-RUN npm install --production
+RUN npm install
 
-COPY server/index.js ./
+COPY server/index.js server/shell.html server/vite-init.mjs ./
+
+RUN mkdir -p /tmp/content
 
 # Copy PulseAudio config
 COPY docker/pulse-default.pa /etc/pulse/default.pa
