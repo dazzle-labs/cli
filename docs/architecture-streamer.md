@@ -1,128 +1,201 @@
-# Architecture: Streamer (Ephemeral Pod)
+# Architecture: Streamer (Stage Pod)
+
+**Part:** `streamer/`
+**Language:** Node.js / JavaScript
+**Last updated:** 2026-03-03
+
+---
 
 ## Overview
 
-The streamer runs as an ephemeral Kubernetes pod, providing an isolated browser environment with screen capture capabilities. Each pod runs Xvfb (virtual display), PulseAudio (audio), Google Chrome (browser), OBS Studio (screen capture/streaming), and a Node.js API server.
+The streamer runs as an ephemeral Kubernetes pod (one per stage). It provides an isolated browser environment with:
+- Google Chrome running on a headless display (Xvfb)
+- A **panel system** for serving and hot-swapping JavaScript/JSX content into Chrome via Vite HMR
+- A Node.js/Express HTTP API for content management, CDP discovery, and health
+- OBS Studio for screen capture and optional RTMP streaming
+- WebSocket proxy from the control plane to Chrome's CDP port
+
+---
 
 ## Technology Stack
 
 | Category | Technology | Version |
-|----------|-----------|---------|
-| Base Image | Ubuntu | 22.04 |
+|----------|------------|---------|
+| Runtime | Node.js | 20 |
+| HTTP Server | Express | 4.18.2 |
+| HTTP Proxy | http-proxy | 1.18.1 |
+| WebSocket | ws | 8.x |
+| Panel State | Zustand | v5 |
+| Panel Build | Vite | 6 |
+| Panel UI | React | 19 |
 | Browser | Google Chrome Stable | Latest |
-| Screen Capture | OBS Studio | 28+ (with built-in WebSocket) |
 | Virtual Display | Xvfb | System |
 | Audio | PulseAudio | System |
-| Runtime | Node.js | 20 |
-| Web Framework | Express | 4.18.2 |
-| Proxy | http-proxy | 1.18.1 |
-| Cursor | unclutter | System |
+| Screen Capture / Streaming | OBS Studio | 28+ (WebSocket v5) |
+| Base Image | Ubuntu | 22.04 |
+
+---
 
 ## Process Architecture
 
-The entrypoint starts processes sequentially with a cleanup trap:
+The entrypoint starts processes sequentially:
 
 ```
-1. Xvfb :99 (1280x720x24)    → Virtual X11 display
-2. PulseAudio (daemon)        → Audio system on /tmp/pulse/native
-3. unclutter                  → Hides mouse cursor
-4. Google Chrome (kiosk)      → Remote debugging on port 9222
-5. OBS Studio                 → WebSocket on port 4455
-6. Node.js server             → HTTP API on port 8080
+1. Xvfb :99 (1280x720x24)         → Virtual X11 display
+2. PulseAudio (daemon)              → Audio system on /tmp/pulse/native
+3. unclutter                        → Hides mouse cursor on display
+4. Google Chrome (kiosk mode)       → CDP on localhost:9222
+5. OBS Studio                       → WebSocket on localhost:4455
+6. Node.js server (index.js)        → HTTP API on port 8080
+   └── Vite dev server              → Panel HMR serving (started in code)
 ```
 
-Signal handling: `trap cleanup EXIT INT TERM` — kills all child processes. `wait -n` exits when any process dies.
+Signal trap `EXIT INT TERM` kills all child processes on exit.
+
+---
 
 ## Port Map
 
 | Port | Service | Access |
 |------|---------|--------|
-| 8080 | Node.js HTTP API | External (k8s service) |
-| 9222 | Chrome CDP | Internal (proxied via Node.js) |
-| 4455 | OBS WebSocket v5 | Internal (used by MCP tools) |
+| `8080` | Node.js HTTP API | External (via control plane proxy) |
+| `9222` | Chrome CDP | Internal only (proxied through Node.js) |
+| `4455` | OBS WebSocket v5 | Internal only (used by OBS commands) |
 
-## API Endpoints
+---
+
+## HTTP API Endpoints
 
 ### Health
-- `GET /health` — No auth. Returns `{ status: 'ok', lastActivity, uptime }`
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/health` | None | Returns `{ status: 'ok', lastActivity, uptime }` |
 
-### CDP Discovery (auth required)
-- `GET /json` — Chrome tab list (rewrites WS URLs to external host)
-- `GET /json/version` — Chrome version info
-- `GET /json/list` — Available tabs
+### CDP Discovery (rewrites WS URLs)
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/json` | Token | Chrome tab list (WS URLs rewritten to external host) |
+| GET | `/json/version` | Token | Chrome version info |
+| GET | `/json/list` | Token | Available tabs |
 
-### Template Engine (auth required)
-- `POST /api/template` — Store and render HTML in Chrome (`{ html }`)
-- `GET /api/template` — Get current HTML
-- `POST /api/template/edit` — Find-and-replace edit (`{ old_string, new_string }`)
-- `GET /template` — Serves HTML to Chrome (no auth, localhost only)
-
-### Navigation (auth required)
-- `POST /api/navigate` — Navigate Chrome to URL (`{ url }`)
+### Panel System (new — replaces old template engine)
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/api/panels` | Token | Create or resize a panel (`{ name, width, height }`) |
+| GET | `/api/panels/:name/script` | Token | Get current user code for panel |
+| POST | `/api/panels/:name/script` | Token | Set full script content (hot-swapped via Vite HMR) |
+| PATCH | `/api/panels/:name/script` | Token | Edit script (find-and-replace `{ old_string, new_string }`) |
+| POST | `/api/panels/:name/event` | Token | Emit state event to panel (`{ event, data }`) |
+| GET | `/api/panels/:name/screenshot` | Token | Capture screenshot of panel as PNG |
 
 ### WebSocket
-- `WS /*` — CDP WebSocket proxy to Chrome port 9222 (token in query string)
+| Protocol | Path | Auth | Description |
+|----------|------|------|-------------|
+| WS | `/*` | Token (query param) | CDP WebSocket proxy to Chrome port 9222 |
+
+---
+
+## Panel System
+
+The panel system is the core feature of the streamer. It manages named, isolated browser views:
+
+1. **Panel directory**: Each panel `<name>` gets a directory at `/tmp/content/<name>/`
+2. **Shell HTML** (`shell.html`): The base HTML page served to Chrome per panel — loads React, Zustand, and Tailwind CSS v4 as globals; mounts `#root` div
+3. **Prelude** (`prelude.js`): Injects `React`, `useState`, `useEffect`, etc., `createRoot`, `create`/`persist` (Zustand) as window globals — available without imports in user code
+4. **User code** (`main.jsx`): Wrapped with Vite HMR hooks, `import.meta.hot.accept()`, and `state-event` listener; sandwiched between `USER_CODE_START` / `USER_CODE_END` markers for extraction
+5. **Auto-mount**: If user code defines `const App`, it is automatically rendered into `#root` via `createRoot`
+6. **State events**: `emit_event` pushes events via Vite HMR's `hot.send('state-event', ...)` — no page reload; accumulated state available in `window.__state`
+
+### Vite HMR Hot-Swap Flow
+
+```
+MCP set_script / edit_script
+         │
+         ▼
+  Write to /tmp/content/<panel>/main.jsx
+         │
+         ▼
+  Vite watches file → HMR update
+         │
+         ▼
+  Chrome receives HMR patch → module replaced → no reload
+```
+
+---
+
+## OBS Integration
+
+The streamer includes an internal OBS WebSocket v5 client (`OBSConnection` class in `index.js`):
+- Connects to `ws://localhost:4455` (no auth) with 30s retry
+- Request/response correlation via `requestId`
+- Used by MCP `gobs` tools for OBS scene/source/streaming control
+
+---
 
 ## Authentication
 
 Token-based with constant-time comparison:
-- Accepts `?token=` query param or `Authorization: Bearer` header
-- Token loaded from `TOKEN` env var (injected from k8s secret)
-- No-auth mode: if `TOKEN` env var is unset, all requests pass through
+- Token loaded from `TOKEN` env var (injected from `browserless-auth` Kubernetes secret)
+- Accepted via `Authorization: Bearer <token>` header or `?token=<token>` query param
+- If `TOKEN` env is unset, all requests pass through (development mode)
+
+---
 
 ## Chrome Configuration
 
 Key startup flags:
-- `--no-sandbox` (container requirement)
-- `--kiosk` (full-screen mode)
-- `--remote-debugging-port=9222` (CDP access)
-- `--remote-debugging-address=0.0.0.0`
-- `--disable-background-timer-throttling` (smooth rendering)
+- `--no-sandbox` (required in containers)
+- `--kiosk` (full-screen, no UI chrome)
+- `--remote-debugging-port=9222` + `--remote-debugging-address=0.0.0.0`
+- `--disable-background-timer-throttling`
 - `--autoplay-policy=no-user-gesture-required`
 - `--user-data-dir=/tmp/chrome-data`
+- Display: `:99` (Xvfb)
 
-Initial page: Data URI with styled "HELLO WORLD" landing.
+---
 
-## OBS Configuration
+## Resource Allocation
 
-Pre-baked configuration via entrypoint heredocs:
-- **Profile:** Resolution matches Xvfb (1280x720), H.264 encoding, 30 FPS
-- **Scene:** xshm screen capture source on display `:99`
-- **WebSocket:** Enabled on port 4455, no authentication
-- **Mode:** Minimize to tray, disabled shutdown check
+Defined in the control plane pod spec:
 
-## Docker Image
+| Resource | Request | Limit |
+|----------|---------|-------|
+| CPU | 2 cores | 4 cores |
+| Memory | 4 Gi | 8 Gi |
+| `/dev/shm` | — | 2 Gi (memory medium for Chrome) |
 
-**Base:** `ubuntu:22.04`
-
-**Layers:**
-1. System deps (X11, audio, fonts, media tools)
-2. OBS Studio (from PPA)
-3. Google Chrome Stable (from Google .deb)
-4. Node.js 20 (from NodeSource)
-5. Application code (`/app/index.js` + `package.json`)
-6. Config files (PulseAudio config, entrypoint script)
-
-**Image size considerations:** Large image (~2GB+) due to Chrome + OBS + X11 stack. Pre-loaded on k3s node (imagePullPolicy: Never).
+---
 
 ## Environment Variables
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `PORT` | 8080 | Node.js server port |
-| `TOKEN` | (none) | Auth token from k8s secret |
-| `DISPLAY` | :99 | X11 display (set in Dockerfile) |
-| `PULSE_SERVER` | unix:/tmp/pulse/native | PulseAudio socket (set in Dockerfile) |
-| `SCREEN_WIDTH` | 1280 | Xvfb resolution width |
-| `SCREEN_HEIGHT` | 720 | Xvfb resolution height |
+| `PORT` | `8080` | HTTP server listen port |
+| `TOKEN` | (none) | Auth token from `browserless-auth` secret |
+| `DISPLAY` | `:99` | X11 display (set in Dockerfile) |
+| `PULSE_SERVER` | `unix:/tmp/pulse/native` | PulseAudio socket |
+| `SCREEN_WIDTH` | `1280` | Xvfb width |
+| `SCREEN_HEIGHT` | `720` | Xvfb height |
 
-## Resource Allocation (from session manager)
+---
 
-- Requests: 2 CPU, 4Gi RAM
-- Limits: 4 CPU, 8Gi RAM
-- `/dev/shm`: 2Gi (Memory medium, for Chrome shared memory)
+## Docker Image
+
+**Base:** `ubuntu:22.04`
+
+**Layers (approximate):**
+1. System deps (X11, audio, fonts, network tools)
+2. OBS Studio (from PPA, WebSocket v5)
+3. Google Chrome Stable (from Google .deb)
+4. Node.js 20 (from NodeSource)
+5. Application code (`index.js`, `shell.html`, `prelude.js`, `package.json`)
+6. Startup entrypoint
+
+**Image size:** ~2 GB+ (Chrome + OBS + X11 stack). Loaded on k3s node with `imagePullPolicy: Never`.
+
+---
 
 ## Health & Readiness
 
-- **K8s Readiness Probe:** HTTP GET `/health` on port 8080, initial delay 2s, period 2s, failure threshold 30
-- **Internal Checks:** Chrome CDP readiness (12s max), OBS WebSocket readiness (30s max)
+- **K8s Readiness Probe:** `GET /health` on port 8080, initial delay 2s, period 2s, failure threshold 30 (60s total window)
+- Probe checks Node.js server availability; Chrome CDP readiness is implicit (Chrome starts before Node.js server)

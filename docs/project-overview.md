@@ -1,76 +1,102 @@
-# Browser Streamer (Dazzle) — Project Overview
+# Browser Streamer — Project Overview
+
+**Last updated:** 2026-03-03
+**Repository type:** Monorepo (4 parts)
+
+---
 
 ## Executive Summary
 
-Browser Streamer (branded as **Dazzle**) is a session-based browser streaming platform that runs on Kubernetes (k3s). It provides ephemeral, isolated browser environments that can be controlled programmatically via Chrome DevTools Protocol (CDP) and managed through an MCP (Model Context Protocol) interface — designed primarily for AI agent integration.
+Browser Streamer (branded as **Dazzle**) is a cloud-native platform that provides on-demand, isolated browser environments controllable via AI agents and the web. Each "stage" is a Kubernetes pod running Chrome on a headless display, accessible through Chrome DevTools Protocol (CDP), an MCP (Model Context Protocol) server, and a React web dashboard.
 
-Each session runs Chrome, OBS Studio, and a Node.js server inside an isolated Kubernetes pod. The platform supports live RTMP streaming to destinations like Twitch, YouTube, and Kick.
+Primary use cases: AI agents that need a persistent browser (Claude Code, OpenAI Agents, etc.), live streaming to Twitch/YouTube/Kick via RTMP, and programmatic browser automation.
 
-## Project Type
-
-- **Repository Type:** Multi-part (3 distinct components in one repo)
-- **Primary Languages:** Go (control plane), TypeScript/React (dashboard), JavaScript/Node.js (streamer)
-- **Architecture:** Microservices on Kubernetes with ephemeral pod orchestration
+---
 
 ## Parts
 
-| Part | Path | Language | Framework | Purpose |
-|------|------|----------|-----------|---------|
-| **Session Manager** | `control-plane/` | Go 1.24 | ConnectRPC, k8s client-go | Control plane: pod lifecycle, auth, API, MCP server, reverse proxy |
-| **Streamer** | `streamer/` + `streamer/docker/` | Node.js 20, Bash | Express, http-proxy | Ephemeral pod: Chrome + OBS + ffmpeg, CDP proxy, HTML rendering |
-| **Dashboard** | `web/` | TypeScript | React 19, Vite, Tailwind CSS 4 | Web UI: session management, onboarding, API key management |
+| Part | Path | Language | Purpose |
+|------|------|----------|---------|
+| **control-plane** | `control-plane/` | Go 1.24 | Backend API, Kubernetes orchestration, auth, DB, CDP/WS proxy, MCP server, serves web SPA |
+| **web** | `web/` | TypeScript / React 19 | Web dashboard SPA (stage management, API keys, stream destinations) |
+| **streamer** | `streamer/` | Node.js | Per-stage browser container: Express HTTP, Chrome CDP, Vite panel rendering |
+| **k8s** | `k8s/` | YAML | Kubernetes manifests, Traefik ingress, TLS, SOPS-encrypted secrets |
 
-## Technology Stack Summary
+---
+
+## Technology Stack
 
 | Category | Technology | Version |
-|----------|-----------|---------|
-| **Orchestration** | k3s (Kubernetes) | v1.29+ |
-| **Control Plane** | Go | 1.24 |
-| **API Protocol** | ConnectRPC (Protobuf) | v2 |
-| **Auth** | Clerk (JWT + OAuth) | SDK v2 |
+|----------|------------|---------|
+| **Control Plane Language** | Go | 1.24 |
+| **RPC Framework** | ConnectRPC (Protobuf/HTTP2) | v1.19 |
+| **Auth** | Clerk (JWT) + internal API keys | SDK Go v2 / React v5 |
 | **Database** | PostgreSQL | 16 (Alpine) |
-| **Secret Management** | SOPS + Age encryption | - |
-| **Frontend** | React + TypeScript | 19 / 5.6 |
-| **Build Tool** | Vite | 6.0 |
-| **CSS** | Tailwind CSS | 4.2 |
-| **Container Runtime** | containerd (k3s) | - |
-| **Build System** | BuildKit (remote SSH) | - |
-| **Ingress** | Traefik + cert-manager | - |
-| **TLS** | Let's Encrypt (ACME) | - |
-| **MCP** | mcp-go | v0.44 |
+| **Encryption** | AES-256-GCM (stream keys at rest) | — |
+| **K8s Client** | k8s.io/client-go | v0.29.3 |
+| **MCP** | mcp-go | v0.44.1 |
+| **Frontend Framework** | React | 19 |
+| **Build Tool** | Vite | 6.x |
+| **CSS** | Tailwind CSS | v4 |
+| **Routing** | React Router | v7 |
+| **Video Playback** | HLS.js | v1.6 |
+| **Streamer Server** | Express | 4 |
+| **WebSocket** | ws | v8 |
+| **Panel State** | Zustand | v5 |
+| **Ingress** | Traefik | — |
+| **TLS** | cert-manager + Let's Encrypt | — |
+| **Secrets** | SOPS-encrypted YAML | — |
+| **Orchestration** | k3s (Kubernetes) | v1.29+ |
+
+---
 
 ## Architecture Pattern
 
-**Control Plane + Ephemeral Workers:**
-
 ```
-Client → Traefik Ingress (TLS) → Session Manager (Go)
-  ├── ConnectRPC API (session/apikey/stream/user services)
-  ├── MCP Server (/mcp/<agent-uuid>/)
-  ├── CDP Auto-Provisioning (/cdp/<uuid>)
-  ├── HTTP/WS Reverse Proxy (/session/:id/*)
-  └── Dashboard SPA (React)
-       ↓
-  Creates/manages ephemeral pods:
-  Streamer Pod (Chrome + OBS + Node.js)
-  ├── CDP Proxy (port 9222 via 8080)
-  ├── HTML Template Engine
-  ├── OBS WebSocket (port 4455)
-  └── Health endpoint (/health)
+User/Agent ──► Traefik Ingress (TLS termination)
+                    │
+                    ▼
+           Control Plane (Go :8080)
+           ├── ConnectRPC API (/api.v1.*)
+           │   ├── StageService (create/list/get/delete)
+           │   ├── ApiKeyService (CRUD, Clerk-only)
+           │   ├── StreamService (RTMP destinations, Clerk-only)
+           │   └── UserService (profile)
+           ├── CDP Proxy (/cdp/<stage-id>)
+           ├── Stage HTTP/WS Proxy (/stage/<id>/*)
+           ├── MCP Server (/stage/<id>/mcp/*)
+           ├── Health (/health)
+           └── Web SPA (fallback /)
+                    │
+              creates/manages pods
+                    │
+                    ▼
+           Streamer Pod (per stage, on-demand)
+           ├── Express HTTP :8080
+           │   ├── Panel API (/api/panels/*)
+           │   ├── CDP discovery proxy (/json/*)
+           │   └── Health (/health)
+           ├── Chrome/Chromium on Xvfb
+           │   └── CDP on localhost:9222
+           └── Vite HMR dev server (panel JSX rendering)
 ```
 
-## Key Features
+---
 
-1. **MCP Integration** — AI agents connect via Model Context Protocol to control browser sessions (start, stop, set_html, edit_html, screenshot, OBS control)
-2. **Two-Path Onboarding** — Experienced (4-step) or Guided (5-step) wizard for new users
-3. **Multi-Framework Support** — Integration snippets for Claude Code, OpenAI Agents, OpenClaw, CrewAI, LangGraph, AutoGen
-4. **RTMP Streaming** — Configure destinations (Twitch, YouTube, Kick, Restream, Custom) with encrypted stream keys
-5. **API Key Management** — `bstr_*` format keys with SHA256 hashing, prefix display, last-used tracking
-6. **Auto-Provisioning** — `/cdp/<uuid>` endpoint automatically creates sessions on first connection
-7. **Session Recovery** — On restart, recovers running pods from Kubernetes state + database
+## Key Capabilities
+
+1. **Stage lifecycle** — Create/activate/deactivate/delete browser pods with status tracking (inactive → starting → running → stopping)
+2. **CDP access** — Full Chrome DevTools Protocol access proxied through control plane; WebSocket URL rewriting for external access
+3. **MCP server** — Per-stage Model Context Protocol tools: `set_script`, `edit_script`, `get_script`, `emit_event`, `screenshot`, `start`, `stop`, OBS controls (`gobs`)
+4. **Panel system** — Streamer manages named panels; supports hot-swap via Vite HMR without page reload
+5. **Stream destinations** — RTMP stream keys for Twitch, YouTube, Kick, custom; AES-256-GCM encrypted at rest
+6. **API keys** — `bstr_*` prefix format, HMAC-SHA256 hashed, with last-used tracking; programmatic auth alongside Clerk JWT
+7. **Stage recovery** — On restart, reconciles in-memory state with live Kubernetes pods and resets orphaned DB records
+
+---
 
 ## Domain & Hosting
 
 - **Production URL:** `https://stream.dazzle.fm`
-- **Infrastructure:** Single Hetzner VPS with k3s
-- **TLS:** Automatic via cert-manager + Let's Encrypt
+- **Infrastructure:** Single Hetzner VPS, k3s (single-node Kubernetes)
+- **TLS:** Automatic via cert-manager + Let's Encrypt ACME

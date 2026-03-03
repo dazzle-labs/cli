@@ -1,88 +1,116 @@
-# Browser Streamer (Dazzle) — Documentation Index
+# Browser Streamer — Documentation Index
 
-> Generated: 2026-03-02 | Scan Level: Deep | Mode: Initial Scan
+> Generated: 2026-03-03 | Scan Level: Quick | Mode: Full Rescan
+
+---
 
 ## Project Overview
 
-- **Type:** Multi-part (3 components in one repository)
-- **Primary Languages:** Go, TypeScript, JavaScript
-- **Architecture:** Control plane + ephemeral workers on Kubernetes (k3s)
-- **Domain:** stream.dazzle.fm
-
-### Quick Reference
-
-#### Session Manager (Go Control Plane)
-- **Type:** Backend API
-- **Tech Stack:** Go 1.24, ConnectRPC, k8s client-go, Clerk, PostgreSQL, mcp-go
-- **Root:** `control-plane/`
-- **Entry Point:** `control-plane/main.go`
-
-#### Streamer (Ephemeral Pod)
-- **Type:** Backend Service
-- **Tech Stack:** Node.js 20, Express, Chrome, OBS Studio, Xvfb
-- **Root:** `streamer/` + `streamer/docker/`
-- **Entry Point:** `streamer/docker/entrypoint.sh` → `streamer/index.js`
-
-#### Dashboard (React Web App)
-- **Type:** Web Frontend
-- **Tech Stack:** React 19, TypeScript, Vite 6, Tailwind CSS 4, Clerk React, ConnectRPC
-- **Root:** `web/`
-- **Entry Point:** `web/src/main.tsx`
+| | |
+|-|-|
+| **Product** | Dazzle — on-demand cloud browser environments for AI agents and live streaming |
+| **Production URL** | https://stream.dazzle.fm |
+| **Repo Type** | Monorepo (4 parts) |
+| **Infrastructure** | Single Hetzner VPS, k3s (single-node Kubernetes) |
+| **Auth** | Clerk (JWT) + internal API keys (`bstr_*`) |
+| **API Protocol** | ConnectRPC (protobuf/HTTP2) |
 
 ---
 
-## Generated Documentation
+## Quick Reference by Part
+
+### control-plane (Go backend)
+- **Path:** `control-plane/`
+- **Role:** API server, K8s orchestration, auth, DB, CDP/WS proxy, MCP server, serves web SPA
+- **Entry:** `control-plane/main.go`
+- **Port:** 8080
+
+### web (React SPA)
+- **Path:** `web/`
+- **Role:** Dashboard for stage management, API keys, stream destinations
+- **Entry:** `web/src/main.tsx`
+- **Dev:** `cd web && npm run dev`
+
+### streamer (Node.js browser pod)
+- **Path:** `streamer/`
+- **Role:** Chrome + OBS + panel rendering (Vite HMR) — ephemeral K8s pod
+- **Entry:** `streamer/index.js`
+
+### k8s (Infrastructure)
+- **Path:** `k8s/`
+- **Role:** Kubernetes manifests, Traefik, TLS, SOPS-encrypted secrets
+
+---
+
+## Documentation
 
 ### Architecture
-- [Project Overview](./project-overview.md) — Executive summary, tech stack, key features
-- [Architecture — Session Manager](./architecture-control-plane.md) — Go control plane, API surface, auth, k8s pod management
-- [Architecture — Streamer](./architecture-streamer.md) — Ephemeral pod internals, Chrome + OBS + Node.js
-- [Architecture — Dashboard](./architecture-dashboard.md) — React app, components, routing, design system
-- [Integration Architecture](./integration-architecture.md) — Part communication, data flow, shared dependencies
+- [Project Overview](./project-overview.md) — Product summary, tech stack, key capabilities
+- [Architecture: Control Plane](./architecture-control-plane.md) — Go backend: routes, stage lifecycle, CDP proxy, MCP, env vars
+- [Architecture: Web Frontend](./architecture-web.md) — React SPA: pages, routing, ConnectRPC client setup
+- [Architecture: Streamer Pod](./architecture-streamer.md) — Node.js: panel system, Chrome, OBS, Vite HMR
+- [Integration Architecture](./integration-architecture.md) — How all parts communicate; data flows
+- [Source Tree Analysis](./source-tree-analysis.md) — Annotated directory structure with critical file callouts
 
-### Data & API
-- [API Contracts](./api-contracts.md) — ConnectRPC services, HTTP endpoints, MCP tools, streamer pod API
-- [Data Models](./data-models.md) — PostgreSQL schema, Go structs, entity relationships
-
-### Code & Structure
-- [Source Tree Analysis](./source-tree-analysis.md) — Annotated directory tree, critical paths, entry points
+### API & Data
+- [API Contracts](./api-contracts.md) — All ConnectRPC services (Stage, ApiKey, Stream, User) + HTTP endpoints
+- [Data Models](./data-models.md) — PostgreSQL schema, migration history, entity relationships
 
 ### Operations
-- [Development Guide](./development-guide.md) — Local setup, build commands, secret management, protobuf generation
-- [Deployment Guide](./deployment-guide.md) — k8s architecture, resource allocation, TLS, provisioning
-
----
-
-## Existing Documentation
-
-- [CLAUDE.md](../CLAUDE.md) — Project instructions for AI assistants (architecture overview, build/deploy, API reference)
-- [Makefile](../Makefile) — Build and deploy automation targets
-- [viewer.html](../viewer.html) — Legacy HLS viewer (vanilla JS)
+- [Development Guide](./development-guide.md) — Local dev setup, build commands, protobuf regen, secret management
+- [Deployment Guide](./deployment-guide.md) — k3s deployment, TLS setup, provisioning, monitoring
 
 ---
 
 ## Getting Started
 
-### For New Developers
-1. Read the [Project Overview](./project-overview.md) for architecture context
-2. Review [Development Guide](./development-guide.md) for local setup
-3. Check [Source Tree Analysis](./source-tree-analysis.md) to understand code layout
+### Run the web frontend locally
+```bash
+cd web && npm install && npm run dev
+# Requires control-plane running on :8080 for API calls
+```
 
-### For Feature Development
-1. Identify which part(s) the feature touches
-2. Read the relevant architecture doc (control-plane, streamer, or dashboard)
-3. Check [API Contracts](./api-contracts.md) for existing endpoints
-4. Check [Data Models](./data-models.md) for schema considerations
-5. Review [Integration Architecture](./integration-architecture.md) for cross-part changes
+### Compile check on the Go backend
+```bash
+cd control-plane && go build -o /dev/null . && go vet ./...
+```
 
-### For AI-Assisted Development
-1. Point the PRD workflow to this index: `docs/index.md`
-2. For session management features: Reference [Architecture — Session Manager](./architecture-control-plane.md)
-3. For UI features: Reference [Architecture — Dashboard](./architecture-dashboard.md)
-4. For streaming features: Reference [Architecture — Streamer](./architecture-streamer.md)
-5. For cross-cutting features: Reference [Integration Architecture](./integration-architecture.md)
+### Build and deploy everything
+```bash
+make build HOST=<vps-ip> CLERK_PK=pk_live_...
+make deploy HOST=<vps-ip>
+```
 
-### For Deployment
-1. Read [Deployment Guide](./deployment-guide.md) for infrastructure details
-2. Use `make build deploy` for standard deployments
-3. Use `make provision` for fresh infrastructure setup
+### Check production status
+```bash
+make status
+make logs-cp
+```
+
+### Regenerate protobuf code
+```bash
+make proto
+```
+
+---
+
+## Key Architectural Decisions
+
+1. **Control plane as unified gateway** — All external traffic (API, CDP, MCP, WebSocket, SPA) routes through one Go binary. Simplifies TLS termination and auth.
+
+2. **Stages are persistent, pods are ephemeral** — A `Stage` DB record survives pod restarts. `GetStage` activates (creates pod) on demand; `DeleteStage` removes everything; `DeactivateStage` deletes pod but keeps record.
+
+3. **Panel system replaces template engine** — The streamer's Vite HMR panel system hot-swaps JavaScript/JSX without page reloads. Panels persist state via `emit_event` + `window.__state`.
+
+4. **Protobuf as service contract** — All control-plane ↔ web communication uses generated ConnectRPC code from `proto/api/v1/`. No hand-written API clients.
+
+5. **SOPS for secrets** — All production secrets are encrypted at rest; decrypted only during `make secrets`. AES-256-GCM used for stream keys within the DB.
+
+---
+
+## Note on Superseded Files
+
+The following old docs exist but have been replaced by the updated files above:
+- `architecture-dashboard.md` → replaced by `architecture-web.md`
+- `architecture-session-manager.md` → replaced by `architecture-control-plane.md`
+- `RESCAN-INDEX.md`, `rescan-summary.md`, `rescan-findings.json` → superseded by this 2026-03-03 rescan

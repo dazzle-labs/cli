@@ -1,137 +1,174 @@
 # Source Tree Analysis
 
-## Directory Structure
+**Last updated:** 2026-03-03
+
+---
+
+## Full Directory Structure
 
 ```
-browser-streamer/
-├── CLAUDE.md                    # Project instructions for AI assistants
-├── Makefile                     # Build/deploy automation (remote SSH + buildkit)
-├── provision.sh                 # Full infrastructure provisioning script
-├── viewer.html                  # Legacy HLS viewer (vanilla JS + HLS.js)
-├── example.html                 # Example HTML page for testing
-├── package.json                 # Root: Playwright dependency for testing
-├── .sops.yaml                   # SOPS encryption config (Age recipients)
-├── .dockerignore                # Docker build exclusions
-├── .gitignore                   # Git exclusions
+browser-streamer/                    # Monorepo root
+├── Makefile                         # All build/deploy targets
+├── provision.sh                     # Full VPS provisioning script
+├── package.json                     # Root-level Playwright (integration testing)
 │
-├── control-plane/             # ★ CONTROL PLANE (Go)
-│   ├── main.go                  # ★ Entry point: HTTP server, routing, pod lifecycle, proxies
-│   ├── auth.go                  # Clerk JWT verification, API key validation
-│   ├── db.go                    # DB migrations, CRUD, AES encryption
-│   ├── mcp.go                   # MCP server (8 tools for AI agents)
-│   ├── connect_session.go       # ConnectRPC SessionService
-│   ├── connect_apikey.go        # ConnectRPC ApiKeyService
-│   ├── connect_stream.go        # ConnectRPC StreamService
-│   ├── connect_user.go          # ConnectRPC UserService
-│   ├── go.mod / go.sum          # Go dependencies
-│   ├── gen/                     # Protobuf-generated Go code
-│   │   └── api/v1/              # Generated service stubs
-│   ├── proto/                   # Protobuf source definitions
-│   │   ├── session.proto
-│   │   ├── apikey.proto
-│   │   ├── stream.proto
-│   │   └── user.proto
-│   └── migrations/              # SQL migration files
-│       ├── 001_initial.up.sql
-│       └── 002_nullable_direct_port.up.sql
-│
-├── streamer/                    # ★ STREAMER POD SERVER (Node.js)
-│   ├── index.js                 # ★ Express API: template engine, CDP proxy, navigation
-│   ├── package.json             # Express + http-proxy dependencies
-│   └── docker/                  # Container image and startup
-│       ├── Dockerfile           # Streamer image (Ubuntu + Chrome + OBS + Node.js)
-│       ├── entrypoint.sh        # Streamer startup: Xvfb → PulseAudio → Chrome → OBS → Node.js
-│       └── pulse-default.pa     # PulseAudio configuration
-│
-├── control-plane/               # ★ CONTROL PLANE CONTAINER IMAGE
+├── control-plane/                   # [PART 1] Go backend
+│   ├── main.go                      # ★ Entry point: Manager, HTTP routing, shutdown
+│   ├── auth.go                      # Clerk JWT + API key authentication
+│   ├── db.go                        # DB connection, migrations runner, CRUD helpers
+│   ├── connect_stage.go             # StageService RPC handler
+│   ├── connect_apikey.go            # ApiKeyService RPC handler
+│   ├── connect_stream.go            # StreamService RPC handler
+│   ├── connect_user.go              # UserService RPC handler
+│   ├── mcp.go                       # MCP server + tool definitions
+│   ├── go.mod / go.sum              # Go module definition
+│   ├── Makefile                     # Component build targets
+│   ├── proto/api/v1/                # ★ Protobuf service definitions
+│   │   ├── stage.proto              # StageService (create/list/get/delete)
+│   │   ├── apikey.proto             # ApiKeyService (CRUD)
+│   │   ├── stream.proto             # StreamService (RTMP destinations)
+│   │   └── user.proto               # UserService (profile)
+│   ├── gen/api/v1/                  # Generated Go + connect stubs (committed)
+│   ├── migrations/                  # PostgreSQL migration files (.up.sql)
+│   │   ├── 001_initial.up.sql       # users, api_keys, stream_destinations
+│   │   ├── 002_nullable_direct_port.up.sql
+│   │   ├── 003_endpoints.up.sql
+│   │   ├── 004_rename_session_log_to_stage_log.up.sql
+│   │   └── 005_consolidate_stages.up.sql  # Renames endpoints→stages, adds status/pod fields
 │   └── docker/
-│       └── Dockerfile           # Multi-stage: Web build + Go build + Alpine runtime
+│       └── Dockerfile               # Multi-stage build: Go binary + web SPA embed
 │
-├── web/                         # ★ WEB DASHBOARD (React + TypeScript)
-│   ├── index.html               # SPA root (dark mode)
-│   ├── package.json             # React 19, Vite, Tailwind CSS, Clerk, ConnectRPC
-│   ├── vite.config.ts           # Vite config with API proxy
-│   ├── tsconfig.json            # Strict TypeScript config
-│   ├── .env                     # Clerk publishable key
-│   ├── .nvmrc                   # Node 24
-│   ├── src/
-│       ├── main.tsx             # App bootstrap (ClerkProvider + Router)
-│       ├── App.tsx              # Auth routing + AuthSetup
-│       ├── client.ts            # ConnectRPC transport with auth interceptor
-│       ├── lib/utils.ts         # cn() utility (clsx + tailwind-merge)
-│       ├── components/
-│       │   ├── Layout.tsx       # Sidebar layout shell
-│       │   ├── ui/              # Reusable components (Button, Input, Badge, Card, etc.)
-│       │   └── onboarding/      # Wizard steps (12 components)
+├── web/                             # [PART 2] React/TypeScript SPA
+│   ├── index.html                   # HTML shell (Vite entry)
+│   ├── vite.config.ts               # ★ Vite config + dev proxy to :8080
+│   ├── tsconfig.json                # TypeScript config
+│   ├── package.json                 # React 19, Clerk, ConnectRPC, HLS.js, Tailwind v4
+│   ├── Makefile                     # build/dev targets
+│   ├── public/                      # Static assets
+│   └── src/
+│       ├── main.tsx                 # ★ App entry: ClerkProvider, Router mount
+│       ├── App.tsx                  # Route definitions (React Router v7)
+│       ├── client.ts                # ★ ConnectRPC transport + all service clients
+│       ├── index.css                # Tailwind base styles
+│       ├── gen/api/v1/              # Generated TypeScript protobuf (committed)
+│       │   ├── stage_pb.ts
+│       │   ├── apikey_pb.ts
+│       │   ├── stream_pb.ts
+│       │   └── user_pb.ts
 │       ├── pages/
-│       │   ├── LandingPage.tsx  # Marketing page + Clerk SignIn
-│       │   ├── Dashboard.tsx    # Session grid + stream destinations
-│       │   ├── GetStarted.tsx   # Two-path onboarding wizard
-│       │   ├── ApiKeys.tsx      # API key management
-│       │   ├── Docs.tsx         # Integration docs + code snippets
-│       │   └── StreamConfig.tsx # RTMP destination management
-│       └── gen/                 # Protobuf-generated TypeScript
-│           ├── session_pb.ts
-│           ├── apikey_pb.ts
-│           ├── stream_pb.ts
-│           └── user_pb.ts
+│       │   ├── LandingPage.tsx      # Public landing page
+│       │   ├── Dashboard.tsx        # ★ Stage management (create, list, activate)
+│       │   ├── ApiKeys.tsx          # API key CRUD
+│       │   ├── StreamConfig.tsx     # RTMP destination management
+│       │   └── Docs.tsx             # Documentation viewer
+│       ├── components/
+│       │   ├── Layout.tsx           # App shell (nav, sidebar)
+│       │   ├── StreamPreview.tsx    # HLS.js video preview component
+│       │   ├── onboarding/          # Onboarding wizard components
+│       │   └── ui/                  # Design system primitives
+│       │       ├── alert.tsx
+│       │       ├── badge.tsx
+│       │       ├── button.tsx       # CVA-based button variants
+│       │       ├── card.tsx
+│       │       ├── input.tsx
+│       │       ├── overlay.tsx
+│       │       └── table.tsx
+│       └── lib/                     # Shared utilities
 │
-├── k8s/                         # ★ KUBERNETES MANIFESTS
-│   ├── namespace.yaml           # browser-streamer namespace
-│   ├── control-plane-deployment.yaml  # Session manager pod spec
-│   ├── control-plane-service.yaml     # ClusterIP service
-│   ├── control-plane-rbac.yaml        # ServiceAccount + Role + RoleBinding
-│   ├── browserless-deployment.yaml      # Chromium pool deployment
-│   ├── browserless-service.yaml         # NodePort 30000
-│   ├── browserless-secret.yaml          # Auth token (plaintext)
-│   ├── browserless-hpa.yaml             # Autoscaler (1-6 replicas, 50% CPU)
-│   ├── postgres.yaml                    # StatefulSet + PVC + Service
-│   ├── ingress.yaml                     # Traefik ingress (stream.dazzle.fm)
-│   ├── traefik-config.yaml              # HTTP→HTTPS redirect
-│   ├── cluster-issuer.yaml              # Let's Encrypt cert-manager
-│   ├── clerk-auth.secrets.yaml          # SOPS-encrypted Clerk keys
-│   ├── clerk-oauth.secrets.yaml         # SOPS-encrypted OAuth secret
-│   ├── encryption-key.secrets.yaml      # SOPS-encrypted AES key
-│   └── postgres-auth.secrets.yaml       # SOPS-encrypted DB password
+├── streamer/                        # [PART 3] Node.js browser pod service
+│   ├── index.js                     # ★ Entry: Express server, panel system, OBS client
+│   ├── shell.html                   # Base HTML shell served to Chrome per panel
+│   ├── prelude.js                   # React/Zustand globals injected into panel pages
+│   ├── vite-init.mjs                # Vite dev server initialization for panel HMR
+│   ├── package.json                 # Express, ws, Vite, React, Zustand
+│   ├── Makefile                     # build target
+│   └── docker/                      # Container image
+│       └── Dockerfile               # Ubuntu + Chrome + OBS + Node.js + entrypoint
 │
-└── agent/                       # Agent workspace (mostly empty)
-    └── .claude/                 # Claude Code agent config
+├── k8s/                             # [PART 4] Kubernetes manifests
+│   ├── control-plane/
+│   │   ├── deployment.yaml          # ★ Control-plane Deployment + env vars
+│   │   ├── rbac.yaml                # ServiceAccount + Role + RoleBinding (pods CRUD)
+│   │   └── service.yaml             # ClusterIP service :8080
+│   ├── infrastructure/
+│   │   ├── postgres.yaml            # PostgreSQL StatefulSet + PVC + service
+│   │   ├── postgres-auth.secrets.yaml     # SOPS-encrypted DB password
+│   │   ├── encryption-key.secrets.yaml    # SOPS-encrypted AES key
+│   │   └── browserless-secret.yaml        # SOPS-encrypted pod auth token
+│   ├── networking/
+│   │   ├── traefik-config.yaml      # Traefik HTTP→HTTPS redirect middleware
+│   │   ├── cluster-issuer.yaml      # Let's Encrypt ClusterIssuer
+│   │   └── ingress.yaml             # ★ Traefik Ingress → control-plane:8080
+│   └── clerk/
+│       └── clerk-auth.secrets.yaml  # SOPS-encrypted Clerk keys
+│
+├── docs/                            # Project documentation (this folder)
+│   ├── index.md                     # ★ Master documentation index
+│   ├── project-overview.md          # Project summary
+│   ├── architecture-control-plane.md
+│   ├── architecture-web.md
+│   ├── architecture-streamer.md
+│   ├── api-contracts.md
+│   ├── data-models.md
+│   ├── integration-architecture.md
+│   ├── source-tree-analysis.md      # (this file)
+│   ├── development-guide.md
+│   ├── deployment-guide.md
+│   └── project-scan-report.json    # BMAD scan state
+│
+├── agent/                           # Placeholder (currently empty)
+├── _bmad/                           # BMAD workflow tooling
+├── _bmad-output/                    # BMAD generated artifacts
+└── .sops.yaml                       # SOPS Age encryption recipients
 ```
 
-## Critical Paths
+---
 
-| Path | Importance | Description |
-|------|-----------|-------------|
-| `control-plane/main.go` | Highest | Core control plane — all routing, pod lifecycle, proxy logic |
-| `control-plane/mcp.go` | High | MCP server — AI agent integration point |
-| `control-plane/auth.go` | High | Dual auth system (Clerk JWT + API key) |
-| `control-plane/db.go` | High | Database schema, migrations, encryption |
-| `streamer/index.js` | High | Streamer pod API — template engine, CDP proxy |
-| `streamer/docker/entrypoint.sh` | High | Pod startup sequence (6 processes) |
-| `streamer/docker/Dockerfile` | Medium | Streamer image (Chrome + OBS + Node.js) |
-| `control-plane/docker/Dockerfile` | Medium | Multi-stage build (web + Go + runtime) |
-| `web/src/App.tsx` | Medium | Dashboard auth routing |
-| `web/src/client.ts` | Medium | ConnectRPC client setup |
-| `k8s/control-plane-deployment.yaml` | Medium | Production configuration |
-| `k8s/ingress.yaml` | Medium | External access (TLS) |
-| `Makefile` | Medium | Build/deploy workflow |
+## Critical Folders by Part
 
-## Entry Points
+### control-plane
+| Folder | Importance | Description |
+|--------|------------|-------------|
+| `control-plane/` root | ★★★ | All Go source — single-package binary |
+| `proto/api/v1/` | ★★★ | Service contracts — source of truth for API |
+| `gen/api/v1/` | ★★ | Generated code — regenerate with `make proto` |
+| `migrations/` | ★★★ | DB schema history — apply-once, ordered |
 
-| Component | Entry Point | How It Starts |
-|-----------|------------|---------------|
-| Session Manager | `control-plane/main.go` | Go binary in Alpine container |
-| Streamer | `streamer/docker/entrypoint.sh` → `streamer/index.js` | Bash entrypoint starts 6 processes |
-| Dashboard | `web/src/main.tsx` | Vite build → static files served by Go binary |
+### web
+| Folder | Importance | Description |
+|--------|------------|-------------|
+| `src/` | ★★★ | All app code |
+| `src/client.ts` | ★★★ | Service client setup and auth interceptor |
+| `src/gen/` | ★★ | Generated from protos — do not hand-edit |
+| `src/pages/` | ★★★ | All route-level components |
 
-## Integration Points
+### streamer
+| Folder | Importance | Description |
+|--------|------------|-------------|
+| `index.js` | ★★★ | Entire streamer service (Express + panel system + OBS) |
+| `shell.html` | ★★★ | Panel HTML template served to Chrome |
+| `prelude.js` | ★★★ | React globals injected into panel pages |
+| `docker/` | ★★ | Container image with Chrome + OBS + Node.js |
 
-```
-Dashboard ──ConnectRPC──→ Session Manager ──k8s API──→ Streamer Pods
-    │                          │                           │
-    └── Clerk JWT ────────────→├── Pod Create/Delete       ├── CDP WebSocket
-                               ├── HTTP Reverse Proxy      ├── Template API
-                               ├── WS Proxy                ├── OBS WebSocket
-                               ├── MCP Server              └── Health Check
-                               └── PostgreSQL
-```
+### k8s
+| File | Importance | Description |
+|------|------------|-------------|
+| `control-plane/deployment.yaml` | ★★★ | Production env config, resource limits |
+| `networking/ingress.yaml` | ★★★ | External routing via Traefik |
+| `infrastructure/postgres.yaml` | ★★ | Database deployment |
+| `*secrets.yaml` | ★★★ | SOPS-encrypted secrets (do not commit decrypted) |
+
+---
+
+## Integration Points in Code
+
+| Location | Integration |
+|----------|------------|
+| `control-plane/main.go: main()` | HTTP mux wiring — all routes registered here |
+| `control-plane/main.go: Manager.createStage()` | Kubernetes pod creation spec |
+| `control-plane/main.go: handleCDP()` | CDP proxy + URL rewriting |
+| `control-plane/auth.go: authenticate()` | Unified Clerk JWT + API key validation |
+| `control-plane/mcp.go: setupMCP()` | All MCP tool definitions |
+| `web/src/client.ts` | All ConnectRPC client instances + Clerk auth interceptor |
+| `streamer/index.js: /api/panels/*` | Panel system API routes |
+| `streamer/index.js: OBSConnection` | OBS WebSocket v5 client |

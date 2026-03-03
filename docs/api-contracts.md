@@ -1,8 +1,262 @@
 # API Contracts
 
+**Last updated:** 2026-03-03
+
+All control plane RPC services use **ConnectRPC** (protobuf over HTTP/2, also compatible with HTTP/1.1 JSON). Base URL: `https://stream.dazzle.fm`
+
+---
+
 ## Authentication
 
-All endpoints (except `GET /health` and dashboard static files) require authentication.
+All authenticated endpoints require:
+```
+Authorization: Bearer <token>
+```
+
+Where `<token>` is either:
+- **Clerk JWT** — obtained from `clerk.session.getToken()` in the frontend
+- **API Key** — `bstr_<secret>` format; accepted by StageService only (not ApiKeyService, StreamService, UserService)
+
+---
+
+## StageService
+
+Accepts Clerk JWT **or** API key.
+
+### CreateStage
+```
+POST /api.v1.StageService/CreateStage
+
+Request:  { "name": string }
+Response: { "stage": Stage }
+```
+Creates a persistent stage record (status: `inactive`). Does not provision a pod.
+
+### ListStages
+```
+POST /api.v1.StageService/ListStages
+
+Request:  {}
+Response: { "stages": Stage[] }
+```
+
+### GetStage
+```
+POST /api.v1.StageService/GetStage
+
+Request:  { "id": string }
+Response: { "stage": Stage }
+```
+Activates the stage if inactive (creates pod, waits for readiness). Returns stage with current status and pod IP.
+
+### DeleteStage
+```
+POST /api.v1.StageService/DeleteStage
+
+Request:  { "id": string }
+Response: {}
+```
+Deletes pod (if active) and DB record.
+
+### Stage Object
+
+```typescript
+interface Stage {
+  id: string;
+  pod_name: string;
+  pod_ip: string;
+  direct_port: number;
+  created_at: Timestamp;
+  last_activity: Timestamp;
+  status: "inactive" | "starting" | "running" | "stopping";
+  owner_user_id: string;
+  name: string;
+}
+```
+
+---
+
+## ApiKeyService
+
+Accepts Clerk JWT **only**.
+
+### CreateApiKey
+```
+POST /api.v1.ApiKeyService/CreateApiKey
+
+Request:  { "name": string }
+Response: { "key": ApiKey, "secret": string }
+```
+The `secret` is returned **once only** and never stored in plaintext.
+
+### ListApiKeys
+```
+POST /api.v1.ApiKeyService/ListApiKeys
+
+Request:  {}
+Response: { "keys": ApiKey[] }
+```
+
+### DeleteApiKey
+```
+POST /api.v1.ApiKeyService/DeleteApiKey
+
+Request:  { "id": string }
+Response: {}
+```
+
+### ApiKey Object
+
+```typescript
+interface ApiKey {
+  id: string;
+  name: string;
+  prefix: string;         // e.g., "bstr_AbC1"
+  created_at: Timestamp;
+  last_used_at: Timestamp | null;
+}
+```
+
+---
+
+## StreamService
+
+Accepts Clerk JWT **only**.
+
+### CreateStreamDestination
+```
+POST /api.v1.StreamService/CreateStreamDestination
+
+Request:
+{
+  "name": string,
+  "platform": string,    // "twitch" | "youtube" | "kick" | "restream" | "custom"
+  "rtmp_url": string,
+  "stream_key": string,  // stored AES-256-GCM encrypted
+  "enabled": boolean
+}
+Response: { "destination": StreamDestination }
+```
+
+### ListStreamDestinations
+```
+POST /api.v1.StreamService/ListStreamDestinations
+
+Request:  { "stage_id": string }
+Response: { "destinations": StreamDestination[] }
+```
+
+### UpdateStreamDestination
+```
+POST /api.v1.StreamService/UpdateStreamDestination
+
+Request:
+{
+  "id": string,
+  "name": string,
+  "platform": string,
+  "rtmp_url": string,
+  "stream_key": string,
+  "enabled": boolean
+}
+Response: { "destination": StreamDestination }
+```
+
+### DeleteStreamDestination
+```
+POST /api.v1.StreamService/DeleteStreamDestination
+
+Request:  { "id": string }
+Response: {}
+```
+
+### StreamDestination Object
+
+```typescript
+interface StreamDestination {
+  id: string;
+  name: string;
+  platform: string;
+  rtmp_url: string;
+  stream_key: string;    // decrypted on read
+  enabled: boolean;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+}
+```
+
+---
+
+## UserService
+
+Accepts Clerk JWT **only**.
+
+### GetProfile
+```
+POST /api.v1.UserService/GetProfile
+
+Request:  {}
+Response:
+{
+  "user_id": string,
+  "email": string,
+  "name": string,
+  "stage_count": number,
+  "api_key_count": number
+}
+```
+
+---
+
+## Non-RPC HTTP Endpoints (Control Plane)
+
+### Health
+```
+GET /health
+Response: { "status": "ok" }
+         or (if authenticated): { "status": "ok", "stages": N, "maxStages": N }
+```
+
+### CDP Proxy
+```
+GET  /cdp/<stage-id>/json/version    Chrome version info (webSocketDebuggerUrl rewritten)
+GET  /cdp/<stage-id>/json            Tab list (WS URLs rewritten)
+WS   /cdp/<stage-id>                 Full CDP WebSocket proxy to Chrome
+```
+Auth: Clerk JWT or API key. The `webSocketDebuggerUrl` is rewritten to `wss://<host>/cdp/<stage-id>`.
+
+### Stage Proxy
+```
+*    /stage/<id>/<path>     HTTP proxy to streamer pod (auth required)
+WS   /stage/<id>/*          WebSocket proxy to streamer pod
+POST /stage/<id>/mcp/*      MCP server for this stage
+```
+
+---
+
+## Streamer Pod API (via stage proxy at `/stage/<id>/...`)
+
+### Panel Management
+```
+POST   /api/panels                     Create panel ({ name, width?, height? })
+GET    /api/panels/:name/script        Get user code
+POST   /api/panels/:name/script        Set script ({ script: string })
+PATCH  /api/panels/:name/script        Edit script ({ old_string, new_string })
+POST   /api/panels/:name/event         Emit state event ({ event, data })
+GET    /api/panels/:name/screenshot    Capture PNG screenshot
+```
+
+### CDP Discovery
+```
+GET /json           Chrome tab list
+GET /json/version   Chrome version
+GET /json/list      Available tabs
+```
+
+### Health
+```
+GET /health     { status: 'ok', lastActivity, uptime }
+```
 
 **Methods:**
 1. **Clerk JWT** — `Authorization: Bearer <clerk-jwt-token>`

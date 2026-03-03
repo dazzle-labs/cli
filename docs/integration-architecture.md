@@ -1,150 +1,168 @@
 # Integration Architecture
 
+**Last updated:** 2026-03-03
+
 ## Overview
 
-Browser Streamer (Dazzle) is a multi-part system where the session manager acts as the central hub. All external traffic flows through the session manager, which proxies to ephemeral streamer pods. The dashboard communicates with the session manager via ConnectRPC.
+Browser Streamer (Dazzle) is a monorepo with 4 parts. The **control plane** is the central hub: it orchestrates Kubernetes pods, proxies all traffic, and serves the web SPA. All external traffic enters through Traefik and flows to the control plane.
+
+---
 
 ## Part Communication Map
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     External Clients                         │
-│  (Browser, AI Agents, Playwright, CDP Tools)                 │
-└────────────────┬────────────────────────────────────────────┘
-                 │ HTTPS (stream.dazzle.fm)
-                 ▼
-┌─────────────────────────────────────────────────────────────┐
-│              Traefik Ingress (TLS Termination)               │
-└────────────────┬────────────────────────────────────────────┘
-                 │ HTTP :8080
-                 ▼
-┌─────────────────────────────────────────────────────────────┐
-│                  Session Manager (Go)                         │
+┌──────────────────────────────────────────────────────────────┐
+│                      External Clients                         │
+│   (Browser, AI Agents, Claude Code MCP, CDP tools)           │
+└─────────────────────┬────────────────────────────────────────┘
+                      │ HTTPS (stream.dazzle.fm)
+                      ▼
+┌──────────────────────────────────────────────────────────────┐
+│               Traefik Ingress (TLS termination)               │
+└─────────────────────┬────────────────────────────────────────┘
+                      │ HTTP :8080
+                      ▼
+┌──────────────────────────────────────────────────────────────┐
+│                   Control Plane (Go)                          │
 │                                                               │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐    │
-│  │Dashboard │  │ConnectRPC│  │   MCP    │  │CDP Proxy │    │
-│  │SPA Files │  │   API    │  │  Server  │  │& Auto-   │    │
-│  │  (GET /) │  │(/api.v1) │  │(/mcp/*)  │  │Provision │    │
+│  │  Web SPA │  │ConnectRPC│  │   MCP    │  │CDP/Stage │    │
+│  │ (GET /)  │  │  /api.v1 │  │ /stage/* │  │  Proxy   │    │
 │  └──────────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘    │
-│                      │             │              │           │
-│  ┌───────────────────┴─────────────┴──────────────┘          │
-│  │         Pod Lifecycle Manager                              │
-│  │  (Create/Delete/Watch k8s Pods)                           │
-│  └───────────┬──────────────────────────┬────────────────┐   │
-│              │                          │                │   │
-│  ┌───────────▼──────────┐  ┌───────────▼──┐  ┌──────────▼─┐│
-│  │  HTTP Reverse Proxy  │  │  WS Proxy    │  │ PostgreSQL ││
-│  │  (/session/:id/*)    │  │  (/cdp/:id)  │  │ (users,    ││
-│  │                      │  │  (WS tunnel) │  │  keys,     ││
-│  └───────────┬──────────┘  └──────┬───────┘  │  sessions, ││
-│              │                     │          │  streams)  ││
-└──────────────┼─────────────────────┼──────────┴────────────┘│
-               │                     │                         │
-               ▼                     ▼                         │
-┌──────────────────────────────────────────────┐               │
-│           Streamer Pod (Ephemeral)            │               │
-│                                               │               │
-│  ┌────────┐  ┌─────────┐  ┌───────────────┐ │               │
-│  │ Chrome │  │   OBS   │  │  Node.js API  │ │               │
-│  │  :9222 │  │  :4455  │  │    :8080      │ │               │
-│  │  (CDP) │  │  (WS)   │  │ (Express)     │ │               │
-│  └────────┘  └─────────┘  └───────────────┘ │               │
-│  ┌────────┐  ┌─────────┐                     │               │
-│  │  Xvfb  │  │ Pulse   │                     │               │
-│  │  :99   │  │ Audio   │                     │               │
-│  └────────┘  └─────────┘                     │               │
-└──────────────────────────────────────────────┘               │
+│                     │             │              │            │
+│  ┌──────────────────┴─────────────┴──────────────┘           │
+│  │              Pod Lifecycle Manager                         │
+│  │  (create/delete/watch k8s pods)                           │
+│  │               + PostgreSQL                                 │
+│  └──────────┬──────────────────────┬──────────────────────┐  │
+│             │                      │                      │  │
+│  ┌──────────▼──────┐   ┌───────────▼──────┐  ┌───────────▼┐ │
+│  │ HTTP Proxy      │   │  WS Proxy        │  │ PostgreSQL │ │
+│  │ /stage/<id>/*   │   │  /cdp/<id>       │  │ (users,    │ │
+│  └──────────┬──────┘   └──────────┬───────┘  │  api_keys, │ │
+└─────────────┼─────────────────────┼──────────│  stages,   ├─┘
+              │                     │          │  streams)  │
+              ▼                     ▼          └────────────┘
+┌──────────────────────────────────────────────┐
+│           Streamer Pod (per stage)            │
+│                                               │
+│  ┌────────────┐  ┌──────────┐  ┌──────────┐  │
+│  │  Chrome    │  │  OBS     │  │ Node.js  │  │
+│  │  CDP :9222 │  │  WS:4455 │  │ :8080    │  │
+│  └────────────┘  └──────────┘  └──────────┘  │
+│  ┌────────────┐  ┌──────────┐                 │
+│  │  Xvfb :99  │  │ Vite HMR │                 │
+│  └────────────┘  └──────────┘                 │
+└──────────────────────────────────────────────┘
 ```
+
+---
 
 ## Integration Points
 
-### 1. Dashboard → Session Manager (ConnectRPC)
+### 1. Web Frontend → Control Plane (ConnectRPC)
 
-| Protocol | Path | Direction | Description |
-|----------|------|-----------|-------------|
-| ConnectRPC | `/api.v1.SessionService/*` | Dashboard → SM | Session CRUD |
-| ConnectRPC | `/api.v1.ApiKeyService/*` | Dashboard → SM | API key CRUD |
-| ConnectRPC | `/api.v1.StreamService/*` | Dashboard → SM | Stream destination CRUD |
-| ConnectRPC | `/api.v1.UserService/*` | Dashboard → SM | User profile |
+| Protocol | Path | Description |
+|----------|------|-------------|
+| ConnectRPC | `/api.v1.StageService/*` | Stage CRUD |
+| ConnectRPC | `/api.v1.ApiKeyService/*` | API key CRUD |
+| ConnectRPC | `/api.v1.StreamService/*` | Stream destination CRUD |
+| ConnectRPC | `/api.v1.UserService/*` | User profile |
 
-**Auth:** Clerk JWT token (injected via interceptor from `@clerk/clerk-react`)
+**Auth:** Clerk JWT injected as `Authorization: Bearer` via connect-web interceptor.
 
-### 2. Session Manager → Kubernetes API
+In development, Vite proxies these paths from `:5173` to `:8080`.
+
+### 2. Control Plane → Kubernetes API
 
 | Action | k8s API | Description |
 |--------|---------|-------------|
 | Create Pod | `POST /api/v1/namespaces/{ns}/pods` | Launch streamer pod |
-| Delete Pod | `DELETE /api/v1/namespaces/{ns}/pods/{name}` | Kill session |
-| List Pods | `GET /api/v1/namespaces/{ns}/pods?labelSelector=app=streamer-session` | Status refresh |
-| Get Pod | `GET /api/v1/namespaces/{ns}/pods/{name}` | Individual status |
+| Delete Pod | `DELETE /api/v1/namespaces/{ns}/pods/{name}` | Terminate stage |
+| List Pods | `GET /api/v1/namespaces/{ns}/pods?labelSelector=app=streamer-stage` | Status refresh (every 5s) |
 
-**Auth:** In-cluster ServiceAccount with namespaced RBAC (pods: create, delete, get, list, watch)
+**Auth:** In-cluster ServiceAccount with RBAC on `pods` resource (get, list, watch, create, delete).
 
-### 3. Session Manager → Streamer Pod (HTTP Proxy)
+### 3. Control Plane → Streamer Pod (Proxy)
 
-| Protocol | Path Pattern | Purpose |
-|----------|-------------|---------|
-| HTTP | `/session/:id/*` → `http://<podIP>:8080/*` | General API proxy |
-| WebSocket | `/session/:id/*` → `ws://<podIP>:8080/*` | WebSocket proxy |
-| HTTP | `/cdp/:id/json/*` → `http://<podIP>:9222/json/*` | CDP discovery |
-| WebSocket | `/cdp/:id` → `ws://<podIP>:9222/devtools/*` | CDP WebSocket tunnel |
+| Protocol | Path Pattern | Destination | Description |
+|----------|-------------|-------------|-------------|
+| HTTP | `/stage/<id>/<path>` | `http://<podIP>:8080/<path>` | General API proxy (panel system) |
+| WebSocket | `/stage/<id>/*` | `ws://<podIP>:8080/*` | WebSocket proxy |
+| WebSocket | `/cdp/<id>` | `ws://<podIP>:8080/devtools/...` | CDP WebSocket (URL resolved via `/json/version`) |
+| HTTP | `/cdp/<id>/json/*` | `http://<podIP>:8080/json/*` | CDP discovery (WS URL rewritten) |
+| HTTP | `/stage/<id>/mcp/*` | MCP server in control plane | MCP tool execution targeting this stage |
 
-**Auth:** Internal `POD_TOKEN` passed as query parameter to streamer
+**Auth:** Internal `POD_TOKEN` passed as query parameter to streamer for pod-level requests.
 
-### 4. Session Manager → PostgreSQL
+### 4. Control Plane → PostgreSQL
 
 | Operation | Tables | Description |
 |-----------|--------|-------------|
 | User upsert | `users` | On first Clerk JWT auth |
-| Session logging | `session_log` | On create/delete |
-| API key CRUD | `api_keys` | Key management |
-| Stream dest CRUD | `stream_destinations` | RTMP config |
+| Stage CRUD | `stages` | Create/update/delete stage records |
+| API key CRUD | `api_keys` | Key management + `last_used_at` updates |
+| Stream dest CRUD | `stream_destinations` | RTMP destination config |
 | Schema migrations | `schema_migrations` | Version tracking |
 
-**Connection:** `postgres://browser_streamer:<password>@postgres:5432/browser_streamer`
+**Connection:** `postgres://browser_streamer:<password>@postgres:5432/browser_streamer` (configurable via env)
 
-### 5. MCP Client → Session Manager (MCP Protocol)
+### 5. MCP Client → Control Plane (MCP Protocol)
 
 | Protocol | Path | Description |
 |----------|------|-------------|
-| StreamableHTTP | `/mcp/<agent-uuid>/` | MCP tool invocation |
+| HTTP (StreamableHTTP) | `/stage/<stage-id>/mcp/*` | MCP tool invocation for this stage |
 
-**Auth:** Clerk JWT or API key. Agent UUID extracted from path and used as session identifier.
+**Auth:** Clerk JWT or API key. Stage ID in path routes tools to the correct pod.
 
-### 6. Session Manager → Streamer Pod (MCP Tool Execution)
+MCP tools available: `start`, `stop`, `set_script`, `edit_script`, `get_script`, `emit_event`, `screenshot`, OBS controls via `gobs`.
 
-| MCP Tool | Pod Endpoint | Description |
-|----------|-------------|-------------|
-| `set_html` | `POST /api/template` | Send HTML to render |
-| `get_html` | `GET /api/template` | Retrieve current HTML |
-| `edit_html` | `POST /api/template/edit` | Find-replace in HTML |
-| `screenshot` | `WS :4455` (OBS) | Capture via OBS WebSocket v5 |
-| `gobs` | `exec gobs-cli --host <podIP>` | OBS CLI commands |
+### 6. Control Plane MCP → Streamer Pod
 
-## Data Flow: Session Lifecycle
+MCP tool implementations in `mcp.go` call the streamer pod's panel API:
+
+| MCP Tool | Streamer Endpoint | Description |
+|----------|-------------------|-------------|
+| `set_script` | `POST /api/panels/:name/script` | Set panel JavaScript content |
+| `edit_script` | `PATCH /api/panels/:name/script` | Find-replace in panel script |
+| `get_script` | `GET /api/panels/:name/script` | Retrieve current panel code |
+| `emit_event` | `POST /api/panels/:name/event` | Push state event to panel |
+| `screenshot` | `GET /api/panels/:name/screenshot` | Capture PNG via CDP |
+| `gobs` | `gobs-cli --host <podIP>` | OBS commands via CLI |
+
+---
+
+## Stage Lifecycle Data Flow
 
 ```
-1. Client authenticates (Clerk JWT or API key)
-2. Client calls CreateSession (ConnectRPC) or /cdp/<uuid> (auto-provision)
-3. Session Manager creates k8s Pod with browser-streamer:latest image
-4. Pod starts: Xvfb → PulseAudio → Chrome → OBS → Node.js
-5. Session Manager polls pod status until Running + PodIP available
-6. Client receives session ID and connection details
-7. Client interacts via:
-   - ConnectRPC API (manage session)
-   - HTTP proxy (/session/:id/*) for template/navigate API
-   - WebSocket (/cdp/:id) for direct Chrome DevTools Protocol
-   - MCP (/mcp/:uuid/) for AI agent tools
-8. Client deletes session or GC removes idle sessions (3 min stuck timeout)
-9. Session Manager deletes pod and logs to session_log table
+1. User authenticates (Clerk JWT or API key)
+2. User calls CreateStage (ConnectRPC) → DB record created (status: inactive)
+3. User calls GetStage (ConnectRPC) → control plane activates stage:
+   a. Creates k8s Pod (streamer image, labels: app=streamer-stage, stage-id=<id>)
+   b. Polls pod status every 500ms until Running + PodIP set
+   c. Returns stage with status=running and pod_ip
+4. Client interacts via:
+   - ConnectRPC API  → stage management
+   - /stage/<id>/*   → HTTP/WS proxy to streamer panel API
+   - /cdp/<id>       → Chrome DevTools Protocol
+   - /stage/<id>/mcp → MCP server (AI agents)
+5. Background GC loop (5s):
+   - Refreshes pod statuses from k8s
+   - Deletes stages stuck in "starting" >3 minutes
+6. User calls DeleteStage → pod deleted, DB record removed
+   OR DeactivateStage  → pod deleted, DB record stays (status: inactive)
 ```
+
+---
 
 ## Shared Dependencies
 
 | Dependency | Used By | Purpose |
 |------------|---------|---------|
-| Protobuf schemas | Session Manager + Dashboard | Service contracts |
-| `browserless-auth` secret | Session Manager + Streamer Pods | Internal auth token |
-| PostgreSQL | Session Manager | Persistent storage |
-| Clerk | Session Manager + Dashboard | User authentication |
-| k8s namespace `browser-streamer` | All components | Resource isolation |
+| Protobuf schemas (`proto/api/v1/`) | control-plane + web | Service contracts (generated code) |
+| `browserless-auth` k8s secret | control-plane + streamer pods | Internal pod auth token |
+| `ENCRYPTION_KEY` env | control-plane | AES-256-GCM for stream key encryption |
+| PostgreSQL | control-plane | Persistent storage |
+| Clerk | control-plane + web | User authentication |
+| k8s namespace `browser-streamer` | All | Resource isolation |
+| Traefik ingress | All external traffic | TLS + routing |

@@ -1,0 +1,196 @@
+# Architecture: Control Plane
+
+**Part:** `control-plane/`
+**Language:** Go 1.24
+**Last updated:** 2026-03-03
+
+> **Note:** This file replaces the old `architecture-session-manager.md`.
+
+---
+
+## Overview
+
+The control plane is the central Go backend. It:
+- Exposes a ConnectRPC API (protobuf over HTTP/2) for stage, API key, stream destination, and user management
+- Uses the Kubernetes client to create/delete/monitor streamer pods on demand
+- Proxies CDP (Chrome DevTools Protocol) and WebSocket connections from clients to the correct stage pod
+- Hosts an MCP (Model Context Protocol) server per stage for AI agent integration
+- Serves the compiled web SPA as a static file server
+- Runs DB migrations and persists all state to PostgreSQL
+
+---
+
+## Technology Stack
+
+| Category | Technology | Version |
+|----------|------------|---------|
+| Language | Go | 1.24 |
+| RPC Framework | ConnectRPC | v1.19.1 |
+| Schema | Protocol Buffers (buf toolchain) | v2 |
+| Auth — External | Clerk SDK Go | v2.5.1 |
+| Auth — Internal | API key (HMAC-SHA256, prefix `bstr_`) | — |
+| Database | PostgreSQL via lib/pq | v1.11.2 |
+| K8s Client | k8s.io/client-go | v0.29.3 |
+| Encryption | AES-256-GCM (via `crypto/cipher`) | stdlib |
+| MCP Server | mcp-go | v0.44.1 |
+| WebSocket | gorilla/websocket | v1.5.3 |
+| UUID | google/uuid | v1.6.0 |
+
+---
+
+## Architecture Pattern
+
+**Service-Oriented Gateway:** A single Go binary acts as the API gateway, Kubernetes controller, and reverse proxy. All external traffic passes through it.
+
+---
+
+## Directory Structure
+
+```
+control-plane/
+├── main.go              # Entry point: Manager init, HTTP routing, shutdown
+├── auth.go              # Authenticator: Clerk JWT + API key verification
+├── db.go                # DB connection, migrations, CRUD helpers
+├── connect_stage.go     # StageService RPC handlers
+├── connect_apikey.go    # ApiKeyService RPC handlers
+├── connect_stream.go    # StreamService RPC handlers
+├── connect_user.go      # UserService RPC handlers
+├── mcp.go               # MCP server setup and tool definitions
+├── proto/
+│   └── api/v1/
+│       ├── stage.proto      # StageService definition
+│       ├── apikey.proto     # ApiKeyService definition
+│       ├── stream.proto     # StreamService definition
+│       └── user.proto       # UserService definition
+├── gen/api/v1/          # Generated Go + TypeScript protobuf code (buf)
+├── migrations/
+│   ├── 001_initial.up.sql
+│   ├── 002_nullable_direct_port.up.sql
+│   ├── 003_endpoints.up.sql
+│   ├── 004_rename_session_log_to_stage_log.up.sql
+│   └── 005_consolidate_stages.up.sql
+└── docker/
+    └── Dockerfile
+```
+
+---
+
+## Core Component: Manager
+
+`Manager` is the central struct holding all runtime state:
+
+```go
+type Manager struct {
+    mu            sync.RWMutex
+    stages        map[string]*Stage   // in-memory stage map
+    clientset     *kubernetes.Clientset
+    namespace     string
+    streamerImage string
+    podToken      string              // internal auth for streamer pods
+    maxStages     int                 // default 3, configurable via MAX_STAGES
+    db            *sql.DB
+    auth          *authenticator
+    encryptionKey []byte             // AES-256 key from ENCRYPTION_KEY env
+}
+```
+
+---
+
+## HTTP Routes
+
+| Path | Method | Auth | Description |
+|------|--------|------|-------------|
+| `/health` | GET | none (stats if authed) | Health check |
+| `/api.v1.StageService/*` | POST | Clerk or API key | Stage CRUD via ConnectRPC |
+| `/api.v1.ApiKeyService/*` | POST | Clerk JWT only | API key CRUD |
+| `/api.v1.StreamService/*` | POST | Clerk JWT only | Stream destination CRUD |
+| `/api.v1.UserService/*` | POST | Clerk JWT only | User profile |
+| `/cdp/<stage-id>` | WS | Clerk or API key | CDP WebSocket proxy to Chrome |
+| `/cdp/<stage-id>/json/*` | GET | Clerk or API key | CDP discovery (URL-rewritten) |
+| `/stage/<id>/*` | HTTP/WS | Clerk or API key | HTTP/WS proxy to streamer pod |
+| `/stage/<id>/mcp/*` | HTTP | Clerk or API key | MCP server (per-stage) |
+| `/*` | GET | none | Serve web SPA (fallback) |
+
+---
+
+## Authentication
+
+Two auth paths, unified via `authenticator`:
+
+1. **Clerk JWT** — `Authorization: Bearer <clerk-jwt>` — validated via Clerk SDK; extracts `user_id` and `email`
+2. **API Key** — `Authorization: Bearer bstr_<secret>` — HMAC-SHA256 hash compared against `api_keys.key_hash` in DB
+
+`clerkOnly` interceptor additionally blocks API-key auth on sensitive endpoints (ApiKeyService, StreamService, UserService).
+
+---
+
+## Stage Lifecycle
+
+```
+inactive ──► starting ──► running ──► stopping ──► (deleted)
+                                         │
+                                         └──► inactive (deactivate, keeps DB record)
+```
+
+- **Create**: Provisions a Kubernetes pod (`app=streamer-stage` label, `stage-id` label), sets DB status to `starting`
+- **Activate**: If stage is `inactive`, creates pod and waits for readiness (polls every 500ms, up to context deadline)
+- **Deactivate**: Deletes pod, sets DB status to `inactive` (record preserved)
+- **Delete**: Deletes pod and DB record
+- **Recovery**: On restart, lists pods with `app=streamer-stage` label; reconciles in-memory state; resets orphaned DB records to `inactive`
+- **GC**: Background loop (5s) deletes stages stuck in `starting` for >3 minutes
+
+---
+
+## CDP Proxy
+
+The control plane provides a stable, authenticated CDP endpoint at `/cdp/<stage-id>`:
+
+- **WebSocket**: Resolves Chrome's real WS URL via `/json/version` on the pod, then raw TCP-proxies the WebSocket upgrade (hijacks both connections, bidirectional `io.Copy`)
+- **HTTP discovery** (`/json/*`): Proxies to pod with token auth; rewrites `webSocketDebuggerUrl` to deterministic external URL `wss://<host>/cdp/<stage-id>`
+
+---
+
+## Streamer Pod Spec
+
+Each stage pod is created with:
+- Image: `STREAMER_IMAGE` env (default `browser-streamer:latest`)
+- CPU: `2` req / `4` limit; Memory: `4Gi` req / `8Gi` limit
+- Volume: `/dev/shm` (2Gi memory) for Chrome shared memory
+- Auth token injected from `browserless-auth` secret
+- Readiness probe: `GET /health` on port 8080, delay 2s, period 2s, threshold 30
+
+---
+
+## MCP Server
+
+The control plane hosts an MCP server at `/stage/<id>/mcp/*` using `mcp-go`. Each stage gets its own MCP endpoint. Tools are defined in `mcp.go` and allow AI agents to interact with the browser panel system (set/edit/get script, emit events, take screenshots, control OBS via `gobs`).
+
+---
+
+## Database Schema
+
+See `data-models.md` for full schema. Key tables:
+- `users` — Clerk user records
+- `api_keys` — hashed API keys with prefix
+- `stages` — persistent stage records with status, pod info
+- `stream_destinations` — per-user RTMP configurations
+- `schema_migrations` — migration version tracking
+
+---
+
+## Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `CLERK_SECRET_KEY` | Yes | — | Clerk backend API key |
+| `ENCRYPTION_KEY` | Yes | — | 32-byte hex AES key for stream key encryption |
+| `DB_HOST` | No | `postgres` | PostgreSQL host |
+| `DB_PORT` | No | `5432` | PostgreSQL port |
+| `DB_USER` | No | `browser_streamer` | DB user |
+| `DB_PASSWORD` | No | — | DB password |
+| `DB_NAME` | No | `browser_streamer` | DB name |
+| `NAMESPACE` | No | `browser-streamer` | Kubernetes namespace |
+| `STREAMER_IMAGE` | No | `browser-streamer:latest` | Container image for stage pods |
+| `POD_TOKEN` | No | — | Internal auth token passed to streamer pods |
+| `MAX_STAGES` | No | `3` | Maximum concurrent stages |
+| `PORT` | No | `8080` | HTTP listen port |

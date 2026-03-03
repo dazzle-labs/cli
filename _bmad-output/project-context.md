@@ -36,8 +36,8 @@ _This file contains critical rules and patterns that AI agents must follow when 
 
 ### Language-Specific Rules
 
-**Go (Session Manager — `session-manager/`):**
-- Flat package structure is intentional — do NOT create sub-packages (`internal/`, `pkg/`, etc.)
+**Go (Control Plane — `control-plane/`):**
+- Sub-directories/packages are acceptable for organizing Go code (e.g., `internal/`, `pkg/`, feature-specific packages)
 - `_ "github.com/lib/pq"` is a blank side-effect import for the Postgres driver — do not remove it
 - Raw SQL with `lib/pq` (no ORM) — migrations live in `session-manager/migrations/`
 - K8s pods are managed imperatively via `client-go` — do not generate YAML manifests or use Helm
@@ -134,7 +134,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - Do NOT run `docker build` locally — builds only work via remote SSH + buildkit
 - Do NOT add `tailwind.config.js` — Tailwind 4 uses CSS-first configuration
 - Do NOT use `npx shadcn-ui` — UI components are hand-written
-- Do NOT create Go sub-packages — flat structure in `session-manager/`
+- Do NOT hand-edit generated proto files in `*/gen/` directories
 - Do NOT hand-edit files in `*/gen/` directories — always regenerate from proto
 - Do NOT add CORS middleware — single-origin architecture
 - Do NOT add test frameworks or linter configs unless explicitly asked
