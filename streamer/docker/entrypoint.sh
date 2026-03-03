@@ -38,7 +38,23 @@ sleep 0.3
 # Hide cursor
 unclutter -idle 0 -root &
 
-# 3. Start Chromium (kiosk mode, no UI chrome)
+# 3. Start Node.js server (must be up before Chrome navigates to panel URL)
+echo "Starting Node.js server..."
+cd /app
+node index.js &
+NODE_PID=$!
+
+# Wait for Node.js to be serving
+echo "Waiting for Node.js server..."
+for i in $(seq 1 60); do
+    if curl -s http://localhost:8080/health > /dev/null 2>&1; then
+        echo "Node.js server ready."
+        break
+    fi
+    sleep 0.2
+done
+
+# 4. Start Chromium pointed directly at the Vite panel URL (no CDP navigate needed)
 echo "Starting Chromium..."
 google-chrome-stable \
     --no-sandbox \
@@ -58,7 +74,7 @@ google-chrome-stable \
     --disable-background-timer-throttling \
     --disable-backgrounding-occluded-windows \
     --disable-renderer-backgrounding \
-    "data:text/html,<html><body style='display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;margin:0;background:linear-gradient(135deg,%230a0a0a,%231a1a2e,%2316213e);color:%23eee;font-family:system-ui;overflow:hidden'><div style='text-align:center'><div style='font-size:72px;font-weight:200;letter-spacing:8px;background:linear-gradient(90deg,%2360a5fa,%23a78bfa,%23f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent'>HELLO WORLD</div><div style='margin-top:16px;font-size:14px;letter-spacing:12px;color:%23555;text-transform:uppercase'>browser streamer</div></div></body></html>" &
+    "http://localhost:8080/@panel/main/" &
 CHROME_PID=$!
 
 # Wait for Chrome CDP to be available
@@ -230,12 +246,6 @@ for i in $(seq 1 10); do
     fi
     sleep 0.5
 done
-
-# 7. Start Node.js server
-echo "Starting Node.js server..."
-cd /app
-node index.js &
-NODE_PID=$!
 
 echo "All processes started. Waiting..."
 wait -n

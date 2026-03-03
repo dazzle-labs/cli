@@ -370,9 +370,12 @@ app.post('/api/panel/:name', auth, async (req, res) => {
     const targetUrl = panelUrl(name);
     if (currentChromeUrl !== targetUrl) {
         try {
+            console.log(`Navigating Chrome: ${currentChromeUrl} → ${targetUrl}`);
             await cdpNavigate(targetUrl);
             currentChromeUrl = targetUrl;
-        } catch { /* ignore — Chrome may not be ready yet */ }
+        } catch (err) {
+            console.error(`CDP navigate failed: ${err.message}`);
+        }
     }
 
     res.json({ status: 'ok', panel: name, length: script.length });
@@ -523,6 +526,11 @@ async function start() {
         console.log('Falling back without HMR support.');
     }
 
+    // Ensure default panel exists before server starts (Chrome will load it on launch)
+    ensurePanelDir('main');
+    panels.set('main', { width: SCREEN_WIDTH, height: SCREEN_HEIGHT });
+    currentChromeUrl = panelUrl('main');
+
     server.listen(PORT, async () => {
         console.log(`Server listening on port ${PORT}`);
         console.log(`Auth: ${TOKEN ? 'enabled' : 'disabled'}`);
@@ -531,10 +539,6 @@ async function start() {
         try {
             await obs.connect(30000);
             await ensureXshmSource();
-            ensurePanelDir('main');
-            panels.set('main', { width: SCREEN_WIDTH, height: SCREEN_HEIGHT });
-            // Best-effort navigation — set_script will retry if this doesn't stick
-            try { await cdpNavigate(panelUrl('main')); } catch {}
             console.log('OBS xshm source ready.');
         } catch (err) {
             console.error('OBS startup error:', err.message);
