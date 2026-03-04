@@ -32,6 +32,94 @@ const panelState = new Map();
 // Vite dev server instance (set during startup)
 let vite = null;
 
+// --- Console log capture via CDP ---
+const LOG_BUFFER_MAX = 1000;
+const logBuffer = []; // ring buffer of { level, text, ts, source, url, line }
+
+async function startLogCapture() {
+    try {
+        const tabsRes = await fetch(`http://${CDP_HOST}:${CDP_PORT}/json`);
+        const tabs = await tabsRes.json();
+        if (!tabs.length) { console.error('Log capture: no browser tabs'); return; }
+
+        const page = tabs.find(t => t.type === 'page') || tabs[0];
+        const wsUrl = page.webSocketDebuggerUrl;
+        const ws = new WebSocket(wsUrl);
+        let msgId = 100;
+
+        ws.on('open', () => {
+            ws.send(JSON.stringify({ id: msgId++, method: 'Runtime.enable' }));
+            ws.send(JSON.stringify({ id: msgId++, method: 'Log.enable' }));
+        });
+
+        ws.on('message', (raw) => {
+            const msg = JSON.parse(raw.toString());
+            if (!msg.method) return;
+
+            let entry = null;
+
+            if (msg.method === 'Runtime.consoleAPICalled') {
+                const p = msg.params;
+                const text = (p.args || []).map(a => {
+                    if (a.type === 'string') return a.value;
+                    if (a.type === 'number' || a.type === 'boolean') return String(a.value);
+                    if (a.description) return a.description;
+                    return JSON.stringify(a.value ?? a.preview ?? a.type);
+                }).join(' ');
+                entry = {
+                    level: p.type || 'log',
+                    text,
+                    ts: p.timestamp || Date.now(),
+                    source: 'console',
+                };
+            } else if (msg.method === 'Runtime.exceptionThrown') {
+                const ex = msg.params?.exceptionDetails;
+                const text = ex?.exception?.description || ex?.text || 'Unknown exception';
+                entry = {
+                    level: 'error',
+                    text,
+                    ts: msg.params?.timestamp || Date.now(),
+                    source: 'exception',
+                    url: ex?.url,
+                    line: ex?.lineNumber,
+                };
+            } else if (msg.method === 'Log.entryAdded') {
+                const e = msg.params?.entry;
+                if (e) {
+                    entry = {
+                        level: e.level || 'log',
+                        text: e.text || '',
+                        ts: e.timestamp || Date.now(),
+                        source: e.source || 'browser',
+                        url: e.url,
+                        line: e.lineNumber,
+                    };
+                }
+            }
+
+            if (entry) {
+                if (logBuffer.length >= LOG_BUFFER_MAX) logBuffer.shift();
+                logBuffer.push(entry);
+            }
+        });
+
+        ws.on('close', () => {
+            console.log('Log capture: CDP disconnected, reconnecting in 2s...');
+            setTimeout(startLogCapture, 2000);
+        });
+
+        ws.on('error', (err) => {
+            console.error('Log capture: CDP error:', err.message);
+            ws.terminate();
+        });
+
+        console.log('Log capture: connected via CDP.');
+    } catch (err) {
+        console.error('Log capture: failed to connect, retrying in 2s...', err.message);
+        setTimeout(startLogCapture, 2000);
+    }
+}
+
 // --- Content helpers (file-based for Vite HMR) ---
 
 const USER_CODE_START = '// --- USER CODE START ---';
@@ -497,6 +585,13 @@ app.post('/api/navigate', auth, async (req, res) => {
     }
 });
 
+// Get browser console logs (tail -n style)
+app.get('/api/logs', auth, (req, res) => {
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 100, 1), LOG_BUFFER_MAX);
+    const entries = logBuffer.slice(-limit);
+    res.json({ count: entries.length, total: logBuffer.length, entries });
+});
+
 // Create HTTP server
 const server = http.createServer(app);
 
@@ -550,6 +645,9 @@ async function start() {
     server.listen(PORT, async () => {
         console.log(`Server listening on port ${PORT}`);
         console.log(`Auth: ${TOKEN ? 'enabled' : 'disabled'}`);
+
+        // Start capturing browser console logs via CDP
+        startLogCapture();
 
         // Connect to OBS and set up xshm screen capture
         try {

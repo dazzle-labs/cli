@@ -130,6 +130,14 @@ Accumulated state is merged into window.__state. An '__init' event fires on scri
 	)
 
 	s.AddTool(
+		mcp.NewTool("get_logs",
+			mcp.WithDescription("Retrieve recent browser console logs (errors, warnings, info, debug). Returns the last N entries like tail. Requires an active stage (call start first)."),
+			mcp.WithNumber("limit", mcp.Description("Number of most recent log entries to return (default 100, max 1000)")),
+		),
+		m.handleMCPGetLogs,
+	)
+
+	s.AddTool(
 		mcp.NewTool("screenshot",
 			mcp.WithDescription("Capture a screenshot of your stage's current output as a PNG image. Requires an active stage (call start first)."),
 		),
@@ -532,6 +540,43 @@ func (m *Manager) handleMCPEmitEvent(ctx context.Context, req mcp.CallToolReques
 	}
 	defer resp.Body.Close()
 	respBody, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		return mcp.NewToolResultError(fmt.Sprintf("pod returned %d: %s", resp.StatusCode, string(respBody))), nil
+	}
+
+	return mcp.NewToolResultText(string(respBody)), nil
+}
+
+func (m *Manager) handleMCPGetLogs(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	agentID := agentIDFromCtx(ctx)
+
+	stage, err := m.requireRunningStage(ctx, agentID)
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	limit := 100
+	if v, ok := req.GetArguments()["limit"]; ok {
+		if n, ok := v.(float64); ok && n > 0 {
+			limit = int(n)
+		}
+	}
+	if limit > 1000 {
+		limit = 1000
+	}
+
+	podURL := fmt.Sprintf("http://%s:8080/api/logs?limit=%d&token=%s", stage.PodIP, limit, url.QueryEscape(m.podToken))
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Get(podURL)
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("failed to get logs: %v", err)), nil
+	}
+	defer resp.Body.Close()
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("failed to read response: %v", err)), nil
+	}
 
 	if resp.StatusCode != http.StatusOK {
 		return mcp.NewToolResultError(fmt.Sprintf("pod returned %d: %s", resp.StatusCode, string(respBody))), nil
