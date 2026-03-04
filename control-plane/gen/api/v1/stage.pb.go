@@ -33,6 +33,7 @@ type Stage struct {
 	Status        string                 `protobuf:"bytes,7,opt,name=status,proto3" json:"status,omitempty"` // inactive | starting | running | stopping
 	OwnerUserId   string                 `protobuf:"bytes,8,opt,name=owner_user_id,json=ownerUserId,proto3" json:"owner_user_id,omitempty"`
 	Name          string                 `protobuf:"bytes,9,opt,name=name,proto3" json:"name,omitempty"`
+	DestinationId string                 `protobuf:"bytes,10,opt,name=destination_id,json=destinationId,proto3" json:"destination_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -126,6 +127,13 @@ func (x *Stage) GetOwnerUserId() string {
 func (x *Stage) GetName() string {
 	if x != nil {
 		return x.Name
+	}
+	return ""
+}
+
+func (x *Stage) GetDestinationId() string {
+	if x != nil {
+		return x.DestinationId
 	}
 	return ""
 }
@@ -466,11 +474,107 @@ func (*DeleteStageResponse) Descriptor() ([]byte, []int) {
 	return file_api_v1_stage_proto_rawDescGZIP(), []int{8}
 }
 
+type SetStageDestinationRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"`
+	DestinationId string                 `protobuf:"bytes,2,opt,name=destination_id,json=destinationId,proto3" json:"destination_id,omitempty"` // empty string to clear
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetStageDestinationRequest) Reset() {
+	*x = SetStageDestinationRequest{}
+	mi := &file_api_v1_stage_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetStageDestinationRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetStageDestinationRequest) ProtoMessage() {}
+
+func (x *SetStageDestinationRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_stage_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetStageDestinationRequest.ProtoReflect.Descriptor instead.
+func (*SetStageDestinationRequest) Descriptor() ([]byte, []int) {
+	return file_api_v1_stage_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *SetStageDestinationRequest) GetStageId() string {
+	if x != nil {
+		return x.StageId
+	}
+	return ""
+}
+
+func (x *SetStageDestinationRequest) GetDestinationId() string {
+	if x != nil {
+		return x.DestinationId
+	}
+	return ""
+}
+
+type SetStageDestinationResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Stage         *Stage                 `protobuf:"bytes,1,opt,name=stage,proto3" json:"stage,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetStageDestinationResponse) Reset() {
+	*x = SetStageDestinationResponse{}
+	mi := &file_api_v1_stage_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetStageDestinationResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetStageDestinationResponse) ProtoMessage() {}
+
+func (x *SetStageDestinationResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_stage_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetStageDestinationResponse.ProtoReflect.Descriptor instead.
+func (*SetStageDestinationResponse) Descriptor() ([]byte, []int) {
+	return file_api_v1_stage_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *SetStageDestinationResponse) GetStage() *Stage {
+	if x != nil {
+		return x.Stage
+	}
+	return nil
+}
+
 var File_api_v1_stage_proto protoreflect.FileDescriptor
 
 const file_api_v1_stage_proto_rawDesc = "" +
 	"\n" +
-	"\x12api/v1/stage.proto\x12\x06api.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xb6\x02\n" +
+	"\x12api/v1/stage.proto\x12\x06api.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xdd\x02\n" +
 	"\x05Stage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
 	"\bpod_name\x18\x02 \x01(\tR\apodName\x12\x15\n" +
@@ -482,7 +586,9 @@ const file_api_v1_stage_proto_rawDesc = "" +
 	"\rlast_activity\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\flastActivity\x12\x16\n" +
 	"\x06status\x18\a \x01(\tR\x06status\x12\"\n" +
 	"\rowner_user_id\x18\b \x01(\tR\vownerUserId\x12\x12\n" +
-	"\x04name\x18\t \x01(\tR\x04name\"(\n" +
+	"\x04name\x18\t \x01(\tR\x04name\x12%\n" +
+	"\x0edestination_id\x18\n" +
+	" \x01(\tR\rdestinationId\"(\n" +
 	"\x12CreateStageRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\":\n" +
 	"\x13CreateStageResponse\x12#\n" +
@@ -496,13 +602,19 @@ const file_api_v1_stage_proto_rawDesc = "" +
 	"\x05stage\x18\x01 \x01(\v2\r.api.v1.StageR\x05stage\"$\n" +
 	"\x12DeleteStageRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x15\n" +
-	"\x13DeleteStageResponse2\xa2\x02\n" +
+	"\x13DeleteStageResponse\"^\n" +
+	"\x1aSetStageDestinationRequest\x12\x19\n" +
+	"\bstage_id\x18\x01 \x01(\tR\astageId\x12%\n" +
+	"\x0edestination_id\x18\x02 \x01(\tR\rdestinationId\"B\n" +
+	"\x1bSetStageDestinationResponse\x12#\n" +
+	"\x05stage\x18\x01 \x01(\v2\r.api.v1.StageR\x05stage2\x82\x03\n" +
 	"\fStageService\x12F\n" +
 	"\vCreateStage\x12\x1a.api.v1.CreateStageRequest\x1a\x1b.api.v1.CreateStageResponse\x12C\n" +
 	"\n" +
 	"ListStages\x12\x19.api.v1.ListStagesRequest\x1a\x1a.api.v1.ListStagesResponse\x12=\n" +
 	"\bGetStage\x12\x17.api.v1.GetStageRequest\x1a\x18.api.v1.GetStageResponse\x12F\n" +
-	"\vDeleteStage\x12\x1a.api.v1.DeleteStageRequest\x1a\x1b.api.v1.DeleteStageResponseB<Z:github.com/browser-streamer/control-plane/gen/api/v1;apiv1b\x06proto3"
+	"\vDeleteStage\x12\x1a.api.v1.DeleteStageRequest\x1a\x1b.api.v1.DeleteStageResponse\x12^\n" +
+	"\x13SetStageDestination\x12\".api.v1.SetStageDestinationRequest\x1a#.api.v1.SetStageDestinationResponseB<Z:github.com/browser-streamer/control-plane/gen/api/v1;apiv1b\x06proto3"
 
 var (
 	file_api_v1_stage_proto_rawDescOnce sync.Once
@@ -516,38 +628,43 @@ func file_api_v1_stage_proto_rawDescGZIP() []byte {
 	return file_api_v1_stage_proto_rawDescData
 }
 
-var file_api_v1_stage_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_api_v1_stage_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_api_v1_stage_proto_goTypes = []any{
-	(*Stage)(nil),                 // 0: api.v1.Stage
-	(*CreateStageRequest)(nil),    // 1: api.v1.CreateStageRequest
-	(*CreateStageResponse)(nil),   // 2: api.v1.CreateStageResponse
-	(*ListStagesRequest)(nil),     // 3: api.v1.ListStagesRequest
-	(*ListStagesResponse)(nil),    // 4: api.v1.ListStagesResponse
-	(*GetStageRequest)(nil),       // 5: api.v1.GetStageRequest
-	(*GetStageResponse)(nil),      // 6: api.v1.GetStageResponse
-	(*DeleteStageRequest)(nil),    // 7: api.v1.DeleteStageRequest
-	(*DeleteStageResponse)(nil),   // 8: api.v1.DeleteStageResponse
-	(*timestamppb.Timestamp)(nil), // 9: google.protobuf.Timestamp
+	(*Stage)(nil),                       // 0: api.v1.Stage
+	(*CreateStageRequest)(nil),          // 1: api.v1.CreateStageRequest
+	(*CreateStageResponse)(nil),         // 2: api.v1.CreateStageResponse
+	(*ListStagesRequest)(nil),           // 3: api.v1.ListStagesRequest
+	(*ListStagesResponse)(nil),          // 4: api.v1.ListStagesResponse
+	(*GetStageRequest)(nil),             // 5: api.v1.GetStageRequest
+	(*GetStageResponse)(nil),            // 6: api.v1.GetStageResponse
+	(*DeleteStageRequest)(nil),          // 7: api.v1.DeleteStageRequest
+	(*DeleteStageResponse)(nil),         // 8: api.v1.DeleteStageResponse
+	(*SetStageDestinationRequest)(nil),  // 9: api.v1.SetStageDestinationRequest
+	(*SetStageDestinationResponse)(nil), // 10: api.v1.SetStageDestinationResponse
+	(*timestamppb.Timestamp)(nil),       // 11: google.protobuf.Timestamp
 }
 var file_api_v1_stage_proto_depIdxs = []int32{
-	9, // 0: api.v1.Stage.created_at:type_name -> google.protobuf.Timestamp
-	9, // 1: api.v1.Stage.last_activity:type_name -> google.protobuf.Timestamp
-	0, // 2: api.v1.CreateStageResponse.stage:type_name -> api.v1.Stage
-	0, // 3: api.v1.ListStagesResponse.stages:type_name -> api.v1.Stage
-	0, // 4: api.v1.GetStageResponse.stage:type_name -> api.v1.Stage
-	1, // 5: api.v1.StageService.CreateStage:input_type -> api.v1.CreateStageRequest
-	3, // 6: api.v1.StageService.ListStages:input_type -> api.v1.ListStagesRequest
-	5, // 7: api.v1.StageService.GetStage:input_type -> api.v1.GetStageRequest
-	7, // 8: api.v1.StageService.DeleteStage:input_type -> api.v1.DeleteStageRequest
-	2, // 9: api.v1.StageService.CreateStage:output_type -> api.v1.CreateStageResponse
-	4, // 10: api.v1.StageService.ListStages:output_type -> api.v1.ListStagesResponse
-	6, // 11: api.v1.StageService.GetStage:output_type -> api.v1.GetStageResponse
-	8, // 12: api.v1.StageService.DeleteStage:output_type -> api.v1.DeleteStageResponse
-	9, // [9:13] is the sub-list for method output_type
-	5, // [5:9] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	11, // 0: api.v1.Stage.created_at:type_name -> google.protobuf.Timestamp
+	11, // 1: api.v1.Stage.last_activity:type_name -> google.protobuf.Timestamp
+	0,  // 2: api.v1.CreateStageResponse.stage:type_name -> api.v1.Stage
+	0,  // 3: api.v1.ListStagesResponse.stages:type_name -> api.v1.Stage
+	0,  // 4: api.v1.GetStageResponse.stage:type_name -> api.v1.Stage
+	0,  // 5: api.v1.SetStageDestinationResponse.stage:type_name -> api.v1.Stage
+	1,  // 6: api.v1.StageService.CreateStage:input_type -> api.v1.CreateStageRequest
+	3,  // 7: api.v1.StageService.ListStages:input_type -> api.v1.ListStagesRequest
+	5,  // 8: api.v1.StageService.GetStage:input_type -> api.v1.GetStageRequest
+	7,  // 9: api.v1.StageService.DeleteStage:input_type -> api.v1.DeleteStageRequest
+	9,  // 10: api.v1.StageService.SetStageDestination:input_type -> api.v1.SetStageDestinationRequest
+	2,  // 11: api.v1.StageService.CreateStage:output_type -> api.v1.CreateStageResponse
+	4,  // 12: api.v1.StageService.ListStages:output_type -> api.v1.ListStagesResponse
+	6,  // 13: api.v1.StageService.GetStage:output_type -> api.v1.GetStageResponse
+	8,  // 14: api.v1.StageService.DeleteStage:output_type -> api.v1.DeleteStageResponse
+	10, // 15: api.v1.StageService.SetStageDestination:output_type -> api.v1.SetStageDestinationResponse
+	11, // [11:16] is the sub-list for method output_type
+	6,  // [6:11] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_api_v1_stage_proto_init() }
@@ -561,7 +678,7 @@ func file_api_v1_stage_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_v1_stage_proto_rawDesc), len(file_api_v1_stage_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

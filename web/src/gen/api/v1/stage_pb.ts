@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file api/v1/stage.proto.
  */
 export const file_api_v1_stage: GenFile = /*@__PURE__*/
-  fileDesc("ChJhcGkvdjEvc3RhZ2UucHJvdG8SBmFwaS52MSLiAQoFU3RhZ2USCgoCaWQYASABKAkSEAoIcG9kX25hbWUYAiABKAkSDgoGcG9kX2lwGAMgASgJEhMKC2RpcmVjdF9wb3J0GAQgASgFEi4KCmNyZWF0ZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjEKDWxhc3RfYWN0aXZpdHkYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEg4KBnN0YXR1cxgHIAEoCRIVCg1vd25lcl91c2VyX2lkGAggASgJEgwKBG5hbWUYCSABKAkiIgoSQ3JlYXRlU3RhZ2VSZXF1ZXN0EgwKBG5hbWUYASABKAkiMwoTQ3JlYXRlU3RhZ2VSZXNwb25zZRIcCgVzdGFnZRgBIAEoCzINLmFwaS52MS5TdGFnZSITChFMaXN0U3RhZ2VzUmVxdWVzdCIzChJMaXN0U3RhZ2VzUmVzcG9uc2USHQoGc3RhZ2VzGAEgAygLMg0uYXBpLnYxLlN0YWdlIh0KD0dldFN0YWdlUmVxdWVzdBIKCgJpZBgBIAEoCSIwChBHZXRTdGFnZVJlc3BvbnNlEhwKBXN0YWdlGAEgASgLMg0uYXBpLnYxLlN0YWdlIiAKEkRlbGV0ZVN0YWdlUmVxdWVzdBIKCgJpZBgBIAEoCSIVChNEZWxldGVTdGFnZVJlc3BvbnNlMqICCgxTdGFnZVNlcnZpY2USRgoLQ3JlYXRlU3RhZ2USGi5hcGkudjEuQ3JlYXRlU3RhZ2VSZXF1ZXN0GhsuYXBpLnYxLkNyZWF0ZVN0YWdlUmVzcG9uc2USQwoKTGlzdFN0YWdlcxIZLmFwaS52MS5MaXN0U3RhZ2VzUmVxdWVzdBoaLmFwaS52MS5MaXN0U3RhZ2VzUmVzcG9uc2USPQoIR2V0U3RhZ2USFy5hcGkudjEuR2V0U3RhZ2VSZXF1ZXN0GhguYXBpLnYxLkdldFN0YWdlUmVzcG9uc2USRgoLRGVsZXRlU3RhZ2USGi5hcGkudjEuRGVsZXRlU3RhZ2VSZXF1ZXN0GhsuYXBpLnYxLkRlbGV0ZVN0YWdlUmVzcG9uc2VCPFo6Z2l0aHViLmNvbS9icm93c2VyLXN0cmVhbWVyL2NvbnRyb2wtcGxhbmUvZ2VuL2FwaS92MTthcGl2MWIGcHJvdG8z", [file_google_protobuf_timestamp]);
+  fileDesc("ChJhcGkvdjEvc3RhZ2UucHJvdG8SBmFwaS52MSL6AQoFU3RhZ2USCgoCaWQYASABKAkSEAoIcG9kX25hbWUYAiABKAkSDgoGcG9kX2lwGAMgASgJEhMKC2RpcmVjdF9wb3J0GAQgASgFEi4KCmNyZWF0ZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjEKDWxhc3RfYWN0aXZpdHkYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEg4KBnN0YXR1cxgHIAEoCRIVCg1vd25lcl91c2VyX2lkGAggASgJEgwKBG5hbWUYCSABKAkSFgoOZGVzdGluYXRpb25faWQYCiABKAkiIgoSQ3JlYXRlU3RhZ2VSZXF1ZXN0EgwKBG5hbWUYASABKAkiMwoTQ3JlYXRlU3RhZ2VSZXNwb25zZRIcCgVzdGFnZRgBIAEoCzINLmFwaS52MS5TdGFnZSITChFMaXN0U3RhZ2VzUmVxdWVzdCIzChJMaXN0U3RhZ2VzUmVzcG9uc2USHQoGc3RhZ2VzGAEgAygLMg0uYXBpLnYxLlN0YWdlIh0KD0dldFN0YWdlUmVxdWVzdBIKCgJpZBgBIAEoCSIwChBHZXRTdGFnZVJlc3BvbnNlEhwKBXN0YWdlGAEgASgLMg0uYXBpLnYxLlN0YWdlIiAKEkRlbGV0ZVN0YWdlUmVxdWVzdBIKCgJpZBgBIAEoCSIVChNEZWxldGVTdGFnZVJlc3BvbnNlIkYKGlNldFN0YWdlRGVzdGluYXRpb25SZXF1ZXN0EhAKCHN0YWdlX2lkGAEgASgJEhYKDmRlc3RpbmF0aW9uX2lkGAIgASgJIjsKG1NldFN0YWdlRGVzdGluYXRpb25SZXNwb25zZRIcCgVzdGFnZRgBIAEoCzINLmFwaS52MS5TdGFnZTKCAwoMU3RhZ2VTZXJ2aWNlEkYKC0NyZWF0ZVN0YWdlEhouYXBpLnYxLkNyZWF0ZVN0YWdlUmVxdWVzdBobLmFwaS52MS5DcmVhdGVTdGFnZVJlc3BvbnNlEkMKCkxpc3RTdGFnZXMSGS5hcGkudjEuTGlzdFN0YWdlc1JlcXVlc3QaGi5hcGkudjEuTGlzdFN0YWdlc1Jlc3BvbnNlEj0KCEdldFN0YWdlEhcuYXBpLnYxLkdldFN0YWdlUmVxdWVzdBoYLmFwaS52MS5HZXRTdGFnZVJlc3BvbnNlEkYKC0RlbGV0ZVN0YWdlEhouYXBpLnYxLkRlbGV0ZVN0YWdlUmVxdWVzdBobLmFwaS52MS5EZWxldGVTdGFnZVJlc3BvbnNlEl4KE1NldFN0YWdlRGVzdGluYXRpb24SIi5hcGkudjEuU2V0U3RhZ2VEZXN0aW5hdGlvblJlcXVlc3QaIy5hcGkudjEuU2V0U3RhZ2VEZXN0aW5hdGlvblJlc3BvbnNlQjxaOmdpdGh1Yi5jb20vYnJvd3Nlci1zdHJlYW1lci9jb250cm9sLXBsYW5lL2dlbi9hcGkvdjE7YXBpdjFiBnByb3RvMw", [file_google_protobuf_timestamp]);
 
 /**
  * @generated from message api.v1.Stage
@@ -64,6 +64,11 @@ export type Stage = Message<"api.v1.Stage"> & {
    * @generated from field: string name = 9;
    */
   name: string;
+
+  /**
+   * @generated from field: string destination_id = 10;
+   */
+  destinationId: string;
 };
 
 /**
@@ -202,6 +207,47 @@ export const DeleteStageResponseSchema: GenMessage<DeleteStageResponse> = /*@__P
   messageDesc(file_api_v1_stage, 8);
 
 /**
+ * @generated from message api.v1.SetStageDestinationRequest
+ */
+export type SetStageDestinationRequest = Message<"api.v1.SetStageDestinationRequest"> & {
+  /**
+   * @generated from field: string stage_id = 1;
+   */
+  stageId: string;
+
+  /**
+   * empty string to clear
+   *
+   * @generated from field: string destination_id = 2;
+   */
+  destinationId: string;
+};
+
+/**
+ * Describes the message api.v1.SetStageDestinationRequest.
+ * Use `create(SetStageDestinationRequestSchema)` to create a new message.
+ */
+export const SetStageDestinationRequestSchema: GenMessage<SetStageDestinationRequest> = /*@__PURE__*/
+  messageDesc(file_api_v1_stage, 9);
+
+/**
+ * @generated from message api.v1.SetStageDestinationResponse
+ */
+export type SetStageDestinationResponse = Message<"api.v1.SetStageDestinationResponse"> & {
+  /**
+   * @generated from field: api.v1.Stage stage = 1;
+   */
+  stage?: Stage;
+};
+
+/**
+ * Describes the message api.v1.SetStageDestinationResponse.
+ * Use `create(SetStageDestinationResponseSchema)` to create a new message.
+ */
+export const SetStageDestinationResponseSchema: GenMessage<SetStageDestinationResponse> = /*@__PURE__*/
+  messageDesc(file_api_v1_stage, 10);
+
+/**
  * @generated from service api.v1.StageService
  */
 export const StageService: GenService<{
@@ -236,6 +282,14 @@ export const StageService: GenService<{
     methodKind: "unary";
     input: typeof DeleteStageRequestSchema;
     output: typeof DeleteStageResponseSchema;
+  },
+  /**
+   * @generated from rpc api.v1.StageService.SetStageDestination
+   */
+  setStageDestination: {
+    methodKind: "unary";
+    input: typeof SetStageDestinationRequestSchema;
+    output: typeof SetStageDestinationResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_api_v1_stage, 0);

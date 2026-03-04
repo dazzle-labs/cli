@@ -50,14 +50,15 @@ const (
 )
 
 type Stage struct {
-	ID          string      `json:"id"`
-	Name        string      `json:"name"`
-	PodName     string      `json:"podName"`
-	PodIP       string      `json:"podIP,omitempty"`
-	DirectPort  int32       `json:"directPort"`
-	CreatedAt   time.Time   `json:"createdAt"`
-	Status      StageStatus `json:"status"`
-	OwnerUserID string      `json:"ownerUserId,omitempty"`
+	ID            string      `json:"id"`
+	Name          string      `json:"name"`
+	PodName       string      `json:"podName"`
+	PodIP         string      `json:"podIP,omitempty"`
+	DirectPort    int32       `json:"directPort"`
+	CreatedAt     time.Time   `json:"createdAt"`
+	Status        StageStatus `json:"status"`
+	OwnerUserID   string      `json:"ownerUserId,omitempty"`
+	DestinationID string      `json:"destinationId,omitempty"`
 }
 
 type Manager struct {

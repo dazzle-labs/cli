@@ -11,6 +11,7 @@ service StageService {
   rpc ListStages(ListStagesRequest) returns (ListStagesResponse);
   rpc GetStage(GetStageRequest) returns (GetStageResponse);
   rpc DeleteStage(DeleteStageRequest) returns (DeleteStageResponse);
+  rpc SetStageDestination(SetStageDestinationRequest) returns (SetStageDestinationResponse);
 }
 
 message Stage {
@@ -23,6 +24,7 @@ message Stage {
   string status = 7; // inactive | starting | running | stopping
   string owner_user_id = 8;
   string name = 9;
+  string destination_id = 10;
 }
 
 message CreateStageRequest {
@@ -52,3 +54,12 @@ message DeleteStageRequest {
 }
 
 message DeleteStageResponse {}
+
+message SetStageDestinationRequest {
+  string stage_id = 1;
+  string destination_id = 2; // empty string to clear
+}
+
+message SetStageDestinationResponse {
+  Stage stage = 1;
+}

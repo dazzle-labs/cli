@@ -11,7 +11,7 @@ import { StreamDestinationForm } from "./StreamDestinationForm";
 import type { StreamDestinationData } from "./StreamDestinationForm";
 import type { Framework } from "./frameworks";
 import type { Stage } from "../../gen/api/v1/stage_pb.js";
-import { streamClient } from "../../client.js";
+import { stageClient, streamClient } from "../../client.js";
 
 interface OnboardingWizardProps {
   open: boolean;
@@ -59,17 +59,18 @@ export function OnboardingWizard({ open, onClose }: OnboardingWizardProps) {
     }
   }
 
-  async function createStreamDestination(dest: StreamDestinationData) {
+  async function createStreamDestination(dest: StreamDestinationData): Promise<string | null> {
     try {
-      await streamClient.createStreamDestination({
+      const resp = await streamClient.createStreamDestination({
         name: dest.name,
         platform: dest.platform,
         rtmpUrl: dest.rtmpUrl,
         streamKey: dest.streamKey,
         enabled: true,
       });
+      return resp.destination?.id ?? null;
     } catch {
-      // best-effort
+      return null;
     }
   }
 
@@ -98,7 +99,17 @@ export function OnboardingWizard({ open, onClose }: OnboardingWizardProps) {
             onCreated={async (st, key) => {
               setStage(st);
               setApiKey(key);
-              if (streamDest) await createStreamDestination(streamDest);
+              let destId: string | null = null;
+              if (streamDest) {
+                destId = await createStreamDestination(streamDest);
+              }
+              if (destId && st.id) {
+                try {
+                  await stageClient.setStageDestination({ stageId: st.id, destinationId: destId });
+                } catch {
+                  // best-effort — user can fix in dashboard
+                }
+              }
               setStep(3);
             }}
           />

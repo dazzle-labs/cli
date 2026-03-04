@@ -136,13 +136,21 @@ export function Dashboard() {
           enabled: existingDest.enabled,
         });
       } else {
-        await streamClient.createStreamDestination({
+        const resp = await streamClient.createStreamDestination({
           name: data.name,
           platform: data.platform,
           rtmpUrl: data.rtmpUrl,
           streamKey: data.streamKey,
           enabled: true,
         });
+        // Auto-select the new destination for this stage
+        if (resp.destination?.id && selectedStageId) {
+          try {
+            await stageClient.setStageDestination({ stageId: selectedStageId, destinationId: resp.destination.id });
+          } catch {
+            // best-effort
+          }
+        }
       }
       await refresh();
     } catch {
@@ -196,7 +204,9 @@ export function Dashboard() {
 
   // Panel data
   const selectedStage = stages.find((s) => s.id === selectedStageId);
-  const selectedDest = destinations.length > 0 ? destinations[0] : undefined;
+  const selectedDest = selectedStage?.destinationId
+    ? destinations.find((d) => d.id === selectedStage.destinationId)
+    : undefined;
   const mcpUrl = selectedStageId ? `${window.location.origin}/stage/${selectedStageId}/mcp` : "";
   const activeFw = FRAMEWORKS.find((fw) => fw.id === activeFramework) ?? FRAMEWORKS[0];
   const snippet = selectedStageId ? activeFw.getSnippet(mcpUrl, "") : "";
@@ -368,7 +378,28 @@ export function Dashboard() {
             {/* Section 4: Stream Destination */}
             <div className="border-t border-white/[0.06] pt-4 mt-4">
               <p className="text-xs font-medium text-zinc-400 mb-3">Streaming</p>
-              {selectedDest ? (
+              {destinations.length > 0 && (
+                <div className="mb-3">
+                  <select
+                    value={selectedStage?.destinationId || ""}
+                    onChange={async (e) => {
+                      try {
+                        await stageClient.setStageDestination({ stageId: selectedStageId!, destinationId: e.target.value });
+                        await refresh();
+                      } catch {
+                        // ignore
+                      }
+                    }}
+                    className="w-full rounded-lg border border-white/[0.06] bg-zinc-950/50 px-3 py-2 text-xs text-zinc-300 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
+                  >
+                    <option value="">Select destination...</option>
+                    {destinations.map((d) => (
+                      <option key={d.id} value={d.id}>{d.name} ({d.platform})</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {selectedDest && (
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <Radio className="h-3.5 w-3.5 text-zinc-500" />
@@ -386,7 +417,8 @@ export function Dashboard() {
                     {selectedDest.enabled ? <ToggleRight className="h-3.5 w-3.5" /> : <ToggleLeft className="h-3.5 w-3.5" />}
                   </button>
                 </div>
-              ) : (
+              )}
+              {!selectedDest && destinations.length === 0 && (
                 <p className="text-xs text-zinc-500 mb-3">
                   Open the curtains — set up streaming to go live.
                 </p>

@@ -269,17 +269,26 @@ func (m *Manager) handleMCPCreateStage(ctx context.Context, req mcp.CallToolRequ
 		return mcp.NewToolResultError("agent ID not found in request context"), nil
 	}
 
+	userID := userIDFromCtx(ctx)
+
+	// Validate destination BEFORE activating stage
+	dest, err := m.validateStreamDestination(agentID, userID)
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
 	waitCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
 
-	userID := userIDFromCtx(ctx)
 	readyStage, err := m.activateStage(waitCtx, agentID, userID)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("failed to activate stage: %v", err)), nil
 	}
 
-	// Configure OBS with user's stream destinations
-	m.configureOBSStream(readyStage, userID)
+	// Configure OBS with the already-validated destination
+	if err := m.configureOBSStream(readyStage, dest); err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("failed to configure stream: %v", err)), nil
+	}
 
 	result, _ := json.Marshal(map[string]any{
 		"status": string(readyStage.Status),
@@ -287,54 +296,68 @@ func (m *Manager) handleMCPCreateStage(ctx context.Context, req mcp.CallToolRequ
 	return mcp.NewToolResultText(string(result)), nil
 }
 
-const defaultRTMPURL = "rtmps://fa723fc1b171.global-contribute.live-video.net"
-
-// configureOBSStream sets OBS stream settings from the user's first enabled stream destination.
-// Falls back to the default RTMP URL (without a key) if no destinations are configured.
-func (m *Manager) configureOBSStream(stage *Stage, userID string) {
-	var rtmpURL, streamKey string
-
-	if m.db != nil && userID != "" {
-		dests, err := dbListStreamDests(m.db, userID)
-		if err != nil {
-			log.Printf("WARN: failed to list stream destinations for user %s: %v", userID, err)
-		} else {
-			for i := range dests {
-				if dests[i].Enabled {
-					rtmpURL = dests[i].RtmpURL
-					key, err := decryptString(m.encryptionKey, dests[i].StreamKey)
-					if err != nil {
-						log.Printf("WARN: failed to decrypt stream key for dest %s: %v", dests[i].ID, err)
-					} else {
-						streamKey = key
-					}
-					log.Printf("Configuring OBS stream for stage %s (dest=%s, platform=%s)", stage.ID, dests[i].Name, dests[i].Platform)
-					break
-				}
-			}
-		}
+// validateStreamDestination looks up the stage's assigned destination and validates it is
+// enabled with a valid RTMP URL and decryptable stream key. Returns the validated row.
+func (m *Manager) validateStreamDestination(stageID, userID string) (*streamDestRow, error) {
+	if m.db == nil || userID == "" {
+		return nil, fmt.Errorf("no stream destination configured — add one via the API before starting a stage")
 	}
 
-	if rtmpURL == "" {
-		rtmpURL = defaultRTMPURL
-		log.Printf("Configuring OBS stream for stage %s with default RTMP URL", stage.ID)
+	row, err := dbGetStage(m.db, stageID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to look up stage: %w", err)
 	}
+	if row == nil {
+		return nil, fmt.Errorf("stage not found")
+	}
+	if !row.DestinationID.Valid || row.DestinationID.String == "" {
+		return nil, fmt.Errorf("no stream destination configured for stage %s — select one in the dashboard", stageID)
+	}
+
+	dest, err := dbGetStreamDestForUser(m.db, row.DestinationID.String, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to look up stream destination: %w", err)
+	}
+	if dest == nil {
+		return nil, fmt.Errorf("stream destination not found for stage %s — select one in the dashboard", stageID)
+	}
+
+	if !dest.Enabled {
+		return nil, fmt.Errorf("stream destination '%s' is disabled on stage %s — enable it in the dashboard", dest.Name, stageID)
+	}
+	if dest.RtmpURL == "" {
+		return nil, fmt.Errorf("stream destination '%s' has no RTMP URL configured", dest.Name)
+	}
+	decryptedKey, err := decryptString(m.encryptionKey, dest.StreamKey)
+	if err != nil {
+		return nil, fmt.Errorf("stream destination '%s' has an invalid stream key: %w", dest.Name, err)
+	}
+	// Store decrypted key so configureOBSStream doesn't need to decrypt again
+	dest.StreamKey = decryptedKey
+
+	return dest, nil
+}
+
+// configureOBSStream sets OBS stream settings using the already-validated destination.
+// dest.StreamKey must already be decrypted (done by validateStreamDestination).
+func (m *Manager) configureOBSStream(stage *Stage, dest *streamDestRow) error {
+	log.Printf("Configuring OBS stream for stage %s (dest=%s, platform=%s)", stage.ID, dest.Name, dest.Platform)
 
 	args := []string{
 		"--host", stage.PodIP, "--port", "4455",
 		"settings", "stream-service", "rtmp_custom",
-		"--server", rtmpURL,
-	}
-	if streamKey != "" {
-		args = append(args, "--key", streamKey)
+		"--server", dest.RtmpURL,
+		"--key", dest.StreamKey,
 	}
 
 	cmd := exec.CommandContext(context.Background(), "gobs-cli", args...)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		log.Printf("WARN: failed to configure OBS stream settings: %v (%s)", err, stderr.String())
+		return fmt.Errorf("failed to configure OBS stream settings: %w (%s)", err, stderr.String())
 	}
+
+	return nil
 }
 
 func (m *Manager) handleMCPDestroyStage(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

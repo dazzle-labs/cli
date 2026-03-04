@@ -267,14 +267,15 @@ func dbDeleteStreamDest(db *sql.DB, id, userID string) error {
 // --- Stage queries ---
 
 type stageRow struct {
-	ID        string
-	UserID    string
-	Name      string
-	Status    string
-	PodName   sql.NullString
-	PodIP     sql.NullString
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID            string
+	UserID        string
+	Name          string
+	Status        string
+	PodName       sql.NullString
+	PodIP         sql.NullString
+	DestinationID sql.NullString
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }
 
 func dbCreateStage(db *sql.DB, userID, name string) (string, error) {
@@ -288,7 +289,7 @@ func dbCreateStage(db *sql.DB, userID, name string) (string, error) {
 
 func dbListStages(db *sql.DB, userID string) ([]stageRow, error) {
 	rows, err := db.Query(`
-		SELECT id, user_id, name, status, pod_name, pod_ip, created_at, updated_at
+		SELECT id, user_id, name, status, pod_name, pod_ip, destination_id, created_at, updated_at
 		FROM stages WHERE user_id=$1 ORDER BY created_at`, userID)
 	if err != nil {
 		return nil, err
@@ -297,7 +298,7 @@ func dbListStages(db *sql.DB, userID string) ([]stageRow, error) {
 	var stages []stageRow
 	for rows.Next() {
 		var s stageRow
-		if err := rows.Scan(&s.ID, &s.UserID, &s.Name, &s.Status, &s.PodName, &s.PodIP, &s.CreatedAt, &s.UpdatedAt); err != nil {
+		if err := rows.Scan(&s.ID, &s.UserID, &s.Name, &s.Status, &s.PodName, &s.PodIP, &s.DestinationID, &s.CreatedAt, &s.UpdatedAt); err != nil {
 			return nil, err
 		}
 		stages = append(stages, s)
@@ -308,8 +309,8 @@ func dbListStages(db *sql.DB, userID string) ([]stageRow, error) {
 func dbGetStage(db *sql.DB, id string) (*stageRow, error) {
 	var s stageRow
 	err := db.QueryRow(`
-		SELECT id, user_id, name, status, pod_name, pod_ip, created_at, updated_at
-		FROM stages WHERE id=$1`, id).Scan(&s.ID, &s.UserID, &s.Name, &s.Status, &s.PodName, &s.PodIP, &s.CreatedAt, &s.UpdatedAt)
+		SELECT id, user_id, name, status, pod_name, pod_ip, destination_id, created_at, updated_at
+		FROM stages WHERE id=$1`, id).Scan(&s.ID, &s.UserID, &s.Name, &s.Status, &s.PodName, &s.PodIP, &s.DestinationID, &s.CreatedAt, &s.UpdatedAt)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -336,6 +337,36 @@ func dbUpdateStageStatus(db *sql.DB, id, status, podName, podIP string) error {
 		UPDATE stages SET status=$2, pod_name=$3, pod_ip=$4, updated_at=NOW()
 		WHERE id=$1`, id, status, sql.NullString{String: podName, Valid: podName != ""}, sql.NullString{String: podIP, Valid: podIP != ""})
 	return err
+}
+
+func dbSetStageDestination(db *sql.DB, stageID, userID, destinationID string) error {
+	destVal := sql.NullString{String: destinationID, Valid: destinationID != ""}
+	res, err := db.Exec(`
+		UPDATE stages SET destination_id=$3, updated_at=NOW()
+		WHERE id=$1 AND user_id=$2`, stageID, userID, destVal)
+	if err != nil {
+		return err
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return fmt.Errorf("stage not found")
+	}
+	return nil
+}
+
+func dbGetStreamDestForUser(db *sql.DB, destID, userID string) (*streamDestRow, error) {
+	var d streamDestRow
+	err := db.QueryRow(`
+		SELECT id, user_id, name, platform, rtmp_url, stream_key, enabled, created_at, updated_at
+		FROM stream_destinations WHERE id=$1 AND user_id=$2`, destID, userID).
+		Scan(&d.ID, &d.UserID, &d.Name, &d.Platform, &d.RtmpURL, &d.StreamKey, &d.Enabled, &d.CreatedAt, &d.UpdatedAt)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &d, nil
 }
 
 // --- Encryption helpers ---

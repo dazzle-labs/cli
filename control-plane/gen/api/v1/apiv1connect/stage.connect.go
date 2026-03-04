@@ -43,6 +43,9 @@ const (
 	// StageServiceDeleteStageProcedure is the fully-qualified name of the StageService's DeleteStage
 	// RPC.
 	StageServiceDeleteStageProcedure = "/api.v1.StageService/DeleteStage"
+	// StageServiceSetStageDestinationProcedure is the fully-qualified name of the StageService's
+	// SetStageDestination RPC.
+	StageServiceSetStageDestinationProcedure = "/api.v1.StageService/SetStageDestination"
 )
 
 // StageServiceClient is a client for the api.v1.StageService service.
@@ -51,6 +54,7 @@ type StageServiceClient interface {
 	ListStages(context.Context, *connect.Request[v1.ListStagesRequest]) (*connect.Response[v1.ListStagesResponse], error)
 	GetStage(context.Context, *connect.Request[v1.GetStageRequest]) (*connect.Response[v1.GetStageResponse], error)
 	DeleteStage(context.Context, *connect.Request[v1.DeleteStageRequest]) (*connect.Response[v1.DeleteStageResponse], error)
+	SetStageDestination(context.Context, *connect.Request[v1.SetStageDestinationRequest]) (*connect.Response[v1.SetStageDestinationResponse], error)
 }
 
 // NewStageServiceClient constructs a client for the api.v1.StageService service. By default, it
@@ -88,15 +92,22 @@ func NewStageServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(stageServiceMethods.ByName("DeleteStage")),
 			connect.WithClientOptions(opts...),
 		),
+		setStageDestination: connect.NewClient[v1.SetStageDestinationRequest, v1.SetStageDestinationResponse](
+			httpClient,
+			baseURL+StageServiceSetStageDestinationProcedure,
+			connect.WithSchema(stageServiceMethods.ByName("SetStageDestination")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // stageServiceClient implements StageServiceClient.
 type stageServiceClient struct {
-	createStage *connect.Client[v1.CreateStageRequest, v1.CreateStageResponse]
-	listStages  *connect.Client[v1.ListStagesRequest, v1.ListStagesResponse]
-	getStage    *connect.Client[v1.GetStageRequest, v1.GetStageResponse]
-	deleteStage *connect.Client[v1.DeleteStageRequest, v1.DeleteStageResponse]
+	createStage         *connect.Client[v1.CreateStageRequest, v1.CreateStageResponse]
+	listStages          *connect.Client[v1.ListStagesRequest, v1.ListStagesResponse]
+	getStage            *connect.Client[v1.GetStageRequest, v1.GetStageResponse]
+	deleteStage         *connect.Client[v1.DeleteStageRequest, v1.DeleteStageResponse]
+	setStageDestination *connect.Client[v1.SetStageDestinationRequest, v1.SetStageDestinationResponse]
 }
 
 // CreateStage calls api.v1.StageService.CreateStage.
@@ -119,12 +130,18 @@ func (c *stageServiceClient) DeleteStage(ctx context.Context, req *connect.Reque
 	return c.deleteStage.CallUnary(ctx, req)
 }
 
+// SetStageDestination calls api.v1.StageService.SetStageDestination.
+func (c *stageServiceClient) SetStageDestination(ctx context.Context, req *connect.Request[v1.SetStageDestinationRequest]) (*connect.Response[v1.SetStageDestinationResponse], error) {
+	return c.setStageDestination.CallUnary(ctx, req)
+}
+
 // StageServiceHandler is an implementation of the api.v1.StageService service.
 type StageServiceHandler interface {
 	CreateStage(context.Context, *connect.Request[v1.CreateStageRequest]) (*connect.Response[v1.CreateStageResponse], error)
 	ListStages(context.Context, *connect.Request[v1.ListStagesRequest]) (*connect.Response[v1.ListStagesResponse], error)
 	GetStage(context.Context, *connect.Request[v1.GetStageRequest]) (*connect.Response[v1.GetStageResponse], error)
 	DeleteStage(context.Context, *connect.Request[v1.DeleteStageRequest]) (*connect.Response[v1.DeleteStageResponse], error)
+	SetStageDestination(context.Context, *connect.Request[v1.SetStageDestinationRequest]) (*connect.Response[v1.SetStageDestinationResponse], error)
 }
 
 // NewStageServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -158,6 +175,12 @@ func NewStageServiceHandler(svc StageServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(stageServiceMethods.ByName("DeleteStage")),
 		connect.WithHandlerOptions(opts...),
 	)
+	stageServiceSetStageDestinationHandler := connect.NewUnaryHandler(
+		StageServiceSetStageDestinationProcedure,
+		svc.SetStageDestination,
+		connect.WithSchema(stageServiceMethods.ByName("SetStageDestination")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/api.v1.StageService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case StageServiceCreateStageProcedure:
@@ -168,6 +191,8 @@ func NewStageServiceHandler(svc StageServiceHandler, opts ...connect.HandlerOpti
 			stageServiceGetStageHandler.ServeHTTP(w, r)
 		case StageServiceDeleteStageProcedure:
 			stageServiceDeleteStageHandler.ServeHTTP(w, r)
+		case StageServiceSetStageDestinationProcedure:
+			stageServiceSetStageDestinationHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -191,4 +216,8 @@ func (UnimplementedStageServiceHandler) GetStage(context.Context, *connect.Reque
 
 func (UnimplementedStageServiceHandler) DeleteStage(context.Context, *connect.Request[v1.DeleteStageRequest]) (*connect.Response[v1.DeleteStageResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.StageService.DeleteStage is not implemented"))
+}
+
+func (UnimplementedStageServiceHandler) SetStageDestination(context.Context, *connect.Request[v1.SetStageDestinationRequest]) (*connect.Response[v1.SetStageDestinationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.StageService.SetStageDestination is not implemented"))
 }

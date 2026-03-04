@@ -90,16 +90,52 @@ func (s *stageServer) DeleteStage(ctx context.Context, req *connect.Request[apiv
 	return connect.NewResponse(&apiv1.DeleteStageResponse{}), nil
 }
 
+func (s *stageServer) SetStageDestination(ctx context.Context, req *connect.Request[apiv1.SetStageDestinationRequest]) (*connect.Response[apiv1.SetStageDestinationResponse], error) {
+	info := mustAuth(ctx)
+
+	row, err := dbGetStage(s.mgr.db, req.Msg.StageId)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	if row == nil || row.UserID != info.UserID {
+		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("stage not found"))
+	}
+
+	if req.Msg.DestinationId != "" {
+		dest, err := dbGetStreamDestForUser(s.mgr.db, req.Msg.DestinationId, info.UserID)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+		if dest == nil {
+			return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("destination not found"))
+		}
+	}
+
+	if err := dbSetStageDestination(s.mgr.db, req.Msg.StageId, info.UserID, req.Msg.DestinationId); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	updated, err := dbGetStage(s.mgr.db, req.Msg.StageId)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	st := stageRowToStruct(updated, s.mgr)
+	return connect.NewResponse(&apiv1.SetStageDestinationResponse{
+		Stage: stageToProto(st),
+	}), nil
+}
+
 // stageRowToStruct merges a DB row with in-memory live state (pod IP, running status).
 func stageRowToStruct(row *stageRow, mgr *Manager) *Stage {
 	st := &Stage{
-		ID:          row.ID,
-		Name:        row.Name,
-		PodName:     row.PodName.String,
-		PodIP:       row.PodIP.String,
-		CreatedAt:   row.CreatedAt,
-		Status:      StageStatus(row.Status),
-		OwnerUserID: row.UserID,
+		ID:            row.ID,
+		Name:          row.Name,
+		PodName:       row.PodName.String,
+		PodIP:         row.PodIP.String,
+		CreatedAt:     row.CreatedAt,
+		Status:        StageStatus(row.Status),
+		OwnerUserID:   row.UserID,
+		DestinationID: row.DestinationID.String,
 	}
 	// Overlay live in-memory state (more up-to-date pod IP, current status)
 	if live, ok := mgr.getStage(row.ID); ok {
@@ -112,13 +148,14 @@ func stageRowToStruct(row *stageRow, mgr *Manager) *Stage {
 
 func stageToProto(s *Stage) *apiv1.Stage {
 	return &apiv1.Stage{
-		Id:          s.ID,
-		Name:        s.Name,
-		PodName:     s.PodName,
-		PodIp:       s.PodIP,
-		DirectPort:  s.DirectPort,
-		CreatedAt:   timestamppb.New(s.CreatedAt),
-		Status:      string(s.Status),
-		OwnerUserId: s.OwnerUserID,
+		Id:            s.ID,
+		Name:          s.Name,
+		PodName:       s.PodName,
+		PodIp:         s.PodIP,
+		DirectPort:    s.DirectPort,
+		CreatedAt:     timestamppb.New(s.CreatedAt),
+		Status:        string(s.Status),
+		OwnerUserId:   s.OwnerUserID,
+		DestinationId: s.DestinationID,
 	}
 }
