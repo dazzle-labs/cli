@@ -70,11 +70,14 @@ Two modes:
 1. Vanilla JS — create DOM elements / canvas and append to document.body
 2. React JSX — define an App component and it will be auto-mounted into #root:
      const App = () => <div>Hello</div>;
-   No createRoot or render call needed. On subsequent set_script/edit_script calls, the root is reused for clean HMR transitions.
+   Do NOT call createRoot or ReactDOM.render — the runtime auto-mounts your App. On subsequent set_script/edit_script calls, the root is reused for clean HMR transitions.
 
 Available globals (no imports needed):
-  React, useState, useEffect, useRef, useMemo, useCallback, useReducer, Fragment
-  createRoot (from react-dom/client)
+  React, useState, useEffect, useRef, useMemo, useCallback, useReducer, Fragment,
+  useContext, useLayoutEffect, useImperativeHandle, useDebugValue,
+  useDeferredValue, useTransition, useId, useSyncExternalStore,
+  createContext, forwardRef, memo, lazy, Suspense
+  createPortal (from react-dom)
   create, persist (from zustand — use for persistent state via localStorage)
 
 Tailwind CSS v4 utility classes work in className (e.g. "text-4xl font-bold text-white").
