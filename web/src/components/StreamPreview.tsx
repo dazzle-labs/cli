@@ -27,7 +27,19 @@ export function StreamPreview({ stageId, status }: StreamPreviewProps) {
   useEffect(() => {
     if (status !== "running" || !videoRef.current) return;
 
-    // Pre-fetch the token for both Safari native HLS and HLS.js
+    const hlsUrl = `/stage/${stageId}/hls/stream.m3u8`;
+
+    if (!Hls.isSupported()) {
+      // Safari native HLS — no custom headers possible, best-effort
+      const video = videoRef.current;
+      video.src = hlsUrl;
+      return () => {
+        video.src = "";
+        video.load();
+      };
+    }
+
+    // Pre-fetch the token so xhrSetup can use it synchronously
     let authToken: string | null = null;
 
     async function initHls() {
@@ -35,24 +47,12 @@ export function StreamPreview({ stageId, status }: StreamPreviewProps) {
 
       if (!videoRef.current) return;
 
-      const tokenQS = authToken ? `?token=${encodeURIComponent(authToken)}` : "";
-      const hlsUrl = `/stage/${stageId}/hls/stream.m3u8${tokenQS}`;
-
-      if (!Hls.isSupported()) {
-        // Safari native HLS — token in query string is the only option
-        const video = videoRef.current;
-        video.src = hlsUrl;
-        return;
-      }
-
       const hls = new Hls({
         liveSyncDurationCount: 3,
         liveMaxLatencyDurationCount: 6,
         maxBufferLength: 5,
         lowLatencyMode: true,
-        xhrSetup: (xhr, url) => {
-          // For segment requests (.ts), add auth header.
-          // The manifest URL already has the token in the query string.
+        xhrSetup: (xhr) => {
           if (authToken) {
             xhr.setRequestHeader("Authorization", `Bearer ${authToken}`);
           }
