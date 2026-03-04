@@ -324,6 +324,9 @@ app.get('/health', (req, res) => {
     res.json({ status: 'ok', lastActivity, uptime: process.uptime() });
 });
 
+// HLS preview (served from /tmp/hls, written by ffmpeg in entrypoint.sh)
+app.use('/hls', auth, express.static('/tmp/hls', { maxAge: 0 }));
+
 // CDP discovery endpoints
 async function cdpDiscovery(req, res, cdpPath) {
     try {

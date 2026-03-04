@@ -9,27 +9,60 @@ On-demand cloud browser environments for AI agents and live streaming. Each **st
 ## Architecture
 
 ```
-User/Agent ──► Traefik (TLS)
-                    │
-                    ▼
-           control-plane (Go :8080)
-           ├── ConnectRPC API (/api.v1.*)
-           │   ├── StageService
-           │   ├── ApiKeyService
-           │   ├── StreamService
-           │   └── UserService
-           ├── CDP Proxy (/stage/<stage-id>/cdp)
-           ├── Stage HTTP/WS Proxy (/stage/<id>/*)
-           ├── MCP Server (/stage/<id>/mcp/*)
-           └── Web SPA (static fallback)
-                    │
-              creates/manages pods
-                    │
-                    ▼
-           Streamer Pod (per stage, ephemeral)
-           ├── Express HTTP :8080
-           ├── Chrome on Xvfb (CDP :9222)
-           └── Vite HMR (panel hot-swap)
+┌─────────────────────────────────────────────────────────────────────┐
+│  Client (Browser / AI Agent / curl)                                 │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │ HTTPS / WSS  :443
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  Traefik Ingress  (TLS termination, cert-manager + Let's Encrypt)   │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │ HTTP / WS  :8080
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  control-plane  (Go, :8080)                                         │
+│                                                                     │
+│  ConnectRPC (POST, Clerk JWT or API key)                            │
+│    /api.v1.StageService/*      stage CRUD + lifecycle               │
+│    /api.v1.ApiKeyService/*     API key management  [Clerk only]     │
+│    /api.v1.StreamService/*     RTMP destinations   [Clerk only]     │
+│    /api.v1.UserService/*       user profile        [Clerk only]     │
+│                                                                     │
+│  Stage routes  (all require Clerk JWT or API key)                   │
+│    GET/WS /stage/<id>/cdp          CDP WebSocket proxy to Chrome    │
+│    GET    /stage/<id>/cdp/json/*   CDP discovery (WS URL rewritten) │
+│    *      /stage/<id>/mcp/*        MCP server (AI agent tools)      │
+│    *      /stage/<id>/hls/*        HLS live preview (m3u8 + .ts)    │
+│    *      /stage/<id>/*            HTTP/WS reverse proxy to pod     │
+│                                                                     │
+│  Public                                                             │
+│    GET    /health                  health check                     │
+│    GET    /*                       Web SPA (React, static files)    │
+│                                                                     │
+│  Internal                                                           │
+│    PostgreSQL  :5432               stages, api_keys, streams, users │
+│    k8s API     (in-cluster)        create / delete streamer pods    │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │ creates pods on demand
+                               │ talks to pod via pod IP :8080
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  Streamer Pod  (Node.js + Chrome, ephemeral, one per stage)         │
+│                                                                     │
+│  Express HTTP  :8080                                                │
+│    GET  /health                    readiness probe                  │
+│    *    /api/panels/*              panel management API             │
+│    GET  /json/*                    CDP discovery (proxied from CP)  │
+│                                                                     │
+│  Chrome  (headless, Xvfb :99)                                       │
+│    CDP WebSocket  :9222            Chrome DevTools Protocol         │
+│                                                                     │
+│  Vite HMR dev server  :5173                                         │
+│    panel JSX hot-swap (set_script / edit_script)                    │
+│                                                                     │
+│  OBS Studio  (WebSocket :4455)                                      │
+│    streaming to RTMP destinations (Twitch / YouTube / Kick)        │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
