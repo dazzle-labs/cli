@@ -43,7 +43,7 @@ func (m *Manager) setupMCP() http.Handler {
 
 	s.AddTool(
 		mcp.NewTool("start",
-			mcp.WithDescription("Activate your stage. Call this before using any other tools. Returns status when ready. Your stage gives you a browser you can render content in, capture screenshots, and stream live to platforms like Twitch and YouTube."),
+			mcp.WithDescription("Activate your stage. Call this before using any other tools. Returns status when ready. Your stage gives you a browser you can render content in, capture screenshots, and stream to platforms like Twitch and YouTube. Starting the stage does NOT begin streaming — use the obs tool with [\"st\", \"s\"] to go live when you're ready."),
 		),
 		m.handleMCPCreateStage,
 	)
@@ -138,7 +138,7 @@ Accumulated state is merged into window.__state. An '__init' event fires on scri
 
 	s.AddTool(
 		mcp.NewTool("obs",
-			mcp.WithDescription(`Control OBS — manage scenes, inputs, streaming, recording, and audio. Requires an active stage (call start first).
+			mcp.WithDescription(`Control OBS — manage scenes, inputs, streaming, recording, and audio. Requires an active stage (call start first). Note: starting a stage does NOT go live automatically. Use "st s" to start streaming when ready, and "st st" to stop.
 
 sc ls — list scenes | sc c — current scene | sc sw <name> — switch scene
 si ls — list scene items | si sh/h/tg <name> — show/hide/toggle item | si t <name> — transform

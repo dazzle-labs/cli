@@ -18,7 +18,7 @@ export const MCP_TOOLS: McpTool[] = [
     id: "start",
     name: "start",
     description:
-      "Activate your stage. Call this before using any other tools. Returns status when ready. Your stage gives you a browser you can render content in, capture screenshots, and stream live.",
+      'Activate your stage. Call this before using any other tools. Returns status when ready. Your stage gives you a browser you can render content in, capture screenshots, and stream to platforms like Twitch and YouTube. Starting the stage does NOT begin streaming — use the obs tool with ["st", "s"] to go live when you\'re ready.',
     params: [],
     example: JSON.stringify({ name: "start", arguments: {} }, null, 2),
   },
@@ -111,7 +111,7 @@ export const MCP_TOOLS: McpTool[] = [
     id: "obs",
     name: "obs",
     description:
-      'Control OBS — manage scenes, inputs, streaming, recording, and audio. Requires an active stage (call start first). e.g. "sc ls" to list scenes, "st s" to start streaming.',
+      'Control OBS — manage scenes, inputs, streaming, recording, and audio. Requires an active stage (call start first). Note: starting a stage does NOT go live automatically — use "st s" to start streaming when ready, and "st st" to stop. e.g. "sc ls" to list scenes.',
     params: [
       {
         name: "args",
