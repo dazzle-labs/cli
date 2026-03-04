@@ -25,7 +25,7 @@ On-demand cloud browser environments for AI agents and live streaming. Each **st
 │  ConnectRPC (POST, Clerk JWT or API key)                            │
 │    /api.v1.StageService/*      stage CRUD + lifecycle               │
 │    /api.v1.ApiKeyService/*     API key management  [Clerk only]     │
-│    /api.v1.StreamService/*     RTMP destinations   [Clerk only]     │
+│    /api.v1.RtmpDestinationService/*     RTMP destinations   [Clerk only]     │
 │    /api.v1.UserService/*       user profile        [Clerk only]     │
 │                                                                     │
 │  Stage routes  (all require Clerk JWT or API key)                   │

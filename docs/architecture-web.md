@@ -100,7 +100,7 @@ ConnectTransport (baseUrl: "/")
   └── AuthInterceptor (injects Clerk JWT as Bearer token)
        ├── stageClient → StageService
        ├── apiKeyClient → ApiKeyService
-       ├── streamClient → StreamService
+       ├── streamClient → RtmpDestinationService
        └── userClient → UserService
 ```
 

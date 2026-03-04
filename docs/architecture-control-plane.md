@@ -53,14 +53,14 @@ control-plane/
 ├── db.go                # DB connection, migrations, CRUD helpers
 ├── connect_stage.go     # StageService RPC handlers
 ├── connect_apikey.go    # ApiKeyService RPC handlers
-├── connect_stream.go    # StreamService RPC handlers
+├── connect_stream.go    # RtmpDestinationService RPC handlers
 ├── connect_user.go      # UserService RPC handlers
 ├── mcp.go               # MCP server setup and tool definitions
 ├── proto/
 │   └── api/v1/
 │       ├── stage.proto      # StageService definition
 │       ├── apikey.proto     # ApiKeyService definition
-│       ├── stream.proto     # StreamService definition
+│       ├── stream.proto     # RtmpDestinationService definition
 │       └── user.proto       # UserService definition
 ├── gen/api/v1/          # Generated Go + TypeScript protobuf code (buf)
 ├── migrations/
@@ -103,7 +103,7 @@ type Manager struct {
 | `/health` | GET | none (stats if authed) | Health check |
 | `/api.v1.StageService/*` | POST | Clerk or API key | Stage CRUD via ConnectRPC |
 | `/api.v1.ApiKeyService/*` | POST | Clerk JWT only | API key CRUD |
-| `/api.v1.StreamService/*` | POST | Clerk JWT only | Stream destination CRUD |
+| `/api.v1.RtmpDestinationService/*` | POST | Clerk JWT only | Stream destination CRUD |
 | `/api.v1.UserService/*` | POST | Clerk JWT only | User profile |
 | `/stage/<stage-id>/cdp` | WS | Clerk or API key | CDP WebSocket proxy to Chrome |
 | `/stage/<stage-id>/cdp/json/*` | GET | Clerk or API key | CDP discovery (URL-rewritten) |
@@ -120,7 +120,7 @@ Two auth paths, unified via `authenticator`:
 1. **Clerk JWT** — `Authorization: Bearer <clerk-jwt>` — validated via Clerk SDK; extracts `user_id` and `email`
 2. **API Key** — `Authorization: Bearer bstr_<secret>` — HMAC-SHA256 hash compared against `api_keys.key_hash` in DB
 
-`clerkOnly` interceptor additionally blocks API-key auth on sensitive endpoints (ApiKeyService, StreamService, UserService).
+`clerkOnly` interceptor additionally blocks API-key auth on sensitive endpoints (ApiKeyService, RtmpDestinationService, UserService).
 
 ---
 

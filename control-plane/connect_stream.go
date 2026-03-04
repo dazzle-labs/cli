@@ -10,12 +10,12 @@ import (
 	apiv1 "github.com/browser-streamer/control-plane/gen/api/v1"
 )
 
-// streamServer implements apiv1connect.StreamServiceHandler.
-type streamServer struct {
+// rtmpDestinationServer implements apiv1connect.RtmpDestinationServiceHandler.
+type rtmpDestinationServer struct {
 	mgr *Manager
 }
 
-func (s *streamServer) CreateStreamDestination(ctx context.Context, req *connect.Request[apiv1.CreateStreamDestinationRequest]) (*connect.Response[apiv1.CreateStreamDestinationResponse], error) {
+func (s *rtmpDestinationServer) CreateStreamDestination(ctx context.Context, req *connect.Request[apiv1.CreateStreamDestinationRequest]) (*connect.Response[apiv1.CreateStreamDestinationResponse], error) {
 	info := mustAuth(ctx)
 	msg := req.Msg
 
@@ -43,7 +43,7 @@ func (s *streamServer) CreateStreamDestination(ctx context.Context, req *connect
 	}), nil
 }
 
-func (s *streamServer) ListStreamDestinations(ctx context.Context, req *connect.Request[apiv1.ListStreamDestinationsRequest]) (*connect.Response[apiv1.ListStreamDestinationsResponse], error) {
+func (s *rtmpDestinationServer) ListStreamDestinations(ctx context.Context, req *connect.Request[apiv1.ListStreamDestinationsRequest]) (*connect.Response[apiv1.ListStreamDestinationsResponse], error) {
 	info := mustAuth(ctx)
 
 	rows, err := dbListStreamDests(s.mgr.db, info.UserID)
@@ -58,7 +58,7 @@ func (s *streamServer) ListStreamDestinations(ctx context.Context, req *connect.
 	return connect.NewResponse(&apiv1.ListStreamDestinationsResponse{Destinations: dests}), nil
 }
 
-func (s *streamServer) UpdateStreamDestination(ctx context.Context, req *connect.Request[apiv1.UpdateStreamDestinationRequest]) (*connect.Response[apiv1.UpdateStreamDestinationResponse], error) {
+func (s *rtmpDestinationServer) UpdateStreamDestination(ctx context.Context, req *connect.Request[apiv1.UpdateStreamDestinationRequest]) (*connect.Response[apiv1.UpdateStreamDestinationResponse], error) {
 	info := mustAuth(ctx)
 	msg := req.Msg
 
@@ -77,7 +77,7 @@ func (s *streamServer) UpdateStreamDestination(ctx context.Context, req *connect
 	}), nil
 }
 
-func (s *streamServer) DeleteStreamDestination(ctx context.Context, req *connect.Request[apiv1.DeleteStreamDestinationRequest]) (*connect.Response[apiv1.DeleteStreamDestinationResponse], error) {
+func (s *rtmpDestinationServer) DeleteStreamDestination(ctx context.Context, req *connect.Request[apiv1.DeleteStreamDestinationRequest]) (*connect.Response[apiv1.DeleteStreamDestinationResponse], error) {
 	info := mustAuth(ctx)
 
 	if err := dbDeleteStreamDest(s.mgr.db, req.Msg.Id, info.UserID); err != nil {

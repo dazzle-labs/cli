@@ -179,14 +179,14 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
   },
   {
     id: "stream",
-    name: "StreamService",
+    name: "RtmpDestinationService",
     description:
       "Manage stream destinations (Twitch, YouTube, Kick, etc). Requires Clerk JWT authentication.",
     endpoints: [
       {
         id: "create-stream-dest",
         method: "POST",
-        path: "/api.v1.StreamService/CreateStreamDestination",
+        path: "/api.v1.RtmpDestinationService/CreateStreamDestination",
         description:
           "Create a new stream destination. Stream keys are encrypted with AES-256-GCM before storage.",
         auth: "Clerk JWT only",
@@ -218,7 +218,7 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
       {
         id: "list-stream-dests",
         method: "POST",
-        path: "/api.v1.StreamService/ListStreamDestinations",
+        path: "/api.v1.RtmpDestinationService/ListStreamDestinations",
         description:
           "List stream destinations. Stream keys are masked (first 4 chars + ***).",
         auth: "Clerk JWT only",
@@ -238,7 +238,7 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
       {
         id: "update-stream-dest",
         method: "POST",
-        path: "/api.v1.StreamService/UpdateStreamDestination",
+        path: "/api.v1.RtmpDestinationService/UpdateStreamDestination",
         description: "Update a stream destination's settings.",
         auth: "Clerk JWT only",
         params: [
@@ -254,7 +254,7 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
       {
         id: "delete-stream-dest",
         method: "POST",
-        path: "/api.v1.StreamService/DeleteStreamDestination",
+        path: "/api.v1.RtmpDestinationService/DeleteStreamDestination",
         description: "Delete a stream destination.",
         auth: "Clerk JWT only",
         params: [

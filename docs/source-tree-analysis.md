@@ -18,7 +18,7 @@ browser-streamer/                    # Monorepo root
 │   ├── db.go                        # DB connection, migrations runner, CRUD helpers
 │   ├── connect_stage.go             # StageService RPC handler
 │   ├── connect_apikey.go            # ApiKeyService RPC handler
-│   ├── connect_stream.go            # StreamService RPC handler
+│   ├── connect_stream.go            # RtmpDestinationService RPC handler
 │   ├── connect_user.go              # UserService RPC handler
 │   ├── mcp.go                       # MCP server + tool definitions
 │   ├── go.mod / go.sum              # Go module definition
@@ -26,7 +26,7 @@ browser-streamer/                    # Monorepo root
 │   ├── proto/api/v1/                # ★ Protobuf service definitions
 │   │   ├── stage.proto              # StageService (create/list/get/delete)
 │   │   ├── apikey.proto             # ApiKeyService (CRUD)
-│   │   ├── stream.proto             # StreamService (RTMP destinations)
+│   │   ├── stream.proto             # RtmpDestinationService (RTMP destinations)
 │   │   └── user.proto               # UserService (profile)
 │   ├── gen/api/v1/                  # Generated Go + connect stubs (committed)
 │   ├── migrations/                  # PostgreSQL migration files (.up.sql)

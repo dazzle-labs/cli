@@ -6,7 +6,7 @@ option go_package = "github.com/browser-streamer/control-plane/gen/api/v1;apiv1"
 
 import "google/protobuf/timestamp.proto";
 
-service StreamService {
+service RtmpDestinationService {
   rpc CreateStreamDestination(CreateStreamDestinationRequest) returns (CreateStreamDestinationResponse);
   rpc ListStreamDestinations(ListStreamDestinationsRequest) returns (ListStreamDestinationsResponse);
   rpc UpdateStreamDestination(UpdateStreamDestinationRequest) returns (UpdateStreamDestinationResponse);

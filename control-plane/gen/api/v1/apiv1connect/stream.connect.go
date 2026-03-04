@@ -21,8 +21,8 @@ import (
 const _ = connect.IsAtLeastVersion1_13_0
 
 const (
-	// StreamServiceName is the fully-qualified name of the StreamService service.
-	StreamServiceName = "api.v1.StreamService"
+	// RtmpDestinationServiceName is the fully-qualified name of the RtmpDestinationService service.
+	RtmpDestinationServiceName = "api.v1.RtmpDestinationService"
 )
 
 // These constants are the fully-qualified names of the RPCs defined in this package. They're
@@ -33,164 +33,164 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// StreamServiceCreateStreamDestinationProcedure is the fully-qualified name of the StreamService's
-	// CreateStreamDestination RPC.
-	StreamServiceCreateStreamDestinationProcedure = "/api.v1.StreamService/CreateStreamDestination"
-	// StreamServiceListStreamDestinationsProcedure is the fully-qualified name of the StreamService's
-	// ListStreamDestinations RPC.
-	StreamServiceListStreamDestinationsProcedure = "/api.v1.StreamService/ListStreamDestinations"
-	// StreamServiceUpdateStreamDestinationProcedure is the fully-qualified name of the StreamService's
-	// UpdateStreamDestination RPC.
-	StreamServiceUpdateStreamDestinationProcedure = "/api.v1.StreamService/UpdateStreamDestination"
-	// StreamServiceDeleteStreamDestinationProcedure is the fully-qualified name of the StreamService's
-	// DeleteStreamDestination RPC.
-	StreamServiceDeleteStreamDestinationProcedure = "/api.v1.StreamService/DeleteStreamDestination"
+	// RtmpDestinationServiceCreateStreamDestinationProcedure is the fully-qualified name of the
+	// RtmpDestinationService's CreateStreamDestination RPC.
+	RtmpDestinationServiceCreateStreamDestinationProcedure = "/api.v1.RtmpDestinationService/CreateStreamDestination"
+	// RtmpDestinationServiceListStreamDestinationsProcedure is the fully-qualified name of the
+	// RtmpDestinationService's ListStreamDestinations RPC.
+	RtmpDestinationServiceListStreamDestinationsProcedure = "/api.v1.RtmpDestinationService/ListStreamDestinations"
+	// RtmpDestinationServiceUpdateStreamDestinationProcedure is the fully-qualified name of the
+	// RtmpDestinationService's UpdateStreamDestination RPC.
+	RtmpDestinationServiceUpdateStreamDestinationProcedure = "/api.v1.RtmpDestinationService/UpdateStreamDestination"
+	// RtmpDestinationServiceDeleteStreamDestinationProcedure is the fully-qualified name of the
+	// RtmpDestinationService's DeleteStreamDestination RPC.
+	RtmpDestinationServiceDeleteStreamDestinationProcedure = "/api.v1.RtmpDestinationService/DeleteStreamDestination"
 )
 
-// StreamServiceClient is a client for the api.v1.StreamService service.
-type StreamServiceClient interface {
+// RtmpDestinationServiceClient is a client for the api.v1.RtmpDestinationService service.
+type RtmpDestinationServiceClient interface {
 	CreateStreamDestination(context.Context, *connect.Request[v1.CreateStreamDestinationRequest]) (*connect.Response[v1.CreateStreamDestinationResponse], error)
 	ListStreamDestinations(context.Context, *connect.Request[v1.ListStreamDestinationsRequest]) (*connect.Response[v1.ListStreamDestinationsResponse], error)
 	UpdateStreamDestination(context.Context, *connect.Request[v1.UpdateStreamDestinationRequest]) (*connect.Response[v1.UpdateStreamDestinationResponse], error)
 	DeleteStreamDestination(context.Context, *connect.Request[v1.DeleteStreamDestinationRequest]) (*connect.Response[v1.DeleteStreamDestinationResponse], error)
 }
 
-// NewStreamServiceClient constructs a client for the api.v1.StreamService service. By default, it
-// uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses, and sends
-// uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the connect.WithGRPC() or
-// connect.WithGRPCWeb() options.
+// NewRtmpDestinationServiceClient constructs a client for the api.v1.RtmpDestinationService
+// service. By default, it uses the Connect protocol with the binary Protobuf Codec, asks for
+// gzipped responses, and sends uncompressed requests. To use the gRPC or gRPC-Web protocols, supply
+// the connect.WithGRPC() or connect.WithGRPCWeb() options.
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewStreamServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) StreamServiceClient {
+func NewRtmpDestinationServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) RtmpDestinationServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
-	streamServiceMethods := v1.File_api_v1_stream_proto.Services().ByName("StreamService").Methods()
-	return &streamServiceClient{
+	rtmpDestinationServiceMethods := v1.File_api_v1_stream_proto.Services().ByName("RtmpDestinationService").Methods()
+	return &rtmpDestinationServiceClient{
 		createStreamDestination: connect.NewClient[v1.CreateStreamDestinationRequest, v1.CreateStreamDestinationResponse](
 			httpClient,
-			baseURL+StreamServiceCreateStreamDestinationProcedure,
-			connect.WithSchema(streamServiceMethods.ByName("CreateStreamDestination")),
+			baseURL+RtmpDestinationServiceCreateStreamDestinationProcedure,
+			connect.WithSchema(rtmpDestinationServiceMethods.ByName("CreateStreamDestination")),
 			connect.WithClientOptions(opts...),
 		),
 		listStreamDestinations: connect.NewClient[v1.ListStreamDestinationsRequest, v1.ListStreamDestinationsResponse](
 			httpClient,
-			baseURL+StreamServiceListStreamDestinationsProcedure,
-			connect.WithSchema(streamServiceMethods.ByName("ListStreamDestinations")),
+			baseURL+RtmpDestinationServiceListStreamDestinationsProcedure,
+			connect.WithSchema(rtmpDestinationServiceMethods.ByName("ListStreamDestinations")),
 			connect.WithClientOptions(opts...),
 		),
 		updateStreamDestination: connect.NewClient[v1.UpdateStreamDestinationRequest, v1.UpdateStreamDestinationResponse](
 			httpClient,
-			baseURL+StreamServiceUpdateStreamDestinationProcedure,
-			connect.WithSchema(streamServiceMethods.ByName("UpdateStreamDestination")),
+			baseURL+RtmpDestinationServiceUpdateStreamDestinationProcedure,
+			connect.WithSchema(rtmpDestinationServiceMethods.ByName("UpdateStreamDestination")),
 			connect.WithClientOptions(opts...),
 		),
 		deleteStreamDestination: connect.NewClient[v1.DeleteStreamDestinationRequest, v1.DeleteStreamDestinationResponse](
 			httpClient,
-			baseURL+StreamServiceDeleteStreamDestinationProcedure,
-			connect.WithSchema(streamServiceMethods.ByName("DeleteStreamDestination")),
+			baseURL+RtmpDestinationServiceDeleteStreamDestinationProcedure,
+			connect.WithSchema(rtmpDestinationServiceMethods.ByName("DeleteStreamDestination")),
 			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
-// streamServiceClient implements StreamServiceClient.
-type streamServiceClient struct {
+// rtmpDestinationServiceClient implements RtmpDestinationServiceClient.
+type rtmpDestinationServiceClient struct {
 	createStreamDestination *connect.Client[v1.CreateStreamDestinationRequest, v1.CreateStreamDestinationResponse]
 	listStreamDestinations  *connect.Client[v1.ListStreamDestinationsRequest, v1.ListStreamDestinationsResponse]
 	updateStreamDestination *connect.Client[v1.UpdateStreamDestinationRequest, v1.UpdateStreamDestinationResponse]
 	deleteStreamDestination *connect.Client[v1.DeleteStreamDestinationRequest, v1.DeleteStreamDestinationResponse]
 }
 
-// CreateStreamDestination calls api.v1.StreamService.CreateStreamDestination.
-func (c *streamServiceClient) CreateStreamDestination(ctx context.Context, req *connect.Request[v1.CreateStreamDestinationRequest]) (*connect.Response[v1.CreateStreamDestinationResponse], error) {
+// CreateStreamDestination calls api.v1.RtmpDestinationService.CreateStreamDestination.
+func (c *rtmpDestinationServiceClient) CreateStreamDestination(ctx context.Context, req *connect.Request[v1.CreateStreamDestinationRequest]) (*connect.Response[v1.CreateStreamDestinationResponse], error) {
 	return c.createStreamDestination.CallUnary(ctx, req)
 }
 
-// ListStreamDestinations calls api.v1.StreamService.ListStreamDestinations.
-func (c *streamServiceClient) ListStreamDestinations(ctx context.Context, req *connect.Request[v1.ListStreamDestinationsRequest]) (*connect.Response[v1.ListStreamDestinationsResponse], error) {
+// ListStreamDestinations calls api.v1.RtmpDestinationService.ListStreamDestinations.
+func (c *rtmpDestinationServiceClient) ListStreamDestinations(ctx context.Context, req *connect.Request[v1.ListStreamDestinationsRequest]) (*connect.Response[v1.ListStreamDestinationsResponse], error) {
 	return c.listStreamDestinations.CallUnary(ctx, req)
 }
 
-// UpdateStreamDestination calls api.v1.StreamService.UpdateStreamDestination.
-func (c *streamServiceClient) UpdateStreamDestination(ctx context.Context, req *connect.Request[v1.UpdateStreamDestinationRequest]) (*connect.Response[v1.UpdateStreamDestinationResponse], error) {
+// UpdateStreamDestination calls api.v1.RtmpDestinationService.UpdateStreamDestination.
+func (c *rtmpDestinationServiceClient) UpdateStreamDestination(ctx context.Context, req *connect.Request[v1.UpdateStreamDestinationRequest]) (*connect.Response[v1.UpdateStreamDestinationResponse], error) {
 	return c.updateStreamDestination.CallUnary(ctx, req)
 }
 
-// DeleteStreamDestination calls api.v1.StreamService.DeleteStreamDestination.
-func (c *streamServiceClient) DeleteStreamDestination(ctx context.Context, req *connect.Request[v1.DeleteStreamDestinationRequest]) (*connect.Response[v1.DeleteStreamDestinationResponse], error) {
+// DeleteStreamDestination calls api.v1.RtmpDestinationService.DeleteStreamDestination.
+func (c *rtmpDestinationServiceClient) DeleteStreamDestination(ctx context.Context, req *connect.Request[v1.DeleteStreamDestinationRequest]) (*connect.Response[v1.DeleteStreamDestinationResponse], error) {
 	return c.deleteStreamDestination.CallUnary(ctx, req)
 }
 
-// StreamServiceHandler is an implementation of the api.v1.StreamService service.
-type StreamServiceHandler interface {
+// RtmpDestinationServiceHandler is an implementation of the api.v1.RtmpDestinationService service.
+type RtmpDestinationServiceHandler interface {
 	CreateStreamDestination(context.Context, *connect.Request[v1.CreateStreamDestinationRequest]) (*connect.Response[v1.CreateStreamDestinationResponse], error)
 	ListStreamDestinations(context.Context, *connect.Request[v1.ListStreamDestinationsRequest]) (*connect.Response[v1.ListStreamDestinationsResponse], error)
 	UpdateStreamDestination(context.Context, *connect.Request[v1.UpdateStreamDestinationRequest]) (*connect.Response[v1.UpdateStreamDestinationResponse], error)
 	DeleteStreamDestination(context.Context, *connect.Request[v1.DeleteStreamDestinationRequest]) (*connect.Response[v1.DeleteStreamDestinationResponse], error)
 }
 
-// NewStreamServiceHandler builds an HTTP handler from the service implementation. It returns the
-// path on which to mount the handler and the handler itself.
+// NewRtmpDestinationServiceHandler builds an HTTP handler from the service implementation. It
+// returns the path on which to mount the handler and the handler itself.
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewStreamServiceHandler(svc StreamServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	streamServiceMethods := v1.File_api_v1_stream_proto.Services().ByName("StreamService").Methods()
-	streamServiceCreateStreamDestinationHandler := connect.NewUnaryHandler(
-		StreamServiceCreateStreamDestinationProcedure,
+func NewRtmpDestinationServiceHandler(svc RtmpDestinationServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	rtmpDestinationServiceMethods := v1.File_api_v1_stream_proto.Services().ByName("RtmpDestinationService").Methods()
+	rtmpDestinationServiceCreateStreamDestinationHandler := connect.NewUnaryHandler(
+		RtmpDestinationServiceCreateStreamDestinationProcedure,
 		svc.CreateStreamDestination,
-		connect.WithSchema(streamServiceMethods.ByName("CreateStreamDestination")),
+		connect.WithSchema(rtmpDestinationServiceMethods.ByName("CreateStreamDestination")),
 		connect.WithHandlerOptions(opts...),
 	)
-	streamServiceListStreamDestinationsHandler := connect.NewUnaryHandler(
-		StreamServiceListStreamDestinationsProcedure,
+	rtmpDestinationServiceListStreamDestinationsHandler := connect.NewUnaryHandler(
+		RtmpDestinationServiceListStreamDestinationsProcedure,
 		svc.ListStreamDestinations,
-		connect.WithSchema(streamServiceMethods.ByName("ListStreamDestinations")),
+		connect.WithSchema(rtmpDestinationServiceMethods.ByName("ListStreamDestinations")),
 		connect.WithHandlerOptions(opts...),
 	)
-	streamServiceUpdateStreamDestinationHandler := connect.NewUnaryHandler(
-		StreamServiceUpdateStreamDestinationProcedure,
+	rtmpDestinationServiceUpdateStreamDestinationHandler := connect.NewUnaryHandler(
+		RtmpDestinationServiceUpdateStreamDestinationProcedure,
 		svc.UpdateStreamDestination,
-		connect.WithSchema(streamServiceMethods.ByName("UpdateStreamDestination")),
+		connect.WithSchema(rtmpDestinationServiceMethods.ByName("UpdateStreamDestination")),
 		connect.WithHandlerOptions(opts...),
 	)
-	streamServiceDeleteStreamDestinationHandler := connect.NewUnaryHandler(
-		StreamServiceDeleteStreamDestinationProcedure,
+	rtmpDestinationServiceDeleteStreamDestinationHandler := connect.NewUnaryHandler(
+		RtmpDestinationServiceDeleteStreamDestinationProcedure,
 		svc.DeleteStreamDestination,
-		connect.WithSchema(streamServiceMethods.ByName("DeleteStreamDestination")),
+		connect.WithSchema(rtmpDestinationServiceMethods.ByName("DeleteStreamDestination")),
 		connect.WithHandlerOptions(opts...),
 	)
-	return "/api.v1.StreamService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return "/api.v1.RtmpDestinationService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case StreamServiceCreateStreamDestinationProcedure:
-			streamServiceCreateStreamDestinationHandler.ServeHTTP(w, r)
-		case StreamServiceListStreamDestinationsProcedure:
-			streamServiceListStreamDestinationsHandler.ServeHTTP(w, r)
-		case StreamServiceUpdateStreamDestinationProcedure:
-			streamServiceUpdateStreamDestinationHandler.ServeHTTP(w, r)
-		case StreamServiceDeleteStreamDestinationProcedure:
-			streamServiceDeleteStreamDestinationHandler.ServeHTTP(w, r)
+		case RtmpDestinationServiceCreateStreamDestinationProcedure:
+			rtmpDestinationServiceCreateStreamDestinationHandler.ServeHTTP(w, r)
+		case RtmpDestinationServiceListStreamDestinationsProcedure:
+			rtmpDestinationServiceListStreamDestinationsHandler.ServeHTTP(w, r)
+		case RtmpDestinationServiceUpdateStreamDestinationProcedure:
+			rtmpDestinationServiceUpdateStreamDestinationHandler.ServeHTTP(w, r)
+		case RtmpDestinationServiceDeleteStreamDestinationProcedure:
+			rtmpDestinationServiceDeleteStreamDestinationHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
 	})
 }
 
-// UnimplementedStreamServiceHandler returns CodeUnimplemented from all methods.
-type UnimplementedStreamServiceHandler struct{}
+// UnimplementedRtmpDestinationServiceHandler returns CodeUnimplemented from all methods.
+type UnimplementedRtmpDestinationServiceHandler struct{}
 
-func (UnimplementedStreamServiceHandler) CreateStreamDestination(context.Context, *connect.Request[v1.CreateStreamDestinationRequest]) (*connect.Response[v1.CreateStreamDestinationResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.StreamService.CreateStreamDestination is not implemented"))
+func (UnimplementedRtmpDestinationServiceHandler) CreateStreamDestination(context.Context, *connect.Request[v1.CreateStreamDestinationRequest]) (*connect.Response[v1.CreateStreamDestinationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.RtmpDestinationService.CreateStreamDestination is not implemented"))
 }
 
-func (UnimplementedStreamServiceHandler) ListStreamDestinations(context.Context, *connect.Request[v1.ListStreamDestinationsRequest]) (*connect.Response[v1.ListStreamDestinationsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.StreamService.ListStreamDestinations is not implemented"))
+func (UnimplementedRtmpDestinationServiceHandler) ListStreamDestinations(context.Context, *connect.Request[v1.ListStreamDestinationsRequest]) (*connect.Response[v1.ListStreamDestinationsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.RtmpDestinationService.ListStreamDestinations is not implemented"))
 }
 
-func (UnimplementedStreamServiceHandler) UpdateStreamDestination(context.Context, *connect.Request[v1.UpdateStreamDestinationRequest]) (*connect.Response[v1.UpdateStreamDestinationResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.StreamService.UpdateStreamDestination is not implemented"))
+func (UnimplementedRtmpDestinationServiceHandler) UpdateStreamDestination(context.Context, *connect.Request[v1.UpdateStreamDestinationRequest]) (*connect.Response[v1.UpdateStreamDestinationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.RtmpDestinationService.UpdateStreamDestination is not implemented"))
 }
 
-func (UnimplementedStreamServiceHandler) DeleteStreamDestination(context.Context, *connect.Request[v1.DeleteStreamDestinationRequest]) (*connect.Response[v1.DeleteStreamDestinationResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.StreamService.DeleteStreamDestination is not implemented"))
+func (UnimplementedRtmpDestinationServiceHandler) DeleteStreamDestination(context.Context, *connect.Request[v1.DeleteStreamDestinationRequest]) (*connect.Response[v1.DeleteStreamDestinationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.RtmpDestinationService.DeleteStreamDestination is not implemented"))
 }

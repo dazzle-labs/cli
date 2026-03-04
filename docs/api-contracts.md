@@ -15,7 +15,7 @@ Authorization: Bearer <token>
 
 Where `<token>` is either:
 - **Clerk JWT** — obtained from `clerk.session.getToken()` in the frontend
-- **API Key** — `bstr_<secret>` format; accepted by StageService only (not ApiKeyService, StreamService, UserService)
+- **API Key** — `bstr_<secret>` format; accepted by StageService only (not ApiKeyService, RtmpDestinationService, UserService)
 
 ---
 
@@ -119,13 +119,13 @@ interface ApiKey {
 
 ---
 
-## StreamService
+## RtmpDestinationService
 
 Accepts Clerk JWT **only**.
 
 ### CreateStreamDestination
 ```
-POST /api.v1.StreamService/CreateStreamDestination
+POST /api.v1.RtmpDestinationService/CreateStreamDestination
 
 Request:
 {
@@ -140,7 +140,7 @@ Response: { "destination": StreamDestination }
 
 ### ListStreamDestinations
 ```
-POST /api.v1.StreamService/ListStreamDestinations
+POST /api.v1.RtmpDestinationService/ListStreamDestinations
 
 Request:  { "stage_id": string }
 Response: { "destinations": StreamDestination[] }
@@ -148,7 +148,7 @@ Response: { "destinations": StreamDestination[] }
 
 ### UpdateStreamDestination
 ```
-POST /api.v1.StreamService/UpdateStreamDestination
+POST /api.v1.RtmpDestinationService/UpdateStreamDestination
 
 Request:
 {
@@ -164,7 +164,7 @@ Response: { "destination": StreamDestination }
 
 ### DeleteStreamDestination
 ```
-POST /api.v1.StreamService/DeleteStreamDestination
+POST /api.v1.RtmpDestinationService/DeleteStreamDestination
 
 Request:  { "id": string }
 Response: {}
@@ -266,7 +266,7 @@ GET /health     { status: 'ok', lastActivity, uptime }
 
 **Service-Level Restrictions:**
 - SessionService: Accepts both Clerk JWT and API key
-- ApiKeyService, StreamService, UserService, EndpointService: Clerk JWT only
+- ApiKeyService, RtmpDestinationService, UserService, EndpointService: Clerk JWT only
 - MCP endpoints: Accepts both Clerk JWT and API key
 - HTTP proxy/CDP endpoints: Accepts both
 
@@ -352,11 +352,11 @@ Request: { id: string }
 Response: {} (empty)
 ```
 
-### StreamService (Clerk JWT only)
+### RtmpDestinationService (Clerk JWT only)
 
 #### CreateStreamDestination
 ```
-POST /api.v1.StreamService/CreateStreamDestination
+POST /api.v1.RtmpDestinationService/CreateStreamDestination
 Request: {
   name: string,
   platform: string,       // "twitch" | "youtube" | "kick" | "restream" | "custom"
@@ -369,21 +369,21 @@ Response: { destination: StreamDestination }  // stream_key returned unencrypted
 
 #### ListStreamDestinations
 ```
-POST /api.v1.StreamService/ListStreamDestinations
+POST /api.v1.RtmpDestinationService/ListStreamDestinations
 Request: { session_id: string }
 Response: { destinations: StreamDestination[] }  // stream_key masked (first 4 chars + ***)
 ```
 
 #### UpdateStreamDestination
 ```
-POST /api.v1.StreamService/UpdateStreamDestination
+POST /api.v1.RtmpDestinationService/UpdateStreamDestination
 Request: { id, name, platform, rtmp_url, stream_key, enabled }
 Response: { destination: StreamDestination }
 ```
 
 #### DeleteStreamDestination
 ```
-POST /api.v1.StreamService/DeleteStreamDestination
+POST /api.v1.RtmpDestinationService/DeleteStreamDestination
 Request: { id: string }
 Response: {} (empty)
 ```

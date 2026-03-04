@@ -66,7 +66,7 @@ Browser Streamer (Dazzle) is a monorepo with 4 parts. The **control plane** is t
 |----------|------|-------------|
 | ConnectRPC | `/api.v1.StageService/*` | Stage CRUD |
 | ConnectRPC | `/api.v1.ApiKeyService/*` | API key CRUD |
-| ConnectRPC | `/api.v1.StreamService/*` | Stream destination CRUD |
+| ConnectRPC | `/api.v1.RtmpDestinationService/*` | Stream destination CRUD |
 | ConnectRPC | `/api.v1.UserService/*` | User profile |
 
 **Auth:** Clerk JWT injected as `Authorization: Bearer` via connect-web interceptor.

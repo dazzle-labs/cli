@@ -580,8 +580,8 @@ const file_api_v1_stream_proto_rawDesc = "" +
 	"\vdestination\x18\x01 \x01(\v2\x19.api.v1.StreamDestinationR\vdestination\"0\n" +
 	"\x1eDeleteStreamDestinationRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"!\n" +
-	"\x1fDeleteStreamDestinationResponse2\xbc\x03\n" +
-	"\rStreamService\x12j\n" +
+	"\x1fDeleteStreamDestinationResponse2\xc5\x03\n" +
+	"\x16RtmpDestinationService\x12j\n" +
 	"\x17CreateStreamDestination\x12&.api.v1.CreateStreamDestinationRequest\x1a'.api.v1.CreateStreamDestinationResponse\x12g\n" +
 	"\x16ListStreamDestinations\x12%.api.v1.ListStreamDestinationsRequest\x1a&.api.v1.ListStreamDestinationsResponse\x12j\n" +
 	"\x17UpdateStreamDestination\x12&.api.v1.UpdateStreamDestinationRequest\x1a'.api.v1.UpdateStreamDestinationResponse\x12j\n" +
@@ -618,14 +618,14 @@ var file_api_v1_stream_proto_depIdxs = []int32{
 	0, // 2: api.v1.CreateStreamDestinationResponse.destination:type_name -> api.v1.StreamDestination
 	0, // 3: api.v1.ListStreamDestinationsResponse.destinations:type_name -> api.v1.StreamDestination
 	0, // 4: api.v1.UpdateStreamDestinationResponse.destination:type_name -> api.v1.StreamDestination
-	1, // 5: api.v1.StreamService.CreateStreamDestination:input_type -> api.v1.CreateStreamDestinationRequest
-	3, // 6: api.v1.StreamService.ListStreamDestinations:input_type -> api.v1.ListStreamDestinationsRequest
-	5, // 7: api.v1.StreamService.UpdateStreamDestination:input_type -> api.v1.UpdateStreamDestinationRequest
-	7, // 8: api.v1.StreamService.DeleteStreamDestination:input_type -> api.v1.DeleteStreamDestinationRequest
-	2, // 9: api.v1.StreamService.CreateStreamDestination:output_type -> api.v1.CreateStreamDestinationResponse
-	4, // 10: api.v1.StreamService.ListStreamDestinations:output_type -> api.v1.ListStreamDestinationsResponse
-	6, // 11: api.v1.StreamService.UpdateStreamDestination:output_type -> api.v1.UpdateStreamDestinationResponse
-	8, // 12: api.v1.StreamService.DeleteStreamDestination:output_type -> api.v1.DeleteStreamDestinationResponse
+	1, // 5: api.v1.RtmpDestinationService.CreateStreamDestination:input_type -> api.v1.CreateStreamDestinationRequest
+	3, // 6: api.v1.RtmpDestinationService.ListStreamDestinations:input_type -> api.v1.ListStreamDestinationsRequest
+	5, // 7: api.v1.RtmpDestinationService.UpdateStreamDestination:input_type -> api.v1.UpdateStreamDestinationRequest
+	7, // 8: api.v1.RtmpDestinationService.DeleteStreamDestination:input_type -> api.v1.DeleteStreamDestinationRequest
+	2, // 9: api.v1.RtmpDestinationService.CreateStreamDestination:output_type -> api.v1.CreateStreamDestinationResponse
+	4, // 10: api.v1.RtmpDestinationService.ListStreamDestinations:output_type -> api.v1.ListStreamDestinationsResponse
+	6, // 11: api.v1.RtmpDestinationService.UpdateStreamDestination:output_type -> api.v1.UpdateStreamDestinationResponse
+	8, // 12: api.v1.RtmpDestinationService.DeleteStreamDestination:output_type -> api.v1.DeleteStreamDestinationResponse
 	9, // [9:13] is the sub-list for method output_type
 	5, // [5:9] is the sub-list for method input_type
 	5, // [5:5] is the sub-list for extension type_name

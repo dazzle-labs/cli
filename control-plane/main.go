@@ -36,7 +36,7 @@ import (
 var (
 	_ apiv1connect.StageServiceHandler  = (*stageServer)(nil)
 	_ apiv1connect.ApiKeyServiceHandler = (*apiKeyServer)(nil)
-	_ apiv1connect.StreamServiceHandler = (*streamServer)(nil)
+	_ apiv1connect.RtmpDestinationServiceHandler = (*rtmpDestinationServer)(nil)
 	_ apiv1connect.UserServiceHandler   = (*userServer)(nil)
 )
 
@@ -911,9 +911,9 @@ func main() {
 	)
 	mux.Handle(apiKeyPath, corsMiddleware(apiKeyHandler))
 
-	// StreamService — Clerk JWT only
-	streamPath, streamHandler := apiv1connect.NewStreamServiceHandler(
-		&streamServer{mgr: mgr},
+	// RtmpDestinationService — Clerk JWT only
+	streamPath, streamHandler := apiv1connect.NewRtmpDestinationServiceHandler(
+		&rtmpDestinationServer{mgr: mgr},
 		connect.WithInterceptors(authInterceptor, clerkOnly),
 	)
 	mux.Handle(streamPath, corsMiddleware(streamHandler))
