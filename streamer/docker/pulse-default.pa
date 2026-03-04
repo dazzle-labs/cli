@@ -1,7 +1,7 @@
 #!/usr/bin/pulseaudio -nF
 
 # Virtual audio sink for capturing Chrome audio output
-load-module module-null-sink sink_name=virtual_out sink_properties=device.description="VirtualOutput"
+load-module module-null-sink sink_name=virtual_out rate=48000 channels=2 sink_properties=device.description="VirtualOutput"
 set-default-sink virtual_out
 
 # Allow monitor source to be used by OBS and other clients

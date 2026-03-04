@@ -165,6 +165,20 @@ cat > "$OBS_CONFIG_DIR/basic/scenes/Untitled.json" <<SCENEJSON
             }
         },
         {
+            "id": "pulse_output_capture",
+            "versioned_id": "pulse_output_capture",
+            "name": "Audio",
+            "uuid": "00000000-0000-0000-0000-000000000003",
+            "enabled": true,
+            "flags": 0,
+            "volume": 1.0,
+            "mixers": 255,
+            "muted": false,
+            "settings": {
+                "device_id": "virtual_out.monitor"
+            }
+        },
+        {
             "id": "scene",
             "versioned_id": "scene",
             "name": "Scene",
