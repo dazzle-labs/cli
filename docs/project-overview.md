@@ -87,7 +87,7 @@ User/Agent ──► Traefik Ingress (TLS termination)
 
 1. **Stage lifecycle** — Create/activate/deactivate/delete browser pods with status tracking (inactive → starting → running → stopping)
 2. **CDP access** — Full Chrome DevTools Protocol access proxied through control plane; WebSocket URL rewriting for external access
-3. **MCP server** — Per-stage Model Context Protocol tools: `set_script`, `edit_script`, `get_script`, `emit_event`, `screenshot`, `start`, `stop`, OBS controls (`gobs`)
+3. **MCP server** — Per-stage Model Context Protocol tools: `set_script`, `edit_script`, `get_script`, `emit_event`, `screenshot`, `start`, `stop`, OBS controls (`obs`)
 4. **Panel system** — Streamer manages named panels; supports hot-swap via Vite HMR without page reload
 5. **Stream destinations** — RTMP stream keys for Twitch, YouTube, Kick, custom; AES-256-GCM encrypted at rest
 6. **API keys** — `bstr_*` prefix format, HMAC-SHA256 hashed, with last-used tracking; programmatic auth alongside Clerk JWT

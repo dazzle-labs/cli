@@ -532,7 +532,10 @@ func (m *Manager) handleStageProxy(w http.ResponseWriter, r *http.Request) {
 	r.URL.Path = remainder
 	r.Host = target.Host
 
-	// Pass token through to the streamer pod
+	// Strip client auth — the control plane already validated the user,
+	// and the streamer pod doesn't understand Clerk JWTs.
+	r.Header.Del("Authorization")
+
 	proxy.ServeHTTP(w, r)
 }
 

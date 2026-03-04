@@ -128,7 +128,7 @@ MCP set_script / edit_script
 The streamer includes an internal OBS WebSocket v5 client (`OBSConnection` class in `index.js`):
 - Connects to `ws://localhost:4455` (no auth) with 30s retry
 - Request/response correlation via `requestId`
-- Used by MCP `gobs` tools for OBS scene/source/streaming control
+- Used by MCP `obs` tool for OBS scene/source/streaming control
 
 ---
 

@@ -325,7 +325,8 @@ app.get('/health', (req, res) => {
 });
 
 // HLS preview (served from /tmp/hls, written by ffmpeg in entrypoint.sh)
-app.use('/hls', auth, express.static('/tmp/hls', { maxAge: 0 }));
+// No auth — only reachable via control plane proxy, which validates the user.
+app.use('/hls', express.static('/tmp/hls', { maxAge: 0 }));
 
 // CDP discovery endpoints
 async function cdpDiscovery(req, res, cdpPath) {

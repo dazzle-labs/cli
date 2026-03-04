@@ -26,7 +26,7 @@ export const MCP_TOOLS: McpTool[] = [
     id: "stop",
     name: "stop",
     description:
-      "Deactivate your stage. It can be reactivated later with start.",
+      "Deactivate your stage. Shuts down the browser and releases cloud resources. Call start to bring it back — stream destinations are preserved, but the panel script will need to be re-set.",
     params: [],
     example: JSON.stringify({ name: "stop", arguments: {} }, null, 2),
   },
@@ -108,21 +108,21 @@ export const MCP_TOOLS: McpTool[] = [
     example: JSON.stringify({ name: "screenshot", arguments: {} }, null, 2),
   },
   {
-    id: "gobs",
-    name: "gobs",
+    id: "obs",
+    name: "obs",
     description:
-      'Run OBS command via gobs-cli. Requires an active stage (call start first). Use shorthands to save tokens — e.g. "sc ls" to list scenes, "st s" to start streaming.',
+      'Control OBS — manage scenes, inputs, streaming, recording, and audio. Requires an active stage (call start first). e.g. "sc ls" to list scenes, "st s" to start streaming.',
     params: [
       {
         name: "args",
         type: "string[]",
         required: true,
         description:
-          'gobs-cli args, e.g. ["st", "s"] to start streaming, ["sc", "ls"] to list scenes.',
+          'OBS command arguments, e.g. ["st", "s"] to start streaming, ["sc", "ls"] to list scenes.',
       },
     ],
     example: JSON.stringify(
-      { name: "gobs", arguments: { args: ["st", "s"] } },
+      { name: "obs", arguments: { args: ["st", "s"] } },
       null,
       2,
     ),

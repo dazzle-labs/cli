@@ -50,7 +50,7 @@ func (m *Manager) setupMCP() http.Handler {
 
 	s.AddTool(
 		mcp.NewTool("stop",
-			mcp.WithDescription("Deactivate your stage. It can be reactivated later with start."),
+			mcp.WithDescription("Deactivate your stage. Shuts down the browser and releases cloud resources. Call start to bring it back — stream destinations are preserved, but the panel script will need to be re-set."),
 		),
 		m.handleMCPDestroyStage,
 	)
@@ -108,19 +108,16 @@ Read window.__state at any time for accumulated state from all prior emit_event 
 
 	s.AddTool(
 		mcp.NewTool("emit_event",
-			mcp.WithDescription(`Emit an event to the running panel without changing code. Use this with set_script to follow an Elm-style architecture:
+			mcp.WithDescription(`Push live data to your running panel without rewriting or reloading the script.
 
-1. set_script defines the VIEW and UPDATE logic once — rendering + event listeners
-2. emit_event pushes STATE into it — no code rewrite, no page reload
+Use with set_script: write your event listeners once, then drive updates with emit_event — no code change, no reload required.
 
-The panel receives events as CustomEvent on window. Accumulated state is merged into window.__state.
-
-Example flow:
+Example:
   set_script: el = div; addEventListener('event', e => { if (e.detail.event === 'score') el.textContent = e.detail.data.points })
   emit_event: { event: "score", data: { points: 42 } }    → el shows "42"
   emit_event: { event: "score", data: { points: 99 } }    → el shows "99"
 
-Best practice: design your set_script code as a pure render function of state. Use emit_event to push new state — the view reacts. This avoids rewriting JS for every content change.`),
+Accumulated state is merged into window.__state. An '__init' event fires on script load if prior state exists.`),
 			mcp.WithString("event", mcp.Required(), mcp.Description("Event name that your set_script code listens for (e.g. 'update', 'alert', 'theme-change')")),
 			mcp.WithString("data", mcp.Required(), mcp.Description("JSON object with event payload — merged into window.__state and delivered as e.detail.data")),
 		),
@@ -135,8 +132,8 @@ Best practice: design your set_script code as a pure render function of state. U
 	)
 
 	s.AddTool(
-		mcp.NewTool("gobs",
-			mcp.WithDescription(`Run OBS command via gobs-cli. Args passed directly (no shell). Requires an active stage (call start first). Use shorthands to save tokens.
+		mcp.NewTool("obs",
+			mcp.WithDescription(`Control OBS — manage scenes, inputs, streaming, recording, and audio. Requires an active stage (call start first).
 
 sc ls — list scenes | sc c — current scene | sc sw <name> — switch scene
 si ls — list scene items | si sh/h/tg <name> — show/hide/toggle item | si t <name> — transform
@@ -161,9 +158,9 @@ set s — show settings | set v — video settings | set p — profile settings
 Stream service settings are managed automatically and cannot be read.
 
 Use ["<cmd>", "--help"] for flags on any command.`),
-			mcp.WithArray("args", mcp.Required(), mcp.Description("gobs-cli args, e.g. [\"st\", \"s\"] to start streaming.")),
+			mcp.WithArray("args", mcp.Required(), mcp.Description("OBS command arguments, e.g. [\"st\", \"s\"] to start streaming.")),
 		),
-		m.handleMCPGobs,
+		m.handleMCPObs,
 	)
 
 	return server.NewStreamableHTTPServer(s)
@@ -647,17 +644,17 @@ func obsScreenshot(podIP string) (string, error) {
 	return imageData, nil
 }
 
-// gobsBlockedCommands are subcommand sequences that could expose stream credentials.
+// obsBlockedCommands are subcommand sequences that could expose stream credentials.
 // The agent should never be able to read the RTMP URL or stream key.
 // Includes both full names and shorthands.
-var gobsBlockedCommands = [][]string{
+var obsBlockedCommands = [][]string{
 	{"settings", "stream-service"},
 	{"settings", "ss"},
 	{"set", "stream-service"},
 	{"set", "ss"},
 }
 
-// redactStreamSecrets removes RTMP URLs and stream-key-like values from gobs output.
+// redactStreamSecrets removes RTMP URLs and stream-key-like values from OBS command output.
 func redactStreamSecrets(output string) string {
 	// Redact rtmp:// and rtmps:// URLs
 	for {
@@ -685,8 +682,8 @@ func redactStreamSecrets(output string) string {
 	return output
 }
 
-// isBlockedGobsCommand checks if the args match any blocked command prefix.
-func isBlockedGobsCommand(args []string) bool {
+// isBlockedObsCommand checks if the args match any blocked command prefix.
+func isBlockedObsCommand(args []string) bool {
 	// Normalize: skip flags (--flag and --flag=val) to find subcommands
 	var subcommands []string
 	for i := 0; i < len(args); i++ {
@@ -700,7 +697,7 @@ func isBlockedGobsCommand(args []string) bool {
 		subcommands = append(subcommands, strings.ToLower(args[i]))
 	}
 
-	for _, blocked := range gobsBlockedCommands {
+	for _, blocked := range obsBlockedCommands {
 		if len(subcommands) >= len(blocked) {
 			match := true
 			for j, b := range blocked {
@@ -717,7 +714,7 @@ func isBlockedGobsCommand(args []string) bool {
 	return false
 }
 
-func (m *Manager) handleMCPGobs(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (m *Manager) handleMCPObs(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	agentID := agentIDFromCtx(ctx)
 
 	// Extract args as string array
@@ -740,7 +737,7 @@ func (m *Manager) handleMCPGobs(ctx context.Context, req mcp.CallToolRequest) (*
 	}
 
 	// Block commands that could expose stream credentials
-	if isBlockedGobsCommand(args) {
+	if isBlockedObsCommand(args) {
 		return mcp.NewToolResultError("access denied: stream service settings contain credentials and cannot be read. Stream configuration is managed automatically."), nil
 	}
 
@@ -751,7 +748,7 @@ func (m *Manager) handleMCPGobs(ctx context.Context, req mcp.CallToolRequest) (*
 
 	// Build gobs-cli command: prepend --host and --port, then user args
 	cmdArgs := append([]string{"--host", stage.PodIP, "--port", "4455"}, args...)
-	log.Printf("MCP gobs: stage=%s cmd=gobs-cli %v", stage.ID, cmdArgs)
+	log.Printf("MCP obs: stage=%s cmd=gobs-cli %v", stage.ID, cmdArgs)
 
 	cmd := exec.CommandContext(ctx, "gobs-cli", cmdArgs...)
 	var stdout, stderr bytes.Buffer

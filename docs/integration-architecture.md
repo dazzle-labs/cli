@@ -115,7 +115,7 @@ In development, Vite proxies these paths from `:5173` to `:8080`.
 
 **Auth:** Clerk JWT or API key. Stage ID in path routes tools to the correct pod.
 
-MCP tools available: `start`, `stop`, `set_script`, `edit_script`, `get_script`, `emit_event`, `screenshot`, OBS controls via `gobs`.
+MCP tools available: `start`, `stop`, `set_script`, `edit_script`, `get_script`, `emit_event`, `screenshot`, OBS controls via `obs`.
 
 ### 6. Control Plane MCP → Streamer Pod
 
@@ -128,7 +128,7 @@ MCP tool implementations in `mcp.go` call the streamer pod's panel API:
 | `get_script` | `GET /api/panels/:name/script` | Retrieve current panel code |
 | `emit_event` | `POST /api/panels/:name/event` | Push state event to panel |
 | `screenshot` | `GET /api/panels/:name/screenshot` | Capture PNG via CDP |
-| `gobs` | `gobs-cli --host <podIP>` | OBS commands via CLI |
+| `obs` | `gobs-cli --host <podIP>` | OBS commands (scenes, streaming, recording, etc.) |
 
 ---
 

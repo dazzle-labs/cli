@@ -483,7 +483,7 @@ Auth: Required (Clerk JWT or API key)
 | `edit_script` | `old_string: string, new_string: string` | Updated script JSON |
 | `emit_event` | `event: string, data: JSON` | Pod response JSON |
 | `screenshot` | (none) | Base64 PNG image content |
-| `gobs` | `args: string[]` | OBS command output (redacted) |
+| `obs` | `args: string[]` | OBS command output (scenes, streaming, recording, etc.; credentials redacted) |
 
 ---
 

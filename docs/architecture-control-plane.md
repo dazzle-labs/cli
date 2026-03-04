@@ -163,7 +163,7 @@ Each stage pod is created with:
 
 ## MCP Server
 
-The control plane hosts an MCP server at `/stage/<id>/mcp/*` using `mcp-go`. Each stage gets its own MCP endpoint. Tools are defined in `mcp.go` and allow AI agents to interact with the browser panel system (set/edit/get script, emit events, take screenshots, control OBS via `gobs`).
+The control plane hosts an MCP server at `/stage/<id>/mcp/*` using `mcp-go`. Each stage gets its own MCP endpoint. Tools are defined in `mcp.go` and allow AI agents to interact with the browser panel system (set/edit/get script, emit events, take screenshots, control OBS via `obs`).
 
 ---
 
