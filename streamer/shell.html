@@ -63,15 +63,14 @@
     _timeouts.clear();
     for (const id of _intervals) _origCI(id);
     _intervals.clear();
-    // Unmount React root if present
-    if (window.__reactRoot) {
-      window.__reactRoot.unmount();
-      window.__reactRoot = null;
-    }
-    // Clear root element content
+    // If a React root is mounted, skip DOM teardown — module re-evaluation will
+    // re-render via React reconciliation (no flash, state preserved when tree matches).
+    // Known: React→vanilla transitions run new code before unmount in wrapUserCode;
+    // this is safe in practice since vanilla scenes append to body while React owns #root.
+    if (window.__reactRoot) return;
+    // Vanilla JS cleanup: clear root and all user-appended DOM nodes
     const rootEl = document.getElementById('root');
     if (rootEl) rootEl.innerHTML = '';
-    // Clear all other DOM content added by user code
     const body = document.body;
     for (let i = body.children.length - 1; i >= 0; i--) {
       const child = body.children[i];

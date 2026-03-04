@@ -77,11 +77,33 @@ ${USER_CODE_START}
 ${code}
 ${USER_CODE_END}
 
-// Auto-mount: if user defined App, render it into #root
-if (typeof App !== 'undefined') {
-  const _root = window.createRoot(document.getElementById('root'));
-  window.__reactRoot = _root;
-  _root.render(window.React.createElement(App));
+// Auto-mount: if user defined App (or window.App as fallback for non-module-scope components)
+const _appToMount = (typeof App !== 'undefined') ? App : window.App;
+if (_appToMount) {
+  try {
+    const _rootEl = document.getElementById('root');
+    if (!_rootEl) {
+      console.error('[panel] React mount failed: #root element not found');
+    } else if (window.__reactRoot) {
+      // Re-render into existing root — React reconciles in-place, no DOM flash.
+      // State is preserved when the component tree structure matches.
+      window.__reactRoot.render(window.React.createElement(_appToMount));
+    } else {
+      const _root = window.createRoot(_rootEl);
+      window.__reactRoot = _root;
+      _root.render(window.React.createElement(_appToMount));
+    }
+  } catch (err) {
+    console.error('[panel] React mount failed:', err);
+  }
+} else if (window.__reactRoot) {
+  // Switching from React scene to vanilla JS — unmount React
+  try {
+    window.__reactRoot.unmount();
+  } catch (err) {
+    console.error('[panel] React unmount failed:', err);
+  }
+  window.__reactRoot = null;
 }
 
 // Fire synthetic init event so user code can read accumulated state
@@ -409,7 +431,9 @@ app.post('/api/panel/:name/edit', auth, async (req, res) => {
         return res.status(400).json({ error: `old_string found ${count} times, must be unique` });
     }
 
-    const newCode = code.replace(old_string, new_string);
+    // Use a replacer function so special `$` patterns in new_string (e.g. $&, $`, ${...})
+    // are not interpreted as String.prototype.replace replacement patterns.
+    const newCode = code.replace(old_string, () => new_string);
     writeUserCode(name, newCode);
 
     res.json({ status: 'ok', panel: name, length: newCode.length });
