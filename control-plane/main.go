@@ -643,7 +643,7 @@ func (m *Manager) proxyCDPDiscovery(w http.ResponseWriter, r *http.Request, stag
 	if r.Header.Get("X-Forwarded-Proto") == "https" || r.TLS != nil {
 		wsScheme = "wss"
 	}
-	deterministicWS := fmt.Sprintf("%s://%s/cdp/%s", wsScheme, extHost, stage.ID)
+	deterministicWS := fmt.Sprintf("%s://%s/stage/%s/cdp", wsScheme, extHost, stage.ID)
 
 	// Replace any webSocketDebuggerUrl value in the JSON
 	bodyStr := string(body)
@@ -688,20 +688,20 @@ func (m *Manager) proxyCDPDiscovery(w http.ResponseWriter, r *http.Request, stag
 	w.Write([]byte(rewritten))
 }
 
-// handleCDP handles /cdp/<uuid> and /cdp/<uuid>/json/* requests.
+// handleCDP handles /stage/<uuid>/cdp and /stage/<uuid>/cdp/json/* requests.
 func (m *Manager) handleCDP(w http.ResponseWriter, r *http.Request) {
-	// Parse: /cdp/<uuid> or /cdp/<uuid>/json/...
-	trimmed := strings.TrimPrefix(r.URL.Path, "/cdp/")
-	parts := strings.SplitN(trimmed, "/", 2)
+	// Parse: /stage/<uuid>/cdp or /stage/<uuid>/cdp/json/...
+	trimmed := strings.TrimPrefix(r.URL.Path, "/stage/")
+	parts := strings.SplitN(trimmed, "/", 3) // ["<uuid>", "cdp", "json/..."]
 	stageID := parts[0]
-	if stageID == "" {
+	if stageID == "" || len(parts) < 2 {
 		http.Error(w, `{"error":"stage id required"}`, http.StatusBadRequest)
 		return
 	}
 
 	subPath := ""
-	if len(parts) > 1 {
-		subPath = "/" + parts[1]
+	if len(parts) > 2 {
+		subPath = "/" + parts[2]
 	}
 
 	isWS := isWebSocketUpgrade(r)
@@ -925,10 +925,11 @@ func main() {
 	)
 	mux.Handle(userPath, corsMiddleware(userHandler))
 
-	// CDP endpoint — returns 503 if stage is not active
-	mux.Handle("/cdp/", corsMiddleware(http.HandlerFunc(mgr.handleCDP)))
-
-	// Stage handler: MCP uses /stage/<uuid>/mcp/..., proxy uses other /stage/<uuid>/* paths
+	// Stage handler: all stage-specific routes under /stage/<uuid>/
+	//   /stage/<uuid>/cdp           — CDP WebSocket proxy and HTTP discovery
+	//   /stage/<uuid>/cdp/json/*    — CDP discovery (URL-rewritten)
+	//   /stage/<uuid>/mcp/*         — MCP server
+	//   /stage/<uuid>/*             — reverse proxy to streamer pod
 	mcpHandler := mgr.mcpMiddleware(mgr.setupMCP())
 	mux.HandleFunc("/stage/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -938,16 +939,25 @@ func main() {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
-		// MCP requests contain /mcp/ in the path
-		if strings.Contains(r.URL.Path, "/mcp") {
+		// Extract the third path segment: /stage/<uuid>/<segment>/...
+		// parts[0]="", parts[1]="stage", parts[2]="<uuid>", parts[3]="<segment>", ...
+		parts := strings.SplitN(r.URL.Path, "/", 5)
+		var segment string
+		if len(parts) >= 4 {
+			segment = parts[3]
+		}
+		switch segment {
+		case "cdp":
+			corsMiddleware(http.HandlerFunc(mgr.handleCDP)).ServeHTTP(w, r)
+		case "mcp":
 			mcpHandler.ServeHTTP(w, r)
-			return
+		default:
+			if isWebSocketUpgrade(r) {
+				mgr.handleWebSocketUpgrade(w, r)
+				return
+			}
+			mgr.auth.authMiddlewareHTTP(http.HandlerFunc(mgr.handleStageProxy)).ServeHTTP(w, r)
 		}
-		if isWebSocketUpgrade(r) {
-			mgr.handleWebSocketUpgrade(w, r)
-			return
-		}
-		mgr.auth.authMiddlewareHTTP(http.HandlerFunc(mgr.handleStageProxy)).ServeHTTP(w, r)
 	})
 
 	// Web SPA (fallback route)

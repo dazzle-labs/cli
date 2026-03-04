@@ -105,8 +105,8 @@ type Manager struct {
 | `/api.v1.ApiKeyService/*` | POST | Clerk JWT only | API key CRUD |
 | `/api.v1.StreamService/*` | POST | Clerk JWT only | Stream destination CRUD |
 | `/api.v1.UserService/*` | POST | Clerk JWT only | User profile |
-| `/cdp/<stage-id>` | WS | Clerk or API key | CDP WebSocket proxy to Chrome |
-| `/cdp/<stage-id>/json/*` | GET | Clerk or API key | CDP discovery (URL-rewritten) |
+| `/stage/<stage-id>/cdp` | WS | Clerk or API key | CDP WebSocket proxy to Chrome |
+| `/stage/<stage-id>/cdp/json/*` | GET | Clerk or API key | CDP discovery (URL-rewritten) |
 | `/stage/<id>/*` | HTTP/WS | Clerk or API key | HTTP/WS proxy to streamer pod |
 | `/stage/<id>/mcp/*` | HTTP | Clerk or API key | MCP server (per-stage) |
 | `/*` | GET | none | Serve web SPA (fallback) |
@@ -143,10 +143,10 @@ inactive ──► starting ──► running ──► stopping ──► (dele
 
 ## CDP Proxy
 
-The control plane provides a stable, authenticated CDP endpoint at `/cdp/<stage-id>`:
+The control plane provides a stable, authenticated CDP endpoint at `/stage/<stage-id>/cdp`:
 
 - **WebSocket**: Resolves Chrome's real WS URL via `/json/version` on the pod, then raw TCP-proxies the WebSocket upgrade (hijacks both connections, bidirectional `io.Copy`)
-- **HTTP discovery** (`/json/*`): Proxies to pod with token auth; rewrites `webSocketDebuggerUrl` to deterministic external URL `wss://<host>/cdp/<stage-id>`
+- **HTTP discovery** (`/cdp/json/*`): Proxies to pod with token auth; rewrites `webSocketDebuggerUrl` to deterministic external URL `wss://<host>/stage/<stage-id>/cdp`
 
 ---
 

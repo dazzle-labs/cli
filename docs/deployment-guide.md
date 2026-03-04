@@ -23,7 +23,7 @@ Traefik Ingress (HTTPS :443)
                                 ├── Web SPA (static files)
                                 ├── ConnectRPC API (/api.v1.*)
                                 ├── MCP Server (/stage/*/mcp/*)
-                                ├── CDP Proxy (/cdp/*)
+                                ├── CDP Proxy (/stage/*/cdp)
                                 ├── Stage HTTP/WS Proxy (/stage/*/...)
                                 └── Creates → Streamer Pods (on-demand)
                                       ├── Chrome + OBS on Xvfb

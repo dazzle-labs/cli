@@ -38,7 +38,7 @@ Browser Streamer (Dazzle) is a monorepo with 4 parts. The **control plane** is t
 │             │                      │                      │  │
 │  ┌──────────▼──────┐   ┌───────────▼──────┐  ┌───────────▼┐ │
 │  │ HTTP Proxy      │   │  WS Proxy        │  │ PostgreSQL │ │
-│  │ /stage/<id>/*   │   │  /cdp/<id>       │  │ (users,    │ │
+│  │ /stage/<id>/*   │   │  /stage/<id>/cdp │  │ (users,    │ │
 │  └──────────┬──────┘   └──────────┬───────┘  │  api_keys, │ │
 └─────────────┼─────────────────────┼──────────│  stages,   ├─┘
               │                     │          │  streams)  │
@@ -89,8 +89,8 @@ In development, Vite proxies these paths from `:5173` to `:8080`.
 |----------|-------------|-------------|-------------|
 | HTTP | `/stage/<id>/<path>` | `http://<podIP>:8080/<path>` | General API proxy (panel system) |
 | WebSocket | `/stage/<id>/*` | `ws://<podIP>:8080/*` | WebSocket proxy |
-| WebSocket | `/cdp/<id>` | `ws://<podIP>:8080/devtools/...` | CDP WebSocket (URL resolved via `/json/version`) |
-| HTTP | `/cdp/<id>/json/*` | `http://<podIP>:8080/json/*` | CDP discovery (WS URL rewritten) |
+| WebSocket | `/stage/<id>/cdp` | `ws://<podIP>:8080/devtools/...` | CDP WebSocket (URL resolved via `/json/version`) |
+| HTTP | `/stage/<id>/cdp/json/*` | `http://<podIP>:8080/json/*` | CDP discovery (WS URL rewritten) |
 | HTTP | `/stage/<id>/mcp/*` | MCP server in control plane | MCP tool execution targeting this stage |
 
 **Auth:** Internal `POD_TOKEN` passed as query parameter to streamer for pod-level requests.
@@ -144,7 +144,7 @@ MCP tool implementations in `mcp.go` call the streamer pod's panel API:
 4. Client interacts via:
    - ConnectRPC API  → stage management
    - /stage/<id>/*   → HTTP/WS proxy to streamer panel API
-   - /cdp/<id>       → Chrome DevTools Protocol
+   - /stage/<id>/cdp → Chrome DevTools Protocol
    - /stage/<id>/mcp → MCP server (AI agents)
 5. Background GC loop (5s):
    - Refreshes pod statuses from k8s

@@ -310,21 +310,21 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
       {
         id: "cdp-discovery",
         method: "GET",
-        path: "/cdp/<uuid>",
+        path: "/stage/<uuid>/cdp",
         description:
           "CDP endpoint. Returns Chrome DevTools Protocol discovery info with rewritten WebSocket URLs. Requires the stage to be active (call the 'start' MCP tool first). Returns 503 if stage is not active.",
         auth: "Clerk JWT or API Key",
         params: [],
         responseExample: JSON.stringify(
           {
-            webSocketDebuggerUrl: "wss://your-host/cdp/a1b2c3d4-.../devtools/browser/...",
+            webSocketDebuggerUrl: "wss://your-host/stage/a1b2c3d4-.../cdp/devtools/browser/...",
             "Browser": "Chrome/131.0.6778.204",
           },
           null,
           2,
         ),
         notes:
-          "Also supports /cdp/<uuid>/json/version and /cdp/<uuid>/json for Chrome target listing. WebSocket connections to /cdp/<uuid> are proxied directly to Chrome port 9222.",
+          "Also supports /stage/<uuid>/cdp/json/version and /stage/<uuid>/cdp/json for Chrome target listing. WebSocket connections to /stage/<uuid>/cdp are proxied directly to Chrome port 9222.",
       },
       {
         id: "stage-proxy",

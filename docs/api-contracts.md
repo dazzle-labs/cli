@@ -219,11 +219,12 @@ Response: { "status": "ok" }
 
 ### CDP Proxy
 ```
-GET  /cdp/<stage-id>/json/version    Chrome version info (webSocketDebuggerUrl rewritten)
-GET  /cdp/<stage-id>/json            Tab list (WS URLs rewritten)
-WS   /cdp/<stage-id>                 Full CDP WebSocket proxy to Chrome
+GET  /stage/<stage-id>/cdp                Chrome version info (webSocketDebuggerUrl rewritten)
+GET  /stage/<stage-id>/cdp/json/version   Chrome version info (webSocketDebuggerUrl rewritten)
+GET  /stage/<stage-id>/cdp/json           Tab list (WS URLs rewritten)
+WS   /stage/<stage-id>/cdp               Full CDP WebSocket proxy to Chrome
 ```
-Auth: Clerk JWT or API key. The `webSocketDebuggerUrl` is rewritten to `wss://<host>/cdp/<stage-id>`.
+Auth: Clerk JWT or API key. The `webSocketDebuggerUrl` is rewritten to `wss://<host>/stage/<stage-id>/cdp`.
 
 ### Stage Proxy
 ```
@@ -439,12 +440,12 @@ Response (authenticated): { status: "ok", sessions: int, maxSessions: int }
 
 ### CDP Auto-Provisioning
 ```
-GET /cdp/<uuid>
-GET /cdp/<uuid>/json/version
-GET /cdp/<uuid>/json
-WS  /cdp/<uuid>
+GET /stage/<uuid>/cdp
+GET /stage/<uuid>/cdp/json/version
+GET /stage/<uuid>/cdp/json
+WS  /stage/<uuid>/cdp
 Auth: Required
-Behavior: Auto-creates session if not exists, waits up to 60s for readiness
+Behavior: Returns 503 if stage is not active (call start first)
 HTTP: Returns Chrome CDP discovery JSON with rewritten WebSocket URLs
 WS: Proxies directly to Chrome port 9222
 ```

@@ -18,7 +18,7 @@ User/Agent ──► Traefik (TLS)
            │   ├── ApiKeyService
            │   ├── StreamService
            │   └── UserService
-           ├── CDP Proxy (/cdp/<stage-id>)
+           ├── CDP Proxy (/stage/<stage-id>/cdp)
            ├── Stage HTTP/WS Proxy (/stage/<id>/*)
            ├── MCP Server (/stage/<id>/mcp/*)
            └── Web SPA (static fallback)
@@ -97,7 +97,7 @@ make logs-cp   # tail control-plane logs
 ## Key Capabilities
 
 - **Stage lifecycle** — browser pods move through states: `inactive → starting → running → stopping`. `GetStage` activates on demand; `DeactivateStage` removes the pod but keeps the DB record; `DeleteStage` removes everything.
-- **CDP access** — full Chrome DevTools Protocol proxied through control plane at `/cdp/<stage-id>`
+- **CDP access** — full Chrome DevTools Protocol proxied through control plane at `/stage/<stage-id>/cdp`
 - **MCP server** — per-stage Model Context Protocol tools: `set_script`, `edit_script`, `emit_event`, `screenshot`, OBS controls
 - **Panel system** — hot-swap JavaScript/JSX via Vite HMR without page reload; state persists via `emit_event` + `window.__state`
 - **Stream destinations** — RTMP keys for Twitch, YouTube, Kick, custom; AES-256-GCM encrypted at rest
