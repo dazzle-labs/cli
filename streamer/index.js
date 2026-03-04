@@ -19,6 +19,7 @@ const SCREEN_HEIGHT = parseInt(process.env.SCREEN_HEIGHT || '720', 10);
 const CONTENT_ROOT = '/app/content';
 const SHELL_HTML = fs.readFileSync(path.join(__dirname, 'shell.html'), 'utf8');
 const PRELUDE_JS = fs.readFileSync(path.join(__dirname, 'prelude.js'), 'utf8');
+const STYLE_CSS = fs.readFileSync(path.join(__dirname, 'style.css'), 'utf8');
 
 // --- Panel metadata (dimensions only — content lives on disk) ---
 // Map<string, { width: number, height: number }>
@@ -51,6 +52,11 @@ function ensurePanelDir(name) {
     const preludePath = path.join(dir, 'prelude.js');
     if (!fs.existsSync(preludePath)) {
         fs.writeFileSync(preludePath, PRELUDE_JS);
+    }
+
+    const stylePath = path.join(dir, 'style.css');
+    if (!fs.existsSync(stylePath)) {
+        fs.writeFileSync(stylePath, STYLE_CSS);
     }
 
     const jsPath = panelMainJs(name);
