@@ -32,7 +32,7 @@ The streamer runs as an ephemeral Kubernetes pod (one per stage). It provides an
 | Virtual Display | Xvfb | System |
 | Audio | PulseAudio | System |
 | Screen Capture / Streaming | OBS Studio | 28+ (WebSocket v5) |
-| Base Image | Ubuntu | 22.04 |
+| Base Image | Ubuntu | 24.04 |
 
 ---
 
@@ -100,11 +100,15 @@ Signal trap `EXIT INT TERM` kills all child processes on exit.
 The panel system is the core feature of the streamer. It manages named, isolated browser views:
 
 1. **Panel directory**: Each panel `<name>` gets a directory at `/tmp/content/<name>/`
-2. **Shell HTML** (`shell.html`): The base HTML page served to Chrome per panel — loads React, Zustand, and Tailwind CSS v4 as globals; mounts `#root` div
+2. **Shell HTML** (`shell.html`): The base HTML page served to Chrome per panel — loads React, Zustand, and Tailwind CSS v4 as globals; mounts `#root` div; includes React Fast Refresh stubs (`$RefreshSig$`/`$RefreshReg$`) for Vite middleware mode compatibility; HMR cleanup unmounts React root and clears all timers/intervals/rafs
 3. **Prelude** (`prelude.js`): Injects `React`, `useState`, `useEffect`, etc., `createRoot`, `create`/`persist` (Zustand) as window globals — available without imports in user code
 4. **User code** (`main.jsx`): Wrapped with Vite HMR hooks, `import.meta.hot.accept()`, and `state-event` listener; sandwiched between `USER_CODE_START` / `USER_CODE_END` markers for extraction
-5. **Auto-mount**: If user code defines `const App`, it is automatically rendered into `#root` via `createRoot`
+5. **Auto-mount**: If user code defines `const App`, it is automatically rendered into `#root` via `createRoot` — no boilerplate needed
 6. **State events**: `emit_event` pushes events via Vite HMR's `hot.send('state-event', ...)` — no page reload; accumulated state available in `window.__state`
+
+### Route Guard
+
+Express `/@panel/:name` routes skip names starting with `@` (e.g. `@react-refresh`, `@vite/client`, `@fs/`) so Vite middleware handles its own internal paths.
 
 ### Vite HMR Hot-Swap Flow
 
@@ -181,7 +185,7 @@ Defined in the control plane pod spec:
 
 ## Docker Image
 
-**Base:** `ubuntu:22.04`
+**Base:** `ubuntu:24.04`
 
 **Layers (approximate):**
 1. System deps (X11, audio, fonts, network tools)

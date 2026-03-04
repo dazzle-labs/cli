@@ -68,7 +68,9 @@ func (m *Manager) setupMCP() http.Handler {
 
 Two modes:
 1. Vanilla JS — create DOM elements / canvas and append to document.body
-2. React JSX — define const App = () => <div>...</div> and it auto-mounts into #root
+2. React JSX — define an App component and it will be auto-mounted into #root:
+     const App = () => <div>Hello</div>;
+   No createRoot or render call needed. On subsequent set_script/edit_script calls, the root is reused for clean HMR transitions.
 
 Available globals (no imports needed):
   React, useState, useEffect, useRef, useMemo, useCallback, useReducer, Fragment
@@ -340,6 +342,8 @@ func (m *Manager) validateStreamDestination(stageID, userID string) (*streamDest
 
 // configureOBSStream sets OBS stream settings using the already-validated destination.
 // dest.StreamKey must already be decrypted (done by validateStreamDestination).
+// Retries with backoff since OBS WebSocket (port 4455) may not be ready immediately
+// after the pod readiness probe passes (which only checks Node.js on port 8080).
 func (m *Manager) configureOBSStream(stage *Stage, dest *streamDestRow) error {
 	log.Printf("Configuring OBS stream for stage %s (dest=%s, platform=%s)", stage.ID, dest.Name, dest.Platform)
 
@@ -350,14 +354,33 @@ func (m *Manager) configureOBSStream(stage *Stage, dest *streamDestRow) error {
 		"--key", dest.StreamKey,
 	}
 
-	cmd := exec.CommandContext(context.Background(), "gobs-cli", args...)
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to configure OBS stream settings: %w (%s)", err, stderr.String())
+	const maxRetries = 10
+	backoff := time.Second
+
+	var lastErr error
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		cmd := exec.CommandContext(context.Background(), "gobs-cli", args...)
+		var stderr bytes.Buffer
+		cmd.Stderr = &stderr
+		if err := cmd.Run(); err != nil {
+			lastErr = fmt.Errorf("failed to configure OBS stream settings: %w (%s)", err, stderr.String())
+			if attempt < maxRetries {
+				log.Printf("OBS not ready on attempt %d/%d, retrying in %v...", attempt, maxRetries, backoff)
+				time.Sleep(backoff)
+				backoff = time.Duration(float64(backoff) * 1.5)
+				if backoff > 10*time.Second {
+					backoff = 10 * time.Second
+				}
+			}
+			continue
+		}
+		if attempt > 1 {
+			log.Printf("OBS stream configured successfully on attempt %d", attempt)
+		}
+		return nil
 	}
 
-	return nil
+	return lastErr
 }
 
 func (m *Manager) handleMCPDestroyStage(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

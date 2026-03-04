@@ -56,6 +56,13 @@
   // Accumulated state from emit_event — persists across HMR swaps
   window.__state = window.__state || {};
 
+  // React Fast Refresh stubs — Vite's react plugin injects $RefreshSig$/$RefreshReg$
+  // calls into JSX modules, but the preamble that defines them only runs via
+  // transformIndexHtml (which doesn't apply in middleware mode). Define no-op stubs
+  // so JSX modules load without errors; actual fast refresh is handled by HMR.
+  window.$RefreshReg$ = () => {};
+  window.$RefreshSig$ = () => (type) => type;
+
   window.__hmrCleanup = function() {
     for (const id of _rafs) _origCAF(id);
     _rafs.clear();
@@ -63,12 +70,12 @@
     _timeouts.clear();
     for (const id of _intervals) _origCI(id);
     _intervals.clear();
-    // If a React root is mounted, skip DOM teardown — module re-evaluation will
-    // re-render via React reconciliation (no flash, state preserved when tree matches).
-    // Known: React→vanilla transitions run new code before unmount in wrapUserCode;
-    // this is safe in practice since vanilla scenes append to body while React owns #root.
-    if (window.__reactRoot) return;
-    // Vanilla JS cleanup: clear root and all user-appended DOM nodes
+    // Unmount any existing React root so the next script can create a fresh one
+    if (window.__reactRoot) {
+      try { window.__reactRoot.unmount(); } catch(e) {}
+      window.__reactRoot = null;
+    }
+    // Clear root div and all user-appended DOM nodes
     const rootEl = document.getElementById('root');
     if (rootEl) rootEl.innerHTML = '';
     const body = document.body;

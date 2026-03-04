@@ -77,33 +77,12 @@ ${USER_CODE_START}
 ${code}
 ${USER_CODE_END}
 
-// Auto-mount: if user defined App (or window.App as fallback for non-module-scope components)
-const _appToMount = (typeof App !== 'undefined') ? App : window.App;
-if (_appToMount) {
-  try {
-    const _rootEl = document.getElementById('root');
-    if (!_rootEl) {
-      console.error('[panel] React mount failed: #root element not found');
-    } else if (window.__reactRoot) {
-      // Re-render into existing root — React reconciles in-place, no DOM flash.
-      // State is preserved when the component tree structure matches.
-      window.__reactRoot.render(window.React.createElement(_appToMount));
-    } else {
-      const _root = window.createRoot(_rootEl);
-      window.__reactRoot = _root;
-      _root.render(window.React.createElement(_appToMount));
-    }
-  } catch (err) {
-    console.error('[panel] React mount failed:', err);
+// Auto-mount: if user code defined an App component, render it into #root
+if (typeof App !== 'undefined') {
+  if (!window.__reactRoot) {
+    window.__reactRoot = createRoot(document.getElementById('root'));
   }
-} else if (window.__reactRoot) {
-  // Switching from React scene to vanilla JS — unmount React
-  try {
-    window.__reactRoot.unmount();
-  } catch (err) {
-    console.error('[panel] React unmount failed:', err);
-  }
-  window.__reactRoot = null;
+  window.__reactRoot.render(React.createElement(App));
 }
 
 // Fire synthetic init event so user code can read accumulated state
@@ -351,8 +330,10 @@ app.get('/json/list', auth, (req, res) => cdpDiscovery(req, res, '/json/list'));
 // --- Panel HTML serving (Vite middleware mode doesn't serve HTML, we do it) ---
 
 // Serve panel HTML — Vite middleware mode only handles transforms, not HTML serving
+// Skip @-prefixed names (e.g. @react-refresh, @vite/client) — those are Vite internals
 app.get('/@panel/:name', async (req, res, next) => {
     const { name } = req.params;
+    if (name.startsWith('@')) return next();
     ensurePanelDir(name);
     const htmlPath = path.join(panelDir(name), 'index.html');
     try {
@@ -366,6 +347,7 @@ app.get('/@panel/:name', async (req, res, next) => {
 // Also handle trailing slash: /@panel/main/
 app.get('/@panel/:name/', async (req, res, next) => {
     const { name } = req.params;
+    if (name.startsWith('@')) return next();
     ensurePanelDir(name);
     const htmlPath = path.join(panelDir(name), 'index.html');
     try {
