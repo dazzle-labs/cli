@@ -273,7 +273,7 @@ jobs:
 
           curl -s -H "Content-Type: application/json" -d "{
             \"embeds\": [{
-              \"title\": \"Browser Streamer deployed\",
+              \"title\": \"Agent Streamer deployed\",
               \"description\": $(echo "$COMMITS" | jq -Rs .),
               \"color\": 5025616
             }]

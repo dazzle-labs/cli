@@ -1,5 +1,5 @@
 #!/bin/bash
-# Setup GitHub Actions secrets for browser-streamer CI/CD.
+# Setup GitHub Actions secrets for agent-streamer CI/CD.
 # Copies reusable secrets from dazzle-labs/axis-router and sets known values.
 #
 # Prerequisites:

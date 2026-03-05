@@ -3,7 +3,7 @@
 # Version: 6.0.4
 # Date: 2026-03-02T18:54:47.833Z
 
-project_name: browser-streamer
+project_name: agent-streamer
 user_skill_level: intermediate
 planning_artifacts: "{project-root}/_bmad-output/planning-artifacts"
 implementation_artifacts: "{project-root}/_bmad-output/implementation-artifacts"
