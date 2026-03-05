@@ -10,7 +10,7 @@
 
 set -euo pipefail
 
-REPO="dazzle-labs/browser-streamer"
+REPO="dazzle-labs/agent-streamer"
 SOURCE_REPO="dazzle-labs/axis-router"
 
 echo "=== Copying secrets from ${SOURCE_REPO} ==="
