@@ -1,11 +1,12 @@
 FROM node:24-alpine AS web
 ARG VITE_CLERK_PUBLISHABLE_KEY
 WORKDIR /app
-COPY web/package.json web/package-lock.json ./
-RUN npm ci
+COPY web/package.json web/yarn.lock web/.yarnrc.yml ./
+COPY web/.yarn/ ./.yarn/
+RUN corepack enable && yarn install --immutable
 COPY web/src/ ./src/
 COPY web/index.html web/tsconfig.json web/vite.config.ts ./
-RUN npm run build
+RUN yarn build
 
 FROM golang:1.25-alpine AS builder
 WORKDIR /app

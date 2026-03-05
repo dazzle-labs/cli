@@ -6,9 +6,9 @@ help: ## Show this help
 # ── Build ──────────────────────────────────────────────
 
 build: ## Build web (Vite + React)
-	. ~/.nvm/nvm.sh && nvm use && npm run build
+	. ~/.nvm/nvm.sh && nvm use && yarn build
 
 # ── Dev ────────────────────────────────────────────────
 
 dev: ## Start dev server
-	. ~/.nvm/nvm.sh && nvm use && npm run dev
+	. ~/.nvm/nvm.sh && nvm use && yarn dev
