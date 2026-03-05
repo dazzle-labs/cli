@@ -85,7 +85,7 @@ On-demand cloud browser environments for AI agents and live streaming. Each **st
 | Go 1.24+ | Build the control-plane |
 | Node.js 20+ | Build/run the web frontend and streamer |
 | kubectl | Interact with the k3s cluster |
-| [SOPS](https://github.com/getsops/sops) | Decrypt secrets (`make secrets`) |
+| [SOPS](https://github.com/getsops/sops) | Decrypt secrets (used automatically by `make local-up` and `make deploy-secrets`) |
 | SSH access to VPS | Remote builds via buildkit |
 | [Clerk](https://clerk.com) account | Auth — provides your `CLERK_PK` public key |
 
@@ -95,7 +95,17 @@ Builds happen **remotely** on the VPS via SSH + buildkit. No local Docker daemon
 
 ## Quick Start
 
-### Develop locally (web frontend only)
+### Run the full stack locally (recommended)
+
+Requires Docker Desktop (8GB+ RAM), Kind, kubectl, and SOPS. See [Local Development](docs/local-dev.md) for details.
+
+```bash
+make local-up              # Build images, create Kind cluster, deploy everything
+cd web && npm run dev      # Start web dev server (in another terminal)
+# Open http://localhost:5173
+```
+
+### Develop web frontend only
 
 Requires the control-plane running on `:8080` (deployed or local).
 
@@ -144,7 +154,7 @@ make logs-cp   # tail control-plane logs
 - **Host:** Single Hetzner VPS, k3s (single-node Kubernetes)
 - **TLS:** cert-manager + Let's Encrypt (automatic)
 - **Auth:** Clerk JWT (dashboard/API) + internal `bstr_*` API keys (programmatic)
-- **Secrets:** SOPS-encrypted YAML — run `make secrets` to decrypt and apply
+- **Secrets:** SOPS-encrypted YAML — decrypted automatically during `make local-up` / `make deploy`; `make deploy-secrets` for manual application
 - **Builds:** Remote SSH + buildkit — no local Docker required
 - **Limits:** HostPort range 31000–31099 caps concurrent sessions at 100
 

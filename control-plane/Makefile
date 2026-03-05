@@ -1,6 +1,6 @@
 HOST      ?= 5.78.145.53
 NS        ?= browser-streamer
-CLERK_PK  ?= pk_live_Y2xlcmsuZGF6emxlLmZtJA
+CLERK_PK  ?= pk_test_cmFyZS13YWxsZXllLTQ4LmNsZXJrLmFjY291bnRzLmRldiQ
 SSH       := ssh root@$(HOST)
 
 .PHONY: help proto build logs deploy restart
