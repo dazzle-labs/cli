@@ -33,7 +33,7 @@ func (s *rtmpDestinationServer) CreateStreamDestination(ctx context.Context, req
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	row, err := dbCreateStreamDest(s.mgr.db, info.UserID, msg.Name, platform, msg.RtmpUrl, encKey, msg.Enabled)
+	row, err := dbCreateStreamDest(s.mgr.db, info.UserID, msg.Name, platform, msg.RtmpUrl, encKey)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -75,7 +75,7 @@ func (s *rtmpDestinationServer) UpdateStreamDestination(ctx context.Context, req
 		}
 	}
 
-	row, err := dbUpdateStreamDest(s.mgr.db, msg.Id, info.UserID, msg.Name, msg.Platform, msg.RtmpUrl, encKey, msg.Enabled)
+	row, err := dbUpdateStreamDest(s.mgr.db, msg.Id, info.UserID, msg.Name, msg.Platform, msg.RtmpUrl, encKey)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeNotFound, err)
 	}
@@ -105,7 +105,6 @@ func streamDestToProto(r *streamDestRow, showKey bool) *apiv1.StreamDestination 
 		Platform:  r.Platform,
 		RtmpUrl:   r.RtmpURL,
 		StreamKey: key,
-		Enabled:   r.Enabled,
 		CreatedAt: timestamppb.New(r.CreatedAt),
 		UpdatedAt: timestamppb.New(r.UpdatedAt),
 	}

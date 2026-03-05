@@ -29,7 +29,6 @@ type StreamDestination struct {
 	Platform      string                 `protobuf:"bytes,3,opt,name=platform,proto3" json:"platform,omitempty"`
 	RtmpUrl       string                 `protobuf:"bytes,4,opt,name=rtmp_url,json=rtmpUrl,proto3" json:"rtmp_url,omitempty"`
 	StreamKey     string                 `protobuf:"bytes,5,opt,name=stream_key,json=streamKey,proto3" json:"stream_key,omitempty"`
-	Enabled       bool                   `protobuf:"varint,6,opt,name=enabled,proto3" json:"enabled,omitempty"`
 	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -101,13 +100,6 @@ func (x *StreamDestination) GetStreamKey() string {
 	return ""
 }
 
-func (x *StreamDestination) GetEnabled() bool {
-	if x != nil {
-		return x.Enabled
-	}
-	return false
-}
-
 func (x *StreamDestination) GetCreatedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.CreatedAt
@@ -128,7 +120,6 @@ type CreateStreamDestinationRequest struct {
 	Platform      string                 `protobuf:"bytes,2,opt,name=platform,proto3" json:"platform,omitempty"`
 	RtmpUrl       string                 `protobuf:"bytes,3,opt,name=rtmp_url,json=rtmpUrl,proto3" json:"rtmp_url,omitempty"`
 	StreamKey     string                 `protobuf:"bytes,4,opt,name=stream_key,json=streamKey,proto3" json:"stream_key,omitempty"`
-	Enabled       bool                   `protobuf:"varint,5,opt,name=enabled,proto3" json:"enabled,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -189,13 +180,6 @@ func (x *CreateStreamDestinationRequest) GetStreamKey() string {
 		return x.StreamKey
 	}
 	return ""
-}
-
-func (x *CreateStreamDestinationRequest) GetEnabled() bool {
-	if x != nil {
-		return x.Enabled
-	}
-	return false
 }
 
 type CreateStreamDestinationResponse struct {
@@ -337,7 +321,6 @@ type UpdateStreamDestinationRequest struct {
 	Platform      string                 `protobuf:"bytes,3,opt,name=platform,proto3" json:"platform,omitempty"`
 	RtmpUrl       string                 `protobuf:"bytes,4,opt,name=rtmp_url,json=rtmpUrl,proto3" json:"rtmp_url,omitempty"`
 	StreamKey     string                 `protobuf:"bytes,5,opt,name=stream_key,json=streamKey,proto3" json:"stream_key,omitempty"`
-	Enabled       bool                   `protobuf:"varint,6,opt,name=enabled,proto3" json:"enabled,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -405,13 +388,6 @@ func (x *UpdateStreamDestinationRequest) GetStreamKey() string {
 		return x.StreamKey
 	}
 	return ""
-}
-
-func (x *UpdateStreamDestinationRequest) GetEnabled() bool {
-	if x != nil {
-		return x.Enabled
-	}
-	return false
 }
 
 type UpdateStreamDestinationResponse struct {
@@ -542,40 +518,37 @@ var File_api_v1_stream_proto protoreflect.FileDescriptor
 
 const file_api_v1_stream_proto_rawDesc = "" +
 	"\n" +
-	"\x13api/v1/stream.proto\x12\x06api.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x9d\x02\n" +
+	"\x13api/v1/stream.proto\x12\x06api.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x83\x02\n" +
 	"\x11StreamDestination\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1a\n" +
 	"\bplatform\x18\x03 \x01(\tR\bplatform\x12\x19\n" +
 	"\brtmp_url\x18\x04 \x01(\tR\artmpUrl\x12\x1d\n" +
 	"\n" +
-	"stream_key\x18\x05 \x01(\tR\tstreamKey\x12\x18\n" +
-	"\aenabled\x18\x06 \x01(\bR\aenabled\x129\n" +
+	"stream_key\x18\x05 \x01(\tR\tstreamKey\x129\n" +
 	"\n" +
 	"created_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
-	"updated_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\xa4\x01\n" +
+	"updated_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\x8a\x01\n" +
 	"\x1eCreateStreamDestinationRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
 	"\bplatform\x18\x02 \x01(\tR\bplatform\x12\x19\n" +
 	"\brtmp_url\x18\x03 \x01(\tR\artmpUrl\x12\x1d\n" +
 	"\n" +
-	"stream_key\x18\x04 \x01(\tR\tstreamKey\x12\x18\n" +
-	"\aenabled\x18\x05 \x01(\bR\aenabled\"^\n" +
+	"stream_key\x18\x04 \x01(\tR\tstreamKey\"^\n" +
 	"\x1fCreateStreamDestinationResponse\x12;\n" +
 	"\vdestination\x18\x01 \x01(\v2\x19.api.v1.StreamDestinationR\vdestination\":\n" +
 	"\x1dListStreamDestinationsRequest\x12\x19\n" +
 	"\bstage_id\x18\x01 \x01(\tR\astageId\"_\n" +
 	"\x1eListStreamDestinationsResponse\x12=\n" +
-	"\fdestinations\x18\x01 \x03(\v2\x19.api.v1.StreamDestinationR\fdestinations\"\xb4\x01\n" +
+	"\fdestinations\x18\x01 \x03(\v2\x19.api.v1.StreamDestinationR\fdestinations\"\x9a\x01\n" +
 	"\x1eUpdateStreamDestinationRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1a\n" +
 	"\bplatform\x18\x03 \x01(\tR\bplatform\x12\x19\n" +
 	"\brtmp_url\x18\x04 \x01(\tR\artmpUrl\x12\x1d\n" +
 	"\n" +
-	"stream_key\x18\x05 \x01(\tR\tstreamKey\x12\x18\n" +
-	"\aenabled\x18\x06 \x01(\bR\aenabled\"^\n" +
+	"stream_key\x18\x05 \x01(\tR\tstreamKey\"^\n" +
 	"\x1fUpdateStreamDestinationResponse\x12;\n" +
 	"\vdestination\x18\x01 \x01(\v2\x19.api.v1.StreamDestinationR\vdestination\"0\n" +
 	"\x1eDeleteStreamDestinationRequest\x12\x0e\n" +

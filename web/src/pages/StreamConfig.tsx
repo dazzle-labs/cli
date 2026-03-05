@@ -4,7 +4,7 @@ import type { StreamDestination } from "../gen/api/v1/stream_pb.js";
 import { StreamDestinationForm } from "@/components/onboarding/StreamDestinationForm.js";
 import type { StreamDestinationData } from "@/components/onboarding/StreamDestinationForm.js";
 import { Button } from "@/components/ui/button";
-import { Plus, X, Trash2, Radio, ToggleLeft, ToggleRight } from "lucide-react";
+import { Plus, X, Trash2, Radio } from "lucide-react";
 
 export function StreamConfig() {
   const [destinations, setDestinations] = useState<StreamDestination[]>([]);
@@ -30,7 +30,6 @@ export function StreamConfig() {
         platform: data.platform,
         rtmpUrl: data.rtmpUrl,
         streamKey: data.streamKey,
-        enabled: true,
       });
       setShowForm(false);
       await refresh();
@@ -41,32 +40,14 @@ export function StreamConfig() {
 
   async function handleUpdate(id: string, data: StreamDestinationData) {
     try {
-      const existing = destinations.find(d => d.id === id);
       await streamClient.updateStreamDestination({
         id,
         name: data.name,
         platform: data.platform,
         rtmpUrl: data.rtmpUrl,
         streamKey: data.streamKey,
-        enabled: existing?.enabled ?? true,
       });
       setEditingId(null);
-      await refresh();
-    } catch {
-      // ignore
-    }
-  }
-
-  async function handleToggle(dest: StreamDestination) {
-    try {
-      await streamClient.updateStreamDestination({
-        id: dest.id,
-        name: dest.name,
-        platform: dest.platform,
-        rtmpUrl: dest.rtmpUrl,
-        streamKey: "",
-        enabled: !dest.enabled,
-      });
       await refresh();
     } catch {
       // ignore
@@ -176,7 +157,6 @@ export function StreamConfig() {
                 <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">Name</th>
                 <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">Platform</th>
                 <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">RTMP URL</th>
-                <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">Status</th>
                 <th className="py-3 px-4"></th>
               </tr>
             </thead>
@@ -195,17 +175,6 @@ export function StreamConfig() {
                   </td>
                   <td className="py-3 px-4">
                     <code className="text-xs text-zinc-500 font-mono">{d.rtmpUrl}</code>
-                  </td>
-                  <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      onClick={() => handleToggle(d)}
-                      className={`flex items-center gap-1.5 text-xs font-medium transition-colors cursor-pointer ${
-                        d.enabled ? "text-emerald-400" : "text-zinc-600"
-                      }`}
-                    >
-                      {d.enabled ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}
-                      {d.enabled ? "On" : "Off"}
-                    </button>
                   </td>
                   <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                     {confirmDeleteId === d.id ? (

@@ -66,7 +66,6 @@ export function OnboardingWizard({ open, onClose }: OnboardingWizardProps) {
         platform: dest.platform,
         rtmpUrl: dest.rtmpUrl,
         streamKey: dest.streamKey,
-        enabled: true,
       });
       return resp.destination?.id ?? null;
     } catch {

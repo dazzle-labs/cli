@@ -19,7 +19,6 @@ message StreamDestination {
   string platform = 3;
   string rtmp_url = 4;
   string stream_key = 5;
-  bool enabled = 6;
   google.protobuf.Timestamp created_at = 7;
   google.protobuf.Timestamp updated_at = 8;
 }
@@ -29,7 +28,6 @@ message CreateStreamDestinationRequest {
   string platform = 2;
   string rtmp_url = 3;
   string stream_key = 4;
-  bool enabled = 5;
 }
 
 message CreateStreamDestinationResponse {
@@ -50,7 +48,6 @@ message UpdateStreamDestinationRequest {
   string platform = 3;
   string rtmp_url = 4;
   string stream_key = 5;
-  bool enabled = 6;
 }
 
 message UpdateStreamDestinationResponse {

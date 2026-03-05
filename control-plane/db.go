@@ -200,19 +200,18 @@ type streamDestRow struct {
 	Platform  string
 	RtmpURL   string
 	StreamKey string // encrypted
-	Enabled   bool
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
 
-func dbCreateStreamDest(db *sql.DB, userID, name, platform, rtmpURL, encStreamKey string, enabled bool) (*streamDestRow, error) {
+func dbCreateStreamDest(db *sql.DB, userID, name, platform, rtmpURL, encStreamKey string) (*streamDestRow, error) {
 	row := &streamDestRow{}
 	err := db.QueryRow(`
-		INSERT INTO stream_destinations (user_id, name, platform, rtmp_url, stream_key, enabled)
-		VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING id, user_id, name, platform, rtmp_url, stream_key, enabled, created_at, updated_at`,
-		userID, name, platform, rtmpURL, encStreamKey, enabled).
-		Scan(&row.ID, &row.UserID, &row.Name, &row.Platform, &row.RtmpURL, &row.StreamKey, &row.Enabled, &row.CreatedAt, &row.UpdatedAt)
+		INSERT INTO stream_destinations (user_id, name, platform, rtmp_url, stream_key)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id, user_id, name, platform, rtmp_url, stream_key, created_at, updated_at`,
+		userID, name, platform, rtmpURL, encStreamKey).
+		Scan(&row.ID, &row.UserID, &row.Name, &row.Platform, &row.RtmpURL, &row.StreamKey, &row.CreatedAt, &row.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +220,7 @@ func dbCreateStreamDest(db *sql.DB, userID, name, platform, rtmpURL, encStreamKe
 
 func dbListStreamDests(db *sql.DB, userID string) ([]streamDestRow, error) {
 	rows, err := db.Query(`
-		SELECT id, user_id, name, platform, rtmp_url, stream_key, enabled, created_at, updated_at
+		SELECT id, user_id, name, platform, rtmp_url, stream_key, created_at, updated_at
 		FROM stream_destinations WHERE user_id=$1 ORDER BY created_at DESC`, userID)
 	if err != nil {
 		return nil, err
@@ -230,7 +229,7 @@ func dbListStreamDests(db *sql.DB, userID string) ([]streamDestRow, error) {
 	var dests []streamDestRow
 	for rows.Next() {
 		var d streamDestRow
-		if err := rows.Scan(&d.ID, &d.UserID, &d.Name, &d.Platform, &d.RtmpURL, &d.StreamKey, &d.Enabled, &d.CreatedAt, &d.UpdatedAt); err != nil {
+		if err := rows.Scan(&d.ID, &d.UserID, &d.Name, &d.Platform, &d.RtmpURL, &d.StreamKey, &d.CreatedAt, &d.UpdatedAt); err != nil {
 			return nil, err
 		}
 		dests = append(dests, d)
@@ -238,23 +237,23 @@ func dbListStreamDests(db *sql.DB, userID string) ([]streamDestRow, error) {
 	return dests, rows.Err()
 }
 
-func dbUpdateStreamDest(db *sql.DB, id, userID, name, platform, rtmpURL, encStreamKey string, enabled bool) (*streamDestRow, error) {
+func dbUpdateStreamDest(db *sql.DB, id, userID, name, platform, rtmpURL, encStreamKey string) (*streamDestRow, error) {
 	row := &streamDestRow{}
 	var err error
 	if encStreamKey != "" {
 		err = db.QueryRow(`
-			UPDATE stream_destinations SET name=$3, platform=$4, rtmp_url=$5, stream_key=$6, enabled=$7, updated_at=NOW()
+			UPDATE stream_destinations SET name=$3, platform=$4, rtmp_url=$5, stream_key=$6, updated_at=NOW()
 			WHERE id=$1 AND user_id=$2
-			RETURNING id, user_id, name, platform, rtmp_url, stream_key, enabled, created_at, updated_at`,
-			id, userID, name, platform, rtmpURL, encStreamKey, enabled).
-			Scan(&row.ID, &row.UserID, &row.Name, &row.Platform, &row.RtmpURL, &row.StreamKey, &row.Enabled, &row.CreatedAt, &row.UpdatedAt)
+			RETURNING id, user_id, name, platform, rtmp_url, stream_key, created_at, updated_at`,
+			id, userID, name, platform, rtmpURL, encStreamKey).
+			Scan(&row.ID, &row.UserID, &row.Name, &row.Platform, &row.RtmpURL, &row.StreamKey, &row.CreatedAt, &row.UpdatedAt)
 	} else {
 		err = db.QueryRow(`
-			UPDATE stream_destinations SET name=$3, platform=$4, rtmp_url=$5, enabled=$6, updated_at=NOW()
+			UPDATE stream_destinations SET name=$3, platform=$4, rtmp_url=$5, updated_at=NOW()
 			WHERE id=$1 AND user_id=$2
-			RETURNING id, user_id, name, platform, rtmp_url, stream_key, enabled, created_at, updated_at`,
-			id, userID, name, platform, rtmpURL, enabled).
-			Scan(&row.ID, &row.UserID, &row.Name, &row.Platform, &row.RtmpURL, &row.StreamKey, &row.Enabled, &row.CreatedAt, &row.UpdatedAt)
+			RETURNING id, user_id, name, platform, rtmp_url, stream_key, created_at, updated_at`,
+			id, userID, name, platform, rtmpURL).
+			Scan(&row.ID, &row.UserID, &row.Name, &row.Platform, &row.RtmpURL, &row.StreamKey, &row.CreatedAt, &row.UpdatedAt)
 	}
 	if err != nil {
 		return nil, err
@@ -367,9 +366,9 @@ func dbSetStageDestination(db *sql.DB, stageID, userID, destinationID string) er
 func dbGetStreamDestForUser(db *sql.DB, destID, userID string) (*streamDestRow, error) {
 	var d streamDestRow
 	err := db.QueryRow(`
-		SELECT id, user_id, name, platform, rtmp_url, stream_key, enabled, created_at, updated_at
+		SELECT id, user_id, name, platform, rtmp_url, stream_key, created_at, updated_at
 		FROM stream_destinations WHERE id=$1 AND user_id=$2`, destID, userID).
-		Scan(&d.ID, &d.UserID, &d.Name, &d.Platform, &d.RtmpURL, &d.StreamKey, &d.Enabled, &d.CreatedAt, &d.UpdatedAt)
+		Scan(&d.ID, &d.UserID, &d.Name, &d.Platform, &d.RtmpURL, &d.StreamKey, &d.CreatedAt, &d.UpdatedAt)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}

@@ -309,8 +309,8 @@ func (m *Manager) handleMCPCreateStage(ctx context.Context, req mcp.CallToolRequ
 	return mcp.NewToolResultText(string(result)), nil
 }
 
-// validateStreamDestination looks up the stage's assigned destination and validates it is
-// enabled with a valid RTMP URL and decryptable stream key. Returns the validated row.
+// validateStreamDestination looks up the stage's assigned destination and validates it has
+// a valid RTMP URL and decryptable stream key. Returns the validated row.
 func (m *Manager) validateStreamDestination(stageID, userID string) (*streamDestRow, error) {
 	if m.db == nil || userID == "" {
 		return nil, fmt.Errorf("no stream destination configured — add one via the API before starting a stage")
@@ -335,9 +335,6 @@ func (m *Manager) validateStreamDestination(stageID, userID string) (*streamDest
 		return nil, fmt.Errorf("stream destination not found for stage %s — select one in the dashboard", stageID)
 	}
 
-	if !dest.Enabled {
-		return nil, fmt.Errorf("stream destination '%s' is disabled on stage %s — enable it in the dashboard", dest.Name, stageID)
-	}
 	if dest.RtmpURL == "" {
 		return nil, fmt.Errorf("stream destination '%s' has no RTMP URL configured", dest.Name)
 	}
