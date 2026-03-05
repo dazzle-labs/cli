@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: control-plane
+  namespace: browser-streamer
+spec:
+  type: NodePort
+  selector:
+    app: control-plane
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 30080  # Must match containerPort in k8s/local/kind-config.yaml

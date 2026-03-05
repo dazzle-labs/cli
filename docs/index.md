@@ -57,25 +57,27 @@
 - [Data Models](./data-models.md) — PostgreSQL schema, migration history, entity relationships
 
 ### Operations
-- [Development Guide](./development-guide.md) — Local dev setup, build commands, protobuf regen, secret management
+- [Local Development (Kind)](./local-dev.md) — Run the full stack locally with Kind (recommended for new devs)
+- [Development Guide](./development-guide.md) — Remote build commands, protobuf regen, secret management
 - [Deployment Guide](./deployment-guide.md) — k3s deployment, TLS setup, provisioning, monitoring
 
 ---
 
 ## Getting Started
 
-### Run the web frontend locally
+### Local development (recommended)
 ```bash
+# Start full stack locally (secrets are SOPS-encrypted, decrypted automatically)
+make local-up
+
+# Start web dev server (in another terminal)
 cd web && npm install && npm run dev
-# Requires control-plane running on :8080 for API calls
+# Open http://localhost:5173
 ```
 
-### Compile check on the Go backend
-```bash
-cd control-plane && go build -o /dev/null . && go vet ./...
-```
+See **[Local Development (Kind)](./local-dev.md)** for the full guide.
 
-### Build and deploy everything
+### Remote build and deploy
 ```bash
 make build HOST=<vps-ip> CLERK_PK=pk_live_...
 make deploy HOST=<vps-ip>

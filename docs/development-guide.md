@@ -31,6 +31,7 @@ browser-streamer/
 ├── k8s/                # Kubernetes YAML manifests
 │   ├── control-plane/  # Deployment, RBAC, service
 │   ├── infrastructure/ # PostgreSQL, encryption-key, postgres-auth secrets
+│   ├── local/          # Kind cluster config, NodePort service, dev secrets
 │   ├── networking/     # Traefik config, ClusterIssuer, Ingress
 │   └── clerk/          # Clerk auth secrets
 ├── Makefile            # Build/deploy automation
@@ -41,7 +42,18 @@ browser-streamer/
 
 ## Local Development
 
-### Control Plane (Go)
+### Full-Stack Local (Kind) — Recommended
+
+The fastest way to develop locally is with Kind, which runs the entire stack (postgres, control-plane, streamer) in a local Kubernetes cluster.
+
+```bash
+make local-up   # Build + deploy to Kind
+cd web && npm run dev                 # Start web dev server
+```
+
+See **[Local Development (Kind)](./local-dev.md)** for prerequisites, first-time setup, and the full workflow.
+
+### Control Plane (Go) — Compile Check Only
 
 ```bash
 cd control-plane
@@ -49,23 +61,7 @@ go build -o /dev/null .   # Compile check
 go vet ./...              # Static analysis
 ```
 
-To run locally, the following env vars are required:
-
-| Variable | Example | Description |
-|----------|---------|-------------|
-| `CLERK_SECRET_KEY` | `sk_test_...` | Clerk backend key |
-| `ENCRYPTION_KEY` | `<64-hex-chars>` | 32-byte AES key |
-| `DB_HOST` | `localhost` | PostgreSQL host |
-| `DB_PORT` | `5432` | PostgreSQL port |
-| `DB_USER` | `browser_streamer` | DB user |
-| `DB_PASSWORD` | `<password>` | DB password |
-| `DB_NAME` | `browser_streamer` | DB name |
-| `PORT` | `8080` | Listen port |
-| `NAMESPACE` | `browser-streamer` | Kubernetes namespace |
-| `STREAMER_IMAGE` | `browser-streamer:latest` | Streamer pod image |
-| `MAX_STAGES` | `3` | Max concurrent stages |
-
-> Note: Running locally requires a Kubernetes context (in-cluster or kubeconfig). The control plane uses `rest.InClusterConfig()` and will fail without a valid k8s connection.
+The control-plane requires Kubernetes (`rest.InClusterConfig()`) and postgres to run. Use Kind for full local execution.
 
 ### Web Frontend (React)
 
@@ -76,17 +72,11 @@ npm run dev          # Vite dev server (proxies /api.v1, /cdp, /stage, /health t
 npm run build        # Production build → web/dist/
 ```
 
-The Vite dev proxy in `web/vite.config.ts` routes API paths to `http://localhost:8080`.
+The Vite dev proxy in `web/vite.config.ts` routes API paths to `http://localhost:8080` (either Kind or remote).
 
 ### Streamer (Node.js)
 
-```bash
-cd streamer
-npm install
-node index.js        # Requires Chrome + Xvfb running locally
-```
-
-> The streamer is designed for the Docker/Kubernetes environment with Chrome, OBS, and Xvfb. Local development without these is limited. The panel system (`/tmp/content/`) and Vite HMR dev server will start, but Chrome CDP will be unavailable.
+The streamer runs inside Docker/Kubernetes with Chrome, OBS, Xvfb, and PulseAudio. It cannot run standalone on macOS — use Kind to test streamer changes locally.
 
 ---
 

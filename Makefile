@@ -6,6 +6,8 @@ NS       := browser-streamer
 .PHONY: help proto build-streamer build-control-plane build deploy restart \
         logs-cp status provision clean \
         secrets install-cert-manager setup-tls \
+        local-build local-build-cp local-build-streamer \
+        local-up local-down local-deploy local-logs local-status \
         control-plane/% streamer/% web/%
 
 help: ## Show this help
@@ -92,6 +94,67 @@ provision: ## Full provision from scratch (usage: make provision HOST=x.x.x.x [T
 
 clean: ## Delete all session pods
 	$(SSH) "k3s kubectl delete pods -n $(NS) -l app=streamer-session --ignore-not-found"
+
+# ── Local dev (Kind) ──────────────────────────────────────
+
+KCTL           := kubectl --context kind-browser-streamer -n browser-streamer
+LOCAL_CLERK_PK ?= pk_test_cmFyZS13YWxsZXllLTQ4LmNsZXJrLmFjY291bnRzLmRldiQ
+CP_BUILD       := docker build -f control-plane/docker/Dockerfile --build-arg VITE_CLERK_PUBLISHABLE_KEY=$(LOCAL_CLERK_PK) -t control-plane:latest .
+STR_BUILD := docker build --platform linux/amd64 -f streamer/docker/Dockerfile -t browser-streamer:latest streamer/
+
+local-build: local-build-cp local-build-streamer ## Build all images locally and load into Kind
+
+local-build-cp: ## Build control-plane image locally and load into Kind
+	$(CP_BUILD)
+	kind load docker-image control-plane:latest --name browser-streamer
+
+local-build-streamer: ## Build streamer image locally and load into Kind
+	$(STR_BUILD)
+	kind load docker-image browser-streamer:latest --name browser-streamer
+
+local-up: ## Create Kind cluster, build images, deploy full stack locally
+	@which sops >/dev/null 2>&1 || { echo "ERROR: sops not found. Install: brew install sops"; exit 1; }
+	$(CP_BUILD)
+	$(STR_BUILD)
+	@if kind get clusters 2>/dev/null | grep -q '^browser-streamer$$'; then \
+		echo "Kind cluster 'browser-streamer' already exists, reusing."; \
+	else \
+		kind create cluster --name browser-streamer --config k8s/local/kind-config.yaml; \
+	fi
+	kubectl --context kind-browser-streamer create namespace browser-streamer --dry-run=client -o yaml | kubectl --context kind-browser-streamer apply -f -
+	kind load docker-image control-plane:latest --name browser-streamer
+	kind load docker-image browser-streamer:latest --name browser-streamer
+	sops -d k8s/local/local.secrets.yaml | $(KCTL) apply -f -
+	$(KCTL) apply -f k8s/infrastructure/postgres.yaml
+	$(KCTL) apply -f k8s/control-plane/rbac.yaml
+	$(KCTL) apply -f k8s/control-plane/deployment.yaml
+	$(KCTL) apply -f k8s/local/service.yaml
+	$(KCTL) wait --for=condition=ready pod -l app=postgres --timeout=120s
+	$(KCTL) wait --for=condition=ready pod -l app=control-plane --timeout=120s
+	@echo ""
+	@echo "Local stack ready! Control-plane at http://localhost:8080"
+
+local-down: ## Delete the Kind cluster
+	kind delete cluster --name browser-streamer
+
+local-deploy: ## Apply manifests and restart control-plane in Kind
+	sops -d k8s/local/local.secrets.yaml | $(KCTL) apply -f -
+	$(KCTL) apply -f k8s/infrastructure/postgres.yaml
+	$(KCTL) apply -f k8s/control-plane/rbac.yaml
+	$(KCTL) apply -f k8s/control-plane/deployment.yaml
+	$(KCTL) apply -f k8s/local/service.yaml
+	$(KCTL) rollout restart deployment/control-plane
+	$(KCTL) rollout status deployment/control-plane --timeout=120s
+
+local-logs: ## Tail control-plane logs in Kind
+	$(KCTL) logs -f deployment/control-plane
+
+local-status: ## Show pods and services in Kind
+	@echo "── Pods ──"
+	$(KCTL) get pods -o wide
+	@echo ""
+	@echo "── Services ──"
+	$(KCTL) get svc
 
 # ── Nested component targets ───────────────────────────────
 

@@ -64,6 +64,20 @@ cd streamer && make build        # Same as: make streamer/build
 cd web && make build             # Same as: make web/build
 ```
 
+### Local Development (Kind)
+```bash
+make local-up                    # Build images + create Kind cluster + deploy
+make local-down                      # Delete Kind cluster
+make local-build                     # Rebuild all images and load into Kind
+make local-build-cp                  # Rebuild control-plane only + load into Kind
+make local-build-streamer            # Rebuild streamer only + load into Kind
+make local-deploy                    # Apply manifests + restart control-plane in Kind
+make local-logs                      # Tail control-plane logs in Kind
+make local-status                    # Show pods and services in Kind
+```
+
+Secrets are SOPS-encrypted in `k8s/local/local.secrets.yaml` (requires Age key). See [docs/local-dev.md](docs/local-dev.md).
+
 ### Configuration
 ```bash
 # Set remote host and clerk key
