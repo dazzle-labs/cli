@@ -1,4 +1,4 @@
-import { UserButton } from "@clerk/clerk-react";
+import { UserButton } from "@clerk/react";
 import { Link, useLocation } from "react-router-dom";
 import { Monitor, Radio, Key, Rocket, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";

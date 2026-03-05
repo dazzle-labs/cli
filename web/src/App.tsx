@@ -1,8 +1,7 @@
 import {
-  SignedIn,
-  SignedOut,
+  Show,
   useAuth,
-} from "@clerk/clerk-react";
+} from "@clerk/react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import { setTokenGetter } from "./client.js";
@@ -24,10 +23,10 @@ function AuthSetup() {
 export function App() {
   return (
     <BrowserRouter>
-      <SignedOut>
+      <Show when="signed-out">
         <LandingPage />
-      </SignedOut>
-      <SignedIn>
+      </Show>
+      <Show when="signed-in">
         <AuthSetup />
         <Layout>
           <Routes>
@@ -38,7 +37,7 @@ export function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Layout>
-      </SignedIn>
+      </Show>
     </BrowserRouter>
   );
 }

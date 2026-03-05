@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { SignIn } from "@clerk/clerk-react";
+import { SignIn } from "@clerk/react";
 import { Eye, Share2, Plug, ArrowRight, X, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -241,15 +241,17 @@ export function LandingPage() {
 
         {/* Inline Clerk sign-in */}
         {showSignIn && (
-          <div ref={signInRef} className="mt-12 flex justify-center relative">
-            <button
-              onClick={() => setShowSignIn(false)}
-              className="absolute -top-2 right-1/2 translate-x-[180px] z-10 text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
-              aria-label="Close sign in"
-            >
-              <X className="h-5 w-5" />
-            </button>
-            <SignIn />
+          <div ref={signInRef} className="mt-12 flex justify-center">
+            <div className="relative">
+              <button
+                onClick={() => setShowSignIn(false)}
+                className="absolute -top-3 -right-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+                aria-label="Close sign in"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <SignIn />
+            </div>
           </div>
         )}
       </section>

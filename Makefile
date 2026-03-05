@@ -3,8 +3,10 @@ CLERK_PK ?= pk_test_cmFyZS13YWxsZXllLTQ4LmNsZXJrLmFjY291bnRzLmRldiQ
 SSH      := ssh root@$(HOST)
 NS       := browser-streamer
 KCTL     := kubectl --context kind-browser-streamer -n browser-streamer
-CP_BUILD := docker build -f control-plane/docker/Dockerfile --build-arg VITE_CLERK_PUBLISHABLE_KEY=$(CLERK_PK) -t control-plane:latest .
-STR_BUILD := docker build --platform linux/amd64 -f streamer/docker/Dockerfile -t browser-streamer:latest streamer/
+CP_IMG   := dazzlefm/agent-streamer-control-plane:latest
+STR_IMG  := dazzlefm/agent-streamer-stage:latest
+CP_BUILD := docker build -f control-plane/docker/Dockerfile --build-arg VITE_CLERK_PUBLISHABLE_KEY=$(CLERK_PK) -t $(CP_IMG) .
+STR_BUILD := docker build --platform linux/amd64 -f streamer/docker/Dockerfile -t $(STR_IMG) streamer/
 
 .PHONY: help check-deps proto up down build build-cp build-streamer deploy logs status \
         remote/build remote/build-streamer remote/build-control-plane \
@@ -58,8 +60,8 @@ up: check-deps ## Create Kind cluster, build images, deploy full stack
 		kind create cluster --name browser-streamer --config k8s/local/kind-config.yaml; \
 	fi
 	kubectl --context kind-browser-streamer create namespace browser-streamer --dry-run=client -o yaml | kubectl --context kind-browser-streamer apply -f -
-	kind load docker-image control-plane:latest --name browser-streamer
-	kind load docker-image browser-streamer:latest --name browser-streamer
+	kind load docker-image $(CP_IMG) --name browser-streamer
+	kind load docker-image $(STR_IMG) --name browser-streamer
 	sops -d k8s/local/local.secrets.yaml | $(KCTL) apply -f -
 	$(KCTL) apply -f k8s/infrastructure/postgres.yaml
 	$(KCTL) apply -f k8s/control-plane/rbac.yaml
@@ -77,11 +79,11 @@ build: check-deps build-cp build-streamer ## Build all images and load into Kind
 
 build-cp: check-deps ## Build control-plane image and load into Kind
 	$(CP_BUILD)
-	kind load docker-image control-plane:latest --name browser-streamer
+	kind load docker-image $(CP_IMG) --name browser-streamer
 
 build-streamer: check-deps ## Build streamer image and load into Kind
 	$(STR_BUILD)
-	kind load docker-image browser-streamer:latest --name browser-streamer
+	kind load docker-image $(STR_IMG) --name browser-streamer
 
 deploy: check-deps ## Apply manifests and restart control-plane in Kind
 	sops -d k8s/local/local.secrets.yaml | $(KCTL) apply -f -
