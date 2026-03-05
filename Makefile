@@ -6,7 +6,7 @@ KCTL     := kubectl --context kind-browser-streamer -n browser-streamer
 CP_BUILD := docker build -f control-plane/docker/Dockerfile --build-arg VITE_CLERK_PUBLISHABLE_KEY=$(CLERK_PK) -t control-plane:latest .
 STR_BUILD := docker build --platform linux/amd64 -f streamer/docker/Dockerfile -t browser-streamer:latest streamer/
 
-.PHONY: help proto up down build build-cp build-streamer deploy logs status \
+.PHONY: help check-deps proto up down build build-cp build-streamer deploy logs status \
         remote/build remote/build-streamer remote/build-control-plane \
         remote/deploy remote/restart remote/deploy-secrets \
         remote/install-cert-manager remote/setup-tls \
@@ -27,11 +27,29 @@ help: ## Show this help
 # Local development (Kind)
 # ══════════════════════════════════════════════════════
 
+check-deps:
+	@which docker >/dev/null 2>&1 || { echo "ERROR: docker not found. Install Docker Desktop: https://www.docker.com/products/docker-desktop"; exit 1; }
+	@which kind >/dev/null 2>&1 || { echo "ERROR: kind not found. Install: brew install kind"; exit 1; }
+	@which kubectl >/dev/null 2>&1 || { echo "ERROR: kubectl not found. Install: brew install kubectl"; exit 1; }
+	@which sops >/dev/null 2>&1 || { echo "ERROR: sops not found. Install: brew install sops"; exit 1; }
+	@if [ -z "$$SOPS_AGE_KEY_FILE" ] && [ -z "$$SOPS_AGE_KEY" ] && [ ! -f "$$HOME/.config/sops/age/keys.txt" ]; then \
+		echo ""; \
+		echo "ERROR: No Age key found. SOPS needs an Age key to decrypt secrets."; \
+		echo ""; \
+		echo "  Copy the shared Age key from axis-router:"; \
+		echo "    mkdir -p ~/.config/sops/age"; \
+		echo "    cp ~/projects/axis-router/.age.key ~/.config/sops/age/keys.txt"; \
+		echo ""; \
+		echo "  Or point SOPS_AGE_KEY_FILE at your key:"; \
+		echo "    export SOPS_AGE_KEY_FILE=/path/to/keys.txt"; \
+		echo ""; \
+		exit 1; \
+	fi
+
 proto: ## Generate protobuf code (Go + TypeScript)
 	$(MAKE) -C control-plane proto
 
-up: ## Create Kind cluster, build images, deploy full stack
-	@which sops >/dev/null 2>&1 || { echo "ERROR: sops not found. Install: brew install sops"; exit 1; }
+up: check-deps ## Create Kind cluster, build images, deploy full stack
 	$(CP_BUILD)
 	$(STR_BUILD)
 	@if kind get clusters 2>/dev/null | grep -q '^browser-streamer$$'; then \
@@ -55,17 +73,17 @@ up: ## Create Kind cluster, build images, deploy full stack
 down: ## Delete the Kind cluster
 	kind delete cluster --name browser-streamer
 
-build: build-cp build-streamer ## Build all images and load into Kind
+build: check-deps build-cp build-streamer ## Build all images and load into Kind
 
-build-cp: ## Build control-plane image and load into Kind
+build-cp: check-deps ## Build control-plane image and load into Kind
 	$(CP_BUILD)
 	kind load docker-image control-plane:latest --name browser-streamer
 
-build-streamer: ## Build streamer image and load into Kind
+build-streamer: check-deps ## Build streamer image and load into Kind
 	$(STR_BUILD)
 	kind load docker-image browser-streamer:latest --name browser-streamer
 
-deploy: ## Apply manifests and restart control-plane in Kind
+deploy: check-deps ## Apply manifests and restart control-plane in Kind
 	sops -d k8s/local/local.secrets.yaml | $(KCTL) apply -f -
 	$(KCTL) apply -f k8s/infrastructure/postgres.yaml
 	$(KCTL) apply -f k8s/control-plane/rbac.yaml
