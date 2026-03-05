@@ -17,6 +17,7 @@ interface StreamDestinationFormProps {
   submitLabel?: string;
   hideSkip?: boolean;
   compact?: boolean;
+  streamKeyOptional?: boolean;
 }
 
 const platforms = [
@@ -50,6 +51,7 @@ export function StreamDestinationForm({
   submitLabel = "Continue",
   hideSkip,
   compact,
+  streamKeyOptional,
 }: StreamDestinationFormProps) {
   const [name, setName] = useState(initial?.name ?? "");
   const [platform, setPlatform] = useState(initial?.platform ?? "custom");
@@ -161,8 +163,8 @@ export function StreamDestinationForm({
               type="password"
               value={streamKey}
               onChange={(e) => setStreamKey(e.target.value)}
-              placeholder="Your stream key"
-              required
+              placeholder={streamKeyOptional ? "Leave blank to keep current key" : "Your stream key"}
+              required={!streamKeyOptional}
             />
           </div>
 

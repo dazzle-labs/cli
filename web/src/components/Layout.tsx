@@ -1,6 +1,6 @@
 import { UserButton } from "@clerk/clerk-react";
 import { Link, useLocation } from "react-router-dom";
-import { Monitor, Key, Rocket, BookOpen } from "lucide-react";
+import { Monitor, Radio, Key, Rocket, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import type { ReactNode } from "react";
@@ -8,6 +8,7 @@ import { OnboardingWizard } from "./onboarding/OnboardingWizard";
 
 const navItems = [
   { path: "/", label: "Stages", icon: Monitor },
+  { path: "/destinations", label: "Destinations", icon: Radio },
   { path: "/api-keys", label: "API Keys", icon: Key },
   { path: "/docs", label: "Docs", icon: BookOpen },
 ];

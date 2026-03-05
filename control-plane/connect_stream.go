@@ -62,9 +62,17 @@ func (s *rtmpDestinationServer) UpdateStreamDestination(ctx context.Context, req
 	info := mustAuth(ctx)
 	msg := req.Msg
 
-	encKey, err := encryptString(s.mgr.encryptionKey, msg.StreamKey)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+	if msg.Name == "" || msg.RtmpUrl == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name and rtmp_url are required"))
+	}
+
+	var encKey string
+	if msg.StreamKey != "" {
+		var err error
+		encKey, err = encryptString(s.mgr.encryptionKey, msg.StreamKey)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
 	}
 
 	row, err := dbUpdateStreamDest(s.mgr.db, msg.Id, info.UserID, msg.Name, msg.Platform, msg.RtmpUrl, encKey, msg.Enabled)

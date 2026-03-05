@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { Link } from "react-router-dom";
 import { stageClient, userClient, streamClient } from "../client.js";
 import type { Stage } from "../gen/api/v1/stage_pb.js";
 import type { StreamDestination } from "../gen/api/v1/stream_pb.js";
@@ -7,9 +8,7 @@ import type { GetProfileResponse } from "../gen/api/v1/user_pb.js";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Cpu, Globe, Radio, ToggleLeft, ToggleRight, X, ChevronRight, Copy, Check, Loader2 } from "lucide-react";
-import { StreamDestinationForm } from "@/components/onboarding/StreamDestinationForm";
-import type { StreamDestinationData } from "@/components/onboarding/StreamDestinationForm";
+import { Trash2, Cpu, Globe, Radio, ArrowUpRight, X, ChevronRight, Copy, Check, Loader2 } from "lucide-react";
 import { FRAMEWORKS } from "@/components/onboarding/frameworks";
 import { StreamPreview } from "@/components/StreamPreview";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
@@ -108,56 +107,6 @@ export function Dashboard() {
     await refresh();
   }
 
-  async function handleToggleStream(dest: StreamDestination) {
-    try {
-      await streamClient.updateStreamDestination({
-        id: dest.id,
-        name: dest.name,
-        platform: dest.platform,
-        rtmpUrl: dest.rtmpUrl,
-        streamKey: dest.streamKey,
-        enabled: !dest.enabled,
-      });
-      await refresh();
-    } catch {
-      // ignore
-    }
-  }
-
-  async function handleStreamSave(data: StreamDestinationData, existingDest?: StreamDestination) {
-    try {
-      if (existingDest) {
-        await streamClient.updateStreamDestination({
-          id: existingDest.id,
-          name: data.name,
-          platform: data.platform,
-          rtmpUrl: data.rtmpUrl,
-          streamKey: data.streamKey,
-          enabled: existingDest.enabled,
-        });
-      } else {
-        const resp = await streamClient.createStreamDestination({
-          name: data.name,
-          platform: data.platform,
-          rtmpUrl: data.rtmpUrl,
-          streamKey: data.streamKey,
-          enabled: true,
-        });
-        // Auto-select the new destination for this stage
-        if (resp.destination?.id && selectedStageId) {
-          try {
-            await stageClient.setStageDestination({ stageId: selectedStageId, destinationId: resp.destination.id });
-          } catch {
-            // best-effort
-          }
-        }
-      }
-      await refresh();
-    } catch {
-      // ignore
-    }
-  }
-
   async function handleCopy(text: string, id: string) {
     if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
     try {
@@ -204,9 +153,6 @@ export function Dashboard() {
 
   // Panel data
   const selectedStage = stages.find((s) => s.id === selectedStageId);
-  const selectedDest = selectedStage?.destinationId
-    ? destinations.find((d) => d.id === selectedStage.destinationId)
-    : undefined;
   const mcpUrl = selectedStageId ? `${window.location.origin}/stage/${selectedStageId}/mcp` : "";
   const activeFw = FRAMEWORKS.find((fw) => fw.id === activeFramework) ?? FRAMEWORKS[0];
   const snippet = selectedStageId ? activeFw.getSnippet(mcpUrl, "") : "";
@@ -378,8 +324,8 @@ export function Dashboard() {
             {/* Section 4: Stream Destination */}
             <div className="border-t border-white/[0.06] pt-4 mt-4">
               <p className="text-xs font-medium text-zinc-400 mb-3">Streaming</p>
-              {destinations.length > 0 && (
-                <div className="mb-3">
+              {destinations.length > 0 ? (
+                <>
                   <select
                     value={selectedStage?.destinationId || ""}
                     onChange={async (e) => {
@@ -390,58 +336,30 @@ export function Dashboard() {
                         // ignore
                       }
                     }}
-                    className="w-full rounded-lg border border-white/[0.06] bg-zinc-950/50 px-3 py-2 text-xs text-zinc-300 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
+                    className="w-full rounded-lg border border-white/[0.06] bg-zinc-950/50 px-3 py-2 text-xs text-zinc-300 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 mb-3"
                   >
                     <option value="">Select destination...</option>
                     {destinations.map((d) => (
                       <option key={d.id} value={d.id}>{d.name} ({d.platform})</option>
                     ))}
                   </select>
-                </div>
-              )}
-              {selectedDest && (
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Radio className="h-3.5 w-3.5 text-zinc-500" />
-                    <span className="text-xs font-mono text-zinc-400 bg-white/[0.04] px-1.5 py-0.5 rounded">
-                      {selectedDest.platform}
-                    </span>
-                    <span className="text-xs text-zinc-500">{selectedDest.name}</span>
-                  </div>
-                  <button
-                    onClick={() => handleToggleStream(selectedDest)}
-                    className={`flex items-center gap-1 text-xs font-medium transition-colors cursor-pointer ${
-                      selectedDest.enabled ? "text-emerald-400" : "text-zinc-600"
-                    }`}
+                  <Link
+                    to="/destinations"
+                    className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-emerald-400 transition-colors"
                   >
-                    {selectedDest.enabled ? <ToggleRight className="h-3.5 w-3.5" /> : <ToggleLeft className="h-3.5 w-3.5" />}
-                  </button>
-                </div>
+                    Manage destinations
+                    <ArrowUpRight className="h-3 w-3" />
+                  </Link>
+                </>
+              ) : (
+                <Link
+                  to="/destinations"
+                  className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-emerald-400 transition-colors"
+                >
+                  No destinations yet. Create one
+                  <ArrowUpRight className="h-3 w-3" />
+                </Link>
               )}
-              {!selectedDest && destinations.length === 0 && (
-                <p className="text-xs text-zinc-500 mb-3">
-                  Open the curtains — set up streaming to go live.
-                </p>
-              )}
-              <StreamDestinationForm
-                key={selectedStageId}
-                compact
-                initial={
-                  selectedDest
-                    ? {
-                        name: selectedDest.name,
-                        platform: selectedDest.platform,
-                        rtmpUrl: selectedDest.rtmpUrl,
-                        streamKey: selectedDest.streamKey,
-                      }
-                    : undefined
-                }
-                submitLabel={selectedDest ? "Save" : "Create"}
-                hideSkip
-                onNext={(data) => {
-                  if (data) handleStreamSave(data, selectedDest);
-                }}
-              />
             </div>
 
             {/* Section 5: Connect */}
