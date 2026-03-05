@@ -16,10 +16,12 @@ spec:
         app: control-plane
     spec:
       serviceAccountName: control-plane
+      imagePullSecrets:
+        - name: dazzlefm-dockerhub-secret
       containers:
         - name: control-plane
-          image: control-plane:latest
-          imagePullPolicy: Never
+          image: dazzlefm/agent-streamer-control-plane:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
           env:
@@ -54,7 +56,7 @@ spec:
             - name: NAMESPACE
               value: browser-streamer
             - name: STREAMER_IMAGE
-              value: browser-streamer:latest
+              value: dazzlefm/agent-streamer-stage:latest
             - name: MAX_SESSIONS
               value: "3"
           resources:

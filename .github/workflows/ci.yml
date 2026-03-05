@@ -1,0 +1,283 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  CP_REPO: dazzlefm/agent-streamer-control-plane
+  STREAMER_REPO: dazzlefm/agent-streamer-stage
+
+jobs:
+  control-plane:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set Up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log In To Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Generate Image Tags
+        id: tags
+        run: |
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "image_tag=${{ env.CP_REPO }}:${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "latest_tag=${{ env.CP_REPO }}:latest" >> $GITHUB_OUTPUT
+
+      - name: Build Docker Image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: control-plane/docker/Dockerfile
+          platforms: linux/amd64
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: |
+            ${{ steps.tags.outputs.image_tag }}
+            ${{ steps.tags.outputs.latest_tag }}
+          build-args: |
+            VITE_CLERK_PUBLISHABLE_KEY=${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
+          cache-from: type=registry,ref=${{ env.CP_REPO }}:buildcache
+          cache-to: ${{ github.ref == 'refs/heads/main' && format('type=registry,ref={0}:buildcache,mode=max', env.CP_REPO) || '' }}
+          load: ${{ github.event_name == 'pull_request' }}
+
+      - name: Docker Scout Scan
+        if: github.event_name == 'pull_request'
+        uses: docker/scout-action@v1
+        with:
+          command: cves
+          image: ${{ steps.tags.outputs.image_tag }}
+          only-severities: critical,high
+          exit-code: true
+          summary: true
+          organization: dazzlefm
+
+    outputs:
+      image_tag: ${{ steps.tags.outputs.short_sha }}
+
+  streamer:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set Up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log In To Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Generate Image Tags
+        id: tags
+        run: |
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "image_tag=${{ env.STREAMER_REPO }}:${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "latest_tag=${{ env.STREAMER_REPO }}:latest" >> $GITHUB_OUTPUT
+
+      - name: Build Docker Image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: streamer/
+          file: streamer/docker/Dockerfile
+          platforms: linux/amd64
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: |
+            ${{ steps.tags.outputs.image_tag }}
+            ${{ steps.tags.outputs.latest_tag }}
+          cache-from: type=registry,ref=${{ env.STREAMER_REPO }}:buildcache
+          cache-to: ${{ github.ref == 'refs/heads/main' && format('type=registry,ref={0}:buildcache,mode=max', env.STREAMER_REPO) || '' }}
+          load: ${{ github.event_name == 'pull_request' }}
+
+      - name: Docker Scout Scan
+        if: github.event_name == 'pull_request'
+        uses: docker/scout-action@v1
+        with:
+          command: cves
+          image: ${{ steps.tags.outputs.image_tag }}
+          only-severities: critical,high
+          exit-code: true
+          summary: true
+          organization: dazzlefm
+
+    outputs:
+      image_tag: ${{ steps.tags.outputs.short_sha }}
+
+  deploy:
+    needs: [control-plane, streamer]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure k3s Kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.K3S_KUBECONFIG }}" > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Log In To Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Install crane and sops
+        run: |
+          curl -sL "https://github.com/google/go-containerregistry/releases/latest/download/go-containerregistry_Linux_x86_64.tar.gz" | tar -xzf - crane
+          sudo mv crane /usr/local/bin/
+          curl -sLO "https://github.com/getsops/sops/releases/download/v3.11.0/sops-v3.11.0.linux.amd64"
+          sudo mv sops-v3.11.0.linux.amd64 /usr/local/bin/sops
+          sudo chmod +x /usr/local/bin/sops
+
+      - name: Setup age key
+        run: |
+          mkdir -p ~/.config/sops/age
+          echo "${{ secrets.AGE_SECRET_KEY }}" > ~/.config/sops/age/keys.txt
+          chmod 600 ~/.config/sops/age/keys.txt
+
+      - name: Compare Image Digests
+        id: compare
+        run: |
+          get_config_digest() {
+            local image=$1
+            local manifest=$(crane manifest "$image" 2>/dev/null)
+            local media_type=$(echo "$manifest" | jq -r '.mediaType // empty')
+
+            if [[ "$media_type" == *"index"* ]] || [[ "$media_type" == *"list"* ]]; then
+              local platform_digest=$(echo "$manifest" | jq -r '.manifests[] | select(.platform.architecture=="amd64" and .platform.os=="linux") | .digest')
+              crane manifest "${image%:*}@${platform_digest}" | jq -r '.config.digest // empty'
+            else
+              echo "$manifest" | jq -r '.config.digest // empty'
+            fi
+          }
+
+          # Check control-plane
+          CP_CURRENT_IMAGE=$(kubectl get deployment control-plane -n browser-streamer -o jsonpath='{.spec.template.spec.containers[?(@.name=="control-plane")].image}' 2>/dev/null || echo "")
+          CP_CURRENT_TAG="${CP_CURRENT_IMAGE##*:}"
+
+          CP_CURRENT_DIGEST=""
+          if [ -n "$CP_CURRENT_IMAGE" ] && [[ "$CP_CURRENT_IMAGE" == *"/"* ]]; then
+            CP_CURRENT_DIGEST=$(get_config_digest "$CP_CURRENT_IMAGE" || echo "")
+          fi
+
+          CP_NEW_IMAGE="${{ env.CP_REPO }}:${{ needs.control-plane.outputs.image_tag }}"
+          CP_NEW_DIGEST=$(get_config_digest "$CP_NEW_IMAGE")
+
+          echo "=== control-plane ==="
+          echo "Current: $CP_CURRENT_IMAGE (config digest: ${CP_CURRENT_DIGEST:-none})"
+          echo "New: $CP_NEW_IMAGE (config digest: ${CP_NEW_DIGEST:-none})"
+
+          CP_CHANGED=false
+          if [ -z "$CP_CURRENT_DIGEST" ] || [ "$CP_CURRENT_DIGEST" != "$CP_NEW_DIGEST" ]; then
+            CP_CHANGED=true
+            echo "control-plane: CHANGED"
+          else
+            echo "control-plane: unchanged"
+          fi
+
+          # Check streamer
+          STREAMER_NEW_IMAGE="${{ env.STREAMER_REPO }}:${{ needs.streamer.outputs.image_tag }}"
+          STREAMER_NEW_DIGEST=$(get_config_digest "$STREAMER_NEW_IMAGE")
+
+          echo ""
+          echo "=== streamer ==="
+          echo "New: $STREAMER_NEW_IMAGE (config digest: ${STREAMER_NEW_DIGEST:-none})"
+
+          echo ""
+          if [ "$CP_CHANGED" = "true" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Decision: DEPLOY (image changed)"
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "Decision: SKIP (images unchanged)"
+          fi
+
+      - name: Decrypt and apply secrets
+        run: |
+          for secret in k8s/secrets/*.yaml k8s/clerk/*.secrets.yaml k8s/infrastructure/*.secrets.yaml; do
+            [ -f "$secret" ] || continue
+            echo "Applying $secret"
+            sops --decrypt "$secret" | kubectl apply -f -
+          done
+
+      - name: Deploy with Kustomize
+        run: |
+          cd k8s/overlays/production
+          kustomize edit set image ${{ env.CP_REPO }}:${{ needs.control-plane.outputs.image_tag }}
+          kustomize edit set image ${{ env.STREAMER_REPO }}:${{ needs.streamer.outputs.image_tag }}
+          kubectl apply -k .
+
+      - name: Update STREAMER_IMAGE env var
+        run: |
+          kubectl set env deployment/control-plane -n browser-streamer \
+            STREAMER_IMAGE=${{ env.STREAMER_REPO }}:${{ needs.streamer.outputs.image_tag }}
+
+      - name: Verify Deployment
+        if: steps.compare.outputs.changed == 'true'
+        run: |
+          kubectl rollout status deployment/control-plane -n browser-streamer --timeout=300s
+          echo ""
+          echo "=== Recent logs ==="
+          POD=$(kubectl get pods -n browser-streamer -l app=control-plane --sort-by=.metadata.creationTimestamp -o jsonpath='{.items[-1].metadata.name}')
+          kubectl logs -n browser-streamer "$POD" --tail=50
+
+      - name: Notify Discord
+        if: success()
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_DEPLOY_WEBHOOK_URL }}
+        run: |
+          REPO_URL="https://github.com/${{ github.repository }}"
+
+          if git rev-parse deployed >/dev/null 2>&1; then
+            RANGE="deployed..HEAD"
+          else
+            RANGE="-1"
+          fi
+
+          COMMITS=$(git log $RANGE --pretty=format:"[\`%h\`](${REPO_URL}/commit/%H) %B" --reverse | grep -v "^Co-Authored-By:" | sed '/^$/d')
+
+          curl -s -H "Content-Type: application/json" -d "{
+            \"embeds\": [{
+              \"title\": \"Browser Streamer deployed\",
+              \"description\": $(echo "$COMMITS" | jq -Rs .),
+              \"color\": 5025616
+            }]
+          }" "$DISCORD_WEBHOOK"
+
+          git tag -f deployed HEAD
+          git push -f origin deployed
