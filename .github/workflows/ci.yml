@@ -237,7 +237,7 @@ jobs:
 
       - name: Deploy with Kustomize
         run: |
-          cd k8s/overlays/production
+          cd k8s
           kustomize edit set image ${{ env.CP_REPO }}:${{ needs.control-plane.outputs.image_tag }}
           kustomize edit set image ${{ env.STREAMER_REPO }}:${{ needs.streamer.outputs.image_tag }}
           kubectl apply -k .
