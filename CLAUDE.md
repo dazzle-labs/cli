@@ -29,23 +29,7 @@ make web/dev                     # Run web dev server only
 
 Secrets are SOPS-encrypted in `k8s/local/local.secrets.yaml` (requires Age key). See [docs/local-dev.md](docs/local-dev.md).
 
-### Remote (VPS via SSH) — `remote/` prefix
-```bash
-make remote/build                # Build all images on remote host
-make remote/build-streamer       # Build streamer image on remote host
-make remote/build-control-plane  # Build control-plane image on remote host
-make remote/deploy               # Apply k8s manifests + restart on remote
-make remote/restart              # Restart control-plane pod on remote
-make remote/deploy-secrets       # Decrypt SOPS secrets and apply to remote cluster
-make remote/install-cert-manager # Install cert-manager on remote cluster
-make remote/setup-tls            # Apply Traefik config, ClusterIssuer, Ingress on remote
-make remote/status               # Show pods, services, ingress, certificates on remote
-make remote/logs                 # Tail control-plane logs on remote
-make remote/clean                # Delete all session pods on remote
-make remote/provision HOST=x.x.x.x  # Full provision from scratch
-```
-
-See [docs/index.md](docs/index.md) for everything else.
+Remote builds and deploys are managed by CI/CD. See [docs/index.md](docs/index.md) for everything else.
 
 ## llms.txt
 
