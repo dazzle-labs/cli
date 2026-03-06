@@ -30,15 +30,17 @@ import (
 	"k8s.io/client-go/rest"
 
 	apiv1connect "github.com/dazzle-labs/cli/gen/api/v1/apiv1connect"
+
+	apiv1internalconnect "github.com/browser-streamer/control-plane/internal/gen/api/v1/apiv1internalconnect"
 )
 
 // Ensure compile-time interface satisfaction.
 var (
-	_ apiv1connect.StageServiceHandler          = (*stageServer)(nil)
-	_ apiv1connect.ApiKeyServiceHandler         = (*apiKeyServer)(nil)
-	_ apiv1connect.RtmpDestinationServiceHandler = (*rtmpDestinationServer)(nil)
-	_ apiv1connect.UserServiceHandler           = (*userServer)(nil)
-	_ apiv1connect.RuntimeServiceHandler        = (*runtimeServer)(nil)
+	_ apiv1connect.StageServiceHandler           = (*stageServer)(nil)
+	_ apiv1internalconnect.ApiKeyServiceHandler   = (*apiKeyServer)(nil)
+	_ apiv1connect.RtmpDestinationServiceHandler  = (*rtmpDestinationServer)(nil)
+	_ apiv1connect.UserServiceHandler             = (*userServer)(nil)
+	_ apiv1connect.RuntimeServiceHandler          = (*runtimeServer)(nil)
 )
 
 type StageStatus string
@@ -960,7 +962,7 @@ func main() {
 	mux.Handle(stagePath, corsMiddleware(stageHandler))
 
 	// ApiKeyService — Clerk JWT only
-	apiKeyPath, apiKeyHandler := apiv1connect.NewApiKeyServiceHandler(
+	apiKeyPath, apiKeyHandler := apiv1internalconnect.NewApiKeyServiceHandler(
 		&apiKeyServer{mgr: mgr},
 		connect.WithInterceptors(authInterceptor, clerkOnly),
 	)
