@@ -36,7 +36,7 @@ chmod +x /tmp/dazzle
 
 if mv /tmp/dazzle "$INSTALL_DIR/dazzle" 2>/dev/null; then
   :
-elif sudo mv /tmp/dazzle "$INSTALL_DIR/dazzle"; then
+elif (echo "sudo required to write to $INSTALL_DIR" && sudo mv /tmp/dazzle "$INSTALL_DIR/dazzle"); then
   :
 else
   echo "Failed to install to $INSTALL_DIR — try: INSTALL_DIR=~/.local/bin" >&2
