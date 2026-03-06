@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package api.v1;
 
-option go_package = "github.com/browser-streamer/control-plane/gen/api/v1;apiv1";
+option go_package = "github.com/dazzle-labs/cli/gen/api/v1;apiv1";
 
 service RuntimeService {
   rpc SetScript(SetScriptRequest) returns (SetScriptResponse);

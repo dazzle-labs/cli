@@ -558,7 +558,7 @@ const file_api_v1_stream_proto_rawDesc = "" +
 	"\x17CreateStreamDestination\x12&.api.v1.CreateStreamDestinationRequest\x1a'.api.v1.CreateStreamDestinationResponse\x12g\n" +
 	"\x16ListStreamDestinations\x12%.api.v1.ListStreamDestinationsRequest\x1a&.api.v1.ListStreamDestinationsResponse\x12j\n" +
 	"\x17UpdateStreamDestination\x12&.api.v1.UpdateStreamDestinationRequest\x1a'.api.v1.UpdateStreamDestinationResponse\x12j\n" +
-	"\x17DeleteStreamDestination\x12&.api.v1.DeleteStreamDestinationRequest\x1a'.api.v1.DeleteStreamDestinationResponseB<Z:github.com/browser-streamer/control-plane/gen/api/v1;apiv1b\x06proto3"
+	"\x17DeleteStreamDestination\x12&.api.v1.DeleteStreamDestinationRequest\x1a'.api.v1.DeleteStreamDestinationResponseB-Z+github.com/dazzle-labs/cli/gen/api/v1;apiv1b\x06proto3"
 
 var (
 	file_api_v1_stream_proto_rawDescOnce sync.Once
