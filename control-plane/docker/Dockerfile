@@ -27,5 +27,7 @@ COPY --from=builder /app/control-plane .
 COPY --from=builder /go/bin/gobs-cli /usr/local/bin/gobs-cli
 COPY --from=builder /app/migrations/ ./migrations/
 COPY --from=web /app/dist/ ./web/
+COPY llms.txt ./web/llms.txt
+RUN mkdir -p ./web/.well-known && cp ./web/llms.txt ./web/.well-known/llms.txt
 EXPOSE 8080
 ENTRYPOINT ["./control-plane"]
