@@ -5,10 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
-	"net/url"
 	"os/exec"
 	"strings"
 	"sync/atomic"
@@ -265,19 +263,8 @@ func (m *Manager) mcpMiddleware(next http.Handler) http.Handler {
 
 // fetchScriptFromPod retrieves the current user script from a running pod.
 func (m *Manager) fetchScriptFromPod(stage *Stage) (string, error) {
-	podURL := fmt.Sprintf("http://%s:8080/api/panel/main?token=%s", stage.PodIP, url.QueryEscape(m.podToken))
-	resp, err := http.Get(podURL)
+	result, err := m.pc.GetScript(stage.PodIP)
 	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("pod returned %d", resp.StatusCode)
-	}
-	var result struct {
-		Script string `json:"script"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return "", err
 	}
 	return result.Script, nil
@@ -297,18 +284,7 @@ func (m *Manager) persistScriptFromPod(stageID string, stage *Stage) {
 
 // restoreScriptToPod pushes a saved script to a newly started pod.
 func (m *Manager) restoreScriptToPod(stage *Stage, script string) error {
-	body, _ := json.Marshal(map[string]string{"script": script})
-	podURL := fmt.Sprintf("http://%s:8080/api/panel/main?token=%s", stage.PodIP, url.QueryEscape(m.podToken))
-	resp, err := http.Post(podURL, "application/json", bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("pod returned %d: %s", resp.StatusCode, string(respBody))
-	}
-	return nil
+	return m.pc.SetScript(stage.PodIP, script)
 }
 
 // requireRunningStage resolves the agent's stage and verifies it is running.
@@ -496,17 +472,8 @@ func (m *Manager) handleMCPSetScript(ctx context.Context, req mcp.CallToolReques
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	body, _ := json.Marshal(map[string]string{"script": script})
-	podURL := fmt.Sprintf("http://%s:8080/api/panel/main?token=%s", stage.PodIP, url.QueryEscape(m.podToken))
-	resp, err := http.Post(podURL, "application/json", bytes.NewReader(body))
-	if err != nil {
+	if err := m.pc.SetScript(stage.PodIP, script); err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("failed to set template: %v", err)), nil
-	}
-	defer resp.Body.Close()
-	respBody, _ := io.ReadAll(resp.Body)
-
-	if resp.StatusCode != http.StatusOK {
-		return mcp.NewToolResultError(fmt.Sprintf("pod returned %d: %s", resp.StatusCode, string(respBody))), nil
 	}
 
 	// Persist script to DB for restore on next activation
@@ -516,7 +483,7 @@ func (m *Manager) handleMCPSetScript(ctx context.Context, req mcp.CallToolReques
 		}
 	}
 
-	return mcp.NewToolResultText(string(respBody)), nil
+	return mcp.NewToolResultText(`{"ok":true}`), nil
 }
 
 func (m *Manager) handleMCPGetScript(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -527,14 +494,12 @@ func (m *Manager) handleMCPGetScript(ctx context.Context, req mcp.CallToolReques
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	podURL := fmt.Sprintf("http://%s:8080/api/panel/main?token=%s", stage.PodIP, url.QueryEscape(m.podToken))
-	resp, err := http.Get(podURL)
+	result, err := m.pc.GetScript(stage.PodIP)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("failed to get template: %v", err)), nil
 	}
-	defer resp.Body.Close()
-	respBody, _ := io.ReadAll(resp.Body)
 
+	respBody, _ := json.Marshal(result)
 	return mcp.NewToolResultText(string(respBody)), nil
 }
 
@@ -554,17 +519,8 @@ func (m *Manager) handleMCPEditScript(ctx context.Context, req mcp.CallToolReque
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	body, _ := json.Marshal(map[string]string{"old_string": oldString, "new_string": newString})
-	podURL := fmt.Sprintf("http://%s:8080/api/panel/main/edit?token=%s", stage.PodIP, url.QueryEscape(m.podToken))
-	resp, err := http.Post(podURL, "application/json", bytes.NewReader(body))
-	if err != nil {
+	if err := m.pc.EditScript(stage.PodIP, oldString, newString); err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("failed to edit template: %v", err)), nil
-	}
-	defer resp.Body.Close()
-	respBody, _ := io.ReadAll(resp.Body)
-
-	if resp.StatusCode != http.StatusOK {
-		return mcp.NewToolResultError(fmt.Sprintf("pod returned %d: %s", resp.StatusCode, string(respBody))), nil
 	}
 
 	// Persist updated script to DB
@@ -572,7 +528,7 @@ func (m *Manager) handleMCPEditScript(ctx context.Context, req mcp.CallToolReque
 		go m.persistScriptFromPod(agentID, stage)
 	}
 
-	return mcp.NewToolResultText(string(respBody)), nil
+	return mcp.NewToolResultText(`{"ok":true}`), nil
 }
 
 func (m *Manager) handleMCPEmitEvent(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -597,20 +553,11 @@ func (m *Manager) handleMCPEmitEvent(ctx context.Context, req mcp.CallToolReques
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	body, _ := json.Marshal(map[string]any{"event": eventName, "data": dataObj})
-	podURL := fmt.Sprintf("http://%s:8080/api/panel/main/event?token=%s", stage.PodIP, url.QueryEscape(m.podToken))
-	resp, err := http.Post(podURL, "application/json", bytes.NewReader(body))
-	if err != nil {
+	if err := m.pc.EmitEvent(stage.PodIP, eventName, dataStr); err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("failed to emit event: %v", err)), nil
 	}
-	defer resp.Body.Close()
-	respBody, _ := io.ReadAll(resp.Body)
 
-	if resp.StatusCode != http.StatusOK {
-		return mcp.NewToolResultError(fmt.Sprintf("pod returned %d: %s", resp.StatusCode, string(respBody))), nil
-	}
-
-	return mcp.NewToolResultText(string(respBody)), nil
+	return mcp.NewToolResultText(`{"ok":true}`), nil
 }
 
 func (m *Manager) handleMCPGetLogs(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -631,22 +578,12 @@ func (m *Manager) handleMCPGetLogs(ctx context.Context, req mcp.CallToolRequest)
 		limit = 1000
 	}
 
-	podURL := fmt.Sprintf("http://%s:8080/api/logs?limit=%d&token=%s", stage.PodIP, limit, url.QueryEscape(m.podToken))
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Get(podURL)
+	entries, err := m.pc.GetLogs(stage.PodIP, limit)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("failed to get logs: %v", err)), nil
 	}
-	defer resp.Body.Close()
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to read response: %v", err)), nil
-	}
 
-	if resp.StatusCode != http.StatusOK {
-		return mcp.NewToolResultError(fmt.Sprintf("pod returned %d: %s", resp.StatusCode, string(respBody))), nil
-	}
-
+	respBody, _ := json.Marshal(entries)
 	return mcp.NewToolResultText(string(respBody)), nil
 }
 
@@ -658,11 +595,12 @@ func (m *Manager) handleMCPScreenshot(ctx context.Context, req mcp.CallToolReque
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	base64PNG, err := obsScreenshot(stage.PodIP)
+	imageBytes, err := m.pc.Screenshot(stage.PodIP)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("screenshot failed: %v", err)), nil
 	}
 
+	base64PNG := base64EncodeBytes(imageBytes)
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{
 			mcp.NewImageContent(base64PNG, "image/png"),
@@ -932,27 +870,13 @@ func (m *Manager) handleMCPObs(ctx context.Context, req mcp.CallToolRequest) (*m
 		}
 	}
 
-	// Build gobs-cli command: prepend --host and --port, then user args
-	cmdArgs := append([]string{"--host", stage.PodIP, "--port", "4455"}, args...)
-	log.Printf("MCP obs: stage=%s cmd=gobs-cli %v", stage.ID, cmdArgs)
+	log.Printf("MCP obs: stage=%s cmd=gobs-cli %v", stage.ID, args)
 
-	cmd := exec.CommandContext(ctx, "gobs-cli", cmdArgs...)
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	if err := cmd.Run(); err != nil {
-		errMsg := stderr.String()
-		if errMsg == "" {
-			errMsg = err.Error()
-		}
-		return mcp.NewToolResultError(fmt.Sprintf("gobs-cli error: %s", redactStreamSecrets(errMsg))), nil
+	output, err := m.pc.ObsCommand(stage.PodIP, args)
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("gobs-cli error: %s", redactStreamSecrets(err.Error()))), nil
 	}
 
-	output := stdout.String()
-	if output == "" {
-		output = "OK"
-	}
 	// Redact any stream credentials that might appear in output
 	return mcp.NewToolResultText(redactStreamSecrets(output)), nil
 }

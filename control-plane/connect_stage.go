@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
+	"time"
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -121,6 +123,78 @@ func (s *stageServer) SetStageDestination(ctx context.Context, req *connect.Requ
 	}
 	st := stageRowToStruct(updated, s.mgr)
 	return connect.NewResponse(&apiv1.SetStageDestinationResponse{
+		Stage: stageToProto(st),
+	}), nil
+}
+
+func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[apiv1.ActivateStageRequest]) (*connect.Response[apiv1.ActivateStageResponse], error) {
+	info := mustAuth(ctx)
+
+	row, err := dbGetStage(s.mgr.db, req.Msg.Id)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	if row == nil || row.UserID != info.UserID {
+		return nil, connect.NewError(connect.CodeNotFound, nil)
+	}
+
+	// Check not already active
+	if live, ok := s.mgr.getStage(req.Msg.Id); ok && live.Status == StatusRunning {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("stage is already active"))
+	}
+
+	waitCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
+	defer cancel()
+
+	readyStage, err := s.mgr.activateStage(waitCtx, req.Msg.Id, info.UserID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	// Restore script
+	if s.mgr.db != nil {
+		if script, err := dbGetStageScript(s.mgr.db, req.Msg.Id); err == nil && script != "" {
+			if err := s.mgr.restoreScriptToPod(readyStage, script); err != nil {
+				log.Printf("WARN: failed to restore script for stage %s: %v", req.Msg.Id, err)
+			}
+		}
+	}
+
+	// Configure OBS stream destination if set
+	dest, destErr := s.mgr.validateStreamDestination(req.Msg.Id, info.UserID)
+	if destErr == nil {
+		if err := s.mgr.configureOBSStream(readyStage, dest); err != nil {
+			log.Printf("Warning: failed to configure stream destination for stage %s: %v", req.Msg.Id, err)
+		}
+	}
+
+	return connect.NewResponse(&apiv1.ActivateStageResponse{
+		Stage: stageToProto(readyStage),
+	}), nil
+}
+
+func (s *stageServer) DeactivateStage(ctx context.Context, req *connect.Request[apiv1.DeactivateStageRequest]) (*connect.Response[apiv1.DeactivateStageResponse], error) {
+	info := mustAuth(ctx)
+
+	row, err := dbGetStage(s.mgr.db, req.Msg.Id)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	if row == nil || row.UserID != info.UserID {
+		return nil, connect.NewError(connect.CodeNotFound, nil)
+	}
+
+	if err := s.mgr.deactivateStage(req.Msg.Id); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	// Return the stage from DB (now inactive)
+	updated, _ := dbGetStage(s.mgr.db, req.Msg.Id)
+	if updated == nil {
+		return connect.NewResponse(&apiv1.DeactivateStageResponse{}), nil
+	}
+	st := stageRowToStruct(updated, s.mgr)
+	return connect.NewResponse(&apiv1.DeactivateStageResponse{
 		Stage: stageToProto(st),
 	}), nil
 }

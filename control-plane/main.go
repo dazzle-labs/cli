@@ -34,10 +34,11 @@ import (
 
 // Ensure compile-time interface satisfaction.
 var (
-	_ apiv1connect.StageServiceHandler  = (*stageServer)(nil)
-	_ apiv1connect.ApiKeyServiceHandler = (*apiKeyServer)(nil)
+	_ apiv1connect.StageServiceHandler          = (*stageServer)(nil)
+	_ apiv1connect.ApiKeyServiceHandler         = (*apiKeyServer)(nil)
 	_ apiv1connect.RtmpDestinationServiceHandler = (*rtmpDestinationServer)(nil)
-	_ apiv1connect.UserServiceHandler   = (*userServer)(nil)
+	_ apiv1connect.UserServiceHandler           = (*userServer)(nil)
+	_ apiv1connect.RuntimeServiceHandler        = (*runtimeServer)(nil)
 )
 
 type StageStatus string
@@ -74,6 +75,7 @@ type Manager struct {
 	db            *sql.DB
 	auth          *authenticator
 	encryptionKey []byte
+	pc            *podClient
 }
 
 func envOrDefault(key, def string) string {
@@ -136,6 +138,8 @@ func NewManager() (*Manager, error) {
 		auth:          newAuthenticator(db, clerkSecretKey),
 		encryptionKey: encKey,
 	}
+
+	m.pc = newPodClient(m.podToken)
 
 	if secret := os.Getenv("IMAGE_PULL_SECRET"); secret != "" {
 		m.imagePullSecrets = []corev1.LocalObjectReference{{Name: secret}}
@@ -962,19 +966,26 @@ func main() {
 	)
 	mux.Handle(apiKeyPath, corsMiddleware(apiKeyHandler))
 
-	// RtmpDestinationService — Clerk JWT only
+	// RtmpDestinationService — Clerk JWT or API key
 	streamPath, streamHandler := apiv1connect.NewRtmpDestinationServiceHandler(
 		&rtmpDestinationServer{mgr: mgr},
-		connect.WithInterceptors(authInterceptor, clerkOnly),
+		connect.WithInterceptors(authInterceptor),
 	)
 	mux.Handle(streamPath, corsMiddleware(streamHandler))
 
-	// UserService — Clerk JWT only
+	// UserService — Clerk JWT or API key
 	userPath, userHandler := apiv1connect.NewUserServiceHandler(
 		&userServer{mgr: mgr},
-		connect.WithInterceptors(authInterceptor, clerkOnly),
+		connect.WithInterceptors(authInterceptor),
 	)
 	mux.Handle(userPath, corsMiddleware(userHandler))
+
+	// RuntimeService — Clerk JWT or API key
+	runtimePath, runtimeHandler := apiv1connect.NewRuntimeServiceHandler(
+		&runtimeServer{mgr: mgr},
+		connect.WithInterceptors(authInterceptor),
+	)
+	mux.Handle(runtimePath, corsMiddleware(runtimeHandler))
 
 	// Stage handler: all stage-specific routes under /stage/<uuid>/
 	//   /stage/<uuid>/cdp           — CDP WebSocket proxy and HTTP discovery
