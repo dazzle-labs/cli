@@ -36,9 +36,10 @@ jobs:
         id: tags
         run: |
           SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          BRANCH=$(echo "${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" | sed 's/[^a-zA-Z0-9._-]/-/g')
           echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
           echo "image_tag=${{ env.CP_REPO }}:${SHORT_SHA}" >> $GITHUB_OUTPUT
-          echo "latest_tag=${{ env.CP_REPO }}:latest" >> $GITHUB_OUTPUT
+          echo "branch_tag=${{ env.CP_REPO }}:${BRANCH}" >> $GITHUB_OUTPUT
 
       - name: Build Docker Image
         id: build
@@ -50,7 +51,7 @@ jobs:
           push: ${{ github.ref == 'refs/heads/main' }}
           tags: |
             ${{ steps.tags.outputs.image_tag }}
-            ${{ steps.tags.outputs.latest_tag }}
+            ${{ steps.tags.outputs.branch_tag }}
           build-args: |
             VITE_CLERK_PUBLISHABLE_KEY=${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
           cache-from: type=registry,ref=${{ env.CP_REPO }}:buildcache
@@ -94,9 +95,10 @@ jobs:
         id: tags
         run: |
           SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          BRANCH=$(echo "${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" | sed 's/[^a-zA-Z0-9._-]/-/g')
           echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
           echo "image_tag=${{ env.STREAMER_REPO }}:${SHORT_SHA}" >> $GITHUB_OUTPUT
-          echo "latest_tag=${{ env.STREAMER_REPO }}:latest" >> $GITHUB_OUTPUT
+          echo "branch_tag=${{ env.STREAMER_REPO }}:${BRANCH}" >> $GITHUB_OUTPUT
 
       - name: Build Docker Image
         id: build
@@ -108,7 +110,7 @@ jobs:
           push: ${{ github.ref == 'refs/heads/main' }}
           tags: |
             ${{ steps.tags.outputs.image_tag }}
-            ${{ steps.tags.outputs.latest_tag }}
+            ${{ steps.tags.outputs.branch_tag }}
           cache-from: type=registry,ref=${{ env.STREAMER_REPO }}:buildcache
           cache-to: ${{ github.ref == 'refs/heads/main' && format('type=registry,ref={0}:buildcache,mode=max', env.STREAMER_REPO) || '' }}
           load: ${{ github.event_name == 'pull_request' }}

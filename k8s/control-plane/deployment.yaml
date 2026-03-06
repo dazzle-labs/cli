@@ -20,7 +20,7 @@ spec:
         - name: dazzlefm-dockerhub-secret
       containers:
         - name: control-plane
-          image: dazzlefm/agent-streamer-control-plane:latest
+          image: dazzlefm/agent-streamer-control-plane:main
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
@@ -56,7 +56,7 @@ spec:
             - name: NAMESPACE
               value: browser-streamer
             - name: STREAMER_IMAGE
-              value: dazzlefm/agent-streamer-stage:latest
+              value: dazzlefm/agent-streamer-stage:main
             - name: MAX_SESSIONS
               value: "3"
           resources:
