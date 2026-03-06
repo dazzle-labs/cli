@@ -34,13 +34,11 @@ echo "Installing dazzle ${TAG} (${OS}/${ARCH})..."
 curl -fsSL "$URL" -o /tmp/dazzle
 chmod +x /tmp/dazzle
 
-if mv /tmp/dazzle "$INSTALL_DIR/dazzle" 2>/dev/null; then
-  :
-elif (echo "sudo required to write to $INSTALL_DIR" && sudo mv /tmp/dazzle "$INSTALL_DIR/dazzle"); then
-  :
+if [ ! -w "$INSTALL_DIR" ]; then
+  echo "sudo required to write to $INSTALL_DIR (you may be prompted for your password)"
+  sudo mv /tmp/dazzle "$INSTALL_DIR/dazzle"
 else
-  echo "Failed to install to $INSTALL_DIR — try: INSTALL_DIR=~/.local/bin" >&2
-  exit 1
+  mv /tmp/dazzle "$INSTALL_DIR/dazzle"
 fi
 
 echo "Installed to $INSTALL_DIR/dazzle"
