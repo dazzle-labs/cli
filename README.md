@@ -96,22 +96,21 @@ Builds happen **remotely** on the VPS via SSH + buildkit. No local Docker daemon
 
 ## Quick Start
 
-### Run the full stack locally (recommended)
-
-Requires Docker Desktop (8GB+ RAM), Kind, kubectl, and SOPS. See [Local Development](docs/local-dev.md) for details.
-
 ```bash
-make local-up              # Build images, create Kind cluster, deploy everything
-cd web && npm run dev      # Start web dev server (in another terminal)
-# Open http://localhost:5173
+make dev    # Build everything, start Kind cluster, run all dev watchers
 ```
+
+This single command builds all images, creates a Kind cluster, deploys the full stack, then starts runtime watcher + web dev server + control-plane log tail. Requires Docker Desktop (8GB+ RAM), Kind, kubectl, and SOPS. See [Local Development](docs/local-dev.md) for details.
+
+- **Control plane API:** http://localhost:8080
+- **Web dashboard:** http://localhost:5173
 
 ### Develop web frontend only
 
-Requires the control-plane running on `:8080` (deployed or local).
+Requires the control-plane running on `:8080` (via `make up` or remote).
 
 ```bash
-cd web && npm install && npm run dev
+make web/dev
 ```
 
 ### Verify Go backend compiles

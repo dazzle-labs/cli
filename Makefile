@@ -26,10 +26,13 @@ OK       = @printf "$(_bold)$(_green)✓ %s$(_reset)\n"
         control-plane/% streamer/% web/%
 
 help: ## Show this help
+	@echo ""
+	@printf "  $(_bold)$(_green)Quick start:$(_reset)  $(_bold)make dev$(_reset)   — builds everything, starts Kind, runs all watchers\n"
+	@echo ""
 	@echo "  Local (Kind):"
-	@grep -E '^(up|down|build|build-cp|build-streamer|deploy|dev|logs|status|proto):.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "    \033[36m%-28s\033[0m %s\n", $$1, $$2}'
-	@echo "    $(_cyan)make runtime/dev$(_reset)             Watch runtime sources"
-	@echo "    $(_cyan)make web/dev$(_reset)                 Web dashboard dev server"
+	@grep -E '^(dev|up|down|build|build-cp|build-streamer|deploy|logs|status|proto):.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "    \033[36m%-28s\033[0m %s\n", $$1, $$2}'
+	@echo "    $(_cyan)make runtime/dev$(_reset)             Watch runtime sources only"
+	@echo "    $(_cyan)make web/dev$(_reset)                 Web dashboard dev server only"
 	@echo ""
 	@echo "  Remote (VPS via SSH):"
 	@grep -E '^remote/[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "    \033[36m%-28s\033[0m %s\n", $$1, $$2}'
@@ -153,14 +156,26 @@ harness: ## Run harness scenarios locally (usage: make harness SCENARIO=hello-wo
 	fi
 	cd harness && set -a && eval "$$(sops decrypt --input-type dotenv --output-type dotenv .env)" && set +a && DAZZLE_URL=http://localhost:8080 npx tsx run.ts $(SCENARIO)
 
-dev: up ## Start local stack, then run all dev watchers (runtime + web + logs)
+dev: up ## ★ Full local dev — build, deploy, watch everything
 	@echo ""
 	$(STEP) "Starting dev watchers"
 	@printf "  $(_yellow)runtime/watch$(_reset)  rebuilds prelude.js, renderer.js, catalog on change\n"
 	@printf "  $(_yellow)web/dev$(_reset)        Vite dev server with HMR\n"
 	@printf "  $(_yellow)logs$(_reset)           control-plane log tail\n"
 	@echo ""
-	@trap 'kill 0' EXIT; \
+	@trap ' \
+		kill 0 2>/dev/null; \
+		echo ""; \
+		printf "$(_bold)$(_yellow)Tear down Kind cluster? [y/N] $(_reset)"; \
+		read ans; \
+		if [ "$$ans" = "y" ] || [ "$$ans" = "Y" ]; then \
+			kind delete cluster --name browser-streamer; \
+			printf "$(_bold)$(_green)✓ Cluster deleted$(_reset)\n"; \
+		else \
+			printf "Cluster kept running. Use $(_cyan)make down$(_reset) to delete later.\n"; \
+		fi; \
+		exit 0; \
+	' INT TERM; \
 	(cd runtime && npm run watch) & \
 	(cd web && yarn dev) & \
 	$(KCTL) logs -f deployment/control-plane & \
