@@ -43,7 +43,7 @@ func (m *Manager) setupMCP() http.Handler {
 
 	s.AddTool(
 		mcp.NewTool("start",
-			mcp.WithDescription("Activate your stage. Call this before using any other tools. Returns status when ready. Your stage gives you a browser you can render content in, capture screenshots, and stream to platforms like Twitch and YouTube. Starting the stage does NOT begin streaming — use the obs tool with [\"st\", \"s\"] to go live when you're ready."),
+			mcp.WithDescription("Activate your stage. Call this before using any other tools. Returns status when ready. Your stage gives you a browser you can render content in, capture screenshots, and stream to platforms like Twitch and YouTube. A stream destination is not required to start — you can preview your stage on stream.dazzle.fm by viewing your stage in the sidebar. Starting the stage does NOT begin streaming — use the obs tool with [\"st\", \"s\"] to go live when you're ready (requires a configured destination)."),
 		),
 		m.handleMCPCreateStage,
 	)
@@ -284,12 +284,6 @@ func (m *Manager) handleMCPCreateStage(ctx context.Context, req mcp.CallToolRequ
 
 	userID := userIDFromCtx(ctx)
 
-	// Validate destination BEFORE activating stage
-	dest, err := m.validateStreamDestination(agentID, userID)
-	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
-	}
-
 	waitCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
 
@@ -298,9 +292,12 @@ func (m *Manager) handleMCPCreateStage(ctx context.Context, req mcp.CallToolRequ
 		return mcp.NewToolResultError(fmt.Sprintf("failed to activate stage: %v", err)), nil
 	}
 
-	// Configure OBS with the already-validated destination
-	if err := m.configureOBSStream(readyStage, dest); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to configure stream: %v", err)), nil
+	// Configure OBS stream destination if one is set (not required to start)
+	dest, destErr := m.validateStreamDestination(agentID, userID)
+	if destErr == nil {
+		if err := m.configureOBSStream(readyStage, dest); err != nil {
+			log.Printf("Warning: failed to configure stream destination for stage %s: %v", agentID, err)
+		}
 	}
 
 	result, _ := json.Marshal(map[string]any{
@@ -805,6 +802,21 @@ func isBlockedObsCommand(args []string) bool {
 	return false
 }
 
+// isStartStreamCommand returns true if the args represent "st s" (start streaming).
+func isStartStreamCommand(args []string) bool {
+	var sub []string
+	for i := 0; i < len(args); i++ {
+		if strings.HasPrefix(args[i], "-") {
+			if !strings.Contains(args[i], "=") && i+1 < len(args) {
+				i++
+			}
+			continue
+		}
+		sub = append(sub, strings.ToLower(args[i]))
+	}
+	return len(sub) >= 2 && sub[0] == "st" && sub[1] == "s"
+}
+
 func (m *Manager) handleMCPObs(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	agentID := agentIDFromCtx(ctx)
 
@@ -835,6 +847,18 @@ func (m *Manager) handleMCPObs(ctx context.Context, req mcp.CallToolRequest) (*m
 	stage, err := m.requireRunningStage(ctx, agentID)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	// When going live, ensure stream destination is configured first
+	if isStartStreamCommand(args) {
+		userID := userIDFromCtx(ctx)
+		dest, err := m.validateStreamDestination(agentID, userID)
+		if err != nil {
+			return mcp.NewToolResultError(err.Error()), nil
+		}
+		if err := m.configureOBSStream(stage, dest); err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("failed to configure stream: %v", err)), nil
+		}
 	}
 
 	// Build gobs-cli command: prepend --host and --port, then user args

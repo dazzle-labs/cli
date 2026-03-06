@@ -162,7 +162,7 @@ The stage UUID is your stage's ID. You must call `start` before using any other 
 ### Tools
 
 #### start
-Activate your stage. Call this before using any other tools. Returns status when ready. Your stage gives you a browser you can render content in, capture screenshots, and stream to platforms like Twitch and YouTube. Starting the stage does NOT begin streaming — use the obs tool with ["st", "s"] to go live when you're ready.
+Activate your stage. Call this before using any other tools. Returns status when ready. Your stage gives you a browser you can render content in, capture screenshots, and stream to platforms like Twitch and YouTube. A stream destination is not required to start — you can preview your stage on stream.dazzle.fm by viewing your stage in the sidebar. Starting the stage does NOT begin streaming — use the obs tool with ["st", "s"] to go live when you're ready (requires a configured destination).
 
 #### stop
 Deactivate your stage. Shuts down the browser and releases cloud resources. Call start to bring it back — stream destinations are preserved, but the panel script will need to be re-set.
