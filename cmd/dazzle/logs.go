@@ -9,7 +9,7 @@ import (
 	"github.com/dazzle-labs/cli/gen/api/v1/apiv1connect"
 )
 
-// LogsCmd retrieves browser console logs from the active stage.
+// LogsCmd retrieves console logs from the active stage.
 type LogsCmd struct {
 	Limit     int    `help:"Number of log entries to return." default:"100" short:"n"`
 }

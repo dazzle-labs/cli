@@ -148,7 +148,7 @@ const file_api_v1_user_proto_rawDesc = "" +
 	"\rapi_key_count\x18\x05 \x01(\x05R\vapiKeyCount2R\n" +
 	"\vUserService\x12C\n" +
 	"\n" +
-	"GetProfile\x12\x19.api.v1.GetProfileRequest\x1a\x1a.api.v1.GetProfileResponseB<Z:github.com/browser-streamer/control-plane/gen/api/v1;apiv1b\x06proto3"
+	"GetProfile\x12\x19.api.v1.GetProfileRequest\x1a\x1a.api.v1.GetProfileResponseB-Z+github.com/dazzle-labs/cli/gen/api/v1;apiv1b\x06proto3"
 
 var (
 	file_api_v1_user_proto_rawDescOnce sync.Once

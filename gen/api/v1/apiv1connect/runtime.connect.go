@@ -13,6 +13,13 @@ import (
 	strings "strings"
 )
 
+// This is a compile-time assertion to ensure that this generated file and the connect package are
+// compatible. If you get a compiler error that this constant is not defined, this code was
+// generated with a version of connect newer than the one compiled into your binary. You can fix the
+// problem by either regenerating this code with an older version of connect or updating the connect
+// version compiled into your binary.
+const _ = connect.IsAtLeastVersion1_13_0
+
 const (
 	// RuntimeServiceName is the fully-qualified name of the RuntimeService service.
 	RuntimeServiceName = "api.v1.RuntimeService"
@@ -26,19 +33,25 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// RuntimeServiceSetScriptProcedure is the fully-qualified name of the RuntimeService's SetScript RPC.
+	// RuntimeServiceSetScriptProcedure is the fully-qualified name of the RuntimeService's SetScript
+	// RPC.
 	RuntimeServiceSetScriptProcedure = "/api.v1.RuntimeService/SetScript"
-	// RuntimeServiceGetScriptProcedure is the fully-qualified name of the RuntimeService's GetScript RPC.
+	// RuntimeServiceGetScriptProcedure is the fully-qualified name of the RuntimeService's GetScript
+	// RPC.
 	RuntimeServiceGetScriptProcedure = "/api.v1.RuntimeService/GetScript"
-	// RuntimeServiceEditScriptProcedure is the fully-qualified name of the RuntimeService's EditScript RPC.
+	// RuntimeServiceEditScriptProcedure is the fully-qualified name of the RuntimeService's EditScript
+	// RPC.
 	RuntimeServiceEditScriptProcedure = "/api.v1.RuntimeService/EditScript"
-	// RuntimeServiceEmitEventProcedure is the fully-qualified name of the RuntimeService's EmitEvent RPC.
+	// RuntimeServiceEmitEventProcedure is the fully-qualified name of the RuntimeService's EmitEvent
+	// RPC.
 	RuntimeServiceEmitEventProcedure = "/api.v1.RuntimeService/EmitEvent"
 	// RuntimeServiceGetLogsProcedure is the fully-qualified name of the RuntimeService's GetLogs RPC.
 	RuntimeServiceGetLogsProcedure = "/api.v1.RuntimeService/GetLogs"
-	// RuntimeServiceScreenshotProcedure is the fully-qualified name of the RuntimeService's Screenshot RPC.
+	// RuntimeServiceScreenshotProcedure is the fully-qualified name of the RuntimeService's Screenshot
+	// RPC.
 	RuntimeServiceScreenshotProcedure = "/api.v1.RuntimeService/Screenshot"
-	// RuntimeServiceObsCommandProcedure is the fully-qualified name of the RuntimeService's ObsCommand RPC.
+	// RuntimeServiceObsCommandProcedure is the fully-qualified name of the RuntimeService's ObsCommand
+	// RPC.
 	RuntimeServiceObsCommandProcedure = "/api.v1.RuntimeService/ObsCommand"
 )
 
@@ -53,10 +66,10 @@ type RuntimeServiceClient interface {
 	ObsCommand(context.Context, *connect.Request[v1.ObsCommandRequest]) (*connect.Response[v1.ObsCommandResponse], error)
 }
 
-// NewRuntimeServiceClient constructs a client for the api.v1.RuntimeService service. By default,
-// it uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses, and
-// sends uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the connect.WithGRPC()
-// or connect.WithGRPCWeb() options.
+// NewRuntimeServiceClient constructs a client for the api.v1.RuntimeService service. By default, it
+// uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses, and sends
+// uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the connect.WithGRPC() or
+// connect.WithGRPCWeb() options.
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).

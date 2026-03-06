@@ -51,7 +51,7 @@ dazzle screenshot
 # Push a live event to your running script
 dazzle emit update '{"value": 42}'
 
-# View browser console logs
+# View console logs
 dazzle logs --limit 50
 ```
 
@@ -67,7 +67,7 @@ dazzle logs --limit 50
 | `dazzle stage` | `s` | Manage streaming stages |
 | `dazzle script` | `sc` | Manage stage scripts |
 | `dazzle emit` | `e` | Push events to running script |
-| `dazzle logs` | `l` | Retrieve browser console logs |
+| `dazzle logs` | `l` | Retrieve console logs |
 | `dazzle screenshot` | `ss` | Capture a screenshot |
 | `dazzle obs` | `o` | Control OBS on the active stage |
 | `dazzle destination` | `dest` | Manage RTMP destinations |

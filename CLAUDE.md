@@ -14,12 +14,10 @@ gen/api/v1/           # Generated protobuf types (package apiv1)
 gen/api/v1/apiv1connect/  # Generated ConnectRPC clients (package apiv1connect)
 ```
 
-The generated files in `gen/` are vendored from `browser-streamer/control-plane/gen/api/v1/` with import paths rewritten to `github.com/dazzle-labs/cli/gen/api/v1`. When the proto definitions change upstream, re-copy those files and rerun the sed rewrite:
+The generated files in `gen/` are copied from the Dazzle control-plane repo after running `make proto` there. The `go_package` option in the `.proto` files is already set to `github.com/dazzle-labs/cli/gen/api/v1` so no import path rewriting is needed — just copy:
 
 ```bash
-cp -r ../browser-streamer/control-plane/gen/api/v1/ gen/api/v1/
-find gen/ -name "*.go" -exec sed -i '' \
-  's|github.com/browser-streamer/control-plane/gen/api/v1|github.com/dazzle-labs/cli/gen/api/v1|g' {} +
+cp -r <control-plane-repo>/gen/api/v1/. gen/api/v1/
 ```
 
 ## Key patterns
