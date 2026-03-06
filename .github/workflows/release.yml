@@ -25,20 +25,3 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Notify Discord
-        if: success()
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_DEPLOY_WEBHOOK_URL }}
-        run: |
-          REPO_URL="https://github.com/${{ github.repository }}"
-          TAG="${{ github.ref_name }}"
-          RELEASE_URL="${REPO_URL}/releases/tag/${TAG}"
-
-          curl -s -H "Content-Type: application/json" -d "{
-            \"embeds\": [{
-              \"title\": \"dazzle CLI ${TAG} released\",
-              \"url\": \"${RELEASE_URL}\",
-              \"description\": \"[View release notes and downloads](${RELEASE_URL})\",
-              \"color\": 5025616
-            }]
-          }" "$DISCORD_WEBHOOK"
