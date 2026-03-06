@@ -1,0 +1,20 @@
+{
+  "name": "@browser-streamer/runtime",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:prelude": "esbuild prelude.ts --bundle --format=iife --minify --outfile=dist/prelude.js --banner:js=\"/* prelude: React, ReactDOM, Zustand globals */\"",
+    "build:renderer": "esbuild renderer.tsx --bundle --format=iife --minify --global-name=__sceneRuntime --outfile=dist/renderer.js --external:react --external:react-dom --external:zustand --jsx=transform --banner:js=\"/* renderer: spec-driven renderer with full component catalog */\"",
+    "build": "npm run build:prelude && npm run build:renderer",
+    "watch": "node watch.mjs"
+  },
+  "dependencies": {
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "zustand": "^5.0.11"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "typescript": "^5.7.0"
+  }
+}

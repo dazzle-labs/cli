@@ -17,9 +17,69 @@ const SCREEN_WIDTH = parseInt(process.env.SCREEN_WIDTH || '1280', 10);
 const SCREEN_HEIGHT = parseInt(process.env.SCREEN_HEIGHT || '720', 10);
 
 const CONTENT_ROOT = '/app/content';
+const RUNTIME_DIR = process.env.RUNTIME_SCRIPTS_DIR || '/app/runtime';
 const SHELL_HTML = fs.readFileSync(path.join(__dirname, 'shell.html'), 'utf8');
-const PRELUDE_JS = fs.readFileSync(path.join(__dirname, 'prelude.js'), 'utf8');
 const STYLE_CSS = fs.readFileSync(path.join(__dirname, 'style.css'), 'utf8');
+
+// Runtime scripts: prefer RUNTIME_DIR mount, fall back to bundled copies.
+// Re-read from disk on each call so hostPath mounts get picked up live.
+function loadRuntimeScript(name) {
+    const mountPath = path.join(RUNTIME_DIR, name);
+    if (fs.existsSync(mountPath)) {
+        return fs.readFileSync(mountPath, 'utf8');
+    }
+    const bundledPath = path.join(__dirname, name);
+    if (fs.existsSync(bundledPath)) {
+        return fs.readFileSync(bundledPath, 'utf8');
+    }
+    console.warn(`${name} not found in ${RUNTIME_DIR} or ${__dirname}`);
+    return '';
+}
+
+// Cached copies — refreshed by watchRuntimeDir when files change on disk.
+let PRELUDE_JS = loadRuntimeScript('prelude.js');
+let RENDERER_JS = loadRuntimeScript('renderer.js');
+console.log(`Loaded prelude.js (${PRELUDE_JS.length} bytes), renderer.js (${RENDERER_JS.length} bytes)`);
+
+// --- Runtime hot-reload: watch RUNTIME_DIR for changes ---
+
+function watchRuntimeDir() {
+    if (!fs.existsSync(RUNTIME_DIR)) return;
+    try {
+        fs.watch(RUNTIME_DIR, { persistent: false }, (eventType, filename) => {
+            if (!filename) return;
+            if (filename !== 'prelude.js' && filename !== 'renderer.js') return;
+
+            console.log(`Runtime file changed: ${filename}, reloading...`);
+
+            // Re-read from disk
+            const updated = loadRuntimeScript(filename);
+            if (!updated) return;
+
+            if (filename === 'prelude.js') PRELUDE_JS = updated;
+            if (filename === 'renderer.js') RENDERER_JS = updated;
+
+            // Update all existing panel dirs with the new file
+            if (fs.existsSync(CONTENT_ROOT)) {
+                for (const name of fs.readdirSync(CONTENT_ROOT)) {
+                    const filePath = path.join(CONTENT_ROOT, name, filename);
+                    if (fs.existsSync(filePath)) {
+                        fs.writeFileSync(filePath, updated);
+                    }
+                }
+            }
+
+            // Trigger full page reload via Vite HMR
+            if (vite) {
+                vite.ws.send({ type: 'full-reload' });
+                console.log(`Triggered full-reload for ${filename}`);
+            }
+        });
+        console.log(`Watching ${RUNTIME_DIR} for runtime script changes`);
+    } catch (err) {
+        console.warn(`Could not watch ${RUNTIME_DIR}: ${err.message}`);
+    }
+}
 
 // --- Panel metadata (dimensions only — content lives on disk) ---
 // Map<string, { width: number, height: number }>
@@ -145,6 +205,11 @@ function ensurePanelDir(name) {
     const stylePath = path.join(dir, 'style.css');
     if (!fs.existsSync(stylePath)) {
         fs.writeFileSync(stylePath, STYLE_CSS);
+    }
+
+    const rendererPath = path.join(dir, 'renderer.js');
+    if (!fs.existsSync(rendererPath)) {
+        fs.writeFileSync(rendererPath, RENDERER_JS);
     }
 
     const jsPath = panelMainJs(name);
@@ -585,6 +650,49 @@ app.post('/api/navigate', auth, async (req, res) => {
     }
 });
 
+// Evaluate JS expression in browser via CDP
+app.post('/api/panel/:name/eval', auth, async (req, res) => {
+    const { expr } = req.body;
+    if (!expr) return res.status(400).json({ error: 'expr required in request body' });
+
+    try {
+        const tabsRes = await fetch(`http://${CDP_HOST}:${CDP_PORT}/json`);
+        const tabs = await tabsRes.json();
+        if (!tabs.length) return res.status(502).json({ error: 'no browser tabs' });
+
+        const page = tabs.find(t => t.type === 'page') || tabs[0];
+        const wsUrl = page.webSocketDebuggerUrl;
+        const result = await new Promise((resolve, reject) => {
+            const ws = new WebSocket(wsUrl);
+            const timeout = setTimeout(() => { ws.close(); reject(new Error('CDP timeout')); }, 5000);
+            ws.on('open', () => {
+                ws.send(JSON.stringify({
+                    id: 1,
+                    method: 'Runtime.evaluate',
+                    params: { expression: String(expr), returnByValue: true },
+                }));
+            });
+            ws.on('message', (data) => {
+                const msg = JSON.parse(data.toString());
+                if (msg.id === 1) {
+                    clearTimeout(timeout);
+                    ws.close();
+                    if (msg.error) reject(new Error(msg.error.message));
+                    else if (msg.result.exceptionDetails) {
+                        reject(new Error(msg.result.exceptionDetails.exception?.description || msg.result.exceptionDetails.text || 'eval error'));
+                    } else {
+                        resolve(msg.result.result?.value);
+                    }
+                }
+            });
+            ws.on('error', (err) => { clearTimeout(timeout); reject(err); });
+        });
+        res.json({ result });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Get browser console logs (tail -n style)
 app.get('/api/logs', auth, (req, res) => {
     const limit = Math.min(Math.max(parseInt(req.query.limit) || 100, 1), LOG_BUFFER_MAX);
@@ -636,6 +744,9 @@ async function start() {
         console.error('Failed to initialize Vite:', err);
         console.log('Falling back without HMR support.');
     }
+
+    // Watch runtime dir for hot-reload of prelude.js / renderer.js
+    watchRuntimeDir();
 
     // Ensure default panel exists before server starts (Chrome will load it on launch)
     ensurePanelDir('main');

@@ -9,14 +9,51 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
+)
+
+// rendererJS is loaded from the runtime-scripts directory at startup.
+// Set RUNTIME_SCRIPTS_DIR to override the default path (e.g. for local dev).
+// In K8s this is mounted from the runtime-scripts ConfigMap at /app/runtime.
+var rendererJS string
+
+// runtimeScriptsDir is the directory containing runtime scripts (renderer.js, catalog files).
+// Catalog files are re-read from this dir on each catalogRead call so hostPath changes are
+// picked up without restarting the control-plane.
+var runtimeScriptsDir string
+
+func init() {
+	runtimeScriptsDir = os.Getenv("RUNTIME_SCRIPTS_DIR")
+	if runtimeScriptsDir == "" {
+		runtimeScriptsDir = "/app/runtime"
+	}
+	path := runtimeScriptsDir + "/renderer.js"
+	data, err := os.ReadFile(path)
+	if err != nil {
+		log.Printf("WARN: renderer.js not found at %s: %v", path, err)
+		return
+	}
+	rendererJS = string(data)
+	log.Printf("Loaded renderer.js (%d bytes) from %s", len(rendererJS), path)
+}
+
+// bootstrapped tracks which stages have had the scene runtime sent via set_script.
+// obsConfigured tracks which stages have had OBS stream settings applied.
+var (
+	bootstrappedMu sync.Mutex
+	bootstrapped   = map[string]bool{}
+
+	obsConfiguredMu sync.Mutex
+	obsConfigured   = map[string]bool{}
 )
 
 // Context key for agent ID extracted from URL path.
@@ -50,7 +87,7 @@ func (m *Manager) setupMCP() http.Handler {
 
 	s.AddTool(
 		mcp.NewTool("stop",
-			mcp.WithDescription("Deactivate your stage. Shuts down the browser and releases cloud resources. Call start to bring it back — stream destinations are preserved, but the panel script will need to be re-set."),
+			mcp.WithDescription("Deactivate your stage. Shuts down the browser and releases cloud resources. Call start to bring it back — stream destinations are preserved, but the scene spec will need to be re-set."),
 		),
 		m.handleMCPDestroyStage,
 	)
@@ -62,75 +99,88 @@ func (m *Manager) setupMCP() http.Handler {
 		m.handleMCPStageStatus,
 	)
 
+	// ── Catalog tool ──
+
 	s.AddTool(
-		mcp.NewTool("set_script",
-			mcp.WithDescription(`Set JavaScript content to render in your stage's browser. Write vanilla JS or JSX. The page is full-viewport with a black background. Changes are hot-swapped with zero page reloads. Requires an active stage (call start first).
-
-Two modes:
-1. Vanilla JS — create DOM elements / canvas and append to document.body
-2. React JSX — define an App component and it will be auto-mounted into #root:
-     const App = () => <div>Hello</div>;
-   Do NOT call createRoot or ReactDOM.render — the runtime auto-mounts your App. On subsequent set_script/edit_script calls, the root is reused for clean HMR transitions.
-
-Available globals (no imports needed):
-  React, useState, useEffect, useRef, useMemo, useCallback, useReducer, Fragment,
-  useContext, useLayoutEffect, useImperativeHandle, useDebugValue,
-  useDeferredValue, useTransition, useId, useSyncExternalStore,
-  createContext, forwardRef, memo, lazy, Suspense
-  createPortal (from react-dom)
-  create, persist (from zustand — use for persistent state via localStorage)
-
-Tailwind CSS v4 utility classes work in className (e.g. "text-4xl font-bold text-white").
-
-Your code can listen for events pushed by emit_event — set up the view once, then drive it with state updates:
-
-  window.addEventListener('event', (e) => {
-    const { event, data } = e.detail;
-    if (event === 'update') el.textContent = data.msg;
-  });
-
-Read window.__state at any time for accumulated state from all prior emit_event calls. An '__init' event fires on module load if state already exists.`),
-			mcp.WithString("script", mcp.Required(), mcp.Description("JavaScript or JSX code to render")),
+		mcp.NewTool("catalogRead",
+			mcp.WithDescription("Read the component catalog — lists available UI components, their props, and design guidelines. Call with detail=\"index\" for a compact list, or detail=\"full\" for the complete reference with all props and design principles. Start with \"full\" on your first call to learn the spec format."),
+			mcp.WithString("detail", mcp.Description("Level of detail: \"index\" for component list, \"full\" for complete reference (default: \"full\")")),
 		),
-		m.handleMCPSetScript,
+		handleMCPCatalogRead,
+	)
+
+	// ── Scene tools ──
+
+	s.AddTool(
+		mcp.NewTool("sceneSet",
+			mcp.WithDescription("Set the full scene spec. Replaces the entire scene. The spec is a declarative UI description with elements, layout, and state bindings. Requires an active stage (call start first)."),
+			mcp.WithObject("spec", mcp.Required(), mcp.Description("Scene spec object with root, elements, and state")),
+		),
+		m.handleMCPSceneSet,
 	)
 
 	s.AddTool(
-		mcp.NewTool("get_script",
-			mcp.WithDescription("Get the current JavaScript content being rendered in your stage's browser. Requires an active stage (call start first)."),
+		mcp.NewTool("scenePatch",
+			mcp.WithDescription("Apply JSON Patch operations (RFC 6902) to the current scene. Supports add, replace, remove. Requires an active stage (call start first)."),
+			mcp.WithArray("patches", mcp.Required(), mcp.Description("Array of JSON Patch operations, each with op, path, and optional value")),
 		),
-		m.handleMCPGetScript,
+		m.handleMCPScenePatch,
 	)
 
 	s.AddTool(
-		mcp.NewTool("edit_script",
-			mcp.WithDescription("Edit the current JavaScript content by finding and replacing a string. The old_string must exist exactly once in the current code. Changes are hot-swapped with no page reload. Requires an active stage (call start first)."),
-			mcp.WithString("old_string", mcp.Required(), mcp.Description("The exact string to find in the current code")),
-			mcp.WithString("new_string", mcp.Required(), mcp.Description("The replacement string")),
+		mcp.NewTool("stateSet",
+			mcp.WithDescription("Update a value in the scene state by JSON Pointer path. Use \"/-\" suffix to append to an array. Requires an active stage (call start first)."),
+			mcp.WithString("path", mcp.Required(), mcp.Description("JSON Pointer path within state, e.g. /events/- or /status/title")),
+			mcp.WithString("value", mcp.Required(), mcp.Description("JSON-encoded value to set")),
 		),
-		m.handleMCPEditScript,
+		m.handleMCPStateSet,
 	)
 
 	s.AddTool(
-		mcp.NewTool("emit_event",
-			mcp.WithDescription(`Push live data to your running panel without rewriting or reloading the script.
-
-Use with set_script: write your event listeners once, then drive updates with emit_event — no code change, no reload required.
-
-Example:
-  set_script: el = div; addEventListener('event', e => { if (e.detail.event === 'score') el.textContent = e.detail.data.points })
-  emit_event: { event: "score", data: { points: 42 } }    → el shows "42"
-  emit_event: { event: "score", data: { points: 99 } }    → el shows "99"
-
-Accumulated state is merged into window.__state. An '__init' event fires on script load if prior state exists.`),
-			mcp.WithString("event", mcp.Required(), mcp.Description("Event name that your set_script code listens for (e.g. 'update', 'alert', 'theme-change')")),
-			mcp.WithString("data", mcp.Required(), mcp.Description("JSON object with event payload — merged into window.__state and delivered as e.detail.data")),
+		mcp.NewTool("sceneRead",
+			mcp.WithDescription("Read the current scene spec. Returns the full spec (root, elements, state). Requires an active stage (call start first)."),
 		),
-		m.handleMCPEmitEvent,
+		m.handleMCPSceneRead,
+	)
+
+	// ── Timeline tools ──
+
+	s.AddTool(
+		mcp.NewTool("timelineAppend",
+			mcp.WithDescription("Add one or more entries to the elapsed timeline. Entries are inserted in sorted order by `at` (elapsed ms). Each entry specifies a scene mutation (snapshot, patch, or stateSet) to fire at that presentation time. Requires an active stage (call start first)."),
+			mcp.WithArray("entries", mcp.Required(), mcp.Description("Array of timeline entries. Each has `at` (elapsed ms), `action` (snapshot/patch/stateSet), optional `transition` and `label`.")),
+		),
+		m.handleMCPTimelineAppend,
 	)
 
 	s.AddTool(
-		mcp.NewTool("get_logs",
+		mcp.NewTool("timelinePlay",
+			mcp.WithDescription("Start, pause, or stop timeline playback. Use seekTo to jump to a specific elapsed ms before playing. Requires an active stage (call start first)."),
+			mcp.WithString("action", mcp.Required(), mcp.Description("Playback action: play, pause, or stop")),
+			mcp.WithNumber("rate", mcp.Description("Playback speed multiplier, default 1.0")),
+			mcp.WithNumber("seekTo", mcp.Description("Jump to this elapsed ms before playing")),
+		),
+		m.handleMCPTimelinePlay,
+	)
+
+	s.AddTool(
+		mcp.NewTool("timelineRead",
+			mcp.WithDescription("Read the current timeline state: entries, playback status, and elapsed position. Requires an active stage (call start first)."),
+		),
+		m.handleMCPTimelineRead,
+	)
+
+	s.AddTool(
+		mcp.NewTool("timelineClear",
+			mcp.WithDescription("Remove all timeline entries and reset playback. Requires an active stage (call start first)."),
+		),
+		m.handleMCPTimelineClear,
+	)
+
+	// ── Utility tools ──
+
+	s.AddTool(
+		mcp.NewTool("getLogs",
 			mcp.WithDescription("Retrieve recent browser console logs (errors, warnings, info, debug). Returns the last N entries like tail. Requires an active stage (call start first)."),
 			mcp.WithNumber("limit", mcp.Description("Number of most recent log entries to return (default 100, max 1000)")),
 		),
@@ -284,11 +334,9 @@ func (m *Manager) handleMCPCreateStage(ctx context.Context, req mcp.CallToolRequ
 
 	userID := userIDFromCtx(ctx)
 
-	// Validate destination BEFORE activating stage
-	dest, err := m.validateStreamDestination(agentID, userID)
-	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
-	}
+	// Validate destination if one is configured — but don't block stage activation if none is set.
+	// The harness and local dev often run without a stream destination.
+	dest, destErr := m.validateStreamDestination(agentID, userID)
 
 	waitCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
@@ -298,9 +346,20 @@ func (m *Manager) handleMCPCreateStage(ctx context.Context, req mcp.CallToolRequ
 		return mcp.NewToolResultError(fmt.Sprintf("failed to activate stage: %v", err)), nil
 	}
 
-	// Configure OBS with the already-validated destination
-	if err := m.configureOBSStream(readyStage, dest); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to configure stream: %v", err)), nil
+	// Configure OBS stream only if a valid destination was found and not already done
+	obsConfiguredMu.Lock()
+	alreadyConfigured := obsConfigured[agentID]
+	obsConfiguredMu.Unlock()
+
+	if dest != nil && destErr == nil && !alreadyConfigured {
+		if err := m.configureOBSStream(readyStage, dest); err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("failed to configure stream: %v", err)), nil
+		}
+		obsConfiguredMu.Lock()
+		obsConfigured[agentID] = true
+		obsConfiguredMu.Unlock()
+	} else if destErr != nil {
+		log.Printf("Stage %s activated without stream destination: %v", agentID, destErr)
 	}
 
 	result, _ := json.Marshal(map[string]any{
@@ -428,122 +487,311 @@ func (m *Manager) handleMCPStageStatus(ctx context.Context, req mcp.CallToolRequ
 	return mcp.NewToolResultText(string(result)), nil
 }
 
-func (m *Manager) handleMCPSetScript(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	agentID := agentIDFromCtx(ctx)
-	script, err := req.RequireString("script")
-	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
-	}
+// ── Internal pod helpers ──
 
-	stage, err := m.requireRunningStage(ctx, agentID)
-	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
-	}
-
+// podSetScript sends a script to the streamer pod via POST /api/panel/main.
+func (m *Manager) podSetScript(stage *Stage, script string) error {
 	body, _ := json.Marshal(map[string]string{"script": script})
 	podURL := fmt.Sprintf("http://%s:8080/api/panel/main?token=%s", stage.PodIP, url.QueryEscape(m.podToken))
 	resp, err := http.Post(podURL, "application/json", bytes.NewReader(body))
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to set template: %v", err)), nil
+		return fmt.Errorf("failed to set script: %v", err)
 	}
 	defer resp.Body.Close()
-	respBody, _ := io.ReadAll(resp.Body)
-
 	if resp.StatusCode != http.StatusOK {
-		return mcp.NewToolResultError(fmt.Sprintf("pod returned %d: %s", resp.StatusCode, string(respBody))), nil
+		respBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("pod returned %d: %s", resp.StatusCode, string(respBody))
 	}
-
-	return mcp.NewToolResultText(string(respBody)), nil
+	return nil
 }
 
-func (m *Manager) handleMCPGetScript(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	agentID := agentIDFromCtx(ctx)
-
-	stage, err := m.requireRunningStage(ctx, agentID)
-	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
-	}
-
-	podURL := fmt.Sprintf("http://%s:8080/api/panel/main?token=%s", stage.PodIP, url.QueryEscape(m.podToken))
-	resp, err := http.Get(podURL)
-	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to get template: %v", err)), nil
-	}
-	defer resp.Body.Close()
-	respBody, _ := io.ReadAll(resp.Body)
-
-	return mcp.NewToolResultText(string(respBody)), nil
-}
-
-func (m *Manager) handleMCPEditScript(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	agentID := agentIDFromCtx(ctx)
-	oldString, err := req.RequireString("old_string")
-	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
-	}
-	newString, err := req.RequireString("new_string")
-	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
-	}
-
-	stage, err := m.requireRunningStage(ctx, agentID)
-	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
-	}
-
-	body, _ := json.Marshal(map[string]string{"old_string": oldString, "new_string": newString})
-	podURL := fmt.Sprintf("http://%s:8080/api/panel/main/edit?token=%s", stage.PodIP, url.QueryEscape(m.podToken))
-	resp, err := http.Post(podURL, "application/json", bytes.NewReader(body))
-	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to edit template: %v", err)), nil
-	}
-	defer resp.Body.Close()
-	respBody, _ := io.ReadAll(resp.Body)
-
-	if resp.StatusCode != http.StatusOK {
-		return mcp.NewToolResultError(fmt.Sprintf("pod returned %d: %s", resp.StatusCode, string(respBody))), nil
-	}
-
-	return mcp.NewToolResultText(string(respBody)), nil
-}
-
-func (m *Manager) handleMCPEmitEvent(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	agentID := agentIDFromCtx(ctx)
-	eventName, err := req.RequireString("event")
-	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
-	}
-	dataStr, err := req.RequireString("data")
-	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
-	}
-
-	// Validate data is valid JSON
-	var dataObj map[string]any
-	if err := json.Unmarshal([]byte(dataStr), &dataObj); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("data must be a valid JSON object: %v", err)), nil
-	}
-
-	stage, err := m.requireRunningStage(ctx, agentID)
-	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
-	}
-
-	body, _ := json.Marshal(map[string]any{"event": eventName, "data": dataObj})
+// podEmitEvent sends an event to the streamer pod via POST /api/panel/main/event.
+func (m *Manager) podEmitEvent(stage *Stage, event string, data any) error {
+	body, _ := json.Marshal(map[string]any{"event": event, "data": data})
 	podURL := fmt.Sprintf("http://%s:8080/api/panel/main/event?token=%s", stage.PodIP, url.QueryEscape(m.podToken))
 	resp, err := http.Post(podURL, "application/json", bytes.NewReader(body))
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to emit event: %v", err)), nil
+		return fmt.Errorf("failed to emit event: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		respBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("pod returned %d: %s", resp.StatusCode, string(respBody))
+	}
+	return nil
+}
+
+// podEval evaluates a JS expression in the browser via POST /api/panel/main/eval.
+func (m *Manager) podEval(stage *Stage, expr string) (string, error) {
+	body, _ := json.Marshal(map[string]string{"expr": expr})
+	podURL := fmt.Sprintf("http://%s:8080/api/panel/main/eval?token=%s", stage.PodIP, url.QueryEscape(m.podToken))
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Post(podURL, "application/json", bytes.NewReader(body))
+	if err != nil {
+		return "", fmt.Errorf("failed to eval: %v", err)
 	}
 	defer resp.Body.Close()
 	respBody, _ := io.ReadAll(resp.Body)
-
 	if resp.StatusCode != http.StatusOK {
-		return mcp.NewToolResultError(fmt.Sprintf("pod returned %d: %s", resp.StatusCode, string(respBody))), nil
+		return "", fmt.Errorf("pod returned %d: %s", resp.StatusCode, string(respBody))
+	}
+	return string(respBody), nil
+}
+
+// ensureBootstrapped sends the scene runtime bundle to the pod if not already done.
+func (m *Manager) ensureBootstrapped(stage *Stage) error {
+	bootstrappedMu.Lock()
+	done := bootstrapped[stage.ID]
+	bootstrappedMu.Unlock()
+	if done {
+		return nil
 	}
 
-	return mcp.NewToolResultText(string(respBody)), nil
+	if rendererJS == "" {
+		return fmt.Errorf("scene runtime not loaded — check RUNTIME_SCRIPTS_DIR or ConfigMap mount")
+	}
+
+	if err := m.podSetScript(stage, rendererJS); err != nil {
+		return fmt.Errorf("failed to bootstrap scene runtime: %v", err)
+	}
+
+	bootstrappedMu.Lock()
+	bootstrapped[stage.ID] = true
+	bootstrappedMu.Unlock()
+	log.Printf("Bootstrapped scene runtime on stage %s", stage.ID)
+	return nil
 }
+
+// clearBootstrapped removes bootstrap and OBS state for a stage (called on deactivate).
+func clearBootstrapped(stageID string) {
+	bootstrappedMu.Lock()
+	delete(bootstrapped, stageID)
+	bootstrappedMu.Unlock()
+
+	obsConfiguredMu.Lock()
+	delete(obsConfigured, stageID)
+	obsConfiguredMu.Unlock()
+}
+
+// ── Catalog tool handler ──
+
+func handleMCPCatalogRead(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	detail := "full"
+	if v, err := req.RequireString("detail"); err == nil && v != "" {
+		detail = v
+	}
+
+	var filename string
+	switch detail {
+	case "index":
+		filename = "catalog-index.md"
+	default:
+		filename = "catalog-full.md"
+	}
+
+	// Read from disk on each call so hostPath changes are picked up live.
+	data, err := os.ReadFile(runtimeScriptsDir + "/" + filename)
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("catalog not available (%s): %v", filename, err)), nil
+	}
+	return mcp.NewToolResultText(string(data)), nil
+}
+
+// ── Scene tool handlers ──
+
+func (m *Manager) handleMCPSceneSet(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	agentID := agentIDFromCtx(ctx)
+
+	stage, err := m.requireRunningStage(ctx, agentID)
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	if err := m.ensureBootstrapped(stage); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	spec, ok := req.GetArguments()["spec"]
+	if !ok {
+		return mcp.NewToolResultError("spec is required"), nil
+	}
+
+	if err := m.podEmitEvent(stage, "scene:snapshot", map[string]any{"spec": spec}); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	return mcp.NewToolResultText("Scene set."), nil
+}
+
+func (m *Manager) handleMCPScenePatch(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	agentID := agentIDFromCtx(ctx)
+
+	stage, err := m.requireRunningStage(ctx, agentID)
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	if err := m.ensureBootstrapped(stage); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	patches, ok := req.GetArguments()["patches"]
+	if !ok {
+		return mcp.NewToolResultError("patches is required"), nil
+	}
+
+	if err := m.podEmitEvent(stage, "scene:patch", map[string]any{"patches": patches}); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	return mcp.NewToolResultText("Patches applied."), nil
+}
+
+func (m *Manager) handleMCPStateSet(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	agentID := agentIDFromCtx(ctx)
+
+	stage, err := m.requireRunningStage(ctx, agentID)
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	if err := m.ensureBootstrapped(stage); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	pathStr, err := req.RequireString("path")
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	valueStr, err := req.RequireString("value")
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	// Parse value as JSON
+	var value any
+	if err := json.Unmarshal([]byte(valueStr), &value); err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("value must be valid JSON: %v", err)), nil
+	}
+
+	if err := m.podEmitEvent(stage, "scene:stateSet", map[string]any{"path": pathStr, "value": value}); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	return mcp.NewToolResultText(fmt.Sprintf("State updated at %s", pathStr)), nil
+}
+
+func (m *Manager) handleMCPSceneRead(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	agentID := agentIDFromCtx(ctx)
+
+	stage, err := m.requireRunningStage(ctx, agentID)
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	result, err := m.podEval(stage, "JSON.stringify(window.__sceneSpec())")
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("failed to read scene: %v", err)), nil
+	}
+
+	return mcp.NewToolResultText(result), nil
+}
+
+// ── Timeline tool handlers ──
+
+func (m *Manager) handleMCPTimelineAppend(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	agentID := agentIDFromCtx(ctx)
+
+	stage, err := m.requireRunningStage(ctx, agentID)
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	if err := m.ensureBootstrapped(stage); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	entries, ok := req.GetArguments()["entries"]
+	if !ok {
+		return mcp.NewToolResultError("entries is required"), nil
+	}
+
+	if err := m.podEmitEvent(stage, "timeline:append", map[string]any{"entries": entries}); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	return mcp.NewToolResultText("Timeline entries appended."), nil
+}
+
+func (m *Manager) handleMCPTimelinePlay(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	agentID := agentIDFromCtx(ctx)
+
+	stage, err := m.requireRunningStage(ctx, agentID)
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	if err := m.ensureBootstrapped(stage); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	action, err := req.RequireString("action")
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	data := map[string]any{"action": action}
+	if rate, ok := req.GetArguments()["rate"]; ok {
+		data["rate"] = rate
+	}
+	if seekTo, ok := req.GetArguments()["seekTo"]; ok {
+		data["seekTo"] = seekTo
+	}
+
+	if err := m.podEmitEvent(stage, "timeline:play", data); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	return mcp.NewToolResultText(fmt.Sprintf("Timeline: %s", action)), nil
+}
+
+func (m *Manager) handleMCPTimelineRead(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	agentID := agentIDFromCtx(ctx)
+
+	stage, err := m.requireRunningStage(ctx, agentID)
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	result, err := m.podEval(stage, "JSON.stringify(window.__timelineState())")
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("failed to read timeline: %v", err)), nil
+	}
+
+	return mcp.NewToolResultText(result), nil
+}
+
+func (m *Manager) handleMCPTimelineClear(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	agentID := agentIDFromCtx(ctx)
+
+	stage, err := m.requireRunningStage(ctx, agentID)
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	if err := m.ensureBootstrapped(stage); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	if err := m.podEmitEvent(stage, "timeline:clear", map[string]any{}); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	return mcp.NewToolResultText("Timeline cleared."), nil
+}
+
+// ── Utility tool handlers ──
 
 func (m *Manager) handleMCPGetLogs(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	agentID := agentIDFromCtx(ctx)
