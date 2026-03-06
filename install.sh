@@ -2,7 +2,7 @@
 set -e
 
 REPO="dazzle-labs/cli"
-INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
+INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
 
 # Detect OS
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
@@ -31,15 +31,16 @@ URL="https://github.com/${REPO}/releases/download/${TAG}/dazzle_${OS}_${ARCH}"
 
 echo "Installing dazzle ${TAG} (${OS}/${ARCH})..."
 
+mkdir -p "$INSTALL_DIR"
 curl -fsSL "$URL" -o /tmp/dazzle
 chmod +x /tmp/dazzle
-
-if [ ! -w "$INSTALL_DIR" ]; then
-  echo "sudo required to write to $INSTALL_DIR (you may be prompted for your password)"
-  sudo mv /tmp/dazzle "$INSTALL_DIR/dazzle"
-else
-  mv /tmp/dazzle "$INSTALL_DIR/dazzle"
-fi
+mv /tmp/dazzle "$INSTALL_DIR/dazzle"
 
 echo "Installed to $INSTALL_DIR/dazzle"
+
+case ":$PATH:" in
+  *":$INSTALL_DIR:"*) ;;
+  *) echo "Add $INSTALL_DIR to your PATH: export PATH=\"$INSTALL_DIR:\$PATH\"" ;;
+esac
+
 echo "Run 'dazzle login' to get started."
