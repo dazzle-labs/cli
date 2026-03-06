@@ -346,6 +346,20 @@ async function ensureXshmSource() {
     });
 }
 
+async function ensureAudioSource() {
+    // Create pulse_output_capture if not exists (601 = already exists, ignore)
+    try {
+        await obs.request('CreateInput', {
+            sceneName: 'Scene',
+            inputName: 'Audio',
+            inputKind: 'pulse_output_capture',
+            inputSettings: { device_id: 'virtual_out.monitor' },
+        });
+    } catch (err) {
+        if (!err.message.includes('601')) throw err;
+    }
+}
+
 // --- CDP Navigate ---
 async function cdpNavigate(url) {
     const tabsRes = await fetch(`http://${CDP_HOST}:${CDP_PORT}/json`);
@@ -653,7 +667,8 @@ async function start() {
         try {
             await obs.connect(30000);
             await ensureXshmSource();
-            console.log('OBS xshm source ready.');
+            await ensureAudioSource();
+            console.log('OBS sources ready.');
         } catch (err) {
             console.error('OBS startup error:', err.message);
             console.log('Server running without OBS. Panels will work when OBS connects.');
