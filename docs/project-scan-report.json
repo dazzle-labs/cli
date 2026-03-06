@@ -2,7 +2,7 @@
   "workflow_version": "1.2.0",
   "timestamps": {
     "started": "2026-03-03T00:00:00Z",
-    "last_updated": "2026-03-03T22:00:00Z",
+    "last_updated": "2026-03-05T00:00:00Z",
     "completed": "2026-03-03T22:00:00Z"
   },
   "mode": "full_rescan",
@@ -49,7 +49,11 @@
     "source-tree-analysis.md",
     "development-guide.md",
     "deployment-guide.md",
-    "project-scan-report.json"
+    "project-scan-report.json",
+    "deep-dive-runtime-harness.md"
+  ],
+  "deep_dive_targets": [
+    {"target_name": "Runtime & Harness", "target_path": "runtime/ + harness/", "files_analyzed": 65, "output_file": "deep-dive-runtime-harness.md", "timestamp": "2026-03-05T00:00:00Z"}
   ],
   "resume_instructions": "Workflow complete. No resume needed."
 }

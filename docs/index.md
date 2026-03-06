@@ -1,6 +1,6 @@
 # Browser Streamer — Documentation Index
 
-> Generated: 2026-03-03 | Scan Level: Quick | Mode: Full Rescan
+> Generated: 2026-03-03 | Last Updated: 2026-03-05 | Deep-Dives: 1
 
 ---
 
@@ -63,6 +63,12 @@
 ### API & Data
 - [API Contracts](./api-contracts.md) — All ConnectRPC services (Stage, ApiKey, Stream, User) + HTTP endpoints
 - [Data Models](./data-models.md) — PostgreSQL schema, migration history, entity relationships
+
+### Deep-Dive Documentation
+
+Detailed exhaustive analysis of specific areas:
+
+- [Runtime & Harness Deep-Dive](./deep-dive-runtime-harness.md) — Comprehensive analysis of the spec-driven rendering engine (37 components, timeline, expressions) and evaluation harness (14 scenarios, agent orchestration, replay, multimodal evaluation) — 65 files, ~7,500 LOC — Generated 2026-03-05
 
 ### Operations
 - [Local Development (Kind)](./local-dev.md) — Run the full stack locally with Kind (recommended for new devs)
