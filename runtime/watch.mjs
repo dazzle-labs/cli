@@ -64,8 +64,8 @@ console.log("[runtime] Watching for changes...")
 
 // Watch catalog source files and regenerate on change
 const catalogSources = [
-  path.resolve(__dirname, "../stream/src/catalogs/general/catalog.ts"),
-  path.resolve(__dirname, "../stream/src/core/catalog.ts"),
+  path.resolve(__dirname, "catalogs/general/catalog.ts"),
+  path.resolve(__dirname, "catalogs/coding/catalog.ts"),
   path.resolve(__dirname, "core/catalog.ts"),
 ]
 

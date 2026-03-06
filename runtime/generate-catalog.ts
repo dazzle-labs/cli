@@ -7,16 +7,17 @@ import fs from "fs"
 import path from "path"
 import { fileURLToPath } from "url"
 
-// Import the catalog from the components registry
-import { generalCatalog } from "../stream/src/catalogs/general/catalog"
+// Import catalogs
+import { generalCatalog } from "./catalogs/general/catalog"
+import { codingCatalog } from "./catalogs/coding/catalog"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const distDir = path.resolve(__dirname, "dist")
 
 fs.mkdirSync(distDir, { recursive: true })
 
-const indexText = generalCatalog.index()
-const fullText = generalCatalog.prompt()
+const indexText = generalCatalog.index() + "\n\n" + codingCatalog.index()
+const fullText = generalCatalog.prompt() + "\n\n" + codingCatalog.prompt()
 
 fs.writeFileSync(path.join(distDir, "catalog-index.md"), indexText)
 fs.writeFileSync(path.join(distDir, "catalog-full.md"), fullText)
