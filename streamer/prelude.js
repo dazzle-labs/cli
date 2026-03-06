@@ -15,5 +15,5 @@ Object.assign(window, {
     useContext, useLayoutEffect, useImperativeHandle, useDebugValue,
     useDeferredValue, useTransition, useId, useSyncExternalStore,
     createContext, forwardRef, memo, lazy, Suspense,
-    createPortal, create, persist,
+    createRoot, createPortal, create, persist,
 });
