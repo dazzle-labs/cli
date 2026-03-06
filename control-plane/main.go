@@ -64,6 +64,7 @@ type Stage struct {
 type Manager struct {
 	mu            sync.RWMutex
 	stages        map[string]*Stage
+	activateMu    sync.Map // per-stage activation locks (stageID -> *sync.Mutex)
 	clientset     *kubernetes.Clientset
 	namespace     string
 	streamerImage string
@@ -333,6 +334,14 @@ func resourcePtr(r resource.Quantity) *resource.Quantity {
 
 // deleteStage removes the pod (if active) and the DB record.
 func (m *Manager) deleteStage(id string) error {
+	val, _ := m.activateMu.LoadOrStore(id, &sync.Mutex{})
+	mu := val.(*sync.Mutex)
+	mu.Lock()
+	defer func() {
+		mu.Unlock()
+		m.activateMu.Delete(id)
+	}()
+
 	m.mu.Lock()
 	stage, ok := m.stages[id]
 	if ok {
@@ -356,7 +365,17 @@ func (m *Manager) deleteStage(id string) error {
 }
 
 // deactivateStage tears down the pod but keeps the DB record as inactive.
+// Acquires the per-stage activation lock to prevent racing with concurrent activations.
 func (m *Manager) deactivateStage(id string) error {
+	val, _ := m.activateMu.LoadOrStore(id, &sync.Mutex{})
+	mu := val.(*sync.Mutex)
+	mu.Lock()
+	defer mu.Unlock()
+	return m.doDeactivateStage(id)
+}
+
+// doDeactivateStage is the inner implementation. Caller must hold the per-stage lock.
+func (m *Manager) doDeactivateStage(id string) error {
 	m.mu.Lock()
 	stage, ok := m.stages[id]
 	if ok {
@@ -385,7 +404,13 @@ func (m *Manager) deactivateStage(id string) error {
 // activateStage creates a pod for an existing inactive stage record.
 // On failure (timeout, pod crash, etc.), it cleans up and resets the stage to inactive.
 func (m *Manager) activateStage(ctx context.Context, id, userID string) (*Stage, error) {
-	// Check if already active
+	// Per-stage lock prevents concurrent activations from racing
+	val, _ := m.activateMu.LoadOrStore(id, &sync.Mutex{})
+	mu := val.(*sync.Mutex)
+	mu.Lock()
+	defer mu.Unlock()
+
+	// Check if already active (under lock, so no race)
 	if stage, ok := m.getStage(id); ok {
 		if stage.Status == StatusRunning && stage.PodIP != "" {
 			return stage, nil
@@ -393,7 +418,7 @@ func (m *Manager) activateStage(ctx context.Context, id, userID string) (*Stage,
 		if stage.Status == StatusStarting {
 			s, err := m.waitForStage(ctx, id)
 			if err != nil {
-				m.deactivateStage(id)
+				m.doDeactivateStage(id)
 				return nil, err
 			}
 			return s, nil
@@ -405,7 +430,7 @@ func (m *Manager) activateStage(ctx context.Context, id, userID string) (*Stage,
 		if strings.Contains(err.Error(), "already exists") {
 			s, err := m.waitForStage(ctx, id)
 			if err != nil {
-				m.deactivateStage(id)
+				m.doDeactivateStage(id)
 				return nil, err
 			}
 			return s, nil
@@ -415,7 +440,7 @@ func (m *Manager) activateStage(ctx context.Context, id, userID string) (*Stage,
 	stage.OwnerUserID = userID
 	s, err := m.waitForStage(ctx, id)
 	if err != nil {
-		m.deactivateStage(id)
+		m.doDeactivateStage(id)
 		return nil, err
 	}
 	return s, nil
