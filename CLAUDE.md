@@ -9,15 +9,16 @@
 All Go files live in `cmd/dazzle/` as `package main`. This lets `go install github.com/dazzle-labs/cli/cmd/dazzle@latest` install the binary as `dazzle`.
 
 ```
-cmd/dazzle/           # package main — all CLI source files
-gen/api/v1/           # Generated protobuf types (package apiv1)
+cmd/dazzle/               # package main — all CLI source files
+proto/api/v1/             # Proto source files (dazzle.v1 — public API contract)
+gen/api/v1/               # Generated protobuf types (package apiv1)
 gen/api/v1/apiv1connect/  # Generated ConnectRPC clients (package apiv1connect)
 ```
 
-The generated files in `gen/` are copied from the Dazzle control-plane repo after running `make proto` there. The `go_package` option in the `.proto` files is already set to `github.com/dazzle-labs/cli/gen/api/v1` so no import path rewriting is needed — just copy:
+This repo owns the public API definitions (`dazzle.v1`). To regenerate after editing proto files:
 
 ```bash
-cp -r <control-plane-repo>/gen/api/v1/. gen/api/v1/
+make proto
 ```
 
 ## Key patterns
