@@ -36,7 +36,7 @@ func (c *UpdateCmd) Run(ctx *Context) error {
 		return fmt.Errorf("fetch latest release: %w", err)
 	}
 
-	if latest == version {
+	if strings.TrimPrefix(latest, "v") == strings.TrimPrefix(version, "v") {
 		printText("Already up to date (%s).", version)
 		return nil
 	}
