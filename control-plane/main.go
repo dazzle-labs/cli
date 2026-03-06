@@ -377,6 +377,7 @@ func (m *Manager) deactivateStage(id string) error {
 }
 
 // activateStage creates a pod for an existing inactive stage record.
+// On failure (timeout, pod crash, etc.), it cleans up and resets the stage to inactive.
 func (m *Manager) activateStage(ctx context.Context, id, userID string) (*Stage, error) {
 	// Check if already active
 	if stage, ok := m.getStage(id); ok {
@@ -384,19 +385,34 @@ func (m *Manager) activateStage(ctx context.Context, id, userID string) (*Stage,
 			return stage, nil
 		}
 		if stage.Status == StatusStarting {
-			return m.waitForStage(ctx, id)
+			s, err := m.waitForStage(ctx, id)
+			if err != nil {
+				m.deactivateStage(id)
+				return nil, err
+			}
+			return s, nil
 		}
 	}
 
 	stage, err := m.createStage(id)
 	if err != nil {
 		if strings.Contains(err.Error(), "already exists") {
-			return m.waitForStage(ctx, id)
+			s, err := m.waitForStage(ctx, id)
+			if err != nil {
+				m.deactivateStage(id)
+				return nil, err
+			}
+			return s, nil
 		}
 		return nil, err
 	}
 	stage.OwnerUserID = userID
-	return m.waitForStage(ctx, id)
+	s, err := m.waitForStage(ctx, id)
+	if err != nil {
+		m.deactivateStage(id)
+		return nil, err
+	}
+	return s, nil
 }
 
 func (m *Manager) getStage(id string) (*Stage, bool) {
@@ -430,7 +446,7 @@ func (m *Manager) gc() {
 	m.mu.Unlock()
 
 	for _, id := range toDelete {
-		_ = m.deleteStage(id)
+		_ = m.deactivateStage(id)
 	}
 }
 
