@@ -348,6 +348,20 @@ func dbUpdateStageStatus(db *sql.DB, id, status, podName, podIP string) error {
 	return err
 }
 
+func dbSetStageScript(db *sql.DB, stageID, script string) error {
+	_, err := db.Exec(`UPDATE stages SET last_script=$2, updated_at=NOW() WHERE id=$1`, stageID, sql.NullString{String: script, Valid: script != ""})
+	return err
+}
+
+func dbGetStageScript(db *sql.DB, stageID string) (string, error) {
+	var s sql.NullString
+	err := db.QueryRow(`SELECT last_script FROM stages WHERE id=$1`, stageID).Scan(&s)
+	if err != nil {
+		return "", err
+	}
+	return s.String, nil
+}
+
 func dbSetStageDestination(db *sql.DB, stageID, userID, destinationID string) error {
 	destVal := sql.NullString{String: destinationID, Valid: destinationID != ""}
 	res, err := db.Exec(`

@@ -263,6 +263,54 @@ func (m *Manager) mcpMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// fetchScriptFromPod retrieves the current user script from a running pod.
+func (m *Manager) fetchScriptFromPod(stage *Stage) (string, error) {
+	podURL := fmt.Sprintf("http://%s:8080/api/panel/main?token=%s", stage.PodIP, url.QueryEscape(m.podToken))
+	resp, err := http.Get(podURL)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("pod returned %d", resp.StatusCode)
+	}
+	var result struct {
+		Script string `json:"script"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", err
+	}
+	return result.Script, nil
+}
+
+// persistScriptFromPod fetches the current script from the pod and saves it to DB.
+func (m *Manager) persistScriptFromPod(stageID string, stage *Stage) {
+	script, err := m.fetchScriptFromPod(stage)
+	if err != nil {
+		log.Printf("WARN: failed to fetch script from pod for stage %s: %v", stageID, err)
+		return
+	}
+	if err := dbSetStageScript(m.db, stageID, script); err != nil {
+		log.Printf("WARN: failed to persist script for stage %s: %v", stageID, err)
+	}
+}
+
+// restoreScriptToPod pushes a saved script to a newly started pod.
+func (m *Manager) restoreScriptToPod(stage *Stage, script string) error {
+	body, _ := json.Marshal(map[string]string{"script": script})
+	podURL := fmt.Sprintf("http://%s:8080/api/panel/main?token=%s", stage.PodIP, url.QueryEscape(m.podToken))
+	resp, err := http.Post(podURL, "application/json", bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		respBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("pod returned %d: %s", resp.StatusCode, string(respBody))
+	}
+	return nil
+}
+
 // requireRunningStage resolves the agent's stage and verifies it is running.
 func (m *Manager) requireRunningStage(ctx context.Context, agentID string) (*Stage, error) {
 	stage, ok := m.getStage(agentID)
@@ -290,6 +338,17 @@ func (m *Manager) handleMCPCreateStage(ctx context.Context, req mcp.CallToolRequ
 	readyStage, err := m.activateStage(waitCtx, agentID, userID)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("failed to activate stage: %v", err)), nil
+	}
+
+	// Restore persisted script if one exists
+	if m.db != nil {
+		if script, err := dbGetStageScript(m.db, agentID); err == nil && script != "" {
+			if err := m.restoreScriptToPod(readyStage, script); err != nil {
+				log.Printf("WARN: failed to restore script for stage %s: %v", agentID, err)
+			} else {
+				log.Printf("Restored script for stage %s (%d bytes)", agentID, len(script))
+			}
+		}
 	}
 
 	// Configure OBS stream destination if one is set (not required to start)
@@ -450,6 +509,13 @@ func (m *Manager) handleMCPSetScript(ctx context.Context, req mcp.CallToolReques
 		return mcp.NewToolResultError(fmt.Sprintf("pod returned %d: %s", resp.StatusCode, string(respBody))), nil
 	}
 
+	// Persist script to DB for restore on next activation
+	if m.db != nil {
+		if err := dbSetStageScript(m.db, agentID, script); err != nil {
+			log.Printf("WARN: failed to persist script for stage %s: %v", agentID, err)
+		}
+	}
+
 	return mcp.NewToolResultText(string(respBody)), nil
 }
 
@@ -499,6 +565,11 @@ func (m *Manager) handleMCPEditScript(ctx context.Context, req mcp.CallToolReque
 
 	if resp.StatusCode != http.StatusOK {
 		return mcp.NewToolResultError(fmt.Sprintf("pod returned %d: %s", resp.StatusCode, string(respBody))), nil
+	}
+
+	// Persist updated script to DB
+	if m.db != nil {
+		go m.persistScriptFromPod(agentID, stage)
 	}
 
 	return mcp.NewToolResultText(string(respBody)), nil
