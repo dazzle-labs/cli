@@ -13,7 +13,6 @@ WORKDIR /app
 COPY control-plane/go.mod control-plane/go.sum ./
 RUN go mod download
 COPY control-plane/*.go ./
-COPY control-plane/gen/ ./gen/
 COPY control-plane/migrations/ ./migrations/
 RUN CGO_ENABLED=0 GOOS=linux go build -o control-plane .
 
