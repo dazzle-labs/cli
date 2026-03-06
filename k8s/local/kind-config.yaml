@@ -7,8 +7,3 @@ nodes:
       - containerPort: 30080
         hostPort: 8080
         protocol: TCP
-    extraMounts:
-      # Mount runtime/dist into the Kind node so the control-plane can
-      # read local build output directly via hostPath (no ConfigMap sync needed).
-      - hostPath: ./runtime/dist
-        containerPath: /runtime-dist

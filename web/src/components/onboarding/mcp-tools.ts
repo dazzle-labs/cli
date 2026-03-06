@@ -27,7 +27,7 @@ export const MCP_TOOLS: McpTool[] = [
     id: "stop",
     name: "stop",
     description:
-      "Deactivate your stage. Shuts down the browser and releases cloud resources. Call start to bring it back — stream destinations are preserved, but the scene spec will need to be re-set.",
+      "Deactivate your stage. Shuts down the browser and releases cloud resources. Call start to bring it back — stream destinations are preserved, but the panel script will need to be re-set.",
     params: [],
     example: JSON.stringify({ name: "stop", arguments: {} }, null, 2),
   },
@@ -40,38 +40,24 @@ export const MCP_TOOLS: McpTool[] = [
     example: JSON.stringify({ name: "status", arguments: {} }, null, 2),
   },
   {
-    id: "sceneSet",
-    name: "sceneSet",
+    id: "set_script",
+    name: "set_script",
     description:
-      "Set the full scene spec. Replaces the entire scene. The spec is a declarative UI description with elements, layout, and state bindings. Requires an active stage (call start first).",
+      "Set JavaScript content to render in your stage's browser. Write vanilla JS or JSX. The page is full-viewport with a black background. Changes are hot-swapped with zero page reloads. Requires an active stage (call start first).",
     params: [
       {
-        name: "spec",
-        type: "object",
+        name: "script",
+        type: "string",
         required: true,
-        description:
-          "Scene spec object with root, elements, and state",
+        description: "JavaScript or JSX code to render",
       },
     ],
     example: JSON.stringify(
       {
-        name: "sceneSet",
+        name: "set_script",
         arguments: {
-          spec: {
-            root: "main",
-            elements: {
-              main: {
-                type: "Box",
-                props: { style: { display: "flex", alignItems: "center", justifyContent: "center", height: "100vh" } },
-                children: ["title"],
-              },
-              title: {
-                type: "Heading",
-                props: { text: "Hello World", level: 1 },
-              },
-            },
-            state: {},
-          },
+          script:
+            'const App = () => <div style={{color: "white", fontSize: 48}}>Hello World</div>;',
         },
       },
       null,
@@ -79,26 +65,38 @@ export const MCP_TOOLS: McpTool[] = [
     ),
   },
   {
-    id: "scenePatch",
-    name: "scenePatch",
+    id: "get_script",
+    name: "get_script",
     description:
-      "Apply JSON Patch operations (RFC 6902) to the current scene. Supports add, replace, remove. Requires an active stage (call start first).",
+      "Get the current JavaScript content being rendered in your stage's browser. Requires an active stage (call start first).",
+    params: [],
+    example: JSON.stringify({ name: "get_script", arguments: {} }, null, 2),
+  },
+  {
+    id: "edit_script",
+    name: "edit_script",
+    description:
+      "Edit the current JavaScript content by finding and replacing a string. The old_string must exist exactly once in the current code. Changes are hot-swapped with no page reload. Requires an active stage (call start first).",
     params: [
       {
-        name: "patches",
-        type: "PatchOp[]",
+        name: "old_string",
+        type: "string",
         required: true,
-        description:
-          "Array of JSON Patch operations, each with op, path, and optional value",
+        description: "The exact string to find in the current code",
+      },
+      {
+        name: "new_string",
+        type: "string",
+        required: true,
+        description: "The replacement string",
       },
     ],
     example: JSON.stringify(
       {
-        name: "scenePatch",
+        name: "edit_script",
         arguments: {
-          patches: [
-            { op: "replace", path: "/elements/title/props/text", value: "Updated Title" },
-          ],
+          old_string: "Hello World",
+          new_string: "Hello Dazzle",
         },
       },
       null,
@@ -106,67 +104,32 @@ export const MCP_TOOLS: McpTool[] = [
     ),
   },
   {
-    id: "stateSet",
-    name: "stateSet",
+    id: "emit_event",
+    name: "emit_event",
     description:
-      'Update a value in the scene state by JSON Pointer path. Use "/-" suffix to append to an array. Requires an active stage (call start first).',
+      "Push live data to your running panel without rewriting or reloading the script. Use with set_script: write your event listeners once, then drive updates with emit_event.",
     params: [
       {
-        name: "path",
+        name: "event",
         type: "string",
         required: true,
         description:
-          "JSON Pointer path within state, e.g. /events/- or /status/title",
+          "Event name that your set_script code listens for (e.g. 'update', 'alert', 'theme-change')",
       },
       {
-        name: "value",
-        type: "any (JSON)",
-        required: true,
-        description: "JSON-encoded value to set",
-      },
-    ],
-    example: JSON.stringify(
-      {
-        name: "stateSet",
-        arguments: { path: "/status/title", value: '"Live Now"' },
-      },
-      null,
-      2,
-    ),
-  },
-  {
-    id: "sceneRead",
-    name: "sceneRead",
-    description:
-      "Read the current scene spec. Returns the full spec (root, elements, state). Requires an active stage (call start first).",
-    params: [],
-    example: JSON.stringify({ name: "sceneRead", arguments: {} }, null, 2),
-  },
-  {
-    id: "timelineAppend",
-    name: "timelineAppend",
-    description:
-      "Add one or more entries to the elapsed timeline. Entries are inserted in sorted order by `at` (elapsed ms). Each entry specifies a scene mutation (snapshot, patch, or stateSet) to fire at that presentation time.",
-    params: [
-      {
-        name: "entries",
-        type: "TimelineEntry[]",
+        name: "data",
+        type: "string (JSON)",
         required: true,
         description:
-          "Array of timeline entries. Each has `at` (elapsed ms), `action` (snapshot/patch/stateSet), optional `transition` and `label`.",
+          "JSON object with event payload — merged into window.__state and delivered as e.detail.data",
       },
     ],
     example: JSON.stringify(
       {
-        name: "timelineAppend",
+        name: "emit_event",
         arguments: {
-          entries: [
-            {
-              at: 0,
-              action: { type: "snapshot", spec: { root: "main", elements: {}, state: {} } },
-              label: "Opening scene",
-            },
-          ],
+          event: "score",
+          data: '{"points": 42}',
         },
       },
       null,
@@ -174,62 +137,8 @@ export const MCP_TOOLS: McpTool[] = [
     ),
   },
   {
-    id: "timelinePlay",
-    name: "timelinePlay",
-    description:
-      "Start, pause, or stop timeline playback. Use seekTo to jump to a specific elapsed ms before playing.",
-    params: [
-      {
-        name: "action",
-        type: '"play" | "pause" | "stop"',
-        required: true,
-        description: "Playback action",
-      },
-      {
-        name: "rate",
-        type: "number",
-        required: false,
-        description: "Playback speed multiplier, default 1.0",
-      },
-      {
-        name: "seekTo",
-        type: "number",
-        required: false,
-        description: "Jump to this elapsed ms before playing",
-      },
-    ],
-    example: JSON.stringify(
-      { name: "timelinePlay", arguments: { action: "play", rate: 1.0 } },
-      null,
-      2,
-    ),
-  },
-  {
-    id: "timelineRead",
-    name: "timelineRead",
-    description:
-      "Read the current timeline state: entries, playback status, and elapsed position.",
-    params: [],
-    example: JSON.stringify(
-      { name: "timelineRead", arguments: {} },
-      null,
-      2,
-    ),
-  },
-  {
-    id: "timelineClear",
-    name: "timelineClear",
-    description: "Remove all timeline entries and reset playback.",
-    params: [],
-    example: JSON.stringify(
-      { name: "timelineClear", arguments: {} },
-      null,
-      2,
-    ),
-  },
-  {
-    id: "getLogs",
-    name: "getLogs",
+    id: "get_logs",
+    name: "get_logs",
     description:
       "Retrieve recent browser console logs (errors, warnings, info, debug). Returns the last N entries like tail. Requires an active stage (call start first).",
     params: [
@@ -241,7 +150,7 @@ export const MCP_TOOLS: McpTool[] = [
       },
     ],
     example: JSON.stringify(
-      { name: "getLogs", arguments: { limit: 50 } },
+      { name: "get_logs", arguments: { limit: 50 } },
       null,
       2,
     ),

@@ -1,2 +1,0 @@
-{"type":"tool_call","timestamp":1772757173279,"elapsed":2,"tool":"start","input":{}}
-{"type":"system","timestamp":1772757173279,"elapsed":2,"subtype":"step_finish","data":{"stepNumber":1,"toolCalls":1}}

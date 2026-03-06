@@ -1,6 +1,6 @@
 # Browser Streamer — Documentation Index
 
-> Generated: 2026-03-03 | Last Updated: 2026-03-05 | Deep-Dives: 1
+> Generated: 2026-03-03 | Last Updated: 2026-03-05
 
 ---
 
@@ -10,7 +10,7 @@
 |-|-|
 | **Product** | Dazzle — on-demand cloud browser environments for AI agents and live streaming |
 | **Production URL** | https://stream.dazzle.fm |
-| **Repo Type** | Monorepo (5 parts) |
+| **Repo Type** | Monorepo (4 parts) |
 | **Infrastructure** | Single Hetzner VPS, k3s (single-node Kubernetes) |
 | **Auth** | Clerk (JWT) + internal API keys (`bstr_*`) |
 | **API Protocol** | ConnectRPC (protobuf/HTTP2) |
@@ -30,14 +30,6 @@
 - **Role:** Dashboard for stage management, API keys, stream destinations
 - **Entry:** `web/src/main.tsx`
 - **Dev:** `cd web && npm run dev`
-
-### runtime (Browser runtime bundles)
-- **Path:** `runtime/`
-- **Role:** Compiled browser-side code: `prelude.js` (React/ReactDOM/Zustand globals) + `renderer.js` (spec-driven renderer with 37 components)
-- **Entry:** `runtime/renderer.tsx`, `runtime/prelude.ts`
-- **Build:** `cd runtime && npm run build` (outputs `dist/prelude.js` + `dist/renderer.js`)
-- **Core types:** `runtime/core/` — Spec, PatchOp, expressions, timeline (shared with harness)
-- **Components:** `runtime/components/` — 37 TSX components across 8 categories (Layout, Text, Content, Broadcast, SVG, Animation, Data, Coding)
 
 ### streamer (Node.js browser pod)
 - **Path:** `streamer/`
@@ -63,12 +55,6 @@
 ### API & Data
 - [API Contracts](./api-contracts.md) — All ConnectRPC services (Stage, ApiKey, Stream, User) + HTTP endpoints
 - [Data Models](./data-models.md) — PostgreSQL schema, migration history, entity relationships
-
-### Deep-Dive Documentation
-
-Detailed exhaustive analysis of specific areas:
-
-- [Runtime & Harness Deep-Dive](./deep-dive-runtime-harness.md) — Comprehensive analysis of the spec-driven rendering engine (37 components, timeline, expressions) and evaluation harness (14 scenarios, agent orchestration, replay, multimodal evaluation) — 65 files, ~7,500 LOC — Generated 2026-03-05
 
 ### Operations
 - [Local Development (Kind)](./local-dev.md) — Run the full stack locally with Kind (recommended for new devs)

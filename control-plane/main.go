@@ -270,7 +270,6 @@ func (m *Manager) createStage(requestedID string) (*Stage, error) {
 					},
 					VolumeMounts: []corev1.VolumeMount{
 						{Name: "dshm", MountPath: "/dev/shm"},
-						{Name: "runtime-scripts", MountPath: "/app/runtime", ReadOnly: true},
 					},
 					ReadinessProbe: &corev1.Probe{
 						ProbeHandler: corev1.ProbeHandler{
@@ -296,7 +295,6 @@ func (m *Manager) createStage(requestedID string) (*Stage, error) {
 						},
 					},
 				},
-				runtimeScriptsVolume(),
 			},
 		},
 	}
@@ -325,31 +323,6 @@ func (m *Manager) createStage(requestedID string) (*Stage, error) {
 
 func resourcePtr(r resource.Quantity) *resource.Quantity {
 	return &r
-}
-
-// runtimeScriptsVolume returns a hostPath volume when RUNTIME_HOSTPATH is set
-// (for local Kind dev — reads files directly from the host), otherwise a ConfigMap volume.
-func runtimeScriptsVolume() corev1.Volume {
-	if hp := os.Getenv("RUNTIME_HOSTPATH"); hp != "" {
-		hostPathDir := corev1.HostPathDirectory
-		return corev1.Volume{
-			Name: "runtime-scripts",
-			VolumeSource: corev1.VolumeSource{
-				HostPath: &corev1.HostPathVolumeSource{
-					Path: hp,
-					Type: &hostPathDir,
-				},
-			},
-		}
-	}
-	return corev1.Volume{
-		Name: "runtime-scripts",
-		VolumeSource: corev1.VolumeSource{
-			ConfigMap: &corev1.ConfigMapVolumeSource{
-				LocalObjectReference: corev1.LocalObjectReference{Name: "runtime-scripts"},
-			},
-		},
-	}
 }
 
 // deleteStage removes the pod (if active) and the DB record.
@@ -395,8 +368,6 @@ func (m *Manager) deactivateStage(id string) error {
 	m.mu.Lock()
 	delete(m.stages, id)
 	m.mu.Unlock()
-
-	clearBootstrapped(id)
 
 	if m.db != nil {
 		dbUpdateStageStatus(m.db, id, "inactive", "", "")

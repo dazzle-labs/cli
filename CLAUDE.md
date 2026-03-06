@@ -5,10 +5,10 @@ For complete architecture, build, deployment, and development guidance, see **[d
 ## Quick Start
 
 ```bash
-make dev    # Builds everything, starts Kind cluster, runs all dev watchers
+make dev    # Builds everything, starts Kind cluster, runs web dev server + log tail
 ```
 
-This is the primary command for local development. It runs `make up` (build images, create cluster, deploy), then starts runtime watcher + web dev server + control-plane log tail in parallel.
+This is the primary command for local development. It runs `make up` (build images, create cluster, deploy), then starts web dev server + control-plane log tail in parallel.
 
 ## Make Commands
 
@@ -20,13 +20,11 @@ make down                        # Delete the Kind cluster
 make build                       # Build all images and load into Kind
 make build-cp                    # Build control-plane image and load into Kind
 make build-streamer              # Build streamer image and load into Kind
-make build-runtime               # Build renderer JS bundle (prelude + renderer)
 make deploy                      # Apply manifests and restart control-plane in Kind
 make logs                        # Tail control-plane logs in Kind
 make status                      # Show pods and services in Kind
 make proto                       # Generate protobuf code (Go + TypeScript)
 make web/dev                     # Run web dev server only
-make runtime/dev                 # Watch runtime sources only
 ```
 
 Secrets are SOPS-encrypted in `k8s/local/local.secrets.yaml` (requires Age key). See [docs/local-dev.md](docs/local-dev.md).

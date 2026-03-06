@@ -75,32 +75,7 @@ browser-streamer/                    # Monorepo root
 │       │       └── table.tsx
 │       └── lib/                     # Shared utilities
 │
-├── runtime/                         # [PART 3] Browser runtime bundles
-│   ├── prelude.ts                   # ★ Bundles React/ReactDOM/Zustand as window globals
-│   ├── renderer.tsx                 # ★ Spec-driven renderer with 37 components
-│   ├── core/                        # Shared protocol types and logic
-│   │   ├── spec.ts                  # Spec, Element, PatchOp types
-│   │   ├── patch.ts                 # applyPatches — JSON Patch on Spec objects
-│   │   ├── expressions.ts           # $state expression resolver
-│   │   ├── timeline.ts              # Timeline entry/playback types
-│   │   ├── catalog.ts               # Component catalog definitions
-│   │   └── registry.ts              # Component registry helpers
-│   ├── components/                  # 37 TSX components (8 categories)
-│   │   ├── Box.tsx, Stack.tsx ...   # Layout (6)
-│   │   ├── Heading.tsx, Text.tsx .. # Text (3)
-│   │   ├── Card.tsx, Image.tsx ...  # Content (3)
-│   │   ├── LowerThird.tsx ...       # Broadcast (4)
-│   │   ├── Shape.tsx, Line.tsx ...  # SVG (4)
-│   │   ├── Animate.tsx ...          # Animation (6)
-│   │   ├── Chart.tsx, Table.tsx ... # Data (5)
-│   │   └── CodeView.tsx ...         # Coding (6)
-│   ├── dist/                        # Build output
-│   │   ├── prelude.js               # ~192kb (minified, includes React)
-│   │   └── renderer.js              # ~35kb (minified, React as external global)
-│   ├── package.json                 # Build scripts, react/zustand deps
-│   └── tsconfig.json                # Classic JSX mode
-│
-├── streamer/                        # [PART 4] Node.js browser pod service
+├── streamer/                        # [PART 3] Node.js browser pod service
 │   ├── index.js                     # ★ Entry: Express server, panel system, OBS client
 │   ├── shell.html                   # Base HTML shell served to Chrome per panel
 │   ├── vite-init.mjs                # Vite dev server initialization for panel HMR
@@ -109,7 +84,7 @@ browser-streamer/                    # Monorepo root
 │   └── docker/                      # Container image
 │       └── Dockerfile               # Ubuntu + Chrome + OBS + Node.js + entrypoint
 │
-├── k8s/                             # [PART 5] Kubernetes manifests
+├── k8s/                             # [PART 4] Kubernetes manifests
 │   ├── control-plane/
 │   │   ├── deployment.yaml          # ★ Control-plane Deployment + env vars
 │   │   ├── rbac.yaml                # ServiceAccount + Role + RoleBinding (pods CRUD)
@@ -165,15 +140,6 @@ browser-streamer/                    # Monorepo root
 | `src/client.ts` | ★★★ | Service client setup and auth interceptor |
 | `src/gen/` | ★★ | Generated from protos — do not hand-edit |
 | `src/pages/` | ★★★ | All route-level components |
-
-### runtime
-| Folder | Importance | Description |
-|--------|------------|-------------|
-| `renderer.tsx` | ★★★ | Spec-driven renderer — Zustand store, timeline, 37-component registry |
-| `prelude.ts` | ★★★ | Bundles React/ReactDOM/Zustand as window globals |
-| `core/` | ★★★ | Protocol types and logic (Spec, PatchOp, expressions) — shared with harness |
-| `components/` | ★★ | 37 TSX component implementations |
-| `dist/` | ★★ | Compiled output: `prelude.js` + `renderer.js` |
 
 ### streamer
 | Folder | Importance | Description |

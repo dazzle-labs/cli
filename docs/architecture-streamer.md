@@ -101,11 +101,10 @@ The panel system is the core feature of the streamer. It manages named, isolated
 
 1. **Panel directory**: Each panel `<name>` gets a directory at `/tmp/content/<name>/`
 2. **Shell HTML** (`shell.html`): The base HTML page served to Chrome per panel — mounts `#root` div; includes React Fast Refresh stubs (`$RefreshSig$`/`$RefreshReg$`) for Vite middleware mode compatibility; HMR cleanup unmounts React root and clears all timers/intervals/rafs
-3. **Prelude** (`prelude.js`): Pre-compiled IIFE bundle (from `runtime/prelude.ts`) containing React 19, ReactDOM, and Zustand. Exposes `React`, `useState`, `useEffect`, `create`/`persist`, `createRoot`, etc. as window globals — available without imports in user code
-4. **Renderer** (`renderer.js`): Pre-compiled IIFE bundle (from `runtime/renderer.tsx`) containing the spec-driven rendering engine with 37 components, Zustand state store, timeline playback, and expression resolution. Uses React globals set by the prelude
-5. **User code** (`main.jsx`): Wrapped with Vite HMR hooks, `import.meta.hot.accept()`, and `state-event` listener; sandwiched between `USER_CODE_START` / `USER_CODE_END` markers for extraction
-6. **Auto-mount**: If user code defines `const App`, it is automatically rendered into `#root` via `createRoot` — no boilerplate needed (no need to call `createRoot` manually)
-7. **State events**: `emit_event` pushes events via Vite HMR's `hot.send('state-event', ...)` — no page reload; accumulated state available in `window.__state`
+3. **Prelude** (`prelude.js`): Bundled module containing React 19, ReactDOM, and Zustand. Exposes `React`, `useState`, `useEffect`, `create`/`persist`, `createRoot`, etc. as window globals — available without imports in user code
+4. **User code** (`main.jsx`): Wrapped with Vite HMR hooks, `import.meta.hot.accept()`, and `state-event` listener; sandwiched between `USER_CODE_START` / `USER_CODE_END` markers for extraction
+5. **Auto-mount**: If user code defines `const App`, it is automatically rendered into `#root` via `createRoot` — no boilerplate needed (no need to call `createRoot` manually)
+6. **State events**: `emit_event` pushes events via Vite HMR's `hot.send('state-event', ...)` — no page reload; accumulated state available in `window.__state`
 
 ### Route Guard
 
@@ -193,8 +192,7 @@ Defined in the control plane pod spec:
 2. OBS Studio (from PPA, WebSocket v5)
 3. Google Chrome Stable (from Google .deb)
 4. Node.js 20 (from NodeSource)
-5. Application code (`index.js`, `shell.html`, `package.json`)
-   + Pre-compiled runtime (`prelude.js`, `renderer.js` from ConfigMap)
+5. Application code (`index.js`, `shell.html`, `prelude.js`, `package.json`)
 6. Startup entrypoint
 
 **Image size:** ~2 GB+ (Chrome + OBS + X11 stack). Loaded on k3s node with `imagePullPolicy: Never`.

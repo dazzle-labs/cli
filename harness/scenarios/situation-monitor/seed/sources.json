@@ -1,7 +1,0 @@
-{
-  "trusted_sources": [
-    "Reuters", "AP News", "BBC", "Al Jazeera",
-    "Associated Press", "NPR", "PBS"
-  ],
-  "refresh_interval_minutes": 5
-}

@@ -1,8 +1,0 @@
-{
-  "allowedTools": [
-    "set_script",
-    "edit_script",
-    "get_script",
-    "screenshot"
-  ]
-}

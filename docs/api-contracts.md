@@ -478,15 +478,11 @@ Auth: Required (Clerk JWT or API key)
 | `start` | (none) | `{"status": "running"}` |
 | `stop` | (none) | `{"status": "inactive"}` |
 | `status` | (none) | `{"status": "running\|inactive\|starting"}` |
-| `sceneSet` | `spec: object` | "Scene set." |
-| `scenePatch` | `patches: PatchOp[]` | "Patches applied." |
-| `stateSet` | `path: string, value: JSON` | "State updated at {path}" |
-| `sceneRead` | (none) | Current scene spec JSON |
-| `timelineAppend` | `entries: TimelineEntry[]` | "Timeline entries appended." |
-| `timelinePlay` | `action: string, rate?: number, seekTo?: number` | "Timeline: {action}" |
-| `timelineRead` | (none) | Timeline state JSON |
-| `timelineClear` | (none) | "Timeline cleared." |
-| `getLogs` | `limit?: number` | Log entries JSON |
+| `set_script` | `script: string` | `{"status": "ok", "panel": "main", "length": N}` |
+| `get_script` | (none) | `{"name": "main", "script": "...", "width": N, "height": N}` |
+| `edit_script` | `old_string: string, new_string: string` | `{"status": "ok", "panel": "main", "length": N}` |
+| `emit_event` | `event: string, data: string (JSON)` | `{"status": "ok", "event": "..."}` |
+| `get_logs` | `limit?: number` | Log entries JSON |
 | `screenshot` | (none) | Base64 PNG image content |
 | `obs` | `args: string[]` | OBS command output (scenes, streaming, recording, etc.; credentials redacted) |
 
@@ -504,7 +500,6 @@ Accessed via session proxy (`/session/:id/...`) or directly by control plane.
 | GET | `/api/panel/main` | Token | Get current script |
 | POST | `/api/panel/main/edit` | Token | Edit script (`{ old_string, new_string }`) |
 | POST | `/api/panel/main/event` | Token | Emit event (`{ event, data }`) |
-| POST | `/api/panel/main/eval` | Token | Eval JS expression (`{ expr }`) |
 | GET | `/template` | None | Serve HTML to Chrome |
 | POST | `/api/navigate` | Token | Navigate Chrome (`{ url }`) |
 | WS | `/*` | Token | CDP WebSocket proxy |

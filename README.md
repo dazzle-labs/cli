@@ -73,7 +73,6 @@ On-demand cloud browser environments for AI agents and live streaming. Each **st
 |------|------|----------|---------|
 | **control-plane** | `control-plane/` | Go 1.24 | API server, K8s orchestration, auth, DB, CDP proxy, MCP, serves web SPA |
 | **web** | `web/` | TypeScript / React 19 | Dashboard — stage management, API keys, stream destinations |
-| **runtime** | `runtime/` | TypeScript / React 19 | Compiled browser runtime: prelude (React/Zustand globals) + renderer (37-component spec engine) |
 | **streamer** | `streamer/` | Node.js 20 | Per-stage browser pod: Chrome, OBS, Vite panel rendering |
 | **k8s** | `k8s/` | YAML | Kubernetes manifests, Traefik ingress, TLS, SOPS secrets |
 

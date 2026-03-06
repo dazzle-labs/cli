@@ -17,8 +17,7 @@ _reset   = \033[0m
 STEP     = @printf "$(_bold)$(_cyan)── %s ──$(_reset)\n"
 OK       = @printf "$(_bold)$(_green)✓ %s$(_reset)\n"
 
-.PHONY: help check-deps proto up down build build-cp build-streamer build-runtime deploy dev harness logs status \
-        deploy-runtime-scripts _patch-local-runtime \
+.PHONY: help check-deps proto up down build build-cp build-streamer deploy dev logs status \
         remote/build remote/build-streamer remote/build-control-plane \
         remote/deploy remote/restart remote/deploy-secrets \
         remote/install-cert-manager remote/setup-tls \
@@ -27,11 +26,10 @@ OK       = @printf "$(_bold)$(_green)✓ %s$(_reset)\n"
 
 help: ## Show this help
 	@echo ""
-	@printf "  $(_bold)$(_green)Quick start:$(_reset)  $(_bold)make dev$(_reset)   — builds everything, starts Kind, runs all watchers\n"
+	@printf "  $(_bold)$(_green)Quick start:$(_reset)  $(_bold)make dev$(_reset)   — builds everything, starts Kind, runs web dev server\n"
 	@echo ""
 	@echo "  Local (Kind):"
 	@grep -E '^(dev|up|down|build|build-cp|build-streamer|deploy|logs|status|proto):.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "    \033[36m%-28s\033[0m %s\n", $$1, $$2}'
-	@echo "    $(_cyan)make runtime/dev$(_reset)             Watch runtime sources only"
 	@echo "    $(_cyan)make web/dev$(_reset)                 Web dashboard dev server only"
 	@echo ""
 	@echo "  Remote (VPS via SSH):"
@@ -66,7 +64,7 @@ check-deps:
 proto: ## Generate protobuf code (Go + TypeScript)
 	$(MAKE) -C control-plane proto
 
-up: check-deps build-runtime ## Create Kind cluster, build images, deploy full stack
+up: check-deps ## Create Kind cluster, build images, deploy full stack
 	$(STEP) "Building control-plane image"
 	$(CP_BUILD)
 	$(STEP) "Building streamer image"
@@ -88,8 +86,6 @@ up: check-deps build-runtime ## Create Kind cluster, build images, deploy full s
 	$(STEP) "Deploying control-plane"
 	$(KCTL) apply -f k8s/control-plane/rbac.yaml
 	$(KCTL) apply -f k8s/control-plane/deployment.yaml
-	$(STEP) "Patching runtime volumes → hostPath"
-	$(MAKE) _patch-local-runtime
 	$(KCTL) apply -f k8s/local/service.yaml
 	$(STEP) "Waiting for pods"
 	$(KCTL) wait --for=condition=ready pod -l app=postgres --timeout=120s
@@ -98,24 +94,6 @@ up: check-deps build-runtime ## Create Kind cluster, build images, deploy full s
 
 down: ## Delete the Kind cluster
 	kind delete cluster --name browser-streamer
-
-build-runtime: ## Build renderer JS bundle and catalog
-	$(STEP) "Building runtime (prelude + renderer)"
-	cd runtime && npm run build
-	$(STEP) "Generating component catalog"
-	cd runtime && npx tsx generate-catalog.ts
-
-_patch-local-runtime:
-	@$(KCTL) patch deployment control-plane --type=json -p '[{"op":"replace","path":"/spec/template/spec/volumes/0","value":{"name":"runtime-scripts","hostPath":{"path":"/runtime-dist","type":"Directory"}}}]'
-	@$(KCTL) set env deployment/control-plane RUNTIME_HOSTPATH=/runtime-dist
-
-deploy-runtime-scripts: build-runtime ## Create/update runtime-scripts ConfigMap from source files
-	$(KCTL) create configmap runtime-scripts \
-		--from-file=prelude.js=runtime/dist/prelude.js \
-		--from-file=renderer.js=runtime/dist/renderer.js \
-		--from-file=catalog-index.md=runtime/dist/catalog-index.md \
-		--from-file=catalog-full.md=runtime/dist/catalog-full.md \
-		--dry-run=client -o yaml | $(KCTL) apply -f -
 
 build: check-deps build-cp build-streamer ## Build all images and load into Kind
 
@@ -131,7 +109,7 @@ build-streamer: check-deps ## Build streamer image and load into Kind
 	$(STEP) "Loading into Kind"
 	kind load docker-image $(STR_IMG) --name browser-streamer
 
-deploy: check-deps build-runtime ## Apply manifests and restart control-plane in Kind
+deploy: check-deps ## Apply manifests and restart control-plane in Kind
 	$(STEP) "Applying secrets"
 	sops -d k8s/local/local.secrets.yaml | $(KCTL) apply -f -
 	$(STEP) "Deploying postgres"
@@ -139,27 +117,14 @@ deploy: check-deps build-runtime ## Apply manifests and restart control-plane in
 	$(STEP) "Deploying control-plane"
 	$(KCTL) apply -f k8s/control-plane/rbac.yaml
 	$(KCTL) apply -f k8s/control-plane/deployment.yaml
-	$(STEP) "Patching runtime volumes → hostPath"
-	$(MAKE) _patch-local-runtime
 	$(KCTL) apply -f k8s/local/service.yaml
 	$(STEP) "Restarting control-plane"
 	$(KCTL) rollout restart deployment/control-plane
 	$(KCTL) rollout status deployment/control-plane --timeout=120s
 
-harness: ## Run harness scenarios locally (usage: make harness SCENARIO=hello-world)
-	@if [ -z "$(SCENARIO)" ]; then echo "Usage: make harness SCENARIO=<name>"; echo ""; echo "Available scenarios:"; ls harness/scenarios/ | sed 's/^/  /'; echo ""; echo "Set DAZZLE_API_KEY in harness/.env or environment."; exit 1; fi
-	@if [ -z "$$DAZZLE_API_KEY" ] && ! grep -q '^DAZZLE_API_KEY=' harness/.env 2>/dev/null; then \
-		echo "ERROR: No API key found."; \
-		echo "  Add DAZZLE_API_KEY to harness/.env (sops --input-type dotenv --output-type dotenv harness/.env)"; \
-		echo "  or export DAZZLE_API_KEY=bstr_... in your shell."; \
-		exit 1; \
-	fi
-	cd harness && set -a && eval "$$(sops decrypt --input-type dotenv --output-type dotenv .env)" && set +a && DAZZLE_URL=http://localhost:8080 npx tsx run.ts $(SCENARIO)
-
 dev: up ## ★ Full local dev — build, deploy, watch everything
 	@echo ""
 	$(STEP) "Starting dev watchers"
-	@printf "  $(_yellow)runtime/watch$(_reset)  rebuilds prelude.js, renderer.js, catalog on change\n"
 	@printf "  $(_yellow)web/dev$(_reset)        Vite dev server with HMR\n"
 	@printf "  $(_yellow)logs$(_reset)           control-plane log tail\n"
 	@echo ""
@@ -176,13 +141,9 @@ dev: up ## ★ Full local dev — build, deploy, watch everything
 		fi; \
 		exit 0; \
 	' INT TERM; \
-	(cd runtime && npm run watch) & \
 	(cd web && yarn dev) & \
 	$(KCTL) logs -f deployment/control-plane & \
 	wait
-
-runtime/dev: build-runtime ## Watch runtime sources and rebuild on change (auto-syncs to Kind via hostPath)
-	cd runtime && npm run watch
 
 logs: ## Tail control-plane logs in Kind
 	$(KCTL) logs -f deployment/control-plane

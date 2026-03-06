@@ -59,10 +59,6 @@ spec:
               value: dazzlefm/agent-streamer-stage:latest
             - name: MAX_SESSIONS
               value: "3"
-          volumeMounts:
-            - name: runtime-scripts
-              mountPath: /app/runtime
-              readOnly: true
           resources:
             requests:
               cpu: 100m
@@ -82,7 +78,3 @@ spec:
               port: 8080
             initialDelaySeconds: 5
             periodSeconds: 30
-      volumes:
-        - name: runtime-scripts
-          configMap:
-            name: runtime-scripts
