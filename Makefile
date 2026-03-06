@@ -17,7 +17,7 @@ _reset   = \033[0m
 STEP     = @printf "$(_bold)$(_cyan)── %s ──$(_reset)\n"
 OK       = @printf "$(_bold)$(_green)✓ %s$(_reset)\n"
 
-.PHONY: help check-deps proto up down build build-cp build-streamer deploy dev logs status \
+.PHONY: help check-deps proto up down build build-cp build-streamer deploy dev llms-txt logs status \
         remote/build remote/build-streamer remote/build-control-plane \
         remote/deploy remote/restart remote/deploy-secrets \
         remote/install-cert-manager remote/setup-tls \
@@ -69,6 +69,8 @@ up: check-deps ## Create Kind cluster, build images, deploy full stack
 	$(CP_BUILD)
 	$(STEP) "Building streamer image"
 	$(STR_BUILD)
+	$(STEP) "Regenerating llms.txt"
+	./scripts/generate-llms-txt.sh > llms.txt
 	$(STEP) "Creating Kind cluster"
 	@if kind get clusters 2>/dev/null | grep -q '^browser-streamer$$'; then \
 		echo "  cluster already exists, reusing"; \
@@ -95,7 +97,7 @@ up: check-deps ## Create Kind cluster, build images, deploy full stack
 down: ## Delete the Kind cluster
 	kind delete cluster --name browser-streamer
 
-build: check-deps build-cp build-streamer ## Build all images and load into Kind
+build: check-deps build-cp build-streamer llms-txt ## Build all images, regenerate llms.txt, load into Kind
 
 build-cp: check-deps ## Build control-plane image and load into Kind
 	$(STEP) "Building control-plane image"
@@ -144,6 +146,10 @@ dev: up ## ★ Full local dev — build, deploy, watch everything
 	(cd web && yarn dev) & \
 	$(KCTL) logs -f deployment/control-plane & \
 	wait
+
+llms-txt: ## Regenerate llms.txt from sources of truth
+	./scripts/generate-llms-txt.sh > llms.txt
+	$(OK) "llms.txt updated"
 
 logs: ## Tail control-plane logs in Kind
 	$(KCTL) logs -f deployment/control-plane

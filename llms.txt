@@ -1,0 +1,355 @@
+# Dazzle (Browser Streamer)
+
+> On-demand cloud browser environments for AI agents and live streaming.
+> Production: https://stream.dazzle.fm
+
+## Overview
+
+Dazzle provides isolated browser stages — each is a Kubernetes pod running Chrome on a headless display with OBS for streaming. Stages are controlled via an MCP (Model Context Protocol) server, Chrome DevTools Protocol (CDP), and a web dashboard.
+
+Primary use cases: AI agents that need a persistent browser, live streaming to Twitch/YouTube/Kick via RTMP, and programmatic browser automation.
+
+## Getting Started
+
+Follow these steps to get your agent connected and streaming:
+
+### 1. Create an account
+
+Sign up at https://stream.dazzle.fm — authentication is handled by Clerk.
+
+### 2. Create a stage
+
+A stage is your isolated browser environment. Create one from the dashboard, or via the API:
+```
+POST https://stream.dazzle.fm/api.v1.StageService/CreateStage
+Authorization: Bearer <your-jwt-or-api-key>
+Content-Type: application/json
+
+{"name": "my-stage"}
+```
+This returns a stage object with an `id` (UUID). The stage starts as `inactive`.
+
+### 3. Get an API key
+
+Create an API key from the dashboard (Settings > API Keys). Keys are in `bstr_<secret>` format. Store it securely — the full key is only shown once.
+
+Set it as an environment variable:
+```bash
+export DAZZLE_API_KEY=bstr_your_key_here
+```
+
+### 4. Connect your MCP client
+
+Your stage's MCP endpoint is:
+```
+POST https://stream.dazzle.fm/stage/<stage-uuid>/mcp
+Protocol: StreamableHTTP (MCP over HTTP)
+Authorization: Bearer <your-api-key>
+```
+
+Here are examples for popular frameworks:
+
+**Claude Code (Shell):**
+```shell
+claude mcp add dazzle https://stream.dazzle.fm/stage/<stage-uuid>/mcp \
+  --transport http \
+  --header "Authorization: Bearer $DAZZLE_API_KEY"
+```
+
+**OpenAI Agents SDK (Python):**
+```python
+import os
+from agents.mcp import MCPServerStreamableHTTP
+
+dazzle = MCPServerStreamableHTTP(
+    url="https://stream.dazzle.fm/stage/<stage-uuid>/mcp",
+    headers={"Authorization": f"Bearer {os.environ['DAZZLE_API_KEY']}"},
+)
+
+agent = Agent(
+    name="my-agent",
+    mcp_servers=[dazzle],
+)
+```
+
+**OpenClaw (YAML):**
+```yaml
+mcp_servers:
+  dazzle:
+    url: "https://stream.dazzle.fm/stage/<stage-uuid>/mcp"
+    headers:
+      Authorization: "Bearer ${DAZZLE_API_KEY}"
+```
+
+**CrewAI (Python):**
+```python
+import os
+from crewai.tools import MCPServerAdapter
+
+dazzle = MCPServerAdapter(
+    server_url="https://stream.dazzle.fm/stage/<stage-uuid>/mcp",
+    headers={"Authorization": f"Bearer {os.environ['DAZZLE_API_KEY']}"},
+)
+
+agent = Agent(
+    role="My Agent",
+    tools=[dazzle],
+)
+```
+
+**LangGraph (Python):**
+```python
+import os
+from langchain_mcp_adapters.client import MCPClient
+
+client = MCPClient(
+    transport="streamable_http",
+    url="https://stream.dazzle.fm/stage/<stage-uuid>/mcp",
+    headers={"Authorization": f"Bearer {os.environ['DAZZLE_API_KEY']}"},
+)
+
+tools = await client.get_tools()
+```
+
+**AutoGen (Python):**
+```python
+import os
+from autogen_ext.tools.mcp import McpWorkbench
+
+workbench = McpWorkbench(
+    server_url="https://stream.dazzle.fm/stage/<stage-uuid>/mcp",
+    headers={"Authorization": f"Bearer {os.environ['DAZZLE_API_KEY']}"},
+)
+
+agent = AssistantAgent(
+    name="my_agent",
+    tools=await workbench.get_tools(),
+)
+```
+### 5. Activate and use your stage
+
+Once connected, call the `start` tool to activate your stage. This provisions a browser pod. Then:
+
+1. **Render content** — use `set_script` to push JavaScript/JSX to the browser
+2. **Go live** — use `obs` with args `["st", "s"]` to start streaming (requires a stream destination)
+3. **Monitor** — use `screenshot` to see what's on screen, `get_logs` for console output
+
+### 6. (Optional) Add a stream destination
+
+To stream to Twitch, YouTube, Kick, etc., add a destination from the dashboard or via the API before going live. Stream destinations are linked to stages and configured automatically in OBS.
+
+## Authentication
+
+All API and MCP requests require:
+```
+Authorization: Bearer <token>
+```
+Where `<token>` is either:
+- **Clerk JWT** — from the web dashboard
+- **API Key** — `bstr_<secret>` format, created via the dashboard
+
+## MCP Server
+
+### Endpoint
+```
+POST /stage/<stage-uuid>/mcp
+Protocol: StreamableHTTP (MCP over HTTP)
+Auth: Clerk JWT or API key
+```
+
+The stage UUID is your stage's ID. You must call `start` before using any other tools.
+
+### Tools
+
+#### start
+Activate your stage. Call this before using any other tools. Returns status when ready. Your stage gives you a browser you can render content in, capture screenshots, and stream to platforms like Twitch and YouTube. Starting the stage does NOT begin streaming — use the obs tool with ["st", "s"] to go live when you're ready.
+
+#### stop
+Deactivate your stage. Shuts down the browser and releases cloud resources. Call start to bring it back — stream destinations are preserved, but the panel script will need to be re-set.
+
+#### status
+Get the current status of your stage (active/inactive/starting).
+
+#### set_script
+Set JavaScript content to render in your stage's browser. Write vanilla JS or JSX. The page is full-viewport with a black background. Changes are hot-swapped with zero page reloads. Requires an active stage (call start first).
+
+Two modes:
+1. Vanilla JS — create DOM elements / canvas and append to document.body
+2. React JSX — define an App component and it will be auto-mounted into #root:
+     const App = () => <div>Hello</div>;
+   Do NOT call createRoot or ReactDOM.render — the runtime auto-mounts your App. On subsequent set_script/edit_script calls, the root is reused for clean HMR transitions.
+
+Available globals (no imports needed):
+  React, useState, useEffect, useRef, useMemo, useCallback, useReducer, Fragment,
+  useContext, useLayoutEffect, useImperativeHandle, useDebugValue,
+  useDeferredValue, useTransition, useId, useSyncExternalStore,
+  createContext, forwardRef, memo, lazy, Suspense
+  createPortal (from react-dom)
+  create, persist (from zustand — use for persistent state via localStorage)
+
+Tailwind CSS v4 utility classes work in className (e.g. "text-4xl font-bold text-white").
+
+Your code can listen for events pushed by emit_event — set up the view once, then drive it with state updates:
+
+  window.addEventListener('event', (e) => {
+    const { event, data } = e.detail;
+    if (event === 'update') el.textContent = data.msg;
+  });
+
+Read window.__state at any time for accumulated state from all prior emit_event calls. An '__init' event fires on module load if state already exists.
+
+**Parameters:**
+- `script` (required) string — JavaScript or JSX code to render
+
+#### get_script
+Get the current JavaScript content being rendered in your stage's browser. Requires an active stage (call start first).
+
+#### edit_script
+Edit the current JavaScript content by finding and replacing a string. The old_string must exist exactly once in the current code. Changes are hot-swapped with no page reload. Requires an active stage (call start first).
+
+**Parameters:**
+- `old_string` (required) string — The exact string to find in the current code
+- `new_string` (required) string — The replacement string
+
+#### emit_event
+Push live data to your running panel without rewriting or reloading the script.
+
+Use with set_script: write your event listeners once, then drive updates with emit_event — no code change, no reload required.
+
+Example:
+  set_script: el = div; addEventListener('event', e => { if (e.detail.event === 'score') el.textContent = e.detail.data.points })
+  emit_event: { event: "score", data: { points: 42 } }    → el shows "42"
+  emit_event: { event: "score", data: { points: 99 } }    → el shows "99"
+
+Accumulated state is merged into window.__state. An '__init' event fires on script load if prior state exists.
+
+**Parameters:**
+- `event` (required) string — Event name that your set_script code listens for (e.g. 'update', 'alert', 'theme-change')
+- `data` (required) string — JSON object with event payload — merged into window.__state and delivered as e.detail.data
+
+#### get_logs
+Retrieve recent browser console logs (errors, warnings, info, debug). Returns the last N entries like tail. Requires an active stage (call start first).
+
+**Parameters:**
+- `limit` (optional) number — Number of most recent log entries to return (default 100, max 1000)
+
+#### screenshot
+Capture a screenshot of your stage's current output as a PNG image. Requires an active stage (call start first).
+
+#### obs
+Control OBS — manage scenes, inputs, streaming, recording, and audio. Requires an active stage (call start first). Note: starting a stage does NOT go live automatically. Use "st s" to start streaming when ready, and "st st" to stop.
+
+sc ls — list scenes | sc c — current scene | sc sw <name> — switch scene
+si ls — list scene items | si sh/h/tg <name> — show/hide/toggle item | si t <name> — transform
+g ls — list groups | g sh/h/tg <name> — show/hide/toggle group
+i ls — list inputs | i k — list input kinds | i c <kind> <name> — create input
+i d <name> — remove | i s <name> — show details | i up <name> — update settings
+i m/um/tg <name> — mute/unmute/toggle | i v <name> — set volume
+t c <name> — get text | t u <name> --text=STR — update text
+st s — start stream | st st — stop stream | st tg — toggle | st ss — stream status
+rec s/st/tg — start/stop/toggle recording | rec ss — recording status
+rec p/r — pause/resume | rec d — get/set directory | rec sp — split | rec c — chapter
+f ls <input> — list filters | f on/off/tg <input> <filter> — enable/disable/toggle
+hk ls — list hotkeys | hk tr <name> — trigger hotkey
+vc s/st/tg/ss — virtual camera start/stop/toggle/status
+sm on/off/tg/ss — studio mode enable/disable/toggle/status
+mi c/p/pa/s/r <name> — media cursor/play/pause/stop/restart
+ss sv --source=NAME --path=FILE — save screenshot to file
+rb s/st/tg/ss/sv — replay buffer start/stop/toggle/status/save
+scn ls/c/sw/new — scene collections list/current/switch/create
+p ls/c/sw/new/rm — profiles list/current/switch/create/remove
+set s — show settings | set v — video settings | set p — profile settings
+Stream service settings are managed automatically and cannot be read.
+
+Use ["<cmd>", "--help"] for flags on any command.
+
+**Parameters:**
+- `args` (required) array — OBS command arguments, e.g. ["st", "s"] to start streaming.
+## Stage Lifecycle
+
+```
+inactive → starting → running → stopping → inactive
+```
+
+- `start` — creates a pod, waits for readiness, configures OBS stream
+- `stop` — tears down the pod, keeps the stage record
+- `status` — check current state
+
+Stages persist across pod restarts. The control plane recovers running pods on startup.
+
+## ConnectRPC API
+
+Base URL: `https://stream.dazzle.fm` (or `http://localhost:8080` for local dev)
+
+All services use `POST /api.v1.<Service>/<Method>` with JSON or Protobuf body.
+
+### StageService (JWT or API key)
+
+| Method | Description |
+|--------|-------------|
+| `CreateStage` | Create a stage (returns inactive, call `start` MCP tool to activate) |
+| `ListStages` | List all stages owned by the authenticated user |
+| `GetStage` | Get stage details by ID |
+| `DeleteStage` | Delete a stage (stops pod if active) |
+| `SetStageDestination` | Link a stream destination to a stage |
+
+### ApiKeyService (JWT only)
+
+| Method | Description |
+|--------|-------------|
+| `CreateApiKey` | Create a new API key (`bstr_*` format). Full key shown only once. |
+| `ListApiKeys` | List all API keys (prefixes only) |
+| `DeleteApiKey` | Delete an API key by ID |
+
+### RtmpDestinationService (JWT only)
+
+| Method | Description |
+|--------|-------------|
+| `CreateStreamDestination` | Create a stream destination (Twitch, YouTube, Kick, etc.) |
+| `ListStreamDestinations` | List destinations for a stage |
+| `UpdateStreamDestination` | Update destination settings |
+| `DeleteStreamDestination` | Delete a destination |
+
+### UserService (JWT only)
+
+| Method | Description |
+|--------|-------------|
+| `GetProfile` | Get user profile with stage and API key counts |
+
+## CDP Access
+
+```
+GET  /stage/<id>/cdp/json/version   — Chrome version info
+GET  /stage/<id>/cdp/json           — Tab list
+WS   /stage/<id>/cdp                — Full CDP WebSocket proxy
+```
+
+WebSocket URLs in responses are rewritten to route through the control plane.
+
+## OBS Control
+
+The `obs` tool wraps `gobs-cli` and supports all OBS WebSocket v5 commands:
+
+| Command | Example args |
+|---------|-------------|
+| Start streaming | `["st", "s"]` |
+| Stop streaming | `["st", "st"]` |
+| Stream status | `["st", "ss"]` |
+| List scenes | `["sc", "ls"]` |
+| Screenshot to file | `["ss", "sv", "--source=Scene", "--path=/tmp/shot.png"]` |
+| Start recording | `["rec", "s"]` |
+| List inputs | `["i", "ls"]` |
+
+Stream service settings (RTMP URL, stream key) are managed automatically and cannot be read by agents.
+
+## Typical Workflow
+
+```
+1. start              → Provision browser pod
+2. set_script          → Render content (JS/JSX, hot-swapped via HMR)
+3. screenshot          → Verify output looks correct
+4. obs ["st", "s"]     → Go live on configured stream destination
+5. edit_script / emit_event → Update content live without reload
+6. obs ["st", "st"]    → Stop streaming
+7. stop                → Release resources
+```
