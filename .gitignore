@@ -19,9 +19,5 @@ web/dist/
 stream/
 
 # Go workspace (local dev only)
-go.work
-go.work.sum
 
 # Go workspace (local dev only)
-go.work
-go.work.sum
