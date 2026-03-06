@@ -757,7 +757,7 @@ var File_api_v1_runtime_proto protoreflect.FileDescriptor
 
 const file_api_v1_runtime_proto_rawDesc = "" +
 	"\n" +
-	"\x14api/v1/runtime.proto\x12\x06api.v1\"E\n" +
+	"\x14api/v1/runtime.proto\x12\tdazzle.v1\"E\n" +
 	"\x10SetScriptRequest\x12\x19\n" +
 	"\bstage_id\x18\x01 \x01(\tR\astageId\x12\x16\n" +
 	"\x06script\x18\x02 \x01(\tR\x06script\"#\n" +
@@ -787,9 +787,9 @@ const file_api_v1_runtime_proto_rawDesc = "" +
 	"\bLogEntry\x12\x14\n" +
 	"\x05level\x18\x01 \x01(\tR\x05level\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12\x1c\n" +
-	"\ttimestamp\x18\x03 \x01(\tR\ttimestamp\"=\n" +
-	"\x0fGetLogsResponse\x12*\n" +
-	"\aentries\x18\x01 \x03(\v2\x10.api.v1.LogEntryR\aentries\".\n" +
+	"\ttimestamp\x18\x03 \x01(\tR\ttimestamp\"@\n" +
+	"\x0fGetLogsResponse\x12-\n" +
+	"\aentries\x18\x01 \x03(\v2\x13.dazzle.v1.LogEntryR\aentries\".\n" +
 	"\x11ScreenshotRequest\x12\x19\n" +
 	"\bstage_id\x18\x01 \x01(\tR\astageId\"*\n" +
 	"\x12ScreenshotResponse\x12\x14\n" +
@@ -798,18 +798,18 @@ const file_api_v1_runtime_proto_rawDesc = "" +
 	"\bstage_id\x18\x01 \x01(\tR\astageId\x12\x12\n" +
 	"\x04args\x18\x02 \x03(\tR\x04args\",\n" +
 	"\x12ObsCommandResponse\x12\x16\n" +
-	"\x06output\x18\x01 \x01(\tR\x06output2\xe1\x03\n" +
-	"\x0eRuntimeService\x12@\n" +
-	"\tSetScript\x12\x18.api.v1.SetScriptRequest\x1a\x19.api.v1.SetScriptResponse\x12@\n" +
-	"\tGetScript\x12\x18.api.v1.GetScriptRequest\x1a\x19.api.v1.GetScriptResponse\x12C\n" +
+	"\x06output\x18\x01 \x01(\tR\x06output2\x8b\x04\n" +
+	"\x0eRuntimeService\x12F\n" +
+	"\tSetScript\x12\x1b.dazzle.v1.SetScriptRequest\x1a\x1c.dazzle.v1.SetScriptResponse\x12F\n" +
+	"\tGetScript\x12\x1b.dazzle.v1.GetScriptRequest\x1a\x1c.dazzle.v1.GetScriptResponse\x12I\n" +
 	"\n" +
-	"EditScript\x12\x19.api.v1.EditScriptRequest\x1a\x1a.api.v1.EditScriptResponse\x12@\n" +
-	"\tEmitEvent\x12\x18.api.v1.EmitEventRequest\x1a\x19.api.v1.EmitEventResponse\x12:\n" +
-	"\aGetLogs\x12\x16.api.v1.GetLogsRequest\x1a\x17.api.v1.GetLogsResponse\x12C\n" +
+	"EditScript\x12\x1c.dazzle.v1.EditScriptRequest\x1a\x1d.dazzle.v1.EditScriptResponse\x12F\n" +
+	"\tEmitEvent\x12\x1b.dazzle.v1.EmitEventRequest\x1a\x1c.dazzle.v1.EmitEventResponse\x12@\n" +
+	"\aGetLogs\x12\x19.dazzle.v1.GetLogsRequest\x1a\x1a.dazzle.v1.GetLogsResponse\x12I\n" +
 	"\n" +
-	"Screenshot\x12\x19.api.v1.ScreenshotRequest\x1a\x1a.api.v1.ScreenshotResponse\x12C\n" +
+	"Screenshot\x12\x1c.dazzle.v1.ScreenshotRequest\x1a\x1d.dazzle.v1.ScreenshotResponse\x12I\n" +
 	"\n" +
-	"ObsCommand\x12\x19.api.v1.ObsCommandRequest\x1a\x1a.api.v1.ObsCommandResponseB-Z+github.com/dazzle-labs/cli/gen/api/v1;apiv1b\x06proto3"
+	"ObsCommand\x12\x1c.dazzle.v1.ObsCommandRequest\x1a\x1d.dazzle.v1.ObsCommandResponseB-Z+github.com/dazzle-labs/cli/gen/api/v1;apiv1b\x06proto3"
 
 var (
 	file_api_v1_runtime_proto_rawDescOnce sync.Once
@@ -825,38 +825,38 @@ func file_api_v1_runtime_proto_rawDescGZIP() []byte {
 
 var file_api_v1_runtime_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_api_v1_runtime_proto_goTypes = []any{
-	(*SetScriptRequest)(nil),   // 0: api.v1.SetScriptRequest
-	(*SetScriptResponse)(nil),  // 1: api.v1.SetScriptResponse
-	(*GetScriptRequest)(nil),   // 2: api.v1.GetScriptRequest
-	(*GetScriptResponse)(nil),  // 3: api.v1.GetScriptResponse
-	(*EditScriptRequest)(nil),  // 4: api.v1.EditScriptRequest
-	(*EditScriptResponse)(nil), // 5: api.v1.EditScriptResponse
-	(*EmitEventRequest)(nil),   // 6: api.v1.EmitEventRequest
-	(*EmitEventResponse)(nil),  // 7: api.v1.EmitEventResponse
-	(*GetLogsRequest)(nil),     // 8: api.v1.GetLogsRequest
-	(*LogEntry)(nil),           // 9: api.v1.LogEntry
-	(*GetLogsResponse)(nil),    // 10: api.v1.GetLogsResponse
-	(*ScreenshotRequest)(nil),  // 11: api.v1.ScreenshotRequest
-	(*ScreenshotResponse)(nil), // 12: api.v1.ScreenshotResponse
-	(*ObsCommandRequest)(nil),  // 13: api.v1.ObsCommandRequest
-	(*ObsCommandResponse)(nil), // 14: api.v1.ObsCommandResponse
+	(*SetScriptRequest)(nil),   // 0: dazzle.v1.SetScriptRequest
+	(*SetScriptResponse)(nil),  // 1: dazzle.v1.SetScriptResponse
+	(*GetScriptRequest)(nil),   // 2: dazzle.v1.GetScriptRequest
+	(*GetScriptResponse)(nil),  // 3: dazzle.v1.GetScriptResponse
+	(*EditScriptRequest)(nil),  // 4: dazzle.v1.EditScriptRequest
+	(*EditScriptResponse)(nil), // 5: dazzle.v1.EditScriptResponse
+	(*EmitEventRequest)(nil),   // 6: dazzle.v1.EmitEventRequest
+	(*EmitEventResponse)(nil),  // 7: dazzle.v1.EmitEventResponse
+	(*GetLogsRequest)(nil),     // 8: dazzle.v1.GetLogsRequest
+	(*LogEntry)(nil),           // 9: dazzle.v1.LogEntry
+	(*GetLogsResponse)(nil),    // 10: dazzle.v1.GetLogsResponse
+	(*ScreenshotRequest)(nil),  // 11: dazzle.v1.ScreenshotRequest
+	(*ScreenshotResponse)(nil), // 12: dazzle.v1.ScreenshotResponse
+	(*ObsCommandRequest)(nil),  // 13: dazzle.v1.ObsCommandRequest
+	(*ObsCommandResponse)(nil), // 14: dazzle.v1.ObsCommandResponse
 }
 var file_api_v1_runtime_proto_depIdxs = []int32{
-	9,  // 0: api.v1.GetLogsResponse.entries:type_name -> api.v1.LogEntry
-	0,  // 1: api.v1.RuntimeService.SetScript:input_type -> api.v1.SetScriptRequest
-	2,  // 2: api.v1.RuntimeService.GetScript:input_type -> api.v1.GetScriptRequest
-	4,  // 3: api.v1.RuntimeService.EditScript:input_type -> api.v1.EditScriptRequest
-	6,  // 4: api.v1.RuntimeService.EmitEvent:input_type -> api.v1.EmitEventRequest
-	8,  // 5: api.v1.RuntimeService.GetLogs:input_type -> api.v1.GetLogsRequest
-	11, // 6: api.v1.RuntimeService.Screenshot:input_type -> api.v1.ScreenshotRequest
-	13, // 7: api.v1.RuntimeService.ObsCommand:input_type -> api.v1.ObsCommandRequest
-	1,  // 8: api.v1.RuntimeService.SetScript:output_type -> api.v1.SetScriptResponse
-	3,  // 9: api.v1.RuntimeService.GetScript:output_type -> api.v1.GetScriptResponse
-	5,  // 10: api.v1.RuntimeService.EditScript:output_type -> api.v1.EditScriptResponse
-	7,  // 11: api.v1.RuntimeService.EmitEvent:output_type -> api.v1.EmitEventResponse
-	10, // 12: api.v1.RuntimeService.GetLogs:output_type -> api.v1.GetLogsResponse
-	12, // 13: api.v1.RuntimeService.Screenshot:output_type -> api.v1.ScreenshotResponse
-	14, // 14: api.v1.RuntimeService.ObsCommand:output_type -> api.v1.ObsCommandResponse
+	9,  // 0: dazzle.v1.GetLogsResponse.entries:type_name -> dazzle.v1.LogEntry
+	0,  // 1: dazzle.v1.RuntimeService.SetScript:input_type -> dazzle.v1.SetScriptRequest
+	2,  // 2: dazzle.v1.RuntimeService.GetScript:input_type -> dazzle.v1.GetScriptRequest
+	4,  // 3: dazzle.v1.RuntimeService.EditScript:input_type -> dazzle.v1.EditScriptRequest
+	6,  // 4: dazzle.v1.RuntimeService.EmitEvent:input_type -> dazzle.v1.EmitEventRequest
+	8,  // 5: dazzle.v1.RuntimeService.GetLogs:input_type -> dazzle.v1.GetLogsRequest
+	11, // 6: dazzle.v1.RuntimeService.Screenshot:input_type -> dazzle.v1.ScreenshotRequest
+	13, // 7: dazzle.v1.RuntimeService.ObsCommand:input_type -> dazzle.v1.ObsCommandRequest
+	1,  // 8: dazzle.v1.RuntimeService.SetScript:output_type -> dazzle.v1.SetScriptResponse
+	3,  // 9: dazzle.v1.RuntimeService.GetScript:output_type -> dazzle.v1.GetScriptResponse
+	5,  // 10: dazzle.v1.RuntimeService.EditScript:output_type -> dazzle.v1.EditScriptResponse
+	7,  // 11: dazzle.v1.RuntimeService.EmitEvent:output_type -> dazzle.v1.EmitEventResponse
+	10, // 12: dazzle.v1.RuntimeService.GetLogs:output_type -> dazzle.v1.GetLogsResponse
+	12, // 13: dazzle.v1.RuntimeService.Screenshot:output_type -> dazzle.v1.ScreenshotResponse
+	14, // 14: dazzle.v1.RuntimeService.ObsCommand:output_type -> dazzle.v1.ObsCommandResponse
 	8,  // [8:15] is the sub-list for method output_type
 	1,  // [1:8] is the sub-list for method input_type
 	1,  // [1:1] is the sub-list for extension type_name

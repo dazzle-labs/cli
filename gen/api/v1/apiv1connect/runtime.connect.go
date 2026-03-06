@@ -22,7 +22,7 @@ const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// RuntimeServiceName is the fully-qualified name of the RuntimeService service.
-	RuntimeServiceName = "api.v1.RuntimeService"
+	RuntimeServiceName = "dazzle.v1.RuntimeService"
 )
 
 // These constants are the fully-qualified names of the RPCs defined in this package. They're
@@ -35,27 +35,27 @@ const (
 const (
 	// RuntimeServiceSetScriptProcedure is the fully-qualified name of the RuntimeService's SetScript
 	// RPC.
-	RuntimeServiceSetScriptProcedure = "/api.v1.RuntimeService/SetScript"
+	RuntimeServiceSetScriptProcedure = "/dazzle.v1.RuntimeService/SetScript"
 	// RuntimeServiceGetScriptProcedure is the fully-qualified name of the RuntimeService's GetScript
 	// RPC.
-	RuntimeServiceGetScriptProcedure = "/api.v1.RuntimeService/GetScript"
+	RuntimeServiceGetScriptProcedure = "/dazzle.v1.RuntimeService/GetScript"
 	// RuntimeServiceEditScriptProcedure is the fully-qualified name of the RuntimeService's EditScript
 	// RPC.
-	RuntimeServiceEditScriptProcedure = "/api.v1.RuntimeService/EditScript"
+	RuntimeServiceEditScriptProcedure = "/dazzle.v1.RuntimeService/EditScript"
 	// RuntimeServiceEmitEventProcedure is the fully-qualified name of the RuntimeService's EmitEvent
 	// RPC.
-	RuntimeServiceEmitEventProcedure = "/api.v1.RuntimeService/EmitEvent"
+	RuntimeServiceEmitEventProcedure = "/dazzle.v1.RuntimeService/EmitEvent"
 	// RuntimeServiceGetLogsProcedure is the fully-qualified name of the RuntimeService's GetLogs RPC.
-	RuntimeServiceGetLogsProcedure = "/api.v1.RuntimeService/GetLogs"
+	RuntimeServiceGetLogsProcedure = "/dazzle.v1.RuntimeService/GetLogs"
 	// RuntimeServiceScreenshotProcedure is the fully-qualified name of the RuntimeService's Screenshot
 	// RPC.
-	RuntimeServiceScreenshotProcedure = "/api.v1.RuntimeService/Screenshot"
+	RuntimeServiceScreenshotProcedure = "/dazzle.v1.RuntimeService/Screenshot"
 	// RuntimeServiceObsCommandProcedure is the fully-qualified name of the RuntimeService's ObsCommand
 	// RPC.
-	RuntimeServiceObsCommandProcedure = "/api.v1.RuntimeService/ObsCommand"
+	RuntimeServiceObsCommandProcedure = "/dazzle.v1.RuntimeService/ObsCommand"
 )
 
-// RuntimeServiceClient is a client for the api.v1.RuntimeService service.
+// RuntimeServiceClient is a client for the dazzle.v1.RuntimeService service.
 type RuntimeServiceClient interface {
 	SetScript(context.Context, *connect.Request[v1.SetScriptRequest]) (*connect.Response[v1.SetScriptResponse], error)
 	GetScript(context.Context, *connect.Request[v1.GetScriptRequest]) (*connect.Response[v1.GetScriptResponse], error)
@@ -66,10 +66,10 @@ type RuntimeServiceClient interface {
 	ObsCommand(context.Context, *connect.Request[v1.ObsCommandRequest]) (*connect.Response[v1.ObsCommandResponse], error)
 }
 
-// NewRuntimeServiceClient constructs a client for the api.v1.RuntimeService service. By default, it
-// uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses, and sends
-// uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the connect.WithGRPC() or
-// connect.WithGRPCWeb() options.
+// NewRuntimeServiceClient constructs a client for the dazzle.v1.RuntimeService service. By default,
+// it uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses, and
+// sends uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the connect.WithGRPC()
+// or connect.WithGRPCWeb() options.
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
@@ -133,42 +133,42 @@ type runtimeServiceClient struct {
 	obsCommand *connect.Client[v1.ObsCommandRequest, v1.ObsCommandResponse]
 }
 
-// SetScript calls api.v1.RuntimeService.SetScript.
+// SetScript calls dazzle.v1.RuntimeService.SetScript.
 func (c *runtimeServiceClient) SetScript(ctx context.Context, req *connect.Request[v1.SetScriptRequest]) (*connect.Response[v1.SetScriptResponse], error) {
 	return c.setScript.CallUnary(ctx, req)
 }
 
-// GetScript calls api.v1.RuntimeService.GetScript.
+// GetScript calls dazzle.v1.RuntimeService.GetScript.
 func (c *runtimeServiceClient) GetScript(ctx context.Context, req *connect.Request[v1.GetScriptRequest]) (*connect.Response[v1.GetScriptResponse], error) {
 	return c.getScript.CallUnary(ctx, req)
 }
 
-// EditScript calls api.v1.RuntimeService.EditScript.
+// EditScript calls dazzle.v1.RuntimeService.EditScript.
 func (c *runtimeServiceClient) EditScript(ctx context.Context, req *connect.Request[v1.EditScriptRequest]) (*connect.Response[v1.EditScriptResponse], error) {
 	return c.editScript.CallUnary(ctx, req)
 }
 
-// EmitEvent calls api.v1.RuntimeService.EmitEvent.
+// EmitEvent calls dazzle.v1.RuntimeService.EmitEvent.
 func (c *runtimeServiceClient) EmitEvent(ctx context.Context, req *connect.Request[v1.EmitEventRequest]) (*connect.Response[v1.EmitEventResponse], error) {
 	return c.emitEvent.CallUnary(ctx, req)
 }
 
-// GetLogs calls api.v1.RuntimeService.GetLogs.
+// GetLogs calls dazzle.v1.RuntimeService.GetLogs.
 func (c *runtimeServiceClient) GetLogs(ctx context.Context, req *connect.Request[v1.GetLogsRequest]) (*connect.Response[v1.GetLogsResponse], error) {
 	return c.getLogs.CallUnary(ctx, req)
 }
 
-// Screenshot calls api.v1.RuntimeService.Screenshot.
+// Screenshot calls dazzle.v1.RuntimeService.Screenshot.
 func (c *runtimeServiceClient) Screenshot(ctx context.Context, req *connect.Request[v1.ScreenshotRequest]) (*connect.Response[v1.ScreenshotResponse], error) {
 	return c.screenshot.CallUnary(ctx, req)
 }
 
-// ObsCommand calls api.v1.RuntimeService.ObsCommand.
+// ObsCommand calls dazzle.v1.RuntimeService.ObsCommand.
 func (c *runtimeServiceClient) ObsCommand(ctx context.Context, req *connect.Request[v1.ObsCommandRequest]) (*connect.Response[v1.ObsCommandResponse], error) {
 	return c.obsCommand.CallUnary(ctx, req)
 }
 
-// RuntimeServiceHandler is an implementation of the api.v1.RuntimeService service.
+// RuntimeServiceHandler is an implementation of the dazzle.v1.RuntimeService service.
 type RuntimeServiceHandler interface {
 	SetScript(context.Context, *connect.Request[v1.SetScriptRequest]) (*connect.Response[v1.SetScriptResponse], error)
 	GetScript(context.Context, *connect.Request[v1.GetScriptRequest]) (*connect.Response[v1.GetScriptResponse], error)
@@ -228,7 +228,7 @@ func NewRuntimeServiceHandler(svc RuntimeServiceHandler, opts ...connect.Handler
 		connect.WithSchema(runtimeServiceMethods.ByName("ObsCommand")),
 		connect.WithHandlerOptions(opts...),
 	)
-	return "/api.v1.RuntimeService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return "/dazzle.v1.RuntimeService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case RuntimeServiceSetScriptProcedure:
 			runtimeServiceSetScriptHandler.ServeHTTP(w, r)
@@ -254,29 +254,29 @@ func NewRuntimeServiceHandler(svc RuntimeServiceHandler, opts ...connect.Handler
 type UnimplementedRuntimeServiceHandler struct{}
 
 func (UnimplementedRuntimeServiceHandler) SetScript(context.Context, *connect.Request[v1.SetScriptRequest]) (*connect.Response[v1.SetScriptResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.RuntimeService.SetScript is not implemented"))
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.RuntimeService.SetScript is not implemented"))
 }
 
 func (UnimplementedRuntimeServiceHandler) GetScript(context.Context, *connect.Request[v1.GetScriptRequest]) (*connect.Response[v1.GetScriptResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.RuntimeService.GetScript is not implemented"))
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.RuntimeService.GetScript is not implemented"))
 }
 
 func (UnimplementedRuntimeServiceHandler) EditScript(context.Context, *connect.Request[v1.EditScriptRequest]) (*connect.Response[v1.EditScriptResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.RuntimeService.EditScript is not implemented"))
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.RuntimeService.EditScript is not implemented"))
 }
 
 func (UnimplementedRuntimeServiceHandler) EmitEvent(context.Context, *connect.Request[v1.EmitEventRequest]) (*connect.Response[v1.EmitEventResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.RuntimeService.EmitEvent is not implemented"))
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.RuntimeService.EmitEvent is not implemented"))
 }
 
 func (UnimplementedRuntimeServiceHandler) GetLogs(context.Context, *connect.Request[v1.GetLogsRequest]) (*connect.Response[v1.GetLogsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.RuntimeService.GetLogs is not implemented"))
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.RuntimeService.GetLogs is not implemented"))
 }
 
 func (UnimplementedRuntimeServiceHandler) Screenshot(context.Context, *connect.Request[v1.ScreenshotRequest]) (*connect.Response[v1.ScreenshotResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.RuntimeService.Screenshot is not implemented"))
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.RuntimeService.Screenshot is not implemented"))
 }
 
 func (UnimplementedRuntimeServiceHandler) ObsCommand(context.Context, *connect.Request[v1.ObsCommandRequest]) (*connect.Response[v1.ObsCommandResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.RuntimeService.ObsCommand is not implemented"))
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.RuntimeService.ObsCommand is not implemented"))
 }

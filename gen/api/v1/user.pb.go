@@ -137,7 +137,7 @@ var File_api_v1_user_proto protoreflect.FileDescriptor
 
 const file_api_v1_user_proto_rawDesc = "" +
 	"\n" +
-	"\x11api/v1/user.proto\x12\x06api.v1\"\x13\n" +
+	"\x11api/v1/user.proto\x12\tdazzle.v1\"\x13\n" +
 	"\x11GetProfileRequest\"\x9c\x01\n" +
 	"\x12GetProfileResponse\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x14\n" +
@@ -145,10 +145,10 @@ const file_api_v1_user_proto_rawDesc = "" +
 	"\x04name\x18\x03 \x01(\tR\x04name\x12\x1f\n" +
 	"\vstage_count\x18\x04 \x01(\x05R\n" +
 	"stageCount\x12\"\n" +
-	"\rapi_key_count\x18\x05 \x01(\x05R\vapiKeyCount2R\n" +
-	"\vUserService\x12C\n" +
+	"\rapi_key_count\x18\x05 \x01(\x05R\vapiKeyCount2X\n" +
+	"\vUserService\x12I\n" +
 	"\n" +
-	"GetProfile\x12\x19.api.v1.GetProfileRequest\x1a\x1a.api.v1.GetProfileResponseB-Z+github.com/dazzle-labs/cli/gen/api/v1;apiv1b\x06proto3"
+	"GetProfile\x12\x1c.dazzle.v1.GetProfileRequest\x1a\x1d.dazzle.v1.GetProfileResponseB-Z+github.com/dazzle-labs/cli/gen/api/v1;apiv1b\x06proto3"
 
 var (
 	file_api_v1_user_proto_rawDescOnce sync.Once
@@ -164,12 +164,12 @@ func file_api_v1_user_proto_rawDescGZIP() []byte {
 
 var file_api_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_api_v1_user_proto_goTypes = []any{
-	(*GetProfileRequest)(nil),  // 0: api.v1.GetProfileRequest
-	(*GetProfileResponse)(nil), // 1: api.v1.GetProfileResponse
+	(*GetProfileRequest)(nil),  // 0: dazzle.v1.GetProfileRequest
+	(*GetProfileResponse)(nil), // 1: dazzle.v1.GetProfileResponse
 }
 var file_api_v1_user_proto_depIdxs = []int32{
-	0, // 0: api.v1.UserService.GetProfile:input_type -> api.v1.GetProfileRequest
-	1, // 1: api.v1.UserService.GetProfile:output_type -> api.v1.GetProfileResponse
+	0, // 0: dazzle.v1.UserService.GetProfile:input_type -> dazzle.v1.GetProfileRequest
+	1, // 1: dazzle.v1.UserService.GetProfile:output_type -> dazzle.v1.GetProfileResponse
 	1, // [1:2] is the sub-list for method output_type
 	0, // [0:1] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name

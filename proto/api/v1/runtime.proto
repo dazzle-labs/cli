@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package dazzle.v1;
+
+option go_package = "github.com/dazzle-labs/cli/gen/api/v1;apiv1";
+
+service RuntimeService {
+  rpc SetScript(SetScriptRequest) returns (SetScriptResponse);
+  rpc GetScript(GetScriptRequest) returns (GetScriptResponse);
+  rpc EditScript(EditScriptRequest) returns (EditScriptResponse);
+  rpc EmitEvent(EmitEventRequest) returns (EmitEventResponse);
+  rpc GetLogs(GetLogsRequest) returns (GetLogsResponse);
+  rpc Screenshot(ScreenshotRequest) returns (ScreenshotResponse);
+  rpc ObsCommand(ObsCommandRequest) returns (ObsCommandResponse);
+}
+
+message SetScriptRequest { string stage_id = 1; string script = 2; }
+message SetScriptResponse { bool ok = 1; }
+
+message GetScriptRequest { string stage_id = 1; }
+message GetScriptResponse { string script = 1; }
+
+message EditScriptRequest { string stage_id = 1; string old_string = 2; string new_string = 3; }
+message EditScriptResponse { bool ok = 1; }
+
+message EmitEventRequest { string stage_id = 1; string event = 2; string data = 3; }
+message EmitEventResponse { bool ok = 1; }
+
+message GetLogsRequest { string stage_id = 1; int32 limit = 2; }
+message LogEntry { string level = 1; string message = 2; string timestamp = 3; }
+message GetLogsResponse { repeated LogEntry entries = 1; }
+
+message ScreenshotRequest { string stage_id = 1; }
+message ScreenshotResponse { bytes image = 1; }
+
+message ObsCommandRequest { string stage_id = 1; repeated string args = 2; }
+message ObsCommandResponse { string output = 1; }

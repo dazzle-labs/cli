@@ -22,7 +22,7 @@ const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// UserServiceName is the fully-qualified name of the UserService service.
-	UserServiceName = "api.v1.UserService"
+	UserServiceName = "dazzle.v1.UserService"
 )
 
 // These constants are the fully-qualified names of the RPCs defined in this package. They're
@@ -34,16 +34,16 @@ const (
 // period.
 const (
 	// UserServiceGetProfileProcedure is the fully-qualified name of the UserService's GetProfile RPC.
-	UserServiceGetProfileProcedure = "/api.v1.UserService/GetProfile"
+	UserServiceGetProfileProcedure = "/dazzle.v1.UserService/GetProfile"
 )
 
-// UserServiceClient is a client for the api.v1.UserService service.
+// UserServiceClient is a client for the dazzle.v1.UserService service.
 type UserServiceClient interface {
 	GetProfile(context.Context, *connect.Request[v1.GetProfileRequest]) (*connect.Response[v1.GetProfileResponse], error)
 }
 
-// NewUserServiceClient constructs a client for the api.v1.UserService service. By default, it uses
-// the Connect protocol with the binary Protobuf Codec, asks for gzipped responses, and sends
+// NewUserServiceClient constructs a client for the dazzle.v1.UserService service. By default, it
+// uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses, and sends
 // uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the connect.WithGRPC() or
 // connect.WithGRPCWeb() options.
 //
@@ -67,12 +67,12 @@ type userServiceClient struct {
 	getProfile *connect.Client[v1.GetProfileRequest, v1.GetProfileResponse]
 }
 
-// GetProfile calls api.v1.UserService.GetProfile.
+// GetProfile calls dazzle.v1.UserService.GetProfile.
 func (c *userServiceClient) GetProfile(ctx context.Context, req *connect.Request[v1.GetProfileRequest]) (*connect.Response[v1.GetProfileResponse], error) {
 	return c.getProfile.CallUnary(ctx, req)
 }
 
-// UserServiceHandler is an implementation of the api.v1.UserService service.
+// UserServiceHandler is an implementation of the dazzle.v1.UserService service.
 type UserServiceHandler interface {
 	GetProfile(context.Context, *connect.Request[v1.GetProfileRequest]) (*connect.Response[v1.GetProfileResponse], error)
 }
@@ -90,7 +90,7 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(userServiceMethods.ByName("GetProfile")),
 		connect.WithHandlerOptions(opts...),
 	)
-	return "/api.v1.UserService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return "/dazzle.v1.UserService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case UserServiceGetProfileProcedure:
 			userServiceGetProfileHandler.ServeHTTP(w, r)
@@ -104,5 +104,5 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption
 type UnimplementedUserServiceHandler struct{}
 
 func (UnimplementedUserServiceHandler) GetProfile(context.Context, *connect.Request[v1.GetProfileRequest]) (*connect.Response[v1.GetProfileResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.UserService.GetProfile is not implemented"))
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.UserService.GetProfile is not implemented"))
 }

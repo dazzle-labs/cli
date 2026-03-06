@@ -518,7 +518,7 @@ var File_api_v1_stream_proto protoreflect.FileDescriptor
 
 const file_api_v1_stream_proto_rawDesc = "" +
 	"\n" +
-	"\x13api/v1/stream.proto\x12\x06api.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x83\x02\n" +
+	"\x13api/v1/stream.proto\x12\tdazzle.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x83\x02\n" +
 	"\x11StreamDestination\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1a\n" +
@@ -535,30 +535,30 @@ const file_api_v1_stream_proto_rawDesc = "" +
 	"\bplatform\x18\x02 \x01(\tR\bplatform\x12\x19\n" +
 	"\brtmp_url\x18\x03 \x01(\tR\artmpUrl\x12\x1d\n" +
 	"\n" +
-	"stream_key\x18\x04 \x01(\tR\tstreamKey\"^\n" +
-	"\x1fCreateStreamDestinationResponse\x12;\n" +
-	"\vdestination\x18\x01 \x01(\v2\x19.api.v1.StreamDestinationR\vdestination\":\n" +
+	"stream_key\x18\x04 \x01(\tR\tstreamKey\"a\n" +
+	"\x1fCreateStreamDestinationResponse\x12>\n" +
+	"\vdestination\x18\x01 \x01(\v2\x1c.dazzle.v1.StreamDestinationR\vdestination\":\n" +
 	"\x1dListStreamDestinationsRequest\x12\x19\n" +
-	"\bstage_id\x18\x01 \x01(\tR\astageId\"_\n" +
-	"\x1eListStreamDestinationsResponse\x12=\n" +
-	"\fdestinations\x18\x01 \x03(\v2\x19.api.v1.StreamDestinationR\fdestinations\"\x9a\x01\n" +
+	"\bstage_id\x18\x01 \x01(\tR\astageId\"b\n" +
+	"\x1eListStreamDestinationsResponse\x12@\n" +
+	"\fdestinations\x18\x01 \x03(\v2\x1c.dazzle.v1.StreamDestinationR\fdestinations\"\x9a\x01\n" +
 	"\x1eUpdateStreamDestinationRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1a\n" +
 	"\bplatform\x18\x03 \x01(\tR\bplatform\x12\x19\n" +
 	"\brtmp_url\x18\x04 \x01(\tR\artmpUrl\x12\x1d\n" +
 	"\n" +
-	"stream_key\x18\x05 \x01(\tR\tstreamKey\"^\n" +
-	"\x1fUpdateStreamDestinationResponse\x12;\n" +
-	"\vdestination\x18\x01 \x01(\v2\x19.api.v1.StreamDestinationR\vdestination\"0\n" +
+	"stream_key\x18\x05 \x01(\tR\tstreamKey\"a\n" +
+	"\x1fUpdateStreamDestinationResponse\x12>\n" +
+	"\vdestination\x18\x01 \x01(\v2\x1c.dazzle.v1.StreamDestinationR\vdestination\"0\n" +
 	"\x1eDeleteStreamDestinationRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"!\n" +
-	"\x1fDeleteStreamDestinationResponse2\xc5\x03\n" +
-	"\x16RtmpDestinationService\x12j\n" +
-	"\x17CreateStreamDestination\x12&.api.v1.CreateStreamDestinationRequest\x1a'.api.v1.CreateStreamDestinationResponse\x12g\n" +
-	"\x16ListStreamDestinations\x12%.api.v1.ListStreamDestinationsRequest\x1a&.api.v1.ListStreamDestinationsResponse\x12j\n" +
-	"\x17UpdateStreamDestination\x12&.api.v1.UpdateStreamDestinationRequest\x1a'.api.v1.UpdateStreamDestinationResponse\x12j\n" +
-	"\x17DeleteStreamDestination\x12&.api.v1.DeleteStreamDestinationRequest\x1a'.api.v1.DeleteStreamDestinationResponseB-Z+github.com/dazzle-labs/cli/gen/api/v1;apiv1b\x06proto3"
+	"\x1fDeleteStreamDestinationResponse2\xdd\x03\n" +
+	"\x16RtmpDestinationService\x12p\n" +
+	"\x17CreateStreamDestination\x12).dazzle.v1.CreateStreamDestinationRequest\x1a*.dazzle.v1.CreateStreamDestinationResponse\x12m\n" +
+	"\x16ListStreamDestinations\x12(.dazzle.v1.ListStreamDestinationsRequest\x1a).dazzle.v1.ListStreamDestinationsResponse\x12p\n" +
+	"\x17UpdateStreamDestination\x12).dazzle.v1.UpdateStreamDestinationRequest\x1a*.dazzle.v1.UpdateStreamDestinationResponse\x12p\n" +
+	"\x17DeleteStreamDestination\x12).dazzle.v1.DeleteStreamDestinationRequest\x1a*.dazzle.v1.DeleteStreamDestinationResponseB-Z+github.com/dazzle-labs/cli/gen/api/v1;apiv1b\x06proto3"
 
 var (
 	file_api_v1_stream_proto_rawDescOnce sync.Once
@@ -574,31 +574,31 @@ func file_api_v1_stream_proto_rawDescGZIP() []byte {
 
 var file_api_v1_stream_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_api_v1_stream_proto_goTypes = []any{
-	(*StreamDestination)(nil),               // 0: api.v1.StreamDestination
-	(*CreateStreamDestinationRequest)(nil),  // 1: api.v1.CreateStreamDestinationRequest
-	(*CreateStreamDestinationResponse)(nil), // 2: api.v1.CreateStreamDestinationResponse
-	(*ListStreamDestinationsRequest)(nil),   // 3: api.v1.ListStreamDestinationsRequest
-	(*ListStreamDestinationsResponse)(nil),  // 4: api.v1.ListStreamDestinationsResponse
-	(*UpdateStreamDestinationRequest)(nil),  // 5: api.v1.UpdateStreamDestinationRequest
-	(*UpdateStreamDestinationResponse)(nil), // 6: api.v1.UpdateStreamDestinationResponse
-	(*DeleteStreamDestinationRequest)(nil),  // 7: api.v1.DeleteStreamDestinationRequest
-	(*DeleteStreamDestinationResponse)(nil), // 8: api.v1.DeleteStreamDestinationResponse
+	(*StreamDestination)(nil),               // 0: dazzle.v1.StreamDestination
+	(*CreateStreamDestinationRequest)(nil),  // 1: dazzle.v1.CreateStreamDestinationRequest
+	(*CreateStreamDestinationResponse)(nil), // 2: dazzle.v1.CreateStreamDestinationResponse
+	(*ListStreamDestinationsRequest)(nil),   // 3: dazzle.v1.ListStreamDestinationsRequest
+	(*ListStreamDestinationsResponse)(nil),  // 4: dazzle.v1.ListStreamDestinationsResponse
+	(*UpdateStreamDestinationRequest)(nil),  // 5: dazzle.v1.UpdateStreamDestinationRequest
+	(*UpdateStreamDestinationResponse)(nil), // 6: dazzle.v1.UpdateStreamDestinationResponse
+	(*DeleteStreamDestinationRequest)(nil),  // 7: dazzle.v1.DeleteStreamDestinationRequest
+	(*DeleteStreamDestinationResponse)(nil), // 8: dazzle.v1.DeleteStreamDestinationResponse
 	(*timestamppb.Timestamp)(nil),           // 9: google.protobuf.Timestamp
 }
 var file_api_v1_stream_proto_depIdxs = []int32{
-	9, // 0: api.v1.StreamDestination.created_at:type_name -> google.protobuf.Timestamp
-	9, // 1: api.v1.StreamDestination.updated_at:type_name -> google.protobuf.Timestamp
-	0, // 2: api.v1.CreateStreamDestinationResponse.destination:type_name -> api.v1.StreamDestination
-	0, // 3: api.v1.ListStreamDestinationsResponse.destinations:type_name -> api.v1.StreamDestination
-	0, // 4: api.v1.UpdateStreamDestinationResponse.destination:type_name -> api.v1.StreamDestination
-	1, // 5: api.v1.RtmpDestinationService.CreateStreamDestination:input_type -> api.v1.CreateStreamDestinationRequest
-	3, // 6: api.v1.RtmpDestinationService.ListStreamDestinations:input_type -> api.v1.ListStreamDestinationsRequest
-	5, // 7: api.v1.RtmpDestinationService.UpdateStreamDestination:input_type -> api.v1.UpdateStreamDestinationRequest
-	7, // 8: api.v1.RtmpDestinationService.DeleteStreamDestination:input_type -> api.v1.DeleteStreamDestinationRequest
-	2, // 9: api.v1.RtmpDestinationService.CreateStreamDestination:output_type -> api.v1.CreateStreamDestinationResponse
-	4, // 10: api.v1.RtmpDestinationService.ListStreamDestinations:output_type -> api.v1.ListStreamDestinationsResponse
-	6, // 11: api.v1.RtmpDestinationService.UpdateStreamDestination:output_type -> api.v1.UpdateStreamDestinationResponse
-	8, // 12: api.v1.RtmpDestinationService.DeleteStreamDestination:output_type -> api.v1.DeleteStreamDestinationResponse
+	9, // 0: dazzle.v1.StreamDestination.created_at:type_name -> google.protobuf.Timestamp
+	9, // 1: dazzle.v1.StreamDestination.updated_at:type_name -> google.protobuf.Timestamp
+	0, // 2: dazzle.v1.CreateStreamDestinationResponse.destination:type_name -> dazzle.v1.StreamDestination
+	0, // 3: dazzle.v1.ListStreamDestinationsResponse.destinations:type_name -> dazzle.v1.StreamDestination
+	0, // 4: dazzle.v1.UpdateStreamDestinationResponse.destination:type_name -> dazzle.v1.StreamDestination
+	1, // 5: dazzle.v1.RtmpDestinationService.CreateStreamDestination:input_type -> dazzle.v1.CreateStreamDestinationRequest
+	3, // 6: dazzle.v1.RtmpDestinationService.ListStreamDestinations:input_type -> dazzle.v1.ListStreamDestinationsRequest
+	5, // 7: dazzle.v1.RtmpDestinationService.UpdateStreamDestination:input_type -> dazzle.v1.UpdateStreamDestinationRequest
+	7, // 8: dazzle.v1.RtmpDestinationService.DeleteStreamDestination:input_type -> dazzle.v1.DeleteStreamDestinationRequest
+	2, // 9: dazzle.v1.RtmpDestinationService.CreateStreamDestination:output_type -> dazzle.v1.CreateStreamDestinationResponse
+	4, // 10: dazzle.v1.RtmpDestinationService.ListStreamDestinations:output_type -> dazzle.v1.ListStreamDestinationsResponse
+	6, // 11: dazzle.v1.RtmpDestinationService.UpdateStreamDestination:output_type -> dazzle.v1.UpdateStreamDestinationResponse
+	8, // 12: dazzle.v1.RtmpDestinationService.DeleteStreamDestination:output_type -> dazzle.v1.DeleteStreamDestinationResponse
 	9, // [9:13] is the sub-list for method output_type
 	5, // [5:9] is the sub-list for method input_type
 	5, // [5:5] is the sub-list for extension type_name

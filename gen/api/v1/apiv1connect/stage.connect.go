@@ -22,7 +22,7 @@ const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// StageServiceName is the fully-qualified name of the StageService service.
-	StageServiceName = "api.v1.StageService"
+	StageServiceName = "dazzle.v1.StageService"
 )
 
 // These constants are the fully-qualified names of the RPCs defined in this package. They're
@@ -35,26 +35,26 @@ const (
 const (
 	// StageServiceCreateStageProcedure is the fully-qualified name of the StageService's CreateStage
 	// RPC.
-	StageServiceCreateStageProcedure = "/api.v1.StageService/CreateStage"
+	StageServiceCreateStageProcedure = "/dazzle.v1.StageService/CreateStage"
 	// StageServiceListStagesProcedure is the fully-qualified name of the StageService's ListStages RPC.
-	StageServiceListStagesProcedure = "/api.v1.StageService/ListStages"
+	StageServiceListStagesProcedure = "/dazzle.v1.StageService/ListStages"
 	// StageServiceGetStageProcedure is the fully-qualified name of the StageService's GetStage RPC.
-	StageServiceGetStageProcedure = "/api.v1.StageService/GetStage"
+	StageServiceGetStageProcedure = "/dazzle.v1.StageService/GetStage"
 	// StageServiceDeleteStageProcedure is the fully-qualified name of the StageService's DeleteStage
 	// RPC.
-	StageServiceDeleteStageProcedure = "/api.v1.StageService/DeleteStage"
+	StageServiceDeleteStageProcedure = "/dazzle.v1.StageService/DeleteStage"
 	// StageServiceSetStageDestinationProcedure is the fully-qualified name of the StageService's
 	// SetStageDestination RPC.
-	StageServiceSetStageDestinationProcedure = "/api.v1.StageService/SetStageDestination"
+	StageServiceSetStageDestinationProcedure = "/dazzle.v1.StageService/SetStageDestination"
 	// StageServiceActivateStageProcedure is the fully-qualified name of the StageService's
 	// ActivateStage RPC.
-	StageServiceActivateStageProcedure = "/api.v1.StageService/ActivateStage"
+	StageServiceActivateStageProcedure = "/dazzle.v1.StageService/ActivateStage"
 	// StageServiceDeactivateStageProcedure is the fully-qualified name of the StageService's
 	// DeactivateStage RPC.
-	StageServiceDeactivateStageProcedure = "/api.v1.StageService/DeactivateStage"
+	StageServiceDeactivateStageProcedure = "/dazzle.v1.StageService/DeactivateStage"
 )
 
-// StageServiceClient is a client for the api.v1.StageService service.
+// StageServiceClient is a client for the dazzle.v1.StageService service.
 type StageServiceClient interface {
 	CreateStage(context.Context, *connect.Request[v1.CreateStageRequest]) (*connect.Response[v1.CreateStageResponse], error)
 	ListStages(context.Context, *connect.Request[v1.ListStagesRequest]) (*connect.Response[v1.ListStagesResponse], error)
@@ -65,7 +65,7 @@ type StageServiceClient interface {
 	DeactivateStage(context.Context, *connect.Request[v1.DeactivateStageRequest]) (*connect.Response[v1.DeactivateStageResponse], error)
 }
 
-// NewStageServiceClient constructs a client for the api.v1.StageService service. By default, it
+// NewStageServiceClient constructs a client for the dazzle.v1.StageService service. By default, it
 // uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses, and sends
 // uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the connect.WithGRPC() or
 // connect.WithGRPCWeb() options.
@@ -132,42 +132,42 @@ type stageServiceClient struct {
 	deactivateStage     *connect.Client[v1.DeactivateStageRequest, v1.DeactivateStageResponse]
 }
 
-// CreateStage calls api.v1.StageService.CreateStage.
+// CreateStage calls dazzle.v1.StageService.CreateStage.
 func (c *stageServiceClient) CreateStage(ctx context.Context, req *connect.Request[v1.CreateStageRequest]) (*connect.Response[v1.CreateStageResponse], error) {
 	return c.createStage.CallUnary(ctx, req)
 }
 
-// ListStages calls api.v1.StageService.ListStages.
+// ListStages calls dazzle.v1.StageService.ListStages.
 func (c *stageServiceClient) ListStages(ctx context.Context, req *connect.Request[v1.ListStagesRequest]) (*connect.Response[v1.ListStagesResponse], error) {
 	return c.listStages.CallUnary(ctx, req)
 }
 
-// GetStage calls api.v1.StageService.GetStage.
+// GetStage calls dazzle.v1.StageService.GetStage.
 func (c *stageServiceClient) GetStage(ctx context.Context, req *connect.Request[v1.GetStageRequest]) (*connect.Response[v1.GetStageResponse], error) {
 	return c.getStage.CallUnary(ctx, req)
 }
 
-// DeleteStage calls api.v1.StageService.DeleteStage.
+// DeleteStage calls dazzle.v1.StageService.DeleteStage.
 func (c *stageServiceClient) DeleteStage(ctx context.Context, req *connect.Request[v1.DeleteStageRequest]) (*connect.Response[v1.DeleteStageResponse], error) {
 	return c.deleteStage.CallUnary(ctx, req)
 }
 
-// SetStageDestination calls api.v1.StageService.SetStageDestination.
+// SetStageDestination calls dazzle.v1.StageService.SetStageDestination.
 func (c *stageServiceClient) SetStageDestination(ctx context.Context, req *connect.Request[v1.SetStageDestinationRequest]) (*connect.Response[v1.SetStageDestinationResponse], error) {
 	return c.setStageDestination.CallUnary(ctx, req)
 }
 
-// ActivateStage calls api.v1.StageService.ActivateStage.
+// ActivateStage calls dazzle.v1.StageService.ActivateStage.
 func (c *stageServiceClient) ActivateStage(ctx context.Context, req *connect.Request[v1.ActivateStageRequest]) (*connect.Response[v1.ActivateStageResponse], error) {
 	return c.activateStage.CallUnary(ctx, req)
 }
 
-// DeactivateStage calls api.v1.StageService.DeactivateStage.
+// DeactivateStage calls dazzle.v1.StageService.DeactivateStage.
 func (c *stageServiceClient) DeactivateStage(ctx context.Context, req *connect.Request[v1.DeactivateStageRequest]) (*connect.Response[v1.DeactivateStageResponse], error) {
 	return c.deactivateStage.CallUnary(ctx, req)
 }
 
-// StageServiceHandler is an implementation of the api.v1.StageService service.
+// StageServiceHandler is an implementation of the dazzle.v1.StageService service.
 type StageServiceHandler interface {
 	CreateStage(context.Context, *connect.Request[v1.CreateStageRequest]) (*connect.Response[v1.CreateStageResponse], error)
 	ListStages(context.Context, *connect.Request[v1.ListStagesRequest]) (*connect.Response[v1.ListStagesResponse], error)
@@ -227,7 +227,7 @@ func NewStageServiceHandler(svc StageServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(stageServiceMethods.ByName("DeactivateStage")),
 		connect.WithHandlerOptions(opts...),
 	)
-	return "/api.v1.StageService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return "/dazzle.v1.StageService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case StageServiceCreateStageProcedure:
 			stageServiceCreateStageHandler.ServeHTTP(w, r)
@@ -253,29 +253,29 @@ func NewStageServiceHandler(svc StageServiceHandler, opts ...connect.HandlerOpti
 type UnimplementedStageServiceHandler struct{}
 
 func (UnimplementedStageServiceHandler) CreateStage(context.Context, *connect.Request[v1.CreateStageRequest]) (*connect.Response[v1.CreateStageResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.StageService.CreateStage is not implemented"))
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.StageService.CreateStage is not implemented"))
 }
 
 func (UnimplementedStageServiceHandler) ListStages(context.Context, *connect.Request[v1.ListStagesRequest]) (*connect.Response[v1.ListStagesResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.StageService.ListStages is not implemented"))
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.StageService.ListStages is not implemented"))
 }
 
 func (UnimplementedStageServiceHandler) GetStage(context.Context, *connect.Request[v1.GetStageRequest]) (*connect.Response[v1.GetStageResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.StageService.GetStage is not implemented"))
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.StageService.GetStage is not implemented"))
 }
 
 func (UnimplementedStageServiceHandler) DeleteStage(context.Context, *connect.Request[v1.DeleteStageRequest]) (*connect.Response[v1.DeleteStageResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.StageService.DeleteStage is not implemented"))
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.StageService.DeleteStage is not implemented"))
 }
 
 func (UnimplementedStageServiceHandler) SetStageDestination(context.Context, *connect.Request[v1.SetStageDestinationRequest]) (*connect.Response[v1.SetStageDestinationResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.StageService.SetStageDestination is not implemented"))
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.StageService.SetStageDestination is not implemented"))
 }
 
 func (UnimplementedStageServiceHandler) ActivateStage(context.Context, *connect.Request[v1.ActivateStageRequest]) (*connect.Response[v1.ActivateStageResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.StageService.ActivateStage is not implemented"))
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.StageService.ActivateStage is not implemented"))
 }
 
 func (UnimplementedStageServiceHandler) DeactivateStage(context.Context, *connect.Request[v1.DeactivateStageRequest]) (*connect.Response[v1.DeactivateStageResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.StageService.DeactivateStage is not implemented"))
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.StageService.DeactivateStage is not implemented"))
 }

@@ -750,7 +750,7 @@ var File_api_v1_stage_proto protoreflect.FileDescriptor
 
 const file_api_v1_stage_proto_rawDesc = "" +
 	"\n" +
-	"\x12api/v1/stage.proto\x12\x06api.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xdd\x02\n" +
+	"\x12api/v1/stage.proto\x12\tdazzle.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xdd\x02\n" +
 	"\x05Stage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
 	"\bpod_name\x18\x02 \x01(\tR\apodName\x12\x15\n" +
@@ -766,41 +766,41 @@ const file_api_v1_stage_proto_rawDesc = "" +
 	"\x0edestination_id\x18\n" +
 	" \x01(\tR\rdestinationId\"(\n" +
 	"\x12CreateStageRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\":\n" +
-	"\x13CreateStageResponse\x12#\n" +
-	"\x05stage\x18\x01 \x01(\v2\r.api.v1.StageR\x05stage\"\x13\n" +
-	"\x11ListStagesRequest\";\n" +
-	"\x12ListStagesResponse\x12%\n" +
-	"\x06stages\x18\x01 \x03(\v2\r.api.v1.StageR\x06stages\"!\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\"=\n" +
+	"\x13CreateStageResponse\x12&\n" +
+	"\x05stage\x18\x01 \x01(\v2\x10.dazzle.v1.StageR\x05stage\"\x13\n" +
+	"\x11ListStagesRequest\">\n" +
+	"\x12ListStagesResponse\x12(\n" +
+	"\x06stages\x18\x01 \x03(\v2\x10.dazzle.v1.StageR\x06stages\"!\n" +
 	"\x0fGetStageRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"7\n" +
-	"\x10GetStageResponse\x12#\n" +
-	"\x05stage\x18\x01 \x01(\v2\r.api.v1.StageR\x05stage\"$\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\":\n" +
+	"\x10GetStageResponse\x12&\n" +
+	"\x05stage\x18\x01 \x01(\v2\x10.dazzle.v1.StageR\x05stage\"$\n" +
 	"\x12DeleteStageRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x15\n" +
 	"\x13DeleteStageResponse\"^\n" +
 	"\x1aSetStageDestinationRequest\x12\x19\n" +
 	"\bstage_id\x18\x01 \x01(\tR\astageId\x12%\n" +
-	"\x0edestination_id\x18\x02 \x01(\tR\rdestinationId\"B\n" +
-	"\x1bSetStageDestinationResponse\x12#\n" +
-	"\x05stage\x18\x01 \x01(\v2\r.api.v1.StageR\x05stage\"&\n" +
+	"\x0edestination_id\x18\x02 \x01(\tR\rdestinationId\"E\n" +
+	"\x1bSetStageDestinationResponse\x12&\n" +
+	"\x05stage\x18\x01 \x01(\v2\x10.dazzle.v1.StageR\x05stage\"&\n" +
 	"\x14ActivateStageRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"<\n" +
-	"\x15ActivateStageResponse\x12#\n" +
-	"\x05stage\x18\x01 \x01(\v2\r.api.v1.StageR\x05stage\"(\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"?\n" +
+	"\x15ActivateStageResponse\x12&\n" +
+	"\x05stage\x18\x01 \x01(\v2\x10.dazzle.v1.StageR\x05stage\"(\n" +
 	"\x16DeactivateStageRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\">\n" +
-	"\x17DeactivateStageResponse\x12#\n" +
-	"\x05stage\x18\x01 \x01(\v2\r.api.v1.StageR\x05stage2\xa4\x04\n" +
-	"\fStageService\x12F\n" +
-	"\vCreateStage\x12\x1a.api.v1.CreateStageRequest\x1a\x1b.api.v1.CreateStageResponse\x12C\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"A\n" +
+	"\x17DeactivateStageResponse\x12&\n" +
+	"\x05stage\x18\x01 \x01(\v2\x10.dazzle.v1.StageR\x05stage2\xce\x04\n" +
+	"\fStageService\x12L\n" +
+	"\vCreateStage\x12\x1d.dazzle.v1.CreateStageRequest\x1a\x1e.dazzle.v1.CreateStageResponse\x12I\n" +
 	"\n" +
-	"ListStages\x12\x19.api.v1.ListStagesRequest\x1a\x1a.api.v1.ListStagesResponse\x12=\n" +
-	"\bGetStage\x12\x17.api.v1.GetStageRequest\x1a\x18.api.v1.GetStageResponse\x12F\n" +
-	"\vDeleteStage\x12\x1a.api.v1.DeleteStageRequest\x1a\x1b.api.v1.DeleteStageResponse\x12^\n" +
-	"\x13SetStageDestination\x12\".api.v1.SetStageDestinationRequest\x1a#.api.v1.SetStageDestinationResponse\x12L\n" +
-	"\rActivateStage\x12\x1c.api.v1.ActivateStageRequest\x1a\x1d.api.v1.ActivateStageResponse\x12R\n" +
-	"\x0fDeactivateStage\x12\x1e.api.v1.DeactivateStageRequest\x1a\x1f.api.v1.DeactivateStageResponseB-Z+github.com/dazzle-labs/cli/gen/api/v1;apiv1b\x06proto3"
+	"ListStages\x12\x1c.dazzle.v1.ListStagesRequest\x1a\x1d.dazzle.v1.ListStagesResponse\x12C\n" +
+	"\bGetStage\x12\x1a.dazzle.v1.GetStageRequest\x1a\x1b.dazzle.v1.GetStageResponse\x12L\n" +
+	"\vDeleteStage\x12\x1d.dazzle.v1.DeleteStageRequest\x1a\x1e.dazzle.v1.DeleteStageResponse\x12d\n" +
+	"\x13SetStageDestination\x12%.dazzle.v1.SetStageDestinationRequest\x1a&.dazzle.v1.SetStageDestinationResponse\x12R\n" +
+	"\rActivateStage\x12\x1f.dazzle.v1.ActivateStageRequest\x1a .dazzle.v1.ActivateStageResponse\x12X\n" +
+	"\x0fDeactivateStage\x12!.dazzle.v1.DeactivateStageRequest\x1a\".dazzle.v1.DeactivateStageResponseB-Z+github.com/dazzle-labs/cli/gen/api/v1;apiv1b\x06proto3"
 
 var (
 	file_api_v1_stage_proto_rawDescOnce sync.Once
@@ -816,46 +816,46 @@ func file_api_v1_stage_proto_rawDescGZIP() []byte {
 
 var file_api_v1_stage_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_api_v1_stage_proto_goTypes = []any{
-	(*Stage)(nil),                       // 0: api.v1.Stage
-	(*CreateStageRequest)(nil),          // 1: api.v1.CreateStageRequest
-	(*CreateStageResponse)(nil),         // 2: api.v1.CreateStageResponse
-	(*ListStagesRequest)(nil),           // 3: api.v1.ListStagesRequest
-	(*ListStagesResponse)(nil),          // 4: api.v1.ListStagesResponse
-	(*GetStageRequest)(nil),             // 5: api.v1.GetStageRequest
-	(*GetStageResponse)(nil),            // 6: api.v1.GetStageResponse
-	(*DeleteStageRequest)(nil),          // 7: api.v1.DeleteStageRequest
-	(*DeleteStageResponse)(nil),         // 8: api.v1.DeleteStageResponse
-	(*SetStageDestinationRequest)(nil),  // 9: api.v1.SetStageDestinationRequest
-	(*SetStageDestinationResponse)(nil), // 10: api.v1.SetStageDestinationResponse
-	(*ActivateStageRequest)(nil),        // 11: api.v1.ActivateStageRequest
-	(*ActivateStageResponse)(nil),       // 12: api.v1.ActivateStageResponse
-	(*DeactivateStageRequest)(nil),      // 13: api.v1.DeactivateStageRequest
-	(*DeactivateStageResponse)(nil),     // 14: api.v1.DeactivateStageResponse
+	(*Stage)(nil),                       // 0: dazzle.v1.Stage
+	(*CreateStageRequest)(nil),          // 1: dazzle.v1.CreateStageRequest
+	(*CreateStageResponse)(nil),         // 2: dazzle.v1.CreateStageResponse
+	(*ListStagesRequest)(nil),           // 3: dazzle.v1.ListStagesRequest
+	(*ListStagesResponse)(nil),          // 4: dazzle.v1.ListStagesResponse
+	(*GetStageRequest)(nil),             // 5: dazzle.v1.GetStageRequest
+	(*GetStageResponse)(nil),            // 6: dazzle.v1.GetStageResponse
+	(*DeleteStageRequest)(nil),          // 7: dazzle.v1.DeleteStageRequest
+	(*DeleteStageResponse)(nil),         // 8: dazzle.v1.DeleteStageResponse
+	(*SetStageDestinationRequest)(nil),  // 9: dazzle.v1.SetStageDestinationRequest
+	(*SetStageDestinationResponse)(nil), // 10: dazzle.v1.SetStageDestinationResponse
+	(*ActivateStageRequest)(nil),        // 11: dazzle.v1.ActivateStageRequest
+	(*ActivateStageResponse)(nil),       // 12: dazzle.v1.ActivateStageResponse
+	(*DeactivateStageRequest)(nil),      // 13: dazzle.v1.DeactivateStageRequest
+	(*DeactivateStageResponse)(nil),     // 14: dazzle.v1.DeactivateStageResponse
 	(*timestamppb.Timestamp)(nil),       // 15: google.protobuf.Timestamp
 }
 var file_api_v1_stage_proto_depIdxs = []int32{
-	15, // 0: api.v1.Stage.created_at:type_name -> google.protobuf.Timestamp
-	15, // 1: api.v1.Stage.last_activity:type_name -> google.protobuf.Timestamp
-	0,  // 2: api.v1.CreateStageResponse.stage:type_name -> api.v1.Stage
-	0,  // 3: api.v1.ListStagesResponse.stages:type_name -> api.v1.Stage
-	0,  // 4: api.v1.GetStageResponse.stage:type_name -> api.v1.Stage
-	0,  // 5: api.v1.SetStageDestinationResponse.stage:type_name -> api.v1.Stage
-	0,  // 6: api.v1.ActivateStageResponse.stage:type_name -> api.v1.Stage
-	0,  // 7: api.v1.DeactivateStageResponse.stage:type_name -> api.v1.Stage
-	1,  // 8: api.v1.StageService.CreateStage:input_type -> api.v1.CreateStageRequest
-	3,  // 9: api.v1.StageService.ListStages:input_type -> api.v1.ListStagesRequest
-	5,  // 10: api.v1.StageService.GetStage:input_type -> api.v1.GetStageRequest
-	7,  // 11: api.v1.StageService.DeleteStage:input_type -> api.v1.DeleteStageRequest
-	9,  // 12: api.v1.StageService.SetStageDestination:input_type -> api.v1.SetStageDestinationRequest
-	11, // 13: api.v1.StageService.ActivateStage:input_type -> api.v1.ActivateStageRequest
-	13, // 14: api.v1.StageService.DeactivateStage:input_type -> api.v1.DeactivateStageRequest
-	2,  // 15: api.v1.StageService.CreateStage:output_type -> api.v1.CreateStageResponse
-	4,  // 16: api.v1.StageService.ListStages:output_type -> api.v1.ListStagesResponse
-	6,  // 17: api.v1.StageService.GetStage:output_type -> api.v1.GetStageResponse
-	8,  // 18: api.v1.StageService.DeleteStage:output_type -> api.v1.DeleteStageResponse
-	10, // 19: api.v1.StageService.SetStageDestination:output_type -> api.v1.SetStageDestinationResponse
-	12, // 20: api.v1.StageService.ActivateStage:output_type -> api.v1.ActivateStageResponse
-	14, // 21: api.v1.StageService.DeactivateStage:output_type -> api.v1.DeactivateStageResponse
+	15, // 0: dazzle.v1.Stage.created_at:type_name -> google.protobuf.Timestamp
+	15, // 1: dazzle.v1.Stage.last_activity:type_name -> google.protobuf.Timestamp
+	0,  // 2: dazzle.v1.CreateStageResponse.stage:type_name -> dazzle.v1.Stage
+	0,  // 3: dazzle.v1.ListStagesResponse.stages:type_name -> dazzle.v1.Stage
+	0,  // 4: dazzle.v1.GetStageResponse.stage:type_name -> dazzle.v1.Stage
+	0,  // 5: dazzle.v1.SetStageDestinationResponse.stage:type_name -> dazzle.v1.Stage
+	0,  // 6: dazzle.v1.ActivateStageResponse.stage:type_name -> dazzle.v1.Stage
+	0,  // 7: dazzle.v1.DeactivateStageResponse.stage:type_name -> dazzle.v1.Stage
+	1,  // 8: dazzle.v1.StageService.CreateStage:input_type -> dazzle.v1.CreateStageRequest
+	3,  // 9: dazzle.v1.StageService.ListStages:input_type -> dazzle.v1.ListStagesRequest
+	5,  // 10: dazzle.v1.StageService.GetStage:input_type -> dazzle.v1.GetStageRequest
+	7,  // 11: dazzle.v1.StageService.DeleteStage:input_type -> dazzle.v1.DeleteStageRequest
+	9,  // 12: dazzle.v1.StageService.SetStageDestination:input_type -> dazzle.v1.SetStageDestinationRequest
+	11, // 13: dazzle.v1.StageService.ActivateStage:input_type -> dazzle.v1.ActivateStageRequest
+	13, // 14: dazzle.v1.StageService.DeactivateStage:input_type -> dazzle.v1.DeactivateStageRequest
+	2,  // 15: dazzle.v1.StageService.CreateStage:output_type -> dazzle.v1.CreateStageResponse
+	4,  // 16: dazzle.v1.StageService.ListStages:output_type -> dazzle.v1.ListStagesResponse
+	6,  // 17: dazzle.v1.StageService.GetStage:output_type -> dazzle.v1.GetStageResponse
+	8,  // 18: dazzle.v1.StageService.DeleteStage:output_type -> dazzle.v1.DeleteStageResponse
+	10, // 19: dazzle.v1.StageService.SetStageDestination:output_type -> dazzle.v1.SetStageDestinationResponse
+	12, // 20: dazzle.v1.StageService.ActivateStage:output_type -> dazzle.v1.ActivateStageResponse
+	14, // 21: dazzle.v1.StageService.DeactivateStage:output_type -> dazzle.v1.DeactivateStageResponse
 	15, // [15:22] is the sub-list for method output_type
 	8,  // [8:15] is the sub-list for method input_type
 	8,  // [8:8] is the sub-list for extension type_name
