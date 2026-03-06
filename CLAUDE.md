@@ -42,21 +42,22 @@ When updating MCP tools or framework examples, regenerate with `make llms-txt`. 
 
 ## Proto / API types
 
-The `.proto` source files live in `control-plane/proto/api/v1/`. The generated Go types are **not** kept in this repo — they live in `github.com/dazzle-labs/cli/gen/api/v1` (public), which the control-plane imports as a Go dependency.
+Proto interfaces are split into public and internal:
 
-### When proto definitions change
+- **Public** (`dazzle.v1`) — Stage, Runtime, Stream, User. Proto source + generated Go live in `dazzle-cli/` (git submodule → `github.com/dazzle-labs/cli`). These are the client-facing APIs.
+- **Internal** (`dazzle.internal.v1`) — ApiKey. Proto source in `control-plane/proto/api/v1/`, generated Go in `control-plane/internal/gen/`. Go's `internal/` directory enforces access restriction.
 
-1. Edit the `.proto` files in `control-plane/proto/api/v1/`
-2. Regenerate: `make proto` — this writes into a temporary local `gen/` directory
-3. Copy to dazzle-cli:
-   ```bash
-   cp -r control-plane/gen/api/v1/. ../dazzle-cli/gen/api/v1/
-   ```
-4. Commit and tag a new release in `dazzle-cli`
-5. Update the dependency here:
-   ```bash
-   cd control-plane && go get github.com/dazzle-labs/cli@<new-tag>
-   ```
-6. Commit and push
+A `go.work` file at the repo root wires up `./control-plane` and `./dazzle-cli` so local builds always use the local submodule — no tagging needed during development.
 
-The `go_package` option in all `.proto` files is set to `github.com/dazzle-labs/cli/gen/api/v1;apiv1` so generated files are ready to drop into dazzle-cli without any import path changes.
+### Changing public proto definitions
+
+1. Edit the `.proto` files in `dazzle-cli/proto/api/v1/`
+2. Regenerate: `cd dazzle-cli && make proto`
+3. Build locally to verify: `cd control-plane && go build ./...` (go.work picks up local changes)
+4. When ready to ship: commit + tag dazzle-cli, then `cd control-plane && go get github.com/dazzle-labs/cli@<new-tag>`
+
+### Changing internal proto definitions
+
+1. Edit `control-plane/proto/api/v1/apikey.proto`
+2. Regenerate: `cd control-plane/proto && buf generate`
+3. Commit the updated files in `control-plane/internal/gen/`
