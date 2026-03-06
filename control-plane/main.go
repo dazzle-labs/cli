@@ -282,7 +282,7 @@ func (m *Manager) createStage(requestedID string) (*Stage, error) {
 						PeriodSeconds:       2,
 						FailureThreshold:    30,
 					},
-					ImagePullPolicy: corev1.PullNever,
+					ImagePullPolicy: corev1.PullIfNotPresent,
 				},
 			},
 			Volumes: []corev1.Volume{
