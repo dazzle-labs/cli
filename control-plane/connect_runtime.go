@@ -8,8 +8,8 @@ import (
 	"log"
 
 	"connectrpc.com/connect"
-	apiv1 "github.com/browser-streamer/control-plane/gen/api/v1"
-	apiv1connect "github.com/browser-streamer/control-plane/gen/api/v1/apiv1connect"
+	apiv1 "github.com/dazzle-labs/cli/gen/api/v1"
+	apiv1connect "github.com/dazzle-labs/cli/gen/api/v1/apiv1connect"
 )
 
 // runtimeServer implements apiv1connect.RuntimeServiceHandler.

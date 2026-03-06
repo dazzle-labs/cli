@@ -29,7 +29,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	apiv1connect "github.com/browser-streamer/control-plane/gen/api/v1/apiv1connect"
+	apiv1connect "github.com/dazzle-labs/cli/gen/api/v1/apiv1connect"
 )
 
 // Ensure compile-time interface satisfaction.

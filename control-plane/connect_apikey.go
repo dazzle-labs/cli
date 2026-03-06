@@ -6,7 +6,7 @@ import (
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	apiv1 "github.com/browser-streamer/control-plane/gen/api/v1"
+	apiv1 "github.com/dazzle-labs/cli/gen/api/v1"
 )
 
 // apiKeyServer implements apiv1connect.ApiKeyServiceHandler.
