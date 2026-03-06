@@ -279,7 +279,7 @@ Stages persist across pod restarts. The control plane recovers running pods on s
 
 ## ConnectRPC API
 
-Base URL: `https://stream.dazzle.fm` (or `http://localhost:8080` for local dev)
+Base URL: `https://stream.dazzle.fm`
 
 All services use `POST /api.v1.<Service>/<Method>` with JSON or Protobuf body.
 
