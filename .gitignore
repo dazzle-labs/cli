@@ -1,0 +1,8 @@
+# Build output
+/cli
+/dazzle
+dist/
+
+# Go
+*.test
+*.out
