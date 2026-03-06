@@ -4,12 +4,14 @@ import type { StreamDestination } from "../gen/api/v1/stream_pb.js";
 import { StreamDestinationForm } from "@/components/onboarding/StreamDestinationForm.js";
 import type { StreamDestinationData } from "@/components/onboarding/StreamDestinationForm.js";
 import { Button } from "@/components/ui/button";
-import { Plus, X, Trash2, Radio } from "lucide-react";
+import { X, Trash2, Radio } from "lucide-react";
+import { PlatformIcon, PLATFORM_LIST } from "@/components/PlatformIcon";
 
 export function StreamConfig() {
   const [destinations, setDestinations] = useState<StreamDestination[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
+  const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
+  const [showPlatformPicker, setShowPlatformPicker] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
@@ -31,7 +33,8 @@ export function StreamConfig() {
         rtmpUrl: data.rtmpUrl,
         streamKey: data.streamKey,
       });
-      setShowForm(false);
+      setSelectedPlatform(null);
+      setShowPlatformPicker(false);
       await refresh();
     } catch {
       // ignore
@@ -64,6 +67,14 @@ export function StreamConfig() {
     }
   }
 
+  function handleCancel() {
+    setShowPlatformPicker(false);
+    setSelectedPlatform(null);
+    setEditingId(null);
+  }
+
+  const showingForm = selectedPlatform !== null || editingId !== null;
+
   if (loading) {
     return (
       <div className="flex items-center gap-2 text-zinc-500 text-sm pt-12">
@@ -90,42 +101,61 @@ export function StreamConfig() {
         </div>
         <Button
           onClick={() => {
-            if (showForm || editingId) { setShowForm(false); setEditingId(null); }
-            else { setShowForm(true); }
+            if (showingForm || showPlatformPicker) { handleCancel(); }
+            else { setShowPlatformPicker(true); }
           }}
           className={
-            showForm || editingId
+            showingForm || showPlatformPicker
               ? "bg-transparent border border-white/[0.1] text-zinc-300 hover:bg-white/[0.03]"
               : "bg-emerald-500 text-zinc-950 hover:bg-emerald-400 font-semibold"
           }
         >
-          {showForm || editingId ? (
+          {showingForm || showPlatformPicker ? (
             <>
               <X className="h-4 w-4 mr-1" /> Cancel
             </>
           ) : (
-            <>
-              <Plus className="h-4 w-4 mr-1" /> Add Destination
-            </>
+            "Add Destination"
           )}
         </Button>
       </div>
 
+      {/* Platform picker grid */}
+      {showPlatformPicker && !selectedPlatform && (
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-6 mb-8">
+          <h3 className="text-sm font-semibold text-white mb-4">Choose a platform</h3>
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+            {PLATFORM_LIST.map((p) => (
+              <button
+                key={p.value}
+                type="button"
+                onClick={() => setSelectedPlatform(p.value)}
+                className="flex flex-col items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 transition-all hover:border-emerald-500/20 hover:bg-emerald-500/[0.02] cursor-pointer"
+              >
+                <PlatformIcon platform={p.value} />
+                <span className="text-xs text-zinc-400">{p.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Add/Edit form */}
-      {(showForm || editingId) && (
+      {(selectedPlatform || editingId) && (
         <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-6 mb-8">
           <h3 className="text-sm font-semibold text-white mb-5">
             {editingId ? "Edit Destination" : "New Destination"}
           </h3>
           <StreamDestinationForm
-            key={editingId ?? "new"}
+            key={editingId ?? selectedPlatform ?? "new"}
             compact
             hideSkip
             streamKeyOptional={!!editingId}
+            lockedPlatform={selectedPlatform ?? undefined}
             initial={editingId ? (() => {
               const d = destinations.find(d => d.id === editingId);
               return d ? { name: d.name, platform: d.platform, rtmpUrl: d.rtmpUrl, streamKey: "" } : undefined;
-            })() : undefined}
+            })() : selectedPlatform ? { name: "", platform: selectedPlatform, rtmpUrl: "", streamKey: "" } : undefined}
             submitLabel={editingId ? "Save" : "Create"}
             onNext={(data) => {
               if (data) {
@@ -150,69 +180,109 @@ export function StreamConfig() {
           <p className="text-zinc-600 text-xs">Add one to start streaming.</p>
         </div>
       ) : (
-        <div className="rounded-xl border border-white/[0.06] overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-white/[0.06]">
-                <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">Name</th>
-                <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">Platform</th>
-                <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">RTMP URL</th>
-                <th className="py-3 px-4"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {destinations.map((d) => (
-                <tr
-                  key={d.id}
-                  onClick={() => { setEditingId(d.id); setShowForm(false); setConfirmDeleteId(null); }}
-                  className="border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02] transition-colors cursor-pointer"
-                >
-                  <td className="py-3 px-4 text-zinc-300">{d.name}</td>
-                  <td className="py-3 px-4">
-                    <span className="text-xs font-mono text-zinc-400 bg-white/[0.04] px-2 py-0.5 rounded">
-                      {d.platform}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4">
-                    <code className="text-xs text-zinc-500 font-mono">{d.rtmpUrl}</code>
-                  </td>
-                  <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
-                    {confirmDeleteId === d.id ? (
-                      <div className="flex items-center gap-2 justify-end">
-                        <span className="text-xs text-zinc-400">Unlinks from stages. Delete?</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-400 hover:bg-red-500/10"
-                          onClick={() => { handleDelete(d.id); setConfirmDeleteId(null); }}
-                        >
-                          Delete
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-zinc-500"
-                          onClick={() => setConfirmDeleteId(null)}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-zinc-500 hover:text-red-400 hover:bg-red-500/10"
-                        onClick={() => setConfirmDeleteId(d.id)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                  </td>
+        <>
+          {/* Desktop table */}
+          <div className="rounded-xl border border-white/[0.06] overflow-hidden hidden sm:block">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-white/[0.06]">
+                  <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">Name</th>
+                  <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">Platform</th>
+                  <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">RTMP URL</th>
+                  <th className="py-3 px-4"></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {destinations.map((d) => (
+                  <tr
+                    key={d.id}
+                    onClick={() => { setEditingId(d.id); setShowPlatformPicker(false); setSelectedPlatform(null); setConfirmDeleteId(null); }}
+                    className="border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02] transition-colors cursor-pointer"
+                  >
+                    <td className="py-3 px-4 text-zinc-300">{d.name}</td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2">
+                        <PlatformIcon platform={d.platform} size="sm" />
+                        <span className="text-xs text-zinc-400">{d.platform}</span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <code className="text-xs text-zinc-500 font-mono">{d.rtmpUrl}</code>
+                    </td>
+                    <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
+                      {confirmDeleteId === d.id ? (
+                        <div className="flex items-center gap-2 justify-end">
+                          <span className="text-xs text-zinc-400">Unlinks from stages. Delete?</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-400 hover:bg-red-500/10"
+                            onClick={() => { handleDelete(d.id); setConfirmDeleteId(null); }}
+                          >
+                            Delete
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-zinc-500"
+                            onClick={() => setConfirmDeleteId(null)}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-zinc-500 hover:text-red-400 hover:bg-red-500/10"
+                          onClick={() => setConfirmDeleteId(d.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="flex flex-col gap-3 sm:hidden">
+            {destinations.map((d) => (
+              <div
+                key={d.id}
+                onClick={() => { setEditingId(d.id); setShowPlatformPicker(false); setSelectedPlatform(null); setConfirmDeleteId(null); }}
+                className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 cursor-pointer hover:border-emerald-500/15 transition-all"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-zinc-300 font-medium">{d.name}</span>
+                  <div className="flex items-center gap-2">
+                    <PlatformIcon platform={d.platform} size="sm" />
+                    <span className="text-xs text-zinc-500">{d.platform}</span>
+                  </div>
+                </div>
+                <code className="text-xs text-zinc-600 font-mono break-all">{d.rtmpUrl}</code>
+                <div className="mt-3 flex justify-end" onClick={(e) => e.stopPropagation()}>
+                  {confirmDeleteId === d.id ? (
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="sm" className="text-red-400 hover:bg-red-500/10" onClick={() => { handleDelete(d.id); setConfirmDeleteId(null); }}>
+                        Delete
+                      </Button>
+                      <Button variant="ghost" size="sm" className="text-zinc-500" onClick={() => setConfirmDeleteId(null)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button variant="ghost" size="sm" className="text-zinc-500 hover:text-red-400 hover:bg-red-500/10" onClick={() => setConfirmDeleteId(d.id)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

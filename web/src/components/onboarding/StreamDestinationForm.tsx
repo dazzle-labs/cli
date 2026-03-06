@@ -18,6 +18,7 @@ interface StreamDestinationFormProps {
   hideSkip?: boolean;
   compact?: boolean;
   streamKeyOptional?: boolean;
+  lockedPlatform?: string;
 }
 
 const platforms = [
@@ -44,6 +45,14 @@ const platformNamePlaceholders: Record<string, string> = {
   custom: "e.g. My RTMP destination",
 };
 
+const platformStreamKeyHelp: Record<string, string> = {
+  twitch: "Find your stream key at dashboard.twitch.tv/settings/stream. Click 'Copy' next to Primary Stream Key.",
+  youtube: "Go to studio.youtube.com, click 'Go live', then copy the stream key from the Stream Settings panel.",
+  kick: "Go to kick.com/dashboard/settings/stream, and copy the stream key shown there.",
+  restream: "Log into restream.io, go to Streaming Setup, and copy the stream key for your RTMP URL.",
+  custom: "Check your streaming platform's dashboard for the RTMP URL and stream key.",
+};
+
 export function StreamDestinationForm({
   onNext,
   verbose,
@@ -52,12 +61,13 @@ export function StreamDestinationForm({
   hideSkip,
   compact,
   streamKeyOptional,
+  lockedPlatform,
 }: StreamDestinationFormProps) {
   const [name, setName] = useState(initial?.name ?? "");
-  const [platform, setPlatform] = useState(initial?.platform ?? "custom");
-  const [rtmpUrl, setRtmpUrl] = useState(initial?.rtmpUrl ?? "");
+  const [platform, setPlatform] = useState(lockedPlatform ?? initial?.platform ?? "custom");
+  const [rtmpUrl, setRtmpUrl] = useState(initial?.rtmpUrl || platformRtmpDefaults[lockedPlatform ?? initial?.platform ?? "custom"] || "");
   const [streamKey, setStreamKey] = useState(initial?.streamKey ?? "");
-  const [showHelp, setShowHelp] = useState(false);
+  const [showHelp, setShowHelp] = useState(!!verbose);
 
   function handlePlatformChange(value: string) {
     setPlatform(value);
@@ -111,23 +121,25 @@ export function StreamDestinationForm({
 
       <form onSubmit={handleSubmit} className={compact ? "w-full" : "w-full max-w-md mt-4"}>
         <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-6 flex flex-col gap-5">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-medium text-zinc-500 mb-1.5 block">
-                Platform
-              </label>
-              <select
-                className="flex h-9 w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1 text-sm text-zinc-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500/50 transition-colors"
-                value={platform}
-                onChange={(e) => handlePlatformChange(e.target.value)}
-              >
-                {platforms.map((p) => (
-                  <option key={p.value} value={p.value}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <div className={lockedPlatform ? "" : "grid grid-cols-2 gap-4"}>
+            {!lockedPlatform && (
+              <div>
+                <label className="text-xs font-medium text-zinc-500 mb-1.5 block">
+                  Platform
+                </label>
+                <select
+                  className="flex h-9 w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1 text-sm text-zinc-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500/50 transition-colors"
+                  value={platform}
+                  onChange={(e) => handlePlatformChange(e.target.value)}
+                >
+                  {platforms.map((p) => (
+                    <option key={p.value} value={p.value}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div>
               <label className="text-xs font-medium text-zinc-500 mb-1.5 block">
@@ -166,6 +178,11 @@ export function StreamDestinationForm({
               placeholder={streamKeyOptional ? "Leave blank to keep current key" : "Your stream key"}
               required={!streamKeyOptional}
             />
+            {(verbose || showHelp) && platformStreamKeyHelp[platform] && (
+              <p className="text-xs text-zinc-600 mt-1.5 leading-relaxed">
+                {platformStreamKeyHelp[platform]}
+              </p>
+            )}
           </div>
 
           <Button

@@ -3,6 +3,8 @@ import { Copy, Check, ChevronDown, ChevronRight } from "lucide-react";
 import { FRAMEWORKS } from "@/components/onboarding/frameworks";
 import { MCP_TOOLS } from "@/components/onboarding/mcp-tools";
 import { ENDPOINT_GROUPS } from "@/components/onboarding/api-endpoints";
+import { FrameworkIcon } from "@/components/FrameworkIcon";
+import { CopyAgentPromptButton } from "@/components/CopyAgentPromptButton";
 
 const MCP_URL = `${window.location.origin}/stage/YOUR_UUID/mcp`;
 
@@ -12,6 +14,7 @@ export function Docs() {
   const [expandedTool, setExpandedTool] = useState<string | null>(null);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [expandedEndpoint, setExpandedEndpoint] = useState<string | null>(null);
+  const [activeFramework, setActiveFramework] = useState(FRAMEWORKS[0].id);
 
   async function copy(text: string, id: string) {
     await navigator.clipboard.writeText(text);
@@ -39,19 +42,25 @@ export function Docs() {
     null, 2
   );
 
+  const activeFw = FRAMEWORKS.find((fw) => fw.id === activeFramework) ?? FRAMEWORKS[0];
+  const activeSnippet = activeFw.getSnippet(MCP_URL, "");
+
   return (
     <div>
       {/* Header */}
-      <div className="mb-8">
-        <h1
-          className="text-3xl tracking-[-0.02em] text-white mb-1"
-          style={{ fontFamily: "'DM Serif Display', serif" }}
-        >
-          Docs
-        </h1>
-        <p className="text-sm text-zinc-500">
-          Connect your agent to Dazzle via MCP.
-        </p>
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1
+            className="text-3xl tracking-[-0.02em] text-white mb-1"
+            style={{ fontFamily: "'DM Serif Display', serif" }}
+          >
+            Docs
+          </h1>
+          <p className="text-sm text-zinc-500">
+            Connect your agent to Dazzle via MCP.
+          </p>
+        </div>
+        <CopyAgentPromptButton variant="compact" />
       </div>
 
       {/* Endpoint format */}
@@ -84,7 +93,7 @@ export function Docs() {
         </p>
       </div>
 
-      {/* Framework snippets */}
+      {/* Framework snippets — tabbed */}
       <h2
         className="text-xl tracking-[-0.02em] text-white mb-1"
         style={{ fontFamily: "'DM Serif Display', serif" }}
@@ -95,29 +104,46 @@ export function Docs() {
         Copy the snippet for your framework. Replace <code className="text-zinc-400 bg-white/[0.04] px-1 py-0.5 rounded text-xs">YOUR_UUID</code> with a fixed UUID per project.
       </p>
 
-      <div className="flex flex-col gap-3 mb-4">
-        {FRAMEWORKS.map((fw) => {
-          const snippet = fw.getSnippet(MCP_URL, "");
-          return (
-            <div key={fw.id} className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.06]">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-zinc-300">{fw.name}</span>
-                  <span className="text-xs text-zinc-600">{fw.language}</span>
-                </div>
-                <CopyBtn id={fw.id} text={snippet} />
-              </div>
-              <pre className="p-4 text-sm font-mono text-zinc-300 overflow-x-auto leading-relaxed whitespace-pre-wrap">
-                {snippet}
-              </pre>
-            </div>
-          );
-        })}
+      {/* Framework tab bar */}
+      <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
+        {FRAMEWORKS.map((fw) => (
+          <button
+            key={fw.id}
+            type="button"
+            onClick={() => setActiveFramework(fw.id)}
+            className={
+              fw.id === activeFramework
+                ? "flex items-center gap-2 bg-emerald-500/10 text-emerald-400 text-xs px-3 py-2 rounded-lg font-medium shrink-0 cursor-pointer"
+                : "flex items-center gap-2 text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.03] text-xs px-3 py-2 rounded-lg shrink-0 cursor-pointer"
+            }
+          >
+            <FrameworkIcon id={fw.id} className="h-4 w-4" />
+            {fw.name}
+          </button>
+        ))}
+      </div>
 
-        {/* Claude Code JSON config (additional) */}
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+      {/* Active framework snippet */}
+      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden mb-4">
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.06]">
+          <div className="flex items-center gap-3">
+            <FrameworkIcon id={activeFw.id} className="h-4 w-4 text-emerald-400" />
+            <span className="text-sm font-medium text-zinc-300">{activeFw.name}</span>
+            <span className="text-xs text-zinc-600">{activeFw.language}</span>
+          </div>
+          <CopyBtn id={activeFw.id} text={activeSnippet} />
+        </div>
+        <pre className="p-4 text-sm font-mono text-zinc-300 overflow-x-auto leading-relaxed whitespace-pre-wrap">
+          {activeSnippet}
+        </pre>
+      </div>
+
+      {/* Claude Code .mcp.json variant (shown when claude-code is selected) */}
+      {activeFramework === "claude-code" && (
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden mb-4">
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.06]">
             <div className="flex items-center gap-3">
+              <FrameworkIcon id="claude-code" className="h-4 w-4 text-emerald-400" />
               <span className="text-sm font-medium text-zinc-300">Claude Code</span>
               <span className="text-xs text-zinc-600">.mcp.json</span>
             </div>
@@ -127,7 +153,7 @@ export function Docs() {
             {claudeJsonSnippet}
           </pre>
         </div>
-      </div>
+      )}
 
       {/* Scoping section */}
       <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
@@ -233,7 +259,7 @@ export function Docs() {
                     {tool.params.length > 0 && (
                       <div>
                         <p className="text-xs font-medium text-zinc-400 mb-2">Parameters</p>
-                        <div className="rounded-lg border border-white/[0.06] overflow-hidden">
+                        <div className="rounded-lg border border-white/[0.06] overflow-hidden overflow-x-auto">
                           <table className="w-full text-xs">
                             <thead>
                               <tr className="bg-white/[0.02] text-zinc-500">
@@ -352,7 +378,7 @@ export function Docs() {
                                 {ep.params && ep.params.length > 0 && (
                                   <div>
                                     <p className="text-xs font-medium text-zinc-400 mb-2">Request fields</p>
-                                    <div className="rounded-lg border border-white/[0.06] overflow-hidden">
+                                    <div className="rounded-lg border border-white/[0.06] overflow-hidden overflow-x-auto">
                                       <table className="w-full text-xs">
                                         <thead>
                                           <tr className="bg-white/[0.02] text-zinc-500">
@@ -404,6 +430,18 @@ export function Docs() {
             </div>
           );
         })}
+      </div>
+
+      {/* llms.txt link */}
+      <div className="mt-8 text-center">
+        <a
+          href="/llms.txt"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-zinc-600 hover:text-emerald-400 transition-colors"
+        >
+          View llms.txt for AI agent consumption
+        </a>
       </div>
     </div>
   );
