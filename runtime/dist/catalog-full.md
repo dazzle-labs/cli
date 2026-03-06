@@ -355,3 +355,120 @@ Props:
 ## State Expressions
 Use { "$state": "/path/to/value" } in props to bind to live state.
 Update state with stateSet tool using JSON Pointer paths.
+
+
+# Available Stream Components
+
+## Design Principles — 1920×1080 Broadcast Canvas
+
+**Canvas & Scale:**
+The canvas is 1920×1080 (16:9 broadcast). Design for a large screen, not a phone.
+- Hero headings: 64–120px (6–11% of viewport height). These should command the frame.
+- Subheadings: 36–56px. Body text: 24–36px. Captions/badges: 16–24px.
+- Never use font sizes below 16px — they are invisible on broadcast displays.
+
+**Space Utilization:**
+- Fill the frame. Use full-bleed backgrounds (Gradient/Image with width: 100%, height: 100%).
+- Avoid maxWidth constraints that box content into a narrow column. The canvas is 1920px wide — use it.
+- If content is centered, it should still span at least 60–80% of the frame width.
+- Edge-to-edge layouts (Grid, Split) are preferred over centered stacks for multi-element scenes.
+
+**Composition:**
+- Think broadcast/keynote, not web page. Reference: Apple Keynote, ESPN graphics, Bloomberg terminals.
+- Every element should feel intentional at scale. If it would not be visible from 10 feet away, make it bigger.
+- Use padding (48–80px) instead of maxWidth for breathing room.
+
+**Color:**
+- Each scene should use ONE primary color family with at most 2 accent colors. Do not mix 4–5 different hues in one scene.
+- Broadcast color: backgrounds are deep and saturated (not grey). Text is white or near-white. Accent colors are bold and limited. Think CNN red, Bloomberg blue, ESPN yellow — one dominant brand color per segment.
+- Avoid web-UI grey palettes (#161b22, #0d1117, #30363d). These read as GitHub dark mode, not broadcast. Use rich darks: deep navy (#0a1628), broadcast black (#101820), or warm dark (#1a1412).
+- When in doubt, fewer colors is better. A scene with one bold color and white text always looks more professional than a rainbow.
+
+**Visual Sizing Rules:**
+- Emoji as visual icons: When using emoji as a decorative/hero element (not inline text), set fontSize to at least 80px (standalone hero) or 48px (inside cards/badges). Emoji render at the font-size of their container.
+- Minimum element size: No informational element should be smaller than 40px in its smallest dimension on the 1920x1080 canvas.
+- Decorative opacity: Never go below 0.5 opacity — it becomes invisible noise on broadcast. Either commit (0.7+) or remove the element.
+
+**Animation:**
+- Use Animate/Stagger for entrance animations. Static scenes feel cheap.
+- Keep durations 400–1000ms. Faster = snappy, slower = cinematic.
+
+---
+
+## Workflow — Broadcast Delivery
+
+- After reading this catalog, call sceneSet for your first scene IMMEDIATELY. Do not plan everything upfront.
+- Build scenes incrementally with scenePatch. Don't front-load all elements into sceneSet — establish the background and hero element, then patch in supporting elements (lower thirds, data, tickers) one at a time.
+- Pacing: aim for a new visual element every 3-5 seconds. Think about what a narrator would say for each beat.
+- Use sceneSet only for the first scene and major segment transitions. Use scenePatch for everything else.
+
+**Broadcast aesthetic — NOT web design:**
+- Full-bleed, edge-to-edge. Broadcast fills the frame aggressively. No centered cards with padding and border-radius.
+- Use the entire 1920x1080 canvas. Content should span 80%+ of the frame width.
+- No visible containers, no card borders, no box shadows. Content floats directly on rich backgrounds.
+- This is motion graphics, not a website. Think CNN/ESPN/Apple Keynote, not a dashboard.
+
+You can compose scenes using sceneSet and scenePatch MCP tools.
+A scene is a flat map of elements, each referencing a component by type name.
+
+## Spec Format
+```
+{
+  "root": "element-key",
+  "elements": {
+    "element-key": {
+      "type": "ComponentName",
+      "props": { ... },
+      "children": ["child-key-1", "child-key-2"],
+      "slot": "main" | "sidebar" | "status" | "lower_third"
+    }
+  },
+  "state": { ... }
+}
+```
+
+## Components
+
+### StatusBar
+Top bar showing current activity and session statistics.
+Props:
+- title: What the agent is currently doing
+- detail (optional): Additional context
+- stats (optional): Session statistics
+
+### CodeView
+Syntax-highlighted code display with file path header and line numbers.
+Props:
+- path: File path being displayed
+- code: The code content
+- language (optional): Language for syntax hints (ts, py, rs, etc.)
+- highlights (optional): Line numbers to highlight
+
+### DiffView
+Side-by-side or inline diff showing old and new text with red/green highlighting.
+Props:
+- path: File path being diffed
+- oldText: Original text
+- newText: New text
+- language (optional): Language for syntax hints
+
+### TerminalView
+Terminal output display showing a command and its results.
+Props:
+- command: The command that was run
+- output: Command output
+- exitCode (optional): Exit code (0 = success)
+
+### EventTimeline
+Scrolling timeline of session events. Reads events from state at "/events". Each event: { type, summary, detail?, timestamp }.
+Props:
+- maxVisible (optional): Max events to show (default 50)
+
+### ProgressPanel
+Task checklist with status indicators.
+Props:
+- tasks: 
+
+## State Expressions
+Use { "$state": "/path/to/value" } in props to bind to live state.
+Update state with stateSet tool using JSON Pointer paths.

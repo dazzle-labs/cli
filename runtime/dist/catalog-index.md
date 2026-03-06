@@ -51,3 +51,18 @@ Use `catalogRead` with `detail: "full"` and `category` or `component` to see ful
 
 All components accept an optional `style` prop (CSS overrides).
 Use `{ "$state": "/path" }` in any prop to bind to live state.
+
+# Component Catalog Index
+
+Use `catalogRead` with `detail: "full"` and `category` or `component` to see full schemas.
+
+## Other
+- **StatusBar** -- Top bar showing current activity and session statistics.
+- **CodeView** -- Syntax-highlighted code display with file path header and line numbers.
+- **DiffView** -- Side-by-side or inline diff showing old and new text with red/green highlighting.
+- **TerminalView** -- Terminal output display showing a command and its results.
+- **EventTimeline** -- Scrolling timeline of session events. Reads events from state at "/events". Each event: { type, summary, detail?, timestamp }.
+- **ProgressPanel** -- Task checklist with status indicators.
+
+All components accept an optional `style` prop (CSS overrides).
+Use `{ "$state": "/path" }` in any prop to bind to live state.
