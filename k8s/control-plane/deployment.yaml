@@ -57,6 +57,8 @@ spec:
               value: browser-streamer
             - name: STREAMER_IMAGE
               value: dazzlefm/agent-streamer-stage:main
+            - name: IMAGE_PULL_SECRET
+              value: dazzlefm-dockerhub-secret
             - name: MAX_SESSIONS
               value: "3"
           resources:

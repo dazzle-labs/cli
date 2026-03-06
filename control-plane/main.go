@@ -67,8 +67,9 @@ type Manager struct {
 	clientset     *kubernetes.Clientset
 	namespace     string
 	streamerImage string
-	podToken      string // internal token for streamer pod auth
-	maxStages     int
+	podToken         string // internal token for streamer pod auth
+	maxStages        int
+	imagePullSecrets []corev1.LocalObjectReference
 	db            *sql.DB
 	auth          *authenticator
 	encryptionKey []byte
@@ -133,6 +134,10 @@ func NewManager() (*Manager, error) {
 		db:            db,
 		auth:          newAuthenticator(db, clerkSecretKey),
 		encryptionKey: encKey,
+	}
+
+	if secret := os.Getenv("IMAGE_PULL_SECRET"); secret != "" {
+		m.imagePullSecrets = []corev1.LocalObjectReference{{Name: secret}}
 	}
 
 	if err := m.recoverStages(); err != nil {
@@ -237,9 +242,7 @@ func (m *Manager) createStage(requestedID string) (*Stage, error) {
 		},
 		Spec: corev1.PodSpec{
 			RestartPolicy: corev1.RestartPolicyNever,
-			ImagePullSecrets: []corev1.LocalObjectReference{
-				{Name: "dazzlefm-dockerhub-secret"},
-			},
+			ImagePullSecrets: m.imagePullSecrets,
 			Containers: []corev1.Container{
 				{
 					Name:  "streamer",
