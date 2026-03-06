@@ -34,6 +34,7 @@ checksum:
 changelog:
   sort: asc
   use: github
+  format: "{{.Message}}"
   groups:
     - title: New features
       regexp: '^.*feat[\(:]'
