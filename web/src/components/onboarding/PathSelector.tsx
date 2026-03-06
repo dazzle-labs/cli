@@ -1,4 +1,5 @@
 import { Zap, BookOpen } from "lucide-react";
+import { CopyAgentPromptButton } from "@/components/CopyAgentPromptButton";
 
 interface PathSelectorProps {
   onSelect: (path: "experienced" | "guided") => void;
@@ -44,9 +45,13 @@ export function PathSelector({ onSelect }: PathSelectorProps) {
             I'm new to this
           </h3>
           <p className="text-xs text-zinc-500 leading-relaxed">
-            Guided walkthrough in 5 steps. We'll explain everything along the way.
+            Guided walkthrough with explanations along the way.
           </p>
         </button>
+      </div>
+
+      <div className="w-full max-w-lg mt-4">
+        <CopyAgentPromptButton variant="full" />
       </div>
     </div>
   );

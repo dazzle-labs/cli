@@ -16,10 +16,11 @@ export function EndpointCreator({ onCreated, verbose, skipApiKey }: EndpointCrea
   const [stage, setStage] = useState<Stage | null>(null);
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const started = useRef(false);
 
   useEffect(() => {
-    if (started.current) return;
+    if (started.current && attempt === 0) return;
     started.current = true;
 
     async function create() {
@@ -53,7 +54,7 @@ export function EndpointCreator({ onCreated, verbose, skipApiKey }: EndpointCrea
     }
 
     create();
-  }, []);
+  }, [attempt]);
 
   return (
     <div className="flex flex-col items-center">
@@ -82,7 +83,19 @@ export function EndpointCreator({ onCreated, verbose, skipApiKey }: EndpointCrea
 
         {status === "error" && (
           <div className="rounded-xl border border-red-500/20 bg-red-500/[0.05] p-6 text-center">
-            <p className="text-sm text-red-400">{error}</p>
+            <p className="text-sm text-red-400 mb-3">{error}</p>
+            <Button
+              onClick={() => {
+                setStatus("creating");
+                setError(null);
+                setAttempt((a) => a + 1);
+              }}
+              variant="ghost"
+              size="sm"
+              className="text-zinc-400 hover:text-white"
+            >
+              Try again
+            </Button>
           </div>
         )}
 

@@ -1,22 +1,35 @@
 # Dazzle — Agent Connection Guide
 
-> Dazzle gives AI agents a cloud environment they can control via MCP (Model Context Protocol). This document explains how to connect your agent.
+> Dazzle gives AI agents a cloud browser environment they can control via MCP (Model Context Protocol). This document explains how to connect your agent.
 
-## Quick Start
+## Setup Prompt
 
-1. Create a stage via the dashboard or API
-2. Get an API key from the dashboard or API
-3. Configure your agent framework with the MCP endpoint
+If you are an AI agent being configured to use Dazzle, follow these steps:
+
+1. Ask the user for their Dazzle API key (or have them create one at the dashboard under API Keys)
+2. Set it as an environment variable: `export DAZZLE_API_KEY=<key>`
+3. Create a stage via the dashboard or API, and note the stage UUID
+4. Configure your MCP connection using the URL format below
 
 ## MCP Endpoint
 
 ```
-URL: https://<your-host>/mcp/<stage-id>
+URL: https://<your-host>/stage/<stage-id>/mcp
 Auth: Bearer <api-key>
-Transport: Streamable HTTP
+Transport: http (Streamable HTTP)
 ```
 
+Each stage UUID maps to an isolated environment. Use a consistent UUID per project.
+
 ## Framework Configuration
+
+### Claude Code (CLI)
+
+```shell
+claude mcp add dazzle https://<your-host>/stage/<stage-id>/mcp \
+  --transport http \
+  --header "Authorization: Bearer $DAZZLE_API_KEY"
+```
 
 ### Claude Code (.mcp.json)
 
@@ -24,10 +37,10 @@ Transport: Streamable HTTP
 {
   "mcpServers": {
     "dazzle": {
-      "type": "streamablehttp",
-      "url": "https://<your-host>/mcp/<stage-id>",
+      "type": "http",
+      "url": "https://<your-host>/stage/<stage-id>/mcp",
       "headers": {
-        "Authorization": "Bearer <api-key>"
+        "Authorization": "Bearer ${DAZZLE_API_KEY}"
       }
     }
   }
@@ -37,11 +50,12 @@ Transport: Streamable HTTP
 ### OpenAI Agents SDK (Python)
 
 ```python
+import os
 from agents.mcp import MCPServerStreamableHTTP
 
 dazzle = MCPServerStreamableHTTP(
-    url="https://<your-host>/mcp/<stage-id>",
-    headers={"Authorization": "Bearer <api-key>"},
+    url="https://<your-host>/stage/<stage-id>/mcp",
+    headers={"Authorization": f"Bearer {os.environ['DAZZLE_API_KEY']}"},
 )
 
 agent = Agent(
@@ -55,19 +69,20 @@ agent = Agent(
 ```yaml
 mcp_servers:
   dazzle:
-    url: "https://<your-host>/mcp/<stage-id>"
+    url: "https://<your-host>/stage/<stage-id>/mcp"
     headers:
-      Authorization: "Bearer <api-key>"
+      Authorization: "Bearer ${DAZZLE_API_KEY}"
 ```
 
 ### CrewAI (Python)
 
 ```python
+import os
 from crewai.tools import MCPServerAdapter
 
 dazzle = MCPServerAdapter(
-    server_url="https://<your-host>/mcp/<stage-id>",
-    headers={"Authorization": "Bearer <api-key>"},
+    server_url="https://<your-host>/stage/<stage-id>/mcp",
+    headers={"Authorization": f"Bearer {os.environ['DAZZLE_API_KEY']}"},
 )
 
 agent = Agent(
@@ -79,12 +94,13 @@ agent = Agent(
 ### LangGraph (Python)
 
 ```python
+import os
 from langchain_mcp_adapters.client import MCPClient
 
 client = MCPClient(
     transport="streamable_http",
-    url="https://<your-host>/mcp/<stage-id>",
-    headers={"Authorization": "Bearer <api-key>"},
+    url="https://<your-host>/stage/<stage-id>/mcp",
+    headers={"Authorization": f"Bearer {os.environ['DAZZLE_API_KEY']}"},
 )
 
 tools = await client.get_tools()
@@ -93,11 +109,12 @@ tools = await client.get_tools()
 ### AutoGen (Python)
 
 ```python
+import os
 from autogen_ext.tools.mcp import McpWorkbench
 
 workbench = McpWorkbench(
-    server_url="https://<your-host>/mcp/<stage-id>",
-    headers={"Authorization": "Bearer <api-key>"},
+    server_url="https://<your-host>/stage/<stage-id>/mcp",
+    headers={"Authorization": f"Bearer {os.environ['DAZZLE_API_KEY']}"},
 )
 
 agent = AssistantAgent(
@@ -106,39 +123,90 @@ agent = AssistantAgent(
 )
 ```
 
-## API Reference
+## MCP Tools
 
-All endpoints require `Authorization: Bearer <api-key>` header or `?token=<api-key>` query parameter.
+Once connected via MCP, your agent has access to these tools:
 
-### Stages
+### start
+Activate your stage. Call this before using any other tools. Returns status when ready. Your stage gives you a browser you can render content in, capture screenshots, and stream to platforms like Twitch and YouTube. Starting the stage does NOT begin streaming — use the obs tool with ["st", "s"] to go live when you're ready.
+- No parameters.
 
-- `POST /api/session` — Create a new stage. Returns `{session: {id, directPort, status}}`.
-- `GET /api/sessions` — List all active stages.
-- `GET /api/session/:id` — Get stage details.
-- `DELETE /api/session/:id` — Destroy a stage.
+### stop
+Deactivate your stage. Shuts down the browser and releases cloud resources. Call start to bring it back — stream destinations are preserved, but the panel script will need to be re-set.
+- No parameters.
 
-### API Keys
+### status
+Get the current status of your stage (active/inactive/starting).
+- No parameters.
 
-- `POST /api/apikey` — Create a new API key. Body: `{name: string}`. Returns `{key: {id, name, prefix}, secret: string}`. The secret is only shown once.
-- `GET /api/apikeys` — List all API keys (secrets are not returned).
-- `DELETE /api/apikey/:id` — Delete an API key.
+### set_script
+Set JavaScript or JSX content to render in your stage's browser. Write vanilla JS (append to document.body) or React JSX (define const App and it auto-mounts). React hooks, Zustand, and Tailwind CSS are available as globals — no imports needed. Changes are hot-swapped with no page reload. Requires an active stage (call start first).
+- `script` (string, required): JavaScript or JSX code to render.
 
-### Health
+### get_script
+Get the current JavaScript content being rendered in your stage's browser. Requires an active stage (call start first).
+- No parameters.
 
-- `GET /health` — Returns `{status: "ok"}`. No auth required.
+### edit_script
+Edit the current JavaScript content by finding and replacing a string. The old_string must exist exactly once in the current code. Changes are hot-swapped with no page reload. Requires an active stage (call start first).
+- `old_string` (string, required): The exact string to find in the current code.
+- `new_string` (string, required): The replacement string.
+
+### screenshot
+Capture a screenshot of your stage's current output as a PNG image. Requires an active stage (call start first).
+- No parameters.
+
+### obs
+Control OBS — manage scenes, inputs, streaming, recording, and audio. Requires an active stage (call start first). Note: starting a stage does NOT go live automatically — use "st s" to start streaming when ready, and "st st" to stop.
+- `args` (string[], required): OBS command arguments, e.g. ["st", "s"] to start streaming, ["sc", "ls"] to list scenes.
 
 ## Stage Lifecycle
 
-1. **Create**: `POST /api/session` spins up an ephemeral cloud environment.
-2. **Poll**: The stage status transitions from `pending` to `running` when ready (typically 5-15 seconds).
-3. **Connect**: Once running, connect via `https://<host>/mcp/<stage-id>` using Streamable HTTP transport.
-4. **Use**: Your agent can navigate, click, type, screenshot, and extract data.
-5. **Stream**: Optionally start an HLS stream for live viewing.
-6. **Destroy**: Stages auto-destroy after idle timeout (default 10 min) or via `DELETE /api/session/:id`.
+1. **Create**: Create a stage via the dashboard or `POST /api.v1.StageService/CreateStage`. The stage starts as `inactive` — no pod is provisioned yet.
+2. **Activate**: Connect your agent to `https://<host>/stage/<stage-id>/mcp` and call the `start` MCP tool. The stage transitions to `starting`, then `running`.
+3. **Use**: Once running, your agent can set scripts, take screenshots, and control OBS.
+4. **Stream**: Optionally start streaming with `obs ["st", "s"]`. Requires a stream destination to be configured and linked to the stage.
+5. **Stop**: Call the `stop` MCP tool or delete the stage via dashboard/API.
+
+## API Reference (ConnectRPC)
+
+All services use `POST` with path `https://<host>/api.v1.<Service>/<Method>`.
+Authenticate with `Authorization: Bearer <token>` header.
+Supports Connect, gRPC, and gRPC-Web protocols with Protobuf and JSON codecs.
+
+### StageService
+
+- `POST /api.v1.StageService/CreateStage` — Create a stage record. Body: `{name?: string}`. Returns `{stage: {id, name, status}}`.
+- `POST /api.v1.StageService/ListStages` — List all stages. Body: `{}`. Returns `{stages: [...]}`.
+- `POST /api.v1.StageService/GetStage` — Get stage by ID. Body: `{id: string}`. Returns `{stage: {...}}`.
+- `POST /api.v1.StageService/DeleteStage` — Delete stage. Body: `{id: string}`. Returns `{}`.
+
+### ApiKeyService
+
+- `POST /api.v1.ApiKeyService/CreateApiKey` — Create API key. Body: `{name: string}`. Returns `{key: {id, name, prefix}, secret: string}`. The secret is only shown once.
+- `POST /api.v1.ApiKeyService/ListApiKeys` — List API keys. Body: `{}`. Returns `{keys: [...]}`.
+- `POST /api.v1.ApiKeyService/DeleteApiKey` — Delete API key. Body: `{id: string}`. Returns `{}`.
+
+### RtmpDestinationService
+
+- `POST /api.v1.RtmpDestinationService/CreateStreamDestination` — Create stream destination. Body: `{name, platform, rtmpUrl, streamKey, enabled}`.
+- `POST /api.v1.RtmpDestinationService/ListStreamDestinations` — List destinations. Body: `{}`.
+- `POST /api.v1.RtmpDestinationService/UpdateStreamDestination` — Update destination. Body: `{id, name?, platform?, rtmpUrl?, streamKey?, enabled?}`.
+- `POST /api.v1.RtmpDestinationService/DeleteStreamDestination` — Delete destination. Body: `{id: string}`.
+
+### UserService
+
+- `POST /api.v1.UserService/GetProfile` — Get user profile. Body: `{}`. Returns `{userId, email, name, stageCount, apiKeyCount}`.
+
+### HTTP Endpoints
+
+- `GET /health` — Health check. Returns `{status: "ok"}`. No auth required.
+- `GET /stage/<uuid>/cdp` — Chrome DevTools Protocol discovery (requires active stage).
+- `ANY /stage/<id>/*` — Reverse proxy to active stage.
 
 ## Concepts
 
-- **Stage**: An ephemeral cloud environment your agent can control. Each stage has a unique ID and a dedicated MCP endpoint.
-- **API Key**: Authentication credential for the API and MCP endpoints. Create via dashboard or API.
+- **Stage**: An isolated cloud browser environment your agent controls. Each stage has a unique UUID and a dedicated MCP endpoint. Stages are inactive by default and must be activated via the `start` MCP tool.
+- **API Key**: Authentication credential for API and MCP endpoints. Prefix: `bstr_`.
 - **MCP (Model Context Protocol)**: The protocol agents use to interact with stages. Dazzle exposes an MCP server per stage via Streamable HTTP transport.
-- **HLS Stream**: Optional live video stream of the stage. Start via the stage's streaming API.
+- **Stream Destination**: An RTMP destination (Twitch, YouTube, Kick, Restream, or custom) that a stage can stream to.
