@@ -1,0 +1,2 @@
+{"type":"tool_call","timestamp":1772757252596,"elapsed":8.2,"tool":"sceneSet","input":{}}
+{"type":"system","timestamp":1772757252596,"elapsed":8.2,"subtype":"step_finish","data":{"stepNumber":1,"toolCalls":1}}

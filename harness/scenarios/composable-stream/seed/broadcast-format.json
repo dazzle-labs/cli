@@ -1,0 +1,17 @@
+{
+  "segments": [
+    {"type": "opening", "duration_seconds": 30, "desk": "anchor"},
+    {"type": "situation-report", "duration_seconds": 120, "desk": "situation-room"},
+    {"type": "satirical-break", "duration_seconds": 60, "desk": "onion-desk"},
+    {"type": "analysis", "duration_seconds": 90, "desk": "editorial"},
+    {"type": "situation-update", "duration_seconds": 60, "desk": "situation-room"},
+    {"type": "closing-satire", "duration_seconds": 45, "desk": "onion-desk"},
+    {"type": "wrap-up", "duration_seconds": 30, "desk": "anchor"}
+  ],
+  "desks": {
+    "anchor": {"tone": "authoritative", "style": "traditional-broadcast"},
+    "situation-room": {"tone": "serious", "style": "data-driven"},
+    "onion-desk": {"tone": "deadpan-satirical", "style": "the-onion"},
+    "editorial": {"tone": "analytical", "style": "essay"}
+  }
+}

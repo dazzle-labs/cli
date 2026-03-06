@@ -1,0 +1,22 @@
+{
+  "scenario": "hello-world",
+  "sessionId": "2026-03-06T00-34-04-hello-world",
+  "stageId": "806eecc5-d76e-4974-a7ba-1a6528ae4ca4",
+  "startTime": 1772757244369,
+  "endTime": 1772757252601,
+  "durationMs": 8232,
+  "durationFormatted": "8s",
+  "toolCallCount": 1,
+  "snapshotCount": 0,
+  "exitCode": 0,
+  "videoPath": "/Users/johnsabath/projects/browser-streamer/harness/sessions/2026-03-06T00-34-04-hello-world/capture.mp4",
+  "toolCallSummary": {
+    "sceneSet": 1
+  },
+  "snapshotsByType": {
+    "snapshot": 0,
+    "script": 0
+  },
+  "firstScene": null,
+  "lastScene": null
+}

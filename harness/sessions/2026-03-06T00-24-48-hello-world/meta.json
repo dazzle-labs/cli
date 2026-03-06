@@ -1,0 +1,20 @@
+{
+  "scenario": "hello-world",
+  "sessionId": "2026-03-06T00-24-48-hello-world",
+  "stageId": "806eecc5-d76e-4974-a7ba-1a6528ae4ca4",
+  "startTime": 1772756688889,
+  "endTime": 1772756691910,
+  "durationMs": 3021,
+  "durationFormatted": "3s",
+  "toolCallCount": 0,
+  "snapshotCount": 0,
+  "exitCode": 1,
+  "evaluationPath": "/Users/johnsabath/projects/browser-streamer/harness/sessions/2026-03-06T00-24-48-hello-world/evaluation.md",
+  "toolCallSummary": {},
+  "snapshotsByType": {
+    "snapshot": 0,
+    "script": 0
+  },
+  "firstScene": null,
+  "lastScene": null
+}

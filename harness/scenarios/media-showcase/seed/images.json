@@ -1,0 +1,62 @@
+{
+  "hero": {
+    "url": "https://picsum.photos/seed/alpine/1920/1080",
+    "caption": "Alpine Summit",
+    "description": "Mountain landscape at golden hour"
+  },
+  "gallery": [
+    {
+      "url": "https://picsum.photos/seed/coast/800/600",
+      "caption": "Coastal Cliffs",
+      "description": "Dramatic sea cliffs at sunset"
+    },
+    {
+      "url": "https://picsum.photos/seed/forest/800/600",
+      "caption": "Ancient Forest",
+      "description": "Old-growth forest canopy"
+    },
+    {
+      "url": "https://picsum.photos/seed/desert/800/600",
+      "caption": "Desert Dunes",
+      "description": "Saharan sand formations"
+    },
+    {
+      "url": "https://picsum.photos/seed/arctic/800/600",
+      "caption": "Arctic Ice",
+      "description": "Glacial formations under polar light"
+    },
+    {
+      "url": "https://picsum.photos/seed/volcano/800/600",
+      "caption": "Volcanic Ridge",
+      "description": "Active volcanic landscape"
+    },
+    {
+      "url": "https://picsum.photos/seed/canyon/800/600",
+      "caption": "Grand Canyon",
+      "description": "Layered canyon walls at dawn"
+    }
+  ],
+  "portraits": [
+    {
+      "url": "https://picsum.photos/seed/face1/600/800",
+      "name": "Dr. Elena Vasquez",
+      "title": "Lead Researcher, Earth Sciences"
+    },
+    {
+      "url": "https://picsum.photos/seed/face2/600/800",
+      "name": "James Okafor",
+      "title": "Documentary Photographer"
+    },
+    {
+      "url": "https://picsum.photos/seed/face3/600/800",
+      "name": "Yuki Tanaka",
+      "title": "Conservation Director"
+    }
+  ],
+  "textures": [
+    "https://picsum.photos/seed/marble/1920/1080",
+    "https://picsum.photos/seed/concrete/1920/1080",
+    "https://picsum.photos/seed/wood/1920/1080"
+  ],
+  "note": "All URLs use picsum.photos with deterministic seeds for reproducible images. Aspect ratios are intentional: hero is 16:9, gallery is 4:3, portraits are 3:4."
+}

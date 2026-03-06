@@ -18,8 +18,11 @@
     "noUncheckedSideEffectImports": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@runtime/*": ["../runtime/*"],
+      "zod": ["./node_modules/zod"],
+      "react": ["./node_modules/@types/react"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "../runtime/core"]
 }

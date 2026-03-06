@@ -1,0 +1,12 @@
+{
+  "user": {
+    "name": "Alex",
+    "timezone": "America/Los_Angeles",
+    "preferences": {
+      "communication_style": "concise and professional",
+      "budget_sensitivity": "moderate",
+      "dietary_restrictions": ["vegetarian"],
+      "travel_class": "business"
+    }
+  }
+}

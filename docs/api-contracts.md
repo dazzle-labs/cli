@@ -475,13 +475,18 @@ Auth: Required (Clerk JWT or API key)
 
 | Tool | Args | Returns |
 |------|------|---------|
-| `start` | (none) | `{"status": "running"}` or `{"status": "already_running"}` |
-| `stop` | (none) | `{"status": "stopped"}` or `{"status": "already_stopped"}` |
-| `status` | (none) | `{"status": "running\|stopped\|starting"}` |
-| `set_script` | `script: string` | Pod response JSON |
-| `get_script` | (none) | `{"script": "..."}` |
-| `edit_script` | `old_string: string, new_string: string` | Updated script JSON |
-| `emit_event` | `event: string, data: JSON` | Pod response JSON |
+| `start` | (none) | `{"status": "running"}` |
+| `stop` | (none) | `{"status": "inactive"}` |
+| `status` | (none) | `{"status": "running\|inactive\|starting"}` |
+| `sceneSet` | `spec: object` | "Scene set." |
+| `scenePatch` | `patches: PatchOp[]` | "Patches applied." |
+| `stateSet` | `path: string, value: JSON` | "State updated at {path}" |
+| `sceneRead` | (none) | Current scene spec JSON |
+| `timelineAppend` | `entries: TimelineEntry[]` | "Timeline entries appended." |
+| `timelinePlay` | `action: string, rate?: number, seekTo?: number` | "Timeline: {action}" |
+| `timelineRead` | (none) | Timeline state JSON |
+| `timelineClear` | (none) | "Timeline cleared." |
+| `getLogs` | `limit?: number` | Log entries JSON |
 | `screenshot` | (none) | Base64 PNG image content |
 | `obs` | `args: string[]` | OBS command output (scenes, streaming, recording, etc.; credentials redacted) |
 
@@ -489,7 +494,7 @@ Auth: Required (Clerk JWT or API key)
 
 ## Streamer Pod API (Internal)
 
-Accessed via session proxy (`/session/:id/...`) or directly by session manager.
+Accessed via session proxy (`/session/:id/...`) or directly by control plane.
 
 | Method | Path | Auth | Purpose |
 |--------|------|------|---------|
@@ -499,6 +504,7 @@ Accessed via session proxy (`/session/:id/...`) or directly by session manager.
 | GET | `/api/panel/main` | Token | Get current script |
 | POST | `/api/panel/main/edit` | Token | Edit script (`{ old_string, new_string }`) |
 | POST | `/api/panel/main/event` | Token | Emit event (`{ event, data }`) |
+| POST | `/api/panel/main/eval` | Token | Eval JS expression (`{ expr }`) |
 | GET | `/template` | None | Serve HTML to Chrome |
 | POST | `/api/navigate` | Token | Navigate Chrome (`{ url }`) |
 | WS | `/*` | Token | CDP WebSocket proxy |

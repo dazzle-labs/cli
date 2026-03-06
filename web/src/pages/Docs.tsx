@@ -217,6 +217,11 @@ export function Docs() {
                   <ChevronRight className="h-4 w-4 text-zinc-500 shrink-0" />
                 )}
                 <code className="text-sm font-mono text-emerald-400">{tool.name}</code>
+                {tool.comingSoon && (
+                  <span className="shrink-0 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-400 border border-amber-500/20">
+                    Coming Soon
+                  </span>
+                )}
                 <span className="text-xs text-zinc-500 truncate">{tool.description}</span>
               </button>
 

@@ -159,6 +159,8 @@ MCP tool implementations in `mcp.go` call the streamer pod's panel API:
 
 | Dependency | Used By | Purpose |
 |------------|---------|---------|
+| Runtime bundles (`runtime/dist/`) | control-plane + streamer pods | `prelude.js` (React globals) + `renderer.js` (spec renderer with 37 components) — loaded via ConfigMap |
+| Runtime core types (`runtime/core/`) | runtime renderer + harness | Spec, PatchOp, expressions, timeline — protocol types |
 | Protobuf schemas (`proto/api/v1/`) | control-plane + web | Service contracts (generated code) |
 | `browserless-auth` k8s secret | control-plane + streamer pods | Internal pod auth token |
 | `ENCRYPTION_KEY` env | control-plane | AES-256-GCM for stream key encryption |

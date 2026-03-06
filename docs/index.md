@@ -10,7 +10,7 @@
 |-|-|
 | **Product** | Dazzle — on-demand cloud browser environments for AI agents and live streaming |
 | **Production URL** | https://stream.dazzle.fm |
-| **Repo Type** | Monorepo (4 parts) |
+| **Repo Type** | Monorepo (5 parts) |
 | **Infrastructure** | Single Hetzner VPS, k3s (single-node Kubernetes) |
 | **Auth** | Clerk (JWT) + internal API keys (`bstr_*`) |
 | **API Protocol** | ConnectRPC (protobuf/HTTP2) |
@@ -30,6 +30,14 @@
 - **Role:** Dashboard for stage management, API keys, stream destinations
 - **Entry:** `web/src/main.tsx`
 - **Dev:** `cd web && npm run dev`
+
+### runtime (Browser runtime bundles)
+- **Path:** `runtime/`
+- **Role:** Compiled browser-side code: `prelude.js` (React/ReactDOM/Zustand globals) + `renderer.js` (spec-driven renderer with 37 components)
+- **Entry:** `runtime/renderer.tsx`, `runtime/prelude.ts`
+- **Build:** `cd runtime && npm run build` (outputs `dist/prelude.js` + `dist/renderer.js`)
+- **Core types:** `runtime/core/` — Spec, PatchOp, expressions, timeline (shared with harness)
+- **Components:** `runtime/components/` — 37 TSX components across 8 categories (Layout, Text, Content, Broadcast, SVG, Animation, Data, Coding)
 
 ### streamer (Node.js browser pod)
 - **Path:** `streamer/`
