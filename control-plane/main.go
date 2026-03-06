@@ -237,6 +237,9 @@ func (m *Manager) createStage(requestedID string) (*Stage, error) {
 		},
 		Spec: corev1.PodSpec{
 			RestartPolicy: corev1.RestartPolicyNever,
+			ImagePullSecrets: []corev1.LocalObjectReference{
+				{Name: "dazzlefm-dockerhub-secret"},
+			},
 			Containers: []corev1.Container{
 				{
 					Name:  "streamer",
