@@ -18,6 +18,8 @@ github.com/dazzle-labs/cli v0.1.0-beta.10 h1:iNJoETZgA6cxqXJCgdCwrNOuH1tIPMbFGVY
 github.com/dazzle-labs/cli v0.1.0-beta.10/go.mod h1:lyH9GCIw9Sx2rftuFQH55IWky0jYU+dF2DF24hV7+1A=
 github.com/dazzle-labs/cli v0.1.0-beta.11 h1:wsXrE+jtnmEDUzeiQ8t2zeSwKbrUUVj1XMo98QJgquA=
 github.com/dazzle-labs/cli v0.1.0-beta.11/go.mod h1:lyH9GCIw9Sx2rftuFQH55IWky0jYU+dF2DF24hV7+1A=
+github.com/dazzle-labs/cli v0.1.0-beta.12 h1:1uG/XZ2tpEzTmBtydRTdxqo4ivWZLvE671HlfZKIqUs=
+github.com/dazzle-labs/cli v0.1.0-beta.12/go.mod h1:lyH9GCIw9Sx2rftuFQH55IWky0jYU+dF2DF24hV7+1A=
 github.com/emicklei/go-restful/v3 v3.11.0 h1:rAQeMHw1c7zTmncogyy8VvRZwtkmkZ4FxERmMY4rD+g=
 github.com/emicklei/go-restful/v3 v3.11.0/go.mod h1:6n3XBCmQQb25CM2LCACGz8ukIrRry+4bhvbpWn3mrbc=
 github.com/frankban/quicktest v1.14.6 h1:7Xjx+VpznH+oBnejlPUj8oUpdxnVs4f8XU8WnHkI4W8=
