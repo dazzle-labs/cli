@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     gnupg \
     fonts-liberation \
+    fonts-noto-color-emoji \
     libasound2t64 \
     libatk-bridge2.0-0 \
     libatk1.0-0 \
