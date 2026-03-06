@@ -33,7 +33,15 @@ echo "Installing dazzle ${TAG} (${OS}/${ARCH})..."
 
 curl -fsSL "$URL" -o /tmp/dazzle
 chmod +x /tmp/dazzle
-mv /tmp/dazzle "$INSTALL_DIR/dazzle"
+
+if mv /tmp/dazzle "$INSTALL_DIR/dazzle" 2>/dev/null; then
+  :
+elif sudo mv /tmp/dazzle "$INSTALL_DIR/dazzle"; then
+  :
+else
+  echo "Failed to install to $INSTALL_DIR — try: INSTALL_DIR=~/.local/bin" >&2
+  exit 1
+fi
 
 echo "Installed to $INSTALL_DIR/dazzle"
 echo "Run 'dazzle login' to get started."
