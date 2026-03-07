@@ -14,7 +14,7 @@ export const FRAMEWORKS: Framework[] = [
     description: "Anthropic's CLI coding agent",
     getSnippet: () =>
       `# Install the Dazzle CLI
-go install github.com/dazzle-labs/cli/cmd/dazzle@latest
+curl -sSL https://stream.dazzle.fm/setup.sh | sh
 
 # Authenticate
 dazzle login
@@ -39,7 +39,7 @@ dazzle s live on`,
     description: "OpenAI's multi-agent framework",
     getSnippet: () =>
       `# Install the Dazzle CLI
-go install github.com/dazzle-labs/cli/cmd/dazzle@latest
+curl -sSL https://stream.dazzle.fm/setup.sh | sh
 
 # Authenticate and create a stage
 dazzle login
@@ -57,7 +57,7 @@ dazzle s live on`,
     description: "Role-based agent collaboration",
     getSnippet: () =>
       `# Install the Dazzle CLI
-go install github.com/dazzle-labs/cli/cmd/dazzle@latest
+curl -sSL https://stream.dazzle.fm/setup.sh | sh
 
 # Authenticate and create a stage
 dazzle login
@@ -75,7 +75,7 @@ dazzle s live on`,
     description: "LangChain's stateful agent graphs",
     getSnippet: () =>
       `# Install the Dazzle CLI
-go install github.com/dazzle-labs/cli/cmd/dazzle@latest
+curl -sSL https://stream.dazzle.fm/setup.sh | sh
 
 # Authenticate and create a stage
 dazzle login
@@ -93,7 +93,7 @@ dazzle s live on`,
     description: "Microsoft's multi-agent framework",
     getSnippet: () =>
       `# Install the Dazzle CLI
-go install github.com/dazzle-labs/cli/cmd/dazzle@latest
+curl -sSL https://stream.dazzle.fm/setup.sh | sh
 
 # Authenticate and create a stage
 dazzle login

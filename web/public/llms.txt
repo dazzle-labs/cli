@@ -14,10 +14,10 @@ Primary use cases: AI agents that need a persistent visual environment, live str
 ### 1. Install the CLI
 
 ```bash
-go install github.com/dazzle-labs/cli/cmd/dazzle@latest
+curl -sSL https://stream.dazzle.fm/setup.sh | sh
 ```
 
-Or download a binary from the [releases page](https://github.com/dazzle-labs/cli/releases). Source: https://github.com/dazzle-labs/cli
+Or `go install github.com/dazzle-labs/cli/cmd/dazzle@latest`, or download a binary from the [releases page](https://github.com/dazzle-labs/cli/releases). Source: https://github.com/dazzle-labs/cli
 
 ### 2. Authenticate
 

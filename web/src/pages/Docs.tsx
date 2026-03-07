@@ -25,7 +25,7 @@ export function Docs() {
     );
   }
 
-  const installSnippet = `go install github.com/dazzle-labs/cli/cmd/dazzle@latest`;
+  const installSnippet = `curl -sSL https://stream.dazzle.fm/setup.sh | sh`;
 
   const quickStartSnippet = `# Authenticate
 dazzle login
@@ -76,7 +76,7 @@ dazzle s live on`;
           </button>
         </div>
         <p className="text-xs text-zinc-600 mt-3">
-          Or download a binary from the <a href="https://github.com/dazzle-labs/cli/releases" target="_blank" rel="noopener noreferrer" className="text-zinc-500 hover:text-emerald-400 transition-colors underline underline-offset-2">releases page</a>. Source: <a href="https://github.com/dazzle-labs/cli" target="_blank" rel="noopener noreferrer" className="text-zinc-500 hover:text-emerald-400 transition-colors underline underline-offset-2">github.com/dazzle-labs/cli</a>
+          Or <code className="text-zinc-500">go install github.com/dazzle-labs/cli/cmd/dazzle@latest</code>. Windows users: download from the <a href="https://github.com/dazzle-labs/cli/releases" target="_blank" rel="noopener noreferrer" className="text-zinc-500 hover:text-emerald-400 transition-colors underline underline-offset-2">releases page</a>.
         </p>
       </div>
 
