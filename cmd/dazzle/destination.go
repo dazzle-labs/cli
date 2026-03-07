@@ -45,9 +45,9 @@ func resolveDestinationByNameOrID(ctx *Context, nameOrID string) (string, error)
 			return d.Id, nil
 		}
 	}
-	// Try platform_username match
+	// Try name or platform_username match
 	for _, d := range destinations {
-		if d.PlatformUsername == nameOrID {
+		if d.Name == nameOrID || d.PlatformUsername == nameOrID {
 			return d.Id, nil
 		}
 	}
@@ -72,9 +72,13 @@ func (c *DestinationListCmd) Run(ctx *Context) error {
 		return nil
 	}
 
-	tableHeader("USERNAME", "PLATFORM", "ID")
+	tableHeader("NAME", "PLATFORM", "ID")
 	for _, d := range destinations {
-		printText("%s", tableRow(d.PlatformUsername, d.Platform, d.Id))
+		displayName := d.Name
+		if displayName == "" {
+			displayName = d.PlatformUsername
+		}
+		printText("%s", tableRow(displayName, d.Platform, d.Id))
 	}
 	return nil
 }
@@ -93,9 +97,9 @@ func (c *DestinationCreateCmd) Run(ctx *Context) error {
 	platform, _ := reader.ReadString('\n')
 	platform = strings.TrimSpace(platform)
 
-	fmt.Print("Platform username: ")
-	platformUsername, _ := reader.ReadString('\n')
-	platformUsername = strings.TrimSpace(platformUsername)
+	fmt.Print("Name: ")
+	name, _ := reader.ReadString('\n')
+	name = strings.TrimSpace(name)
 
 	fmt.Print("RTMP URL: ")
 	rtmpURL, _ := reader.ReadString('\n')
@@ -111,10 +115,10 @@ func (c *DestinationCreateCmd) Run(ctx *Context) error {
 
 	client := apiv1connect.NewRtmpDestinationServiceClient(ctx.HTTPClient, ctx.APIURL)
 	req := connect.NewRequest(&apiv1.CreateStreamDestinationRequest{
-		Platform:         platform,
-		PlatformUsername: platformUsername,
-		RtmpUrl:          rtmpURL,
-		StreamKey:        streamKey,
+		Name:      name,
+		Platform:  platform,
+		RtmpUrl:   rtmpURL,
+		StreamKey: streamKey,
 	})
 	req.Header().Set("Authorization", ctx.authHeader())
 	resp, err := client.CreateStreamDestination(context.Background(), req)
@@ -128,7 +132,7 @@ func (c *DestinationCreateCmd) Run(ctx *Context) error {
 		return nil
 	}
 
-	printText("Destination %q created (ID: %s)", dest.PlatformUsername, dest.Id)
+	printText("Destination %q created (ID: %s)", dest.Name, dest.Id)
 	return nil
 }
 
