@@ -1184,20 +1184,28 @@ func main() {
 	//   /stage/<uuid>/mcp/*         — MCP server
 	//   /stage/<uuid>/*             — reverse proxy to streamer pod
 	mcpHandler := mgr.mcpMiddleware(mgr.setupMCP())
+	spaHandler := spaFileServer("web")
 	mux.HandleFunc("/stage/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
 		// Extract the third path segment: /stage/<uuid>/<segment>/...
 		// parts[0]="", parts[1]="stage", parts[2]="<uuid>", parts[3]="<segment>", ...
 		parts := strings.SplitN(r.URL.Path, "/", 5)
 		var segment string
 		if len(parts) >= 4 {
 			segment = parts[3]
+		}
+
+		// No sub-path (e.g. /stage/<uuid>) — this is a frontend SPA route
+		if segment == "" {
+			spaHandler.ServeHTTP(w, r)
+			return
+		}
+
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
 		}
 		switch segment {
 		case "cdp":
