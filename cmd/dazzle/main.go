@@ -23,13 +23,9 @@ var cli struct {
 	Whoami WhoamiCmd `cmd:"" help:"Show current user."`
 
 	// Resource commands
-	Stage_      StageCmd       `cmd:"" name:"stage" aliases:"s" help:"Manage streaming stages."`
-	Script      ScriptCmd      `cmd:"" name:"script" aliases:"sc" help:"Manage stage scripts."`
-	Emit        EmitCmd        `cmd:"" name:"emit" aliases:"e" help:"Push an event to the running script."`
-	Logs        LogsCmd        `cmd:"" name:"logs" aliases:"l" help:"Retrieve console logs."`
-	Screenshot  ScreenshotCmd  `cmd:"" name:"screenshot" aliases:"ss" help:"Capture a screenshot."`
-	Obs         ObsCmd         `cmd:"" name:"obs" aliases:"o" help:"Control OBS on the active stage."`
+	Stage_      StageCmd       `cmd:"" name:"stage" aliases:"s" help:"Manage stages."`
 	Destination DestinationCmd `cmd:"" name:"destination" aliases:"dest" help:"Manage RTMP destinations."`
+	Obs         ObsCmd         `cmd:"" name:"obs" aliases:"o" help:"Raw OBS commands on the active stage."`
 }
 
 func main() {

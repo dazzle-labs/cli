@@ -12,13 +12,20 @@ import (
 
 // StageCmd groups stage subcommands.
 type StageCmd struct {
-	List   StageListCmd   `cmd:"" aliases:"ls" help:"List stages."`
-	Create StageCreateCmd `cmd:"" aliases:"new" help:"Create a stage."`
-	Delete StageDeleteCmd `cmd:"" aliases:"rm" help:"Delete a stage."`
-	Start  StageStartCmd  `cmd:"" aliases:"up" help:"Activate a stage (start pod)."`
-	Stop   StageStopCmd   `cmd:"" aliases:"down" help:"Deactivate a stage (stop pod)."`
-	Status StageStatusCmd `cmd:"" aliases:"st" help:"Show stage status."`
-	Use    StageUseCmd    `cmd:"" help:"Set default stage."`
+	List       StageListCmd   `cmd:"" aliases:"ls" help:"List stages."`
+	Create     StageCreateCmd `cmd:"" aliases:"new" help:"Create a stage."`
+	Delete     StageDeleteCmd `cmd:"" aliases:"rm" help:"Delete a stage."`
+	Activate   StageStartCmd  `cmd:"" aliases:"start,up" help:"Activate a stage."`
+	Deactivate StageStopCmd   `cmd:"" aliases:"stop,down" help:"Deactivate a stage."`
+	Status     StageStatusCmd `cmd:"" aliases:"st" help:"Show stage status."`
+	Use        StageUseCmd    `cmd:"" help:"Set default stage."`
+
+	// Stage operations
+	Script     ScriptCmd     `cmd:"" aliases:"sc" help:"Manage stage scripts."`
+	Event      EventCmd      `cmd:"" aliases:"ev" help:"Manage stage events."`
+	Logs       LogsCmd       `cmd:"" name:"logs" aliases:"l" help:"Retrieve console logs."`
+	Screenshot ScreenshotCmd `cmd:"" name:"screenshot" aliases:"ss" help:"Capture a screenshot."`
+	Live       StreamCmd     `cmd:"" aliases:"stream" help:"Start or stop streaming."`
 }
 
 // resolveStageByNameOrID tries to resolve a stage name or ID to its ID.
@@ -136,7 +143,7 @@ func (c *StageDeleteCmd) Run(ctx *Context) error {
 	return nil
 }
 
-// StageStartCmd activates a stage (provisions a pod).
+// StageStartCmd activates a stage.
 type StageStartCmd struct {
 }
 
@@ -165,7 +172,7 @@ func (c *StageStartCmd) Run(ctx *Context) error {
 	return nil
 }
 
-// StageStopCmd deactivates a stage (tears down pod).
+// StageStopCmd deactivates a stage.
 type StageStopCmd struct {
 }
 

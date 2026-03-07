@@ -10,10 +10,15 @@ import (
 	"github.com/dazzle-labs/cli/gen/api/v1/apiv1connect"
 )
 
+// EventCmd groups event subcommands.
+type EventCmd struct {
+	Emit EmitCmd `cmd:"" aliases:"e" help:"Push an event to the running script."`
+}
+
 // EmitCmd pushes an event to the running script on the active stage.
 type EmitCmd struct {
-	Event     string `arg:"" help:"Event name."`
-	Data      string `arg:"" optional:"" help:"JSON payload (default: {})."`
+	Event string `arg:"" help:"Event name."`
+	Data  string `arg:"" optional:"" help:"JSON payload (default: {})."`
 }
 
 func (c *EmitCmd) Run(ctx *Context) error {
