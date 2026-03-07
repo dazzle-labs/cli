@@ -321,7 +321,7 @@ func stageToProto(s *Stage, publicBaseURL string) *apiv1.Stage {
 		OwnerUserId:   s.OwnerUserID,
 		DestinationId: s.DestinationID,
 	}
-	if s.PreviewToken != "" && s.Status == StatusRunning && publicBaseURL != "" {
+	if s.PreviewToken != "" && publicBaseURL != "" {
 		pb.Preview = &apiv1.StagePreview{
 			WatchUrl: publicBaseURL + "/stage/" + s.ID + "/preview?token=" + s.PreviewToken,
 			HlsUrl:   publicBaseURL + "/stage/" + s.ID + "/hls/stream.m3u8?token=" + s.PreviewToken,
