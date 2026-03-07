@@ -15,7 +15,7 @@ spec:
         managed-by: kustomize
     spec:
       priorityClassName: placeholder-priority
-      schedulerName: trimaran
+      schedulerName: scheduler-plugins-scheduler
       terminationGracePeriodSeconds: 0
       containers:
         - name: pause

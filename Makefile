@@ -240,7 +240,7 @@ prod/trimaran/install: ## Install Trimaran secondary scheduler on prod
 	$(STEP) "Installing Trimaran scheduler"
 	helm repo add scheduler-plugins https://scheduler-plugins.sigs.k8s.io 2>/dev/null || true
 	helm repo update scheduler-plugins
-	@bash -c 'helm upgrade --install trimaran scheduler-plugins/as-a-second-scheduler \
+	@bash -c 'helm upgrade --install trimaran scheduler-plugins/scheduler-plugins \
 		--kubeconfig <(sops -d k8s/hetzner/kubeconfig.yaml.enc) \
 		-n kube-system \
 		-f k8s/scheduling/trimaran/values.yaml'

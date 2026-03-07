@@ -20,7 +20,7 @@ helmCharts:
     namespace: monitoring
     releaseName: prometheus
     valuesFile: monitoring/prometheus-values.yaml
-  - name: as-a-second-scheduler
+  - name: scheduler-plugins
     repo: https://scheduler-plugins.sigs.k8s.io
     namespace: kube-system
     releaseName: trimaran

@@ -62,7 +62,7 @@ spec:
             - name: MAX_SESSIONS
               value: "3"
             - name: SCHEDULER_NAME
-              value: trimaran
+              value: scheduler-plugins-scheduler
             - name: PRIORITY_CLASS_NAME
               value: streamer-priority
             - name: TWITCH_CLIENT_ID
