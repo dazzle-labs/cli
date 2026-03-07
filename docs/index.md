@@ -114,4 +114,4 @@ The following old docs exist but have been replaced by the updated files above:
 
 Detailed exhaustive analysis of specific areas:
 
-- [Hetzner k3s Infrastructure & K8s Manifests Deep-Dive](./deep-dive-hetzner-k8s-infrastructure.md) - Comprehensive analysis of `infra/hetzner/` + `k8s/`: cluster provisioning via kube-hetzner, Kubernetes manifests, secrets management, CI/CD deployment pipeline (28 files, ~650 LOC) - Generated 2026-03-07
+- [Hetzner k3s Infrastructure & K8s Manifests Deep-Dive](./deep-dive-hetzner-k8s-infrastructure.md) - Comprehensive analysis of `k8s/hetzner/` + `k8s/`: cluster provisioning via kube-hetzner, Kubernetes manifests, secrets management, CI/CD deployment pipeline (28 files, ~650 LOC) - Generated 2026-03-07

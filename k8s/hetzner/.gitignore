@@ -11,3 +11,4 @@ ssh_key
 !ssh_key.pub
 !ssh_key.enc
 !kubeconfig.yaml.enc
+*.lock.info

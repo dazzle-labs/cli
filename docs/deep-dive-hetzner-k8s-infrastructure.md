@@ -1,7 +1,7 @@
 # Hetzner k3s Infrastructure & Kubernetes Manifests - Deep Dive Documentation
 
 **Generated:** 2026-03-07
-**Scope:** `infra/hetzner/` + `k8s/`
+**Scope:** `k8s/hetzner/` + `k8s/`
 **Files Analyzed:** 28
 **Lines of Code:** ~650 (user-authored, excluding vendor/SOPS blocks)
 **Workflow Mode:** Exhaustive Deep-Dive
@@ -25,7 +25,7 @@ This deep-dive covers the Hetzner Cloud k3s cluster provisioning (via the kube-h
 
 ## Complete File Inventory
 
-### infra/hetzner/main.tf
+### k8s/hetzner/main.tf
 
 **Purpose:** Core Terraform configuration — instantiates the `kube-hetzner/kube-hetzner/hcloud` module with the full cluster topology. This is the single source of truth for cluster shape.
 **Lines of Code:** 118
@@ -71,7 +71,7 @@ This deep-dive covers the Hetzner Cloud k3s cluster provisioning (via the kube-h
 
 ---
 
-### infra/hetzner/variables.tf
+### k8s/hetzner/variables.tf
 
 **Purpose:** Declares all input variables for the Hetzner Terraform configuration with sensible defaults.
 **Lines of Code:** 24
@@ -87,7 +87,7 @@ This deep-dive covers the Hetzner Cloud k3s cluster provisioning (via the kube-h
 
 ---
 
-### infra/hetzner/outputs.tf
+### k8s/hetzner/outputs.tf
 
 **Purpose:** Exposes the cluster kubeconfig as a Terraform output so it can be extracted after provisioning.
 **Lines of Code:** 10
@@ -101,7 +101,7 @@ This deep-dive covers the Hetzner Cloud k3s cluster provisioning (via the kube-h
 
 ---
 
-### infra/hetzner/providers.tf
+### k8s/hetzner/providers.tf
 
 **Purpose:** Declares required Terraform/OpenTofu version and provider dependencies.
 **Lines of Code:** 20
@@ -115,7 +115,7 @@ This deep-dive covers the Hetzner Cloud k3s cluster provisioning (via the kube-h
 
 ---
 
-### infra/hetzner/terraform.tfvars
+### k8s/hetzner/terraform.tfvars
 
 **Purpose:** Actual variable values used for provisioning. Contains the live Hetzner API token.
 **Lines of Code:** 14
@@ -125,7 +125,7 @@ This deep-dive covers the Hetzner Cloud k3s cluster provisioning (via the kube-h
 
 ---
 
-### infra/hetzner/terraform.tfvars.example
+### k8s/hetzner/terraform.tfvars.example
 
 **Purpose:** Template showing required variables with empty/example values for new contributors.
 **Lines of Code:** 11
@@ -135,7 +135,7 @@ This deep-dive covers the Hetzner Cloud k3s cluster provisioning (via the kube-h
 
 ---
 
-### infra/hetzner/.gitignore
+### k8s/hetzner/.gitignore
 
 **Purpose:** Controls which files are committed vs gitignored in the infra directory.
 **Lines of Code:** 11
@@ -147,7 +147,7 @@ This deep-dive covers the Hetzner Cloud k3s cluster provisioning (via the kube-h
 
 ---
 
-### infra/hetzner/ssh_key.pub
+### k8s/hetzner/ssh_key.pub
 
 **Purpose:** ED25519 public SSH key used by kube-hetzner to provision nodes.
 **Lines of Code:** 1
@@ -157,7 +157,7 @@ This deep-dive covers the Hetzner Cloud k3s cluster provisioning (via the kube-h
 
 ---
 
-### infra/hetzner/ssh_key.enc
+### k8s/hetzner/ssh_key.enc
 
 **Purpose:** SOPS Age-encrypted ED25519 private SSH key for node access.
 **File Type:** SOPS-encrypted file (raw input type)
@@ -166,7 +166,7 @@ This deep-dive covers the Hetzner Cloud k3s cluster provisioning (via the kube-h
 
 ---
 
-### infra/hetzner/kubeconfig.yaml.enc
+### k8s/hetzner/kubeconfig.yaml.enc
 
 **Purpose:** SOPS Age-encrypted kubeconfig for the remote Hetzner cluster.
 **File Type:** SOPS-encrypted YAML
@@ -397,10 +397,10 @@ This deep-dive covers the Hetzner Cloud k3s cluster provisioning (via the kube-h
 1. `tofu plan` before any infra changes — review the diff carefully
 2. `make prod/status` to verify cluster health before deploying
 3. Check `kubectl get pvc -n browser-streamer` to ensure postgres volume is bound before restarting postgres
-4. Verify SOPS decryption works: `sops -d infra/hetzner/kubeconfig.yaml.enc | head -5`
+4. Verify SOPS decryption works: `sops -d k8s/hetzner/kubeconfig.yaml.enc | head -5`
 
 **Suggested Tests Before PR:**
-- `tofu validate` in `infra/hetzner/`
+- `tofu validate` in `k8s/hetzner/`
 - `kubectl apply --dry-run=client -f k8s/` for manifest syntax
 - `make prod/status` after deploying to verify pods are Running
 
@@ -412,7 +412,7 @@ This deep-dive covers the Hetzner Cloud k3s cluster provisioning (via the kube-h
 
 The infrastructure is split into two layers:
 
-1. **Provisioning layer** (`infra/hetzner/`) — OpenTofu/Terraform manages cloud resources (servers, networking, load balancer, k3s installation). This runs once to create the cluster, then occasionally for topology changes.
+1. **Provisioning layer** (`k8s/hetzner/`) — OpenTofu/Terraform manages cloud resources (servers, networking, load balancer, k3s installation). This runs once to create the cluster, then occasionally for topology changes.
 
 2. **Application layer** (`k8s/`) — Kustomize-organized Kubernetes manifests define the application workload. These are applied by CI/CD on every push to `main`, or manually via `make deploy`.
 
@@ -528,7 +528,7 @@ control-plane Pod
 ## Dependency Graph
 
 ```
-infra/hetzner/
+k8s/hetzner/
   providers.tf ─────> (hcloud, sops providers)
   variables.tf ─────> main.tf
   main.tf ──────────> outputs.tf
@@ -560,12 +560,12 @@ k8s/
 ```
 
 ### Entry Points (Not Imported by Others in Scope)
-- `infra/hetzner/providers.tf` — Terraform entry point
+- `k8s/hetzner/providers.tf` — Terraform entry point
 - `k8s/kustomization.yaml` — Kustomize entry point
 - `k8s/local/kind-config.yaml` — Kind entry point
 
 ### Leaf Nodes (Don't Import Others in Scope)
-- `infra/hetzner/outputs.tf`
+- `k8s/hetzner/outputs.tf`
 - `k8s/namespace.yaml`
 - `k8s/networking/traefik-config.yaml`
 - `k8s/networking/browserless-secret.yaml`
@@ -631,7 +631,7 @@ These docs should be updated to reflect the new architecture.
 ## Modification Guidance
 
 ### To Add a New Node Pool
-1. Edit `infra/hetzner/main.tf` — add entry to `agent_nodepools` or `autoscaler_nodepools`
+1. Edit `k8s/hetzner/main.tf` — add entry to `agent_nodepools` or `autoscaler_nodepools`
 2. Run `tofu plan` to preview, then `tofu apply`
 3. Verify with `make prod/nodes`
 
@@ -643,7 +643,7 @@ These docs should be updated to reflect the new architecture.
 5. For local dev, add the secret to `k8s/local/local.secrets.yaml`
 
 ### To Change Server Types
-1. Edit `infra/hetzner/variables.tf` defaults or override in `terraform.tfvars`
+1. Edit `k8s/hetzner/variables.tf` defaults or override in `terraform.tfvars`
 2. Run `tofu plan` — note: changing server types will recreate nodes (causes downtime for that pool)
 3. Apply during maintenance window
 

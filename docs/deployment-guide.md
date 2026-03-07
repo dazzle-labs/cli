@@ -124,10 +124,10 @@ Images are built and deployed automatically by **GitHub Actions** on push to `ma
 
 ## Infrastructure Provisioning
 
-The cluster is provisioned via OpenTofu + the kube-hetzner module. Configuration lives in `infra/hetzner/`.
+The cluster is provisioned via OpenTofu + the kube-hetzner module. Configuration lives in `k8s/hetzner/`.
 
 ```bash
-cd infra/hetzner
+cd k8s/hetzner
 cp terraform.tfvars.example terraform.tfvars   # Fill in hcloud_token
 make prod/infra/init
 make prod/infra/plan

@@ -36,8 +36,8 @@ browser-streamer/
 │   ├── local/          # Kind cluster config, NodePort service, dev secrets
 │   ├── networking/     # Traefik config, ClusterIssuer, Ingress
 │   ├── clerk/          # Clerk auth secrets
-│   └── secrets/        # Docker Hub pull secret
-├── infra/hetzner/      # OpenTofu cluster provisioning (kube-hetzner)
+│   ├── secrets/        # Docker Hub pull secret
+│   └── hetzner/        # OpenTofu cluster provisioning (kube-hetzner)
 ├── .github/workflows/  # CI/CD pipeline
 └── Makefile            # Build/deploy automation
 ```
@@ -171,8 +171,8 @@ Secrets are SOPS-encrypted using Age encryption (4 recipients). Recipients confi
 | `k8s/secrets/dockerhub-secret.yaml` | Docker Hub pull credentials |
 | `k8s/networking/browserless-secret.yaml` | `token` (plaintext — not SOPS encrypted) |
 | `k8s/local/local.secrets.yaml` | Combined local dev secrets |
-| `infra/hetzner/ssh_key.enc` | SSH private key for cluster nodes |
-| `infra/hetzner/kubeconfig.yaml.enc` | Remote cluster kubeconfig |
+| `k8s/hetzner/ssh_key.enc` | SSH private key for cluster nodes |
+| `k8s/hetzner/kubeconfig.yaml.enc` | Remote cluster kubeconfig |
 
 **Do not decrypt secrets to disk.** The Makefile, CI/CD pipeline, and OpenTofu all handle decryption automatically and transiently:
 - `make up` / `make deploy` decrypts and applies local secrets
@@ -196,7 +196,7 @@ sops k8s/infrastructure/encryption-key.secrets.yaml
 | `control-plane/proto/buf.gen.yaml` | buf codegen config (Go + TypeScript targets) |
 | `.sops.yaml` | SOPS Age encryption recipients |
 | `Makefile` | All build/deploy targets (local Kind + remote) |
-| `infra/hetzner/main.tf` | Cluster topology and provisioning |
+| `k8s/hetzner/main.tf` | Cluster topology and provisioning |
 | `.github/workflows/ci.yml` | CI/CD pipeline (build, push, deploy) |
 
 ---

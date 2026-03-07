@@ -22,8 +22,8 @@ define _confirm
 endef
 OK       = @printf "$(_bold)$(_green)✓ %s$(_reset)\n"
 
-RKCTL = kubectl --kubeconfig <(sops -d infra/hetzner/kubeconfig.yaml.enc)
-INFRA_DIR := infra/hetzner
+RKCTL = kubectl --kubeconfig <(sops -d k8s/hetzner/kubeconfig.yaml.enc)
+INFRA_DIR := k8s/hetzner
 TFSTATE   := $(INFRA_DIR)/terraform.tfstate
 TFSTATE_ENC := $(INFRA_DIR)/terraform.tfstate.enc
 
