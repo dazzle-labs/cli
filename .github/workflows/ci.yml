@@ -13,6 +13,31 @@ env:
   STREAMER_REPO: dazzlefm/agent-streamer-stage
 
 jobs:
+  buf:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Setup Buf
+        uses: bufbuild/buf-setup-action@v1
+
+      - name: Lint internal protos
+        run: buf lint control-plane/proto
+
+      - name: Lint public protos
+        run: buf lint dazzle-cli/proto
+
+      - name: Breaking change detection (internal)
+        if: github.event_name == 'pull_request'
+        run: buf breaking control-plane/proto --against '.git#branch=main,subdir=control-plane/proto'
+
+      - name: Breaking change detection (public)
+        if: github.event_name == 'pull_request'
+        run: buf breaking dazzle-cli/proto --against '.git#branch=main,subdir=dazzle-cli/proto'
+
   control-plane:
     runs-on: ubuntu-latest
     permissions:
