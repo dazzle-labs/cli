@@ -72,12 +72,12 @@ func fetchLatestTag() (string, error) {
 	return release.TagName, nil
 }
 
-const updateCheckInterval = 24 * time.Hour
+const updateCheckInterval = 4 * time.Hour
 
 type updateState struct {
-	LastCheck  time.Time `json:"last_check"`
-	LastWarned time.Time `json:"last_warned"`
-	LatestTag  string    `json:"latest_tag"`
+	LastCheck    time.Time `json:"last_check"`
+	WarnedTag   string    `json:"warned_tag"`
+	LatestTag   string    `json:"latest_tag"`
 }
 
 func loadUpdateState() (*updateState, error) {
@@ -106,7 +106,8 @@ func saveUpdateState(s *updateState) {
 }
 
 // checkForUpdate prints a warning to stderr if a newer version is available.
-// It checks GitHub at most once per 24 hours, caching the result.
+// Checks GitHub every few hours. Once the user has seen the warning for a
+// given version, it won't nag again until a newer release drops.
 func checkForUpdate() {
 	if version == "dev" {
 		return
@@ -115,7 +116,7 @@ func checkForUpdate() {
 	state, _ := loadUpdateState()
 	now := time.Now()
 
-	// Fetch from GitHub at most once per day
+	// Fetch from GitHub periodically
 	if now.Sub(state.LastCheck) >= updateCheckInterval || state.LatestTag == "" {
 		latest, err := fetchLatestTag()
 		if err != nil {
@@ -125,10 +126,10 @@ func checkForUpdate() {
 		state.LatestTag = latest
 	}
 
-	// Warn at most once per day
-	if stripV(state.LatestTag) != stripV(version) && now.Sub(state.LastWarned) >= updateCheckInterval {
+	// Only warn if outdated AND we haven't already warned about this specific version
+	if stripV(state.LatestTag) != stripV(version) && state.WarnedTag != state.LatestTag {
 		printUpdateWarning(state.LatestTag)
-		state.LastWarned = now
+		state.WarnedTag = state.LatestTag
 	}
 
 	saveUpdateState(state)
