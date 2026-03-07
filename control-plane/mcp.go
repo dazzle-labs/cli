@@ -234,7 +234,7 @@ func (m *Manager) mcpMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// Auth check — API key (bstr_) or Clerk JWT
+		// Auth check — API key (dzl_) or Clerk JWT
 		token := extractBearerToken(r)
 		info, err := m.auth.authenticate(r.Context(), token)
 		if err != nil || info == nil {

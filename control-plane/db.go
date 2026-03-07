@@ -125,7 +125,7 @@ func generateAPIKey() (full string, prefix string) {
 	if _, err := rand.Read(b); err != nil {
 		panic(err)
 	}
-	full = "bstr_" + hex.EncodeToString(b)
+	full = "dzl_" + hex.EncodeToString(b)
 	prefix = full[:13] + "..."
 	return
 }

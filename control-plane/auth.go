@@ -80,8 +80,8 @@ func (a *authenticator) authenticate(ctx context.Context, token string) (*authIn
 		return nil, nil
 	}
 
-	// API key auth: tokens starting with bstr_
-	if strings.HasPrefix(token, "bstr_") {
+	// API key auth: tokens starting with dzl_ (or legacy bstr_)
+	if strings.HasPrefix(token, "dzl_") || strings.HasPrefix(token, "bstr_") {
 		hash := hashAPIKey(token)
 		userID, keyID, err := dbLookupAPIKey(a.db, hash)
 		if err != nil {

@@ -44,7 +44,7 @@ dazzle destination set <id|name>      # Assign destination to current stage
 ### Config files
 ```
 ~/.config/dazzle/
-  credentials.json    # { "api_key": "bstr_...", "api_url": "https://api.dazzle.fm" }
+  credentials.json    # { "api_key": "dzl_...", "api_url": "https://api.dazzle.fm" }
   config.json         # { "default_stage": "...", "api_url": "..." }
 ```
 
@@ -67,7 +67,7 @@ Similar to `gh auth login` / `fly auth login`.
 4. CLI also attempts to open the URL in the default browser
 5. User visits URL, logs in via Clerk, enters the code (or URL has code pre-filled)
 6. Web app verifies the code, creates an API key named "Dazzle CLI", marks device code as complete
-7. CLI polls `POST /auth/device/token` with `device_code` -> eventually gets `{ api_key: "bstr_..." }`
+7. CLI polls `POST /auth/device/token` with `device_code` -> eventually gets `{ api_key: "dzl_..." }`
 8. CLI stores API key in `~/.config/dazzle/credentials.json`
 
 ### Why device flow over direct API key copy-paste?

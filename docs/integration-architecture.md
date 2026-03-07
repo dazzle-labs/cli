@@ -63,7 +63,7 @@ Agent Streamer (Dazzle) is a monorepo with 5 parts. The **control plane** is the
 
 ### 1. CLI / Web Frontend → Control Plane (ConnectRPC)
 
-The CLI and Web UI are the primary consumers of the ConnectRPC API. The CLI authenticates with API keys (`bstr_*`); the Web UI uses Clerk JWT.
+The CLI and Web UI are the primary consumers of the ConnectRPC API. The CLI authenticates with API keys (`dzl_*`); the Web UI uses Clerk JWT.
 
 | Protocol | Path | Description |
 |----------|------|-------------|

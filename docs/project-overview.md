@@ -95,7 +95,7 @@ Web UI ────────►         │
 5. **MCP server** *(legacy)* — Per-stage Model Context Protocol endpoint; being superseded by the CLI
 6. **Panel system** — Streamer manages named panels; supports hot-swap via Vite HMR without page reload
 7. **Stream destinations** — RTMP stream keys for Twitch, YouTube, Kick, custom; AES-256-GCM encrypted at rest
-8. **API keys** — `bstr_*` prefix format, HMAC-SHA256 hashed, with last-used tracking; used by CLI and programmatic clients
+8. **API keys** — `dzl_*` prefix format, HMAC-SHA256 hashed, with last-used tracking; used by CLI and programmatic clients
 9. **Stage recovery** — On restart, reconciles in-memory state with live Kubernetes pods and resets orphaned DB records
 
 ---

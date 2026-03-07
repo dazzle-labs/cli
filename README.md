@@ -139,7 +139,7 @@ make prod/status    # Show prod cluster nodes and pods
 - **CDP access** — full Chrome DevTools Protocol proxied through control plane at `/stage/<stage-id>/cdp`
 - **Panel system** — hot-swap JavaScript/JSX via Vite HMR without page reload; state persists via `emit_event` + `window.__state`
 - **Stream destinations** — RTMP keys for Twitch, YouTube, Kick, custom; AES-256-GCM encrypted at rest
-- **API keys** — `bstr_*` prefix, HMAC-SHA256 hashed, with last-used tracking; used by CLI and programmatic clients
+- **API keys** — `dzl_*` prefix, HMAC-SHA256 hashed, with last-used tracking; used by CLI and programmatic clients
 - **Stage recovery** — on restart, reconciles in-memory state with live K8s pods and resets orphaned DB records
 
 ---
@@ -148,7 +148,7 @@ make prod/status    # Show prod cluster nodes and pods
 
 - **Cluster:** Hetzner Cloud k3s HA (3 control-plane nodes, 2 workers, 0–3 autoscaler), provisioned via OpenTofu + kube-hetzner
 - **TLS:** cert-manager + Let's Encrypt (automatic)
-- **Auth:** Clerk JWT (Web UI) + `bstr_*` API keys (CLI, programmatic)
+- **Auth:** Clerk JWT (Web UI) + `dzl_*` API keys (CLI, programmatic)
 - **Secrets:** SOPS Age-encrypted YAML — decrypted automatically by Make targets and CI/CD
 - **Builds:** GitHub Actions CI/CD — pushes images to Docker Hub, deploys to cluster
 - **Networking:** WireGuard node-to-node encryption, Hetzner Load Balancer

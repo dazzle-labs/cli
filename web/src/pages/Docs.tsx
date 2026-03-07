@@ -112,7 +112,7 @@ dazzle s bc on`;
           </button>
         </div>
         <p className="text-xs text-zinc-600 mt-2">
-          Create an API key in Settings {">"} API Keys, then paste it when prompted. Or set <code className="text-zinc-500">export DAZZLE_API_KEY=bstr_...</code> in your shell profile.
+          Create an API key in Settings {">"} API Keys, then paste it when prompted. Or set <code className="text-zinc-500">export DAZZLE_API_KEY=dzl_...</code> in your shell profile.
         </p>
       </div>
 

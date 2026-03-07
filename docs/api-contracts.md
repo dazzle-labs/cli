@@ -15,7 +15,7 @@ Authorization: Bearer <token>
 
 Where `<token>` is either:
 - **Clerk JWT** — obtained from `clerk.session.getToken()` in the frontend
-- **API Key** — `bstr_<secret>` format; accepted by StageService only (not ApiKeyService, RtmpDestinationService, UserService)
+- **API Key** — `dzl_<secret>` format; accepted by StageService only (not ApiKeyService, RtmpDestinationService, UserService)
 
 ---
 
@@ -111,7 +111,7 @@ Response: {}
 interface ApiKey {
   id: string;
   name: string;
-  prefix: string;         // e.g., "bstr_AbC1"
+  prefix: string;         // e.g., "dzl_AbC1"
   created_at: Timestamp;
   last_used_at: Timestamp | null;
 }
@@ -261,7 +261,7 @@ GET /health     { status: 'ok', lastActivity, uptime }
 
 **Methods:**
 1. **Clerk JWT** — `Authorization: Bearer <clerk-jwt-token>`
-2. **API Key** — `Authorization: Bearer bstr_<64-char-hex>`
+2. **API Key** — `Authorization: Bearer dzl_<64-char-hex>`
 3. **Query Parameter** — `?token=<token>` (fallback)
 
 **Service-Level Restrictions:**
@@ -334,7 +334,7 @@ Response: {
     created_at: Timestamp,
     last_used_at: Timestamp (nullable)
   },
-  secret: string          // Full key (bstr_<hex>), shown only once
+  secret: string          // Full key (dzl_<hex>), shown only once
 }
 ```
 

@@ -137,9 +137,9 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
             key: {
               id: "key_abc123",
               name: "production",
-              prefix: "bstr_a1b2c3d4e...",
+              prefix: "dzl_a1b2c3d4e...",
             },
-            secret: "bstr_a1b2c3d4e5f67890...",
+            secret: "dzl_a1b2c3d4e5f67890...",
           },
           null,
           2,
@@ -154,7 +154,7 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
         auth: "Clerk JWT only",
         params: [],
         responseExample: JSON.stringify(
-          { keys: [{ id: "key_abc123", name: "production", prefix: "bstr_a1b2c3d4e..." }] },
+          { keys: [{ id: "key_abc123", name: "production", prefix: "dzl_a1b2c3d4e..." }] },
           null,
           2,
         ),

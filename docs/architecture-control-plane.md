@@ -28,7 +28,7 @@ The control plane is the central Go backend. It:
 | RPC Framework | ConnectRPC | v1.19.1 |
 | Schema | Protocol Buffers (buf toolchain) | v2 |
 | Auth — External | Clerk SDK Go | v2.5.1 |
-| Auth — Internal | API key (HMAC-SHA256, prefix `bstr_`) | — |
+| Auth — Internal | API key (HMAC-SHA256, prefix `dzl_`) | — |
 | Database | PostgreSQL via lib/pq | v1.11.2 |
 | K8s Client | k8s.io/client-go | v0.29.3 |
 | Encryption | AES-256-GCM (via `crypto/cipher`) | stdlib |
@@ -118,7 +118,7 @@ type Manager struct {
 Two auth paths, unified via `authenticator`:
 
 1. **Clerk JWT** — `Authorization: Bearer <clerk-jwt>` — validated via Clerk SDK; extracts `user_id` and `email`
-2. **API Key** — `Authorization: Bearer bstr_<secret>` — HMAC-SHA256 hash compared against `api_keys.key_hash` in DB
+2. **API Key** — `Authorization: Bearer dzl_<secret>` — HMAC-SHA256 hash compared against `api_keys.key_hash` in DB
 
 `clerkOnly` interceptor additionally blocks API-key auth on sensitive endpoints (ApiKeyService, RtmpDestinationService, UserService).
 

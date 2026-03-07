@@ -37,7 +37,7 @@ Created in `001_initial.up.sql`
 | `id` | TEXT | PRIMARY KEY DEFAULT gen_random_uuid() | Key ID |
 | `user_id` | TEXT | NOT NULL → users(id) CASCADE | Owner |
 | `name` | TEXT | NOT NULL | User-provided label |
-| `prefix` | TEXT | NOT NULL | First 8 chars of key (e.g., `bstr_AbC1`) for display |
+| `prefix` | TEXT | NOT NULL | First 8 chars of key (e.g., `dzl_AbC1`) for display |
 | `key_hash` | TEXT | NOT NULL | HMAC-SHA256 hash of full secret |
 | `created_at` | TIMESTAMPTZ | NOT NULL DEFAULT NOW() | Creation time |
 | `last_used_at` | TIMESTAMPTZ | — | Last successful auth time |
@@ -150,7 +150,7 @@ Upserted on first Clerk JWT authentication. Email/name populated via profile API
 
 **Indexes:** `idx_api_keys_hash` (key_hash), `idx_api_keys_user` (user_id)
 
-**Key Format:** `bstr_<64-char-hex>` (80 chars total, 32 bytes of randomness)
+**Key Format:** `dzl_<64-char-hex>` (80 chars total, 32 bytes of randomness)
 
 ### stream_destinations
 

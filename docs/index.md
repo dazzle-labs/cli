@@ -13,7 +13,7 @@
 | **Production URL** | https://stream.dazzle.fm |
 | **Repo Type** | Monorepo (5 parts) |
 | **Infrastructure** | Hetzner Cloud k3s HA cluster (3 CP + 2 workers + autoscaler 0–3), provisioned via OpenTofu + kube-hetzner |
-| **Auth** | Clerk (JWT) + internal API keys (`bstr_*`) |
+| **Auth** | Clerk (JWT) + internal API keys (`dzl_*`) |
 | **API Protocol** | ConnectRPC (protobuf/HTTP2) |
 
 ---

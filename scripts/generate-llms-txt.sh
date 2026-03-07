@@ -39,7 +39,7 @@ Sign up at https://stream.dazzle.fm, create an API key (Settings > API Keys), th
 
 ```bash
 dazzle login
-# Paste your API key (bstr_...) when prompted
+# Paste your API key (dzl_...) when prompted
 ```
 
 ### 3. Create and activate a stage
@@ -101,11 +101,11 @@ cat <<'EOF'
 
 ## Authentication
 
-All requests require an API key in `bstr_<secret>` format, created via the dashboard (Settings > API Keys).
+All requests require an API key in `dzl_<secret>` format, created via the dashboard (Settings > API Keys).
 
 The CLI stores your key locally after `dazzle login`. For programmatic use, set:
 ```bash
-export DAZZLE_API_KEY=bstr_your_key_here
+export DAZZLE_API_KEY=dzl_your_key_here
 ```
 
 ## Scripting
