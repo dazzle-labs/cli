@@ -16,13 +16,21 @@ import (
 func (c *Context) resolveStage() error {
 	// 1. Global --stage flag or DAZZLE_STAGE env (already applied by Kong into ctx.Stage)
 	if c.Stage != "" {
-		c.StageID = c.Stage
+		id, err := resolveStageByNameOrID(c, c.Stage)
+		if err != nil {
+			return err
+		}
+		c.StageID = id
 		return nil
 	}
 
 	// 2. Config default
 	if c.Config.DefaultStage != "" {
-		c.StageID = c.Config.DefaultStage
+		id, err := resolveStageByNameOrID(c, c.Config.DefaultStage)
+		if err != nil {
+			return err
+		}
+		c.StageID = id
 		return nil
 	}
 
