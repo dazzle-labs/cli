@@ -84,8 +84,8 @@ dazzle stage broadcast on
 | `dazzle stage event emit <name> <json>` | `s ev e` | Push event to script |
 | `dazzle stage screenshot` | `s ss` | Capture a screenshot |
 | `dazzle stage logs` | `s l` | Retrieve console logs |
-| `dazzle stage broadcast on` | `s live on` | Start broadcasting |
-| `dazzle stage broadcast off` | `s live off` | Stop broadcasting |
+| `dazzle stage broadcast on` | `s bc on` | Start broadcasting |
+| `dazzle stage broadcast off` | `s bc off` | Stop broadcasting |
 
 ## Global Flags
 
