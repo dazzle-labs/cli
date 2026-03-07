@@ -51,7 +51,7 @@ dazzle stage script set my-overlay.jsx
 dazzle stage screenshot -o preview.png
 
 # Go live on a configured destination
-dazzle stage live on
+dazzle stage broadcast on
 ```
 
 ## Commands
@@ -84,8 +84,8 @@ dazzle stage live on
 | `dazzle stage event emit <name> <json>` | `s ev e` | Push event to script |
 | `dazzle stage screenshot` | `s ss` | Capture a screenshot |
 | `dazzle stage logs` | `s l` | Retrieve console logs |
-| `dazzle stage live on` | `s live on` | Go live |
-| `dazzle stage live off` | `s live off` | Stop streaming |
+| `dazzle stage broadcast on` | `s live on` | Start broadcasting |
+| `dazzle stage broadcast off` | `s live off` | Stop broadcasting |
 
 ## Global Flags
 

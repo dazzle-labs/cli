@@ -25,7 +25,7 @@ type StageCmd struct {
 	Event      EventCmd      `cmd:"" aliases:"ev" help:"Push data to the running script."`
 	Logs       LogsCmd       `cmd:"" name:"logs" aliases:"l" help:"Retrieve stage console logs."`
 	Screenshot ScreenshotCmd `cmd:"" name:"screenshot" aliases:"ss" help:"Capture a screenshot of the stage."`
-	Live       StreamCmd     `cmd:"" aliases:"stream" help:"Go live — stream to a destination."`
+	Broadcast  StreamCmd     `cmd:"" aliases:"bc,live,stream" help:"Broadcast to a streaming destination."`
 }
 
 // resolveStageByNameOrID tries to resolve a stage name or ID to its ID.

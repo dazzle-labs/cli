@@ -9,28 +9,28 @@ import (
 	"github.com/dazzle-labs/cli/gen/api/v1/apiv1connect"
 )
 
-// StreamCmd groups streaming subcommands.
+// StreamCmd groups broadcast subcommands.
 type StreamCmd struct {
-	On     StreamStartCmd  `cmd:"" aliases:"start" help:"Go live on the configured destination."`
-	Off    StreamStopCmd   `cmd:"" aliases:"stop" help:"Stop the live stream."`
-	Status StreamStatusCmd `cmd:"" aliases:"st" help:"Check if currently live."`
+	On     StreamStartCmd  `cmd:"" aliases:"start" help:"Start broadcasting to the configured destination."`
+	Off    StreamStopCmd   `cmd:"" aliases:"stop" help:"Stop the broadcast."`
+	Status StreamStatusCmd `cmd:"" aliases:"st" help:"Check broadcast status."`
 }
 
-// StreamStartCmd starts streaming on the active stage.
+// StreamStartCmd starts broadcasting on the active stage.
 type StreamStartCmd struct{}
 
 func (c *StreamStartCmd) Run(ctx *Context) error {
 	return runObsArgs(ctx, []string{"st", "s"})
 }
 
-// StreamStopCmd stops streaming on the active stage.
+// StreamStopCmd stops broadcasting on the active stage.
 type StreamStopCmd struct{}
 
 func (c *StreamStopCmd) Run(ctx *Context) error {
 	return runObsArgs(ctx, []string{"st", "st"})
 }
 
-// StreamStatusCmd shows streaming status on the active stage.
+// StreamStatusCmd shows broadcast status on the active stage.
 type StreamStatusCmd struct{}
 
 func (c *StreamStatusCmd) Run(ctx *Context) error {
