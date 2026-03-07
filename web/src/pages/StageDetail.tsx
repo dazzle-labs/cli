@@ -6,7 +6,7 @@ import type { StreamDestination } from "../gen/api/v1/stream_pb.js";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Cpu, Globe, ArrowLeft, Copy, Check, ArrowUpRight, Pencil, X as XIcon } from "lucide-react";
+import { Trash2, Cpu, Globe, ArrowLeft, Copy, Check, ArrowUpRight, Pencil, X as XIcon, Link2, RefreshCw } from "lucide-react";
 import { StreamPreview } from "@/components/StreamPreview";
 import { CodeBlock } from "@/components/ui/code-block";
 
@@ -18,6 +18,7 @@ export function StageDetail() {
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [confirmingRegen, setConfirmingRegen] = useState(false);
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
 
   // Inline name editing
@@ -201,6 +202,67 @@ dazzle stage broadcast on`;
             stageId={stageId!}
             status={stage.status === "running" ? "running" : stage.status === "starting" ? "starting" : "stopped"}
           />
+          {stage.preview && (
+            <div className="mt-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Link2 className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
+                <span className="text-xs font-medium text-zinc-400">Preview URL</span>
+              </div>
+              <div className="flex items-center gap-2 mb-2">
+                <code className="flex-1 text-xs font-mono text-zinc-400 truncate">{stage.preview.watchUrl}</code>
+                <button
+                  onClick={() => handleCopy(stage.preview!.watchUrl, "preview-watch")}
+                  className="text-zinc-500 hover:text-emerald-400 p-1 rounded transition-colors cursor-pointer shrink-0"
+                  title="Copy watch URL"
+                >
+                  {copiedId === "preview-watch" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                </button>
+              </div>
+              <div className="flex items-center gap-2 mb-2">
+                <code className="flex-1 text-xs font-mono text-zinc-500 truncate">{stage.preview.hlsUrl}</code>
+                <button
+                  onClick={() => handleCopy(stage.preview!.hlsUrl, "preview-hls")}
+                  className="text-zinc-500 hover:text-emerald-400 p-1 rounded transition-colors cursor-pointer shrink-0"
+                  title="Copy HLS URL"
+                >
+                  {copiedId === "preview-hls" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                </button>
+              </div>
+              <div className="flex items-center">
+                {!confirmingRegen ? (
+                  <button
+                    onClick={() => setConfirmingRegen(true)}
+                    className="inline-flex items-center gap-1 text-xs text-zinc-600 hover:text-zinc-400 transition-colors cursor-pointer"
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                    Regenerate
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-zinc-500">This will disconnect current viewers. Continue?</span>
+                    <button
+                      onClick={async () => {
+                        try {
+                          await stageClient.regeneratePreviewToken({ id: stageId! });
+                          await refresh();
+                        } catch { /* ignore */ }
+                        setConfirmingRegen(false);
+                      }}
+                      className="text-xs text-emerald-400 hover:text-emerald-300 cursor-pointer"
+                    >
+                      Confirm
+                    </button>
+                    <button
+                      onClick={() => setConfirmingRegen(false)}
+                      className="text-xs text-zinc-500 hover:text-zinc-300 cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right: Metadata + Streaming */}

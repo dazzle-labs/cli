@@ -776,8 +776,27 @@ var obsBlockedCommands = [][]string{
 	{"set", "ss"},
 }
 
-// redactStreamSecrets removes RTMP URLs and stream-key-like values from OBS command output.
+// redactStreamSecrets removes RTMP URLs, stream-key-like values, and preview tokens from OBS command output.
 func redactStreamSecrets(output string) string {
+	// Redact preview tokens (dpt_ followed by hex chars)
+	for {
+		idx := strings.Index(output, "dpt_")
+		if idx == -1 {
+			break
+		}
+		end := idx + 4 // past "dpt_"
+		for end < len(output) && ((output[end] >= '0' && output[end] <= '9') || (output[end] >= 'a' && output[end] <= 'f')) {
+			end++
+		}
+		if end == idx+4 {
+			// "dpt_" not followed by hex — skip past it
+			output = output[:idx] + "dpt§" + output[idx+4:]
+			continue
+		}
+		output = output[:idx] + "[REDACTED]" + output[end:]
+	}
+	output = strings.ReplaceAll(output, "dpt§", "dpt_")
+
 	// Redact rtmp:// and rtmps:// URLs
 	for {
 		idx := strings.Index(strings.ToLower(output), "rtmp")

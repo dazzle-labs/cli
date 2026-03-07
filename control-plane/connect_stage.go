@@ -6,7 +6,10 @@ import (
 	"log"
 	"time"
 
+	"strings"
+
 	"connectrpc.com/connect"
+	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	apiv1 "github.com/dazzle-labs/cli/gen/api/v1"
@@ -31,7 +34,7 @@ func (s *stageServer) CreateStage(ctx context.Context, req *connect.Request[apiv
 	}
 
 	return connect.NewResponse(&apiv1.CreateStageResponse{
-		Stage: stageToProto(stage),
+		Stage: stageToProto(stage, s.mgr.publicBaseURL),
 	}), nil
 }
 
@@ -46,7 +49,7 @@ func (s *stageServer) ListStages(ctx context.Context, req *connect.Request[apiv1
 	var pbStages []*apiv1.Stage
 	for _, row := range rows {
 		st := stageRowToStruct(&row, s.mgr)
-		pbStages = append(pbStages, stageToProto(st))
+		pbStages = append(pbStages, stageToProto(st, s.mgr.publicBaseURL))
 	}
 	return connect.NewResponse(&apiv1.ListStagesResponse{
 		Stages: pbStages,
@@ -66,7 +69,7 @@ func (s *stageServer) GetStage(ctx context.Context, req *connect.Request[apiv1.G
 
 	st := stageRowToStruct(row, s.mgr)
 	return connect.NewResponse(&apiv1.GetStageResponse{
-		Stage: stageToProto(st),
+		Stage: stageToProto(st, s.mgr.publicBaseURL),
 	}), nil
 }
 
@@ -123,7 +126,7 @@ func (s *stageServer) SetStageDestination(ctx context.Context, req *connect.Requ
 	}
 	st := stageRowToStruct(updated, s.mgr)
 	return connect.NewResponse(&apiv1.SetStageDestinationResponse{
-		Stage: stageToProto(st),
+		Stage: stageToProto(st, s.mgr.publicBaseURL),
 	}), nil
 }
 
@@ -151,6 +154,14 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
+	// Re-read token from DB (may have been regenerated during activation)
+	if freshRow, err := dbGetStage(s.mgr.db, req.Msg.Id); err == nil && freshRow != nil && freshRow.PreviewToken.Valid && freshRow.PreviewToken.String != "" {
+		readyStage.PreviewToken = freshRow.PreviewToken.String
+		s.mgr.mu.Lock()
+		s.mgr.previewTokens[freshRow.PreviewToken.String] = req.Msg.Id
+		s.mgr.mu.Unlock()
+	}
+
 	// Restore script
 	if s.mgr.db != nil {
 		if script, err := dbGetStageScript(s.mgr.db, req.Msg.Id); err == nil && script != "" {
@@ -169,7 +180,7 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 	}
 
 	return connect.NewResponse(&apiv1.ActivateStageResponse{
-		Stage: stageToProto(readyStage),
+		Stage: stageToProto(readyStage, s.mgr.publicBaseURL),
 	}), nil
 }
 
@@ -195,7 +206,7 @@ func (s *stageServer) DeactivateStage(ctx context.Context, req *connect.Request[
 	}
 	st := stageRowToStruct(updated, s.mgr)
 	return connect.NewResponse(&apiv1.DeactivateStageResponse{
-		Stage: stageToProto(st),
+		Stage: stageToProto(st, s.mgr.publicBaseURL),
 	}), nil
 }
 
@@ -233,7 +244,46 @@ func (s *stageServer) UpdateStage(ctx context.Context, req *connect.Request[apiv
 
 	st := stageRowToStruct(row, s.mgr)
 	return connect.NewResponse(&apiv1.UpdateStageResponse{
-		Stage: stageToProto(st),
+		Stage: stageToProto(st, s.mgr.publicBaseURL),
+	}), nil
+}
+
+func (s *stageServer) RegeneratePreviewToken(ctx context.Context, req *connect.Request[apiv1.RegeneratePreviewTokenRequest]) (*connect.Response[apiv1.RegeneratePreviewTokenResponse], error) {
+	info := mustAuth(ctx)
+
+	row, err := dbGetStage(s.mgr.db, req.Msg.Id)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	if row == nil || row.UserID != info.UserID {
+		return nil, connect.NewError(connect.CodeNotFound, nil)
+	}
+
+	newToken := "dpt_" + strings.ReplaceAll(uuid.NewString(), "-", "")
+	if err := dbSetPreviewToken(s.mgr.db, req.Msg.Id, newToken); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	s.mgr.mu.Lock()
+	// Remove old token mapping
+	if row.PreviewToken.Valid && row.PreviewToken.String != "" {
+		delete(s.mgr.previewTokens, row.PreviewToken.String)
+	}
+	// Add new token mapping
+	s.mgr.previewTokens[newToken] = req.Msg.Id
+	// Update live stage if active
+	if live, ok := s.mgr.stages[req.Msg.Id]; ok {
+		live.PreviewToken = newToken
+	}
+	s.mgr.mu.Unlock()
+
+	updated, err := dbGetStage(s.mgr.db, req.Msg.Id)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	st := stageRowToStruct(updated, s.mgr)
+	return connect.NewResponse(&apiv1.RegeneratePreviewTokenResponse{
+		Stage: stageToProto(st, s.mgr.publicBaseURL),
 	}), nil
 }
 
@@ -248,6 +298,7 @@ func stageRowToStruct(row *stageRow, mgr *Manager) *Stage {
 		Status:        StageStatus(row.Status),
 		OwnerUserID:   row.UserID,
 		DestinationID: row.DestinationID.String,
+		PreviewToken:  row.PreviewToken.String,
 	}
 	// Overlay live in-memory state (more up-to-date pod IP, current status)
 	if live, ok := mgr.getStage(row.ID); ok {
@@ -258,8 +309,8 @@ func stageRowToStruct(row *stageRow, mgr *Manager) *Stage {
 	return st
 }
 
-func stageToProto(s *Stage) *apiv1.Stage {
-	return &apiv1.Stage{
+func stageToProto(s *Stage, publicBaseURL string) *apiv1.Stage {
+	pb := &apiv1.Stage{
 		Id:            s.ID,
 		Name:          s.Name,
 		PodName:       s.PodName,
@@ -270,4 +321,11 @@ func stageToProto(s *Stage) *apiv1.Stage {
 		OwnerUserId:   s.OwnerUserID,
 		DestinationId: s.DestinationID,
 	}
+	if s.PreviewToken != "" && s.Status == StatusRunning && publicBaseURL != "" {
+		pb.Preview = &apiv1.StagePreview{
+			WatchUrl: publicBaseURL + "/stage/" + s.ID + "/preview?token=" + s.PreviewToken,
+			HlsUrl:   publicBaseURL + "/stage/" + s.ID + "/hls/stream.m3u8?token=" + s.PreviewToken,
+		}
+	}
+	return pb
 }

@@ -65,11 +65,13 @@ type Stage struct {
 	Status        StageStatus `json:"status"`
 	OwnerUserID   string      `json:"ownerUserId,omitempty"`
 	DestinationID string      `json:"destinationId,omitempty"`
+	PreviewToken  string      `json:"previewToken,omitempty"`
 }
 
 type Manager struct {
 	mu            sync.RWMutex
 	stages        map[string]*Stage
+	previewTokens map[string]string // preview token -> stageID (O(1) lookup)
 	activateMu    sync.Map // per-stage activation locks (stageID -> *sync.Mutex)
 	clientset     *kubernetes.Clientset
 	namespace     string
@@ -82,6 +84,7 @@ type Manager struct {
 	encryptionKey []byte
 	pc            *podClient
 	oauth         *oauthHandler
+	publicBaseURL string
 }
 
 func envOrDefault(key, def string) string {
@@ -133,8 +136,14 @@ func NewManager() (*Manager, error) {
 		return nil, fmt.Errorf("ENCRYPTION_KEY must be 32 bytes hex-encoded")
 	}
 
+	publicBaseURL := os.Getenv("PUBLIC_BASE_URL")
+	if publicBaseURL == "" {
+		publicBaseURL = os.Getenv("OAUTH_REDIRECT_BASE_URL")
+	}
+
 	m := &Manager{
 		stages:        make(map[string]*Stage),
+		previewTokens: make(map[string]string),
 		clientset:     clientset,
 		namespace:     envOrDefault("NAMESPACE", "browser-streamer"),
 		streamerImage: envOrDefault("STREAMER_IMAGE", "browser-streamer:latest"),
@@ -143,6 +152,7 @@ func NewManager() (*Manager, error) {
 		db:            db,
 		auth:          newAuthenticator(db, clerkSecretKey),
 		encryptionKey: encKey,
+		publicBaseURL: publicBaseURL,
 	}
 
 	m.pc = newPodClient(m.podToken)
@@ -197,11 +207,15 @@ func (m *Manager) recoverStages() error {
 			Status:    status,
 		}
 
-		// Look up name and owner from DB
+		// Look up name, owner, and preview token from DB
 		if m.db != nil {
 			if row, err := dbGetStage(m.db, stageID); err == nil && row != nil {
 				stage.Name = row.Name
 				stage.OwnerUserID = row.UserID
+				if row.PreviewToken.Valid {
+					stage.PreviewToken = row.PreviewToken.String
+					m.previewTokens[row.PreviewToken.String] = stageID
+				}
 			}
 		}
 
@@ -376,6 +390,9 @@ func (m *Manager) deleteStage(id string) error {
 	}
 
 	m.mu.Lock()
+	if s, ok := m.stages[id]; ok && s.PreviewToken != "" {
+		delete(m.previewTokens, s.PreviewToken)
+	}
 	delete(m.stages, id)
 	m.mu.Unlock()
 
@@ -410,6 +427,9 @@ func (m *Manager) doDeactivateStage(id string) error {
 	}
 
 	m.mu.Lock()
+	if s, ok := m.stages[id]; ok && s.PreviewToken != "" {
+		delete(m.previewTokens, s.PreviewToken)
+	}
 	delete(m.stages, id)
 	m.mu.Unlock()
 
@@ -546,17 +566,153 @@ func (m *Manager) createStageRecord(userID, name string) (*Stage, error) {
 	if m.db == nil {
 		return nil, fmt.Errorf("database not available")
 	}
-	id, err := dbCreateStage(m.db, userID, name)
+	id, token, err := dbCreateStage(m.db, userID, name)
 	if err != nil {
 		return nil, err
 	}
 	return &Stage{
-		ID:          id,
-		Name:        name,
-		Status:      StatusInactive,
-		OwnerUserID: userID,
-		CreatedAt:   time.Now(),
+		ID:           id,
+		Name:         name,
+		Status:       StatusInactive,
+		OwnerUserID:  userID,
+		PreviewToken: token,
+		CreatedAt:    time.Now(),
 	}, nil
+}
+
+// handleHLSProxy handles /stage/<uuid>/hls/* with preview token auth and M3U8 rewriting.
+func (m *Manager) handleHLSProxy(w http.ResponseWriter, r *http.Request) {
+	parts := strings.SplitN(strings.TrimPrefix(r.URL.Path, "/stage/"), "/", 3)
+	if len(parts) < 3 {
+		http.Error(w, "invalid hls path", http.StatusBadRequest)
+		return
+	}
+	stageID := parts[0]
+	// parts[1] == "hls", parts[2] == filename
+	filename := parts[2]
+
+	// Path sanitization: only allow .m3u8 and .ts files, no path traversal
+	if strings.Contains(filename, "/") || strings.Contains(filename, "..") {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+	if !strings.HasSuffix(filename, ".m3u8") && !strings.HasSuffix(filename, ".ts") {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	token := r.URL.Query().Get("token")
+
+	// Preview token auth
+	if strings.HasPrefix(token, "dpt_") {
+		m.mu.RLock()
+		mappedStageID, valid := m.previewTokens[token]
+		m.mu.RUnlock()
+
+		if !valid || mappedStageID != stageID {
+			http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
+			return
+		}
+
+		stage, ok := m.getStage(stageID)
+		if !ok || stage.Status != StatusRunning || stage.PodIP == "" {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "stage not active"})
+			return
+		}
+
+		target, _ := url.Parse(fmt.Sprintf("http://%s:8080", stage.PodIP))
+		proxy := httputil.NewSingleHostReverseProxy(target)
+		r.URL.Path = "/hls/" + filename
+		r.URL.RawQuery = "" // strip token from proxied request
+		r.Host = target.Host
+		r.Header.Del("Authorization")
+
+		// For .m3u8, rewrite segment URLs to include token
+		if strings.HasSuffix(filename, ".m3u8") {
+			proxy.ModifyResponse = func(resp *http.Response) error {
+				if resp.StatusCode != http.StatusOK {
+					return nil
+				}
+				body, err := io.ReadAll(resp.Body)
+				resp.Body.Close()
+				if err != nil {
+					return err
+				}
+				lines := strings.Split(string(body), "\n")
+				for i, line := range lines {
+					if line == "" || strings.HasPrefix(line, "#") {
+						continue
+					}
+					lines[i] = line + "?token=" + token
+				}
+				modified := []byte(strings.Join(lines, "\n"))
+				resp.Body = io.NopCloser(strings.NewReader(string(modified)))
+				resp.ContentLength = int64(len(modified))
+				resp.Header.Set("Content-Length", strconv.Itoa(len(modified)))
+				return nil
+			}
+		}
+
+		proxy.ServeHTTP(w, r)
+		return
+	}
+
+	// No preview token or non-dpt_ token: fall through to normal auth
+	m.auth.authMiddlewareHTTP(http.HandlerFunc(m.handleStageProxy)).ServeHTTP(w, r)
+}
+
+// handlePreviewPage serves a browser-friendly HTML page with an embedded HLS.js player.
+func (m *Manager) handlePreviewPage(w http.ResponseWriter, r *http.Request) {
+	parts := strings.SplitN(strings.TrimPrefix(r.URL.Path, "/stage/"), "/", 2)
+	stageID := parts[0]
+	token := r.URL.Query().Get("token")
+
+	if !strings.HasPrefix(token, "dpt_") {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	m.mu.RLock()
+	mappedStageID, valid := m.previewTokens[token]
+	m.mu.RUnlock()
+
+	if !valid || mappedStageID != stageID {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	stage, ok := m.getStage(stageID)
+	isRunning := ok && stage.Status == StatusRunning && stage.PodIP != ""
+
+	hlsURL := "/stage/" + stageID + "/hls/stream.m3u8?token=" + token
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	fmt.Fprintf(w, `<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Stage Preview</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0a;display:flex;align-items:center;justify-content:center;height:100vh;font-family:system-ui,sans-serif;color:#a1a1aa}
+video{max-width:100%%;max-height:100vh;background:#000}
+.offline{text-align:center;font-size:1.125rem}
+</style>
+</head><body>`)
+	if !isRunning {
+		fmt.Fprintf(w, `<div class="offline"><p>Stream is offline</p></div>`)
+	} else {
+		fmt.Fprintf(w, `<video id="v" autoplay muted playsinline controls></video>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.15"></script>
+<script>
+var v=document.getElementById("v"),src=%q;
+if(Hls.isSupported()){var h=new Hls();h.loadSource(src);h.attachMedia(v)}
+else if(v.canPlayType("application/vnd.apple.mpegurl"))v.src=src;
+</script>`, hlsURL)
+	}
+	fmt.Fprintf(w, `</body></html>`)
 }
 
 func (m *Manager) handleHealth(w http.ResponseWriter, r *http.Request) {
@@ -1048,6 +1204,10 @@ func main() {
 			corsMiddleware(http.HandlerFunc(mgr.handleCDP)).ServeHTTP(w, r)
 		case "mcp":
 			mcpHandler.ServeHTTP(w, r)
+		case "hls":
+			mgr.handleHLSProxy(w, r)
+		case "preview":
+			mgr.handlePreviewPage(w, r)
 		default:
 			if isWebSocketUpgrade(r) {
 				mgr.handleWebSocketUpgrade(w, r)

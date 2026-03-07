@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	_ "github.com/lib/pq"
 )
 
@@ -323,22 +324,24 @@ type stageRow struct {
 	PodName       sql.NullString
 	PodIP         sql.NullString
 	DestinationID sql.NullString
+	PreviewToken  sql.NullString
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 }
 
-func dbCreateStage(db *sql.DB, userID, name string) (string, error) {
+func dbCreateStage(db *sql.DB, userID, name string) (string, string, error) {
+	token := "dpt_" + strings.ReplaceAll(uuid.NewString(), "-", "")
 	var id string
 	err := db.QueryRow(`
-		INSERT INTO stages (user_id, name, status)
-		VALUES ($1, $2, 'inactive')
-		RETURNING id`, userID, name).Scan(&id)
-	return id, err
+		INSERT INTO stages (user_id, name, status, preview_token)
+		VALUES ($1, $2, 'inactive', $3)
+		RETURNING id`, userID, name, token).Scan(&id)
+	return id, token, err
 }
 
 func dbListStages(db *sql.DB, userID string) ([]stageRow, error) {
 	rows, err := db.Query(`
-		SELECT id, user_id, name, status, pod_name, pod_ip, destination_id, created_at, updated_at
+		SELECT id, user_id, name, status, pod_name, pod_ip, destination_id, preview_token, created_at, updated_at
 		FROM stages WHERE user_id=$1 ORDER BY created_at`, userID)
 	if err != nil {
 		return nil, err
@@ -347,7 +350,7 @@ func dbListStages(db *sql.DB, userID string) ([]stageRow, error) {
 	var stages []stageRow
 	for rows.Next() {
 		var s stageRow
-		if err := rows.Scan(&s.ID, &s.UserID, &s.Name, &s.Status, &s.PodName, &s.PodIP, &s.DestinationID, &s.CreatedAt, &s.UpdatedAt); err != nil {
+		if err := rows.Scan(&s.ID, &s.UserID, &s.Name, &s.Status, &s.PodName, &s.PodIP, &s.DestinationID, &s.PreviewToken, &s.CreatedAt, &s.UpdatedAt); err != nil {
 			return nil, err
 		}
 		stages = append(stages, s)
@@ -358,8 +361,8 @@ func dbListStages(db *sql.DB, userID string) ([]stageRow, error) {
 func dbGetStage(db *sql.DB, id string) (*stageRow, error) {
 	var s stageRow
 	err := db.QueryRow(`
-		SELECT id, user_id, name, status, pod_name, pod_ip, destination_id, created_at, updated_at
-		FROM stages WHERE id=$1`, id).Scan(&s.ID, &s.UserID, &s.Name, &s.Status, &s.PodName, &s.PodIP, &s.DestinationID, &s.CreatedAt, &s.UpdatedAt)
+		SELECT id, user_id, name, status, pod_name, pod_ip, destination_id, preview_token, created_at, updated_at
+		FROM stages WHERE id=$1`, id).Scan(&s.ID, &s.UserID, &s.Name, &s.Status, &s.PodName, &s.PodIP, &s.DestinationID, &s.PreviewToken, &s.CreatedAt, &s.UpdatedAt)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -422,8 +425,8 @@ func dbRenameStage(db *sql.DB, id, userID, name string) (*stageRow, error) {
 	err := db.QueryRow(`
 		UPDATE stages SET name=$3, updated_at=NOW()
 		WHERE id=$1 AND user_id=$2
-		RETURNING id, user_id, name, status, pod_name, pod_ip, destination_id, created_at, updated_at`,
-		id, userID, name).Scan(&s.ID, &s.UserID, &s.Name, &s.Status, &s.PodName, &s.PodIP, &s.DestinationID, &s.CreatedAt, &s.UpdatedAt)
+		RETURNING id, user_id, name, status, pod_name, pod_ip, destination_id, preview_token, created_at, updated_at`,
+		id, userID, name).Scan(&s.ID, &s.UserID, &s.Name, &s.Status, &s.PodName, &s.PodIP, &s.DestinationID, &s.PreviewToken, &s.CreatedAt, &s.UpdatedAt)
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("stage not found")
 	}
@@ -431,6 +434,11 @@ func dbRenameStage(db *sql.DB, id, userID, name string) (*stageRow, error) {
 		return nil, err
 	}
 	return &s, nil
+}
+
+func dbSetPreviewToken(db *sql.DB, stageID, token string) error {
+	_, err := db.Exec(`UPDATE stages SET preview_token=$2, updated_at=NOW() WHERE id=$1`, stageID, token)
+	return err
 }
 
 // --- Encryption helpers ---
