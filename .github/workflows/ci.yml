@@ -286,6 +286,7 @@ jobs:
 
       - name: Decrypt and apply secrets
         run: |
+          kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
           for secret in k8s/secrets/*.yaml k8s/clerk/*.secrets.yaml k8s/infrastructure/*.secrets.yaml; do
             [ -f "$secret" ] || continue
             echo "Applying $secret"
