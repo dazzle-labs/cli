@@ -215,7 +215,7 @@ jobs:
           curl -sLO "https://github.com/getsops/sops/releases/download/v3.11.0/sops-v3.11.0.linux.amd64"
           sudo mv sops-v3.11.0.linux.amd64 /usr/local/bin/sops
           sudo chmod +x /usr/local/bin/sops
-          curl -sL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.6.0/kustomize_v5.6.0_linux_amd64.tar.gz" | tar -xzf -
+          curl -sL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.8.1/kustomize_v5.8.1_linux_amd64.tar.gz" | tar -xzf - kustomize
           sudo mv kustomize /usr/local/bin/
 
       - name: Setup age key
@@ -283,6 +283,8 @@ jobs:
 
       - name: Install Helm
         uses: azure/setup-helm@v4
+        with:
+          version: 'v3.17.3'
 
       - name: Decrypt and apply secrets
         run: |
