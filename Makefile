@@ -30,7 +30,7 @@ TFSTATE_ENC := $(INFRA_DIR)/terraform.tfstate.enc
 .PHONY: help check-deps proto up down build build-cp build-streamer deploy dev llms-txt logs status \
         kubectx prod/kubectl prod/status prod/nodes \
         prod/infra/init prod/infra/plan prod/infra/apply prod/infra/output \
-        prod/k8s/% \
+        k8s/% prod/k8s/% \
         control-plane/% streamer/% web/%
 
 help: ## Show this help
@@ -213,7 +213,7 @@ prod/nodes: ## Show prod cluster nodes
 	@bash -c '$(RKCTL) get nodes -o wide'
 
 prod/k8s/%: ## Run k8s/ Makefile target against prod (e.g. make prod/k8s/prometheus)
-	@bash -c 'KUBECONFIG=<(sops -d k8s/hetzner/kubeconfig.yaml.enc) $(MAKE) -C k8s $*'
+	@bash -c '$(MAKE) -C k8s $* KUBE_ARGS="--kubeconfig <(sops -d k8s/hetzner/kubeconfig.yaml.enc)"'
 
 # ══════════════════════════════════════════════════════
 # Production infrastructure (OpenTofu) — CAUTION
@@ -262,6 +262,9 @@ prod/infra/output: prod/infra/decrypt-state ## Show OpenTofu outputs
 # ══════════════════════════════════════════════════════
 # Nested component targets
 # ══════════════════════════════════════════════════════
+
+k8s/%: check-cluster ## Run k8s/ Makefile target against local Kind (e.g. make k8s/deploy)
+	$(MAKE) -C k8s $* KUBE_ARGS="--context $(KIND_CTX)"
 
 control-plane/%:
 	$(MAKE) -C control-plane $*
