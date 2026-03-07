@@ -20,6 +20,7 @@ interface OnboardingWizardProps {
 
 const WIZARD_STEPS = ["Set up platform", "Set up stage"];
 
+
 const OAUTH_PLATFORMS = ["twitch", "youtube", "kick"] as const;
 
 export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardProps) {

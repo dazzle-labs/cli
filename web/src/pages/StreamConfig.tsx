@@ -62,7 +62,7 @@ export function StreamConfig() {
   async function handleCreate(data: StreamDestinationData) {
     try {
       await streamClient.createStreamDestination({
-        name: data.name,
+        platformUsername: data.platformUsername,
         platform: data.platform,
         rtmpUrl: data.rtmpUrl,
         streamKey: data.streamKey,

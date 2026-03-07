@@ -297,6 +297,24 @@ func (s *stageServer) RegeneratePreviewToken(ctx context.Context, req *connect.R
 	}), nil
 }
 
+func (s *stageServer) RenameStage(ctx context.Context, req *connect.Request[apiv1.RenameStageRequest]) (*connect.Response[apiv1.RenameStageResponse], error) {
+	info := mustAuth(ctx)
+
+	if req.Msg.Name == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name is required"))
+	}
+
+	row, err := dbRenameStage(s.mgr.db, req.Msg.Id, info.UserID, req.Msg.Name)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeNotFound, err)
+	}
+
+	st := stageRowToStruct(row, s.mgr)
+	return connect.NewResponse(&apiv1.RenameStageResponse{
+		Stage: stageToProto(st),
+	}), nil
+}
+
 // stageRowToStruct merges a DB row with in-memory live state (pod IP, running status).
 func stageRowToStruct(row *stageRow, mgr *Manager) *Stage {
 	st := &Stage{

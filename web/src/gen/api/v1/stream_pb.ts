@@ -24,11 +24,6 @@ export type StreamDestination = Message<"dazzle.v1.StreamDestination"> & {
   id: string;
 
   /**
-   * @generated from field: string name = 2;
-   */
-  name: string;
-
-  /**
    * @generated from field: string platform = 3;
    */
   platform: string;
@@ -70,11 +65,6 @@ export const StreamDestinationSchema: GenMessage<StreamDestination> = /*@__PURE_
  * @generated from message dazzle.v1.CreateStreamDestinationRequest
  */
 export type CreateStreamDestinationRequest = Message<"dazzle.v1.CreateStreamDestinationRequest"> & {
-  /**
-   * @generated from field: string name = 1;
-   */
-  name: string;
-
   /**
    * @generated from field: string platform = 2;
    */
@@ -160,60 +150,6 @@ export const ListStreamDestinationsResponseSchema: GenMessage<ListStreamDestinat
   messageDesc(file_api_v1_stream, 4);
 
 /**
- * @generated from message dazzle.v1.UpdateStreamDestinationRequest
- */
-export type UpdateStreamDestinationRequest = Message<"dazzle.v1.UpdateStreamDestinationRequest"> & {
-  /**
-   * @generated from field: string id = 1;
-   */
-  id: string;
-
-  /**
-   * @generated from field: string name = 2;
-   */
-  name: string;
-
-  /**
-   * @generated from field: string platform = 3;
-   */
-  platform: string;
-
-  /**
-   * @generated from field: string rtmp_url = 4;
-   */
-  rtmpUrl: string;
-
-  /**
-   * @generated from field: string stream_key = 5;
-   */
-  streamKey: string;
-};
-
-/**
- * Describes the message dazzle.v1.UpdateStreamDestinationRequest.
- * Use `create(UpdateStreamDestinationRequestSchema)` to create a new message.
- */
-export const UpdateStreamDestinationRequestSchema: GenMessage<UpdateStreamDestinationRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_stream, 5);
-
-/**
- * @generated from message dazzle.v1.UpdateStreamDestinationResponse
- */
-export type UpdateStreamDestinationResponse = Message<"dazzle.v1.UpdateStreamDestinationResponse"> & {
-  /**
-   * @generated from field: dazzle.v1.StreamDestination destination = 1;
-   */
-  destination?: StreamDestination;
-};
-
-/**
- * Describes the message dazzle.v1.UpdateStreamDestinationResponse.
- * Use `create(UpdateStreamDestinationResponseSchema)` to create a new message.
- */
-export const UpdateStreamDestinationResponseSchema: GenMessage<UpdateStreamDestinationResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_stream, 6);
-
-/**
  * @generated from message dazzle.v1.DeleteStreamDestinationRequest
  */
 export type DeleteStreamDestinationRequest = Message<"dazzle.v1.DeleteStreamDestinationRequest"> & {
@@ -228,7 +164,7 @@ export type DeleteStreamDestinationRequest = Message<"dazzle.v1.DeleteStreamDest
  * Use `create(DeleteStreamDestinationRequestSchema)` to create a new message.
  */
 export const DeleteStreamDestinationRequestSchema: GenMessage<DeleteStreamDestinationRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_stream, 7);
+  messageDesc(file_api_v1_stream, 5);
 
 /**
  * @generated from message dazzle.v1.DeleteStreamDestinationResponse
@@ -241,7 +177,7 @@ export type DeleteStreamDestinationResponse = Message<"dazzle.v1.DeleteStreamDes
  * Use `create(DeleteStreamDestinationResponseSchema)` to create a new message.
  */
 export const DeleteStreamDestinationResponseSchema: GenMessage<DeleteStreamDestinationResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_stream, 8);
+  messageDesc(file_api_v1_stream, 6);
 
 /**
  * @generated from service dazzle.v1.RtmpDestinationService
@@ -262,14 +198,6 @@ export const RtmpDestinationService: GenService<{
     methodKind: "unary";
     input: typeof ListStreamDestinationsRequestSchema;
     output: typeof ListStreamDestinationsResponseSchema;
-  },
-  /**
-   * @generated from rpc dazzle.v1.RtmpDestinationService.UpdateStreamDestination
-   */
-  updateStreamDestination: {
-    methodKind: "unary";
-    input: typeof UpdateStreamDestinationRequestSchema;
-    output: typeof UpdateStreamDestinationResponseSchema;
   },
   /**
    * @generated from rpc dazzle.v1.RtmpDestinationService.DeleteStreamDestination

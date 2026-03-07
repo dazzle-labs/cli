@@ -10,12 +10,18 @@ import { Trash2, Cpu, Globe, ArrowLeft, Copy, Check, ArrowUpRight, Pencil, X as 
 import { StreamPreview } from "@/components/StreamPreview";
 import { CodeBlock } from "@/components/ui/code-block";
 
+const FRAMEWORK_STORAGE_KEY = "dazzle-last-framework";
+
 export function StageDetail() {
   const { stageId } = useParams<{ stageId: string }>();
   const navigate = useNavigate();
   const [stage, setStage] = useState<Stage | null>(null);
   const [destinations, setDestinations] = useState<StreamDestination[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeFramework, setActiveFramework] = useState(() => {
+    const saved = localStorage.getItem(FRAMEWORK_STORAGE_KEY);
+    return saved && FRAMEWORKS.some(fw => fw.id === saved) ? saved : FRAMEWORKS[0].id;
+  });
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [confirmingRegen, setConfirmingRegen] = useState(false);
@@ -51,6 +57,12 @@ export function StageDetail() {
       if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
     };
   }, []);
+
+  function handleSelectFramework(id: string) {
+    setActiveFramework(id);
+    localStorage.setItem(FRAMEWORK_STORAGE_KEY, id);
+    setCopiedId(null);
+  }
 
   async function handleCopy(text: string, id: string) {
     if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
@@ -266,6 +278,10 @@ dazzle stage broadcast on`;
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
             <p className="text-xs font-medium text-zinc-400 mb-3">Details</p>
             <div className="flex flex-col gap-2.5">
+              <div className="flex items-center gap-2 text-xs text-zinc-500">
+                <span className="text-zinc-600 w-[52px]">ID</span>
+                <code className="font-mono text-zinc-400">{stage.id}</code>
+              </div>
               {stage.podName && (
                 <div className="flex items-center gap-2 text-xs text-zinc-500">
                   <Cpu className="h-3.5 w-3.5 shrink-0" />
