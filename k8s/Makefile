@@ -23,7 +23,7 @@ OK      = @printf "$(_bold)$(_green)✓ %s$(_reset)\n"
 apply-secrets: ## Decrypt SOPS secrets and apply them to the cluster
 	$(STEP) "Applying secrets"
 	@$(KUBECTL) create namespace monitoring --dry-run=client -o yaml | $(KUBECTL) apply -f -
-	@for secret in secrets/*.yaml clerk/*.secrets.yaml infrastructure/*.secrets.yaml; do \
+	@for secret in secrets/*.yaml; do \
 		[ -f "$$secret" ] || continue; \
 		echo "  $$secret"; \
 		sops --decrypt "$$secret" | $(KUBECTL) apply -f -; \
