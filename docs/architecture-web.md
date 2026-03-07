@@ -10,7 +10,7 @@
 
 ## Overview
 
-The web frontend is a React 19 SPA (Single Page Application) served by the control plane at `/`. It provides the user-facing dashboard for managing stages, API keys, stream destinations, and viewing documentation. Auth is handled entirely by Clerk.
+The web frontend is a React 19 SPA (Single Page Application) served by the control plane at `/`. It is one of the two **primary consumers** of the platform (alongside the Dazzle CLI). The Web UI provides the dashboard for managing stages, API keys, stream destinations, and account settings. Auth is handled entirely by Clerk. The CLI is the preferred interface for AI agents and developers doing scripting/automation; the Web UI is for configuration and monitoring.
 
 ---
 

@@ -8,7 +8,8 @@
 
 | | |
 |-|-|
-| **Product** | Dazzle — on-demand cloud browser environments for AI agents and live streaming |
+| **Product** | Dazzle — on-demand cloud browser environments for AI-driven live streaming and automation |
+| **Primary Consumers** | Dazzle CLI (`dazzle`) and Web UI |
 | **Production URL** | https://stream.dazzle.fm |
 | **Repo Type** | Monorepo (4 parts) |
 | **Infrastructure** | Hetzner Cloud k3s HA cluster (3 CP + 2 workers + autoscaler 0–3), provisioned via OpenTofu + kube-hetzner |
@@ -21,7 +22,7 @@
 
 ### control-plane (Go backend)
 - **Path:** `control-plane/`
-- **Role:** API server, K8s orchestration, auth, DB, CDP/WS proxy, MCP server, serves web SPA
+- **Role:** API server, K8s orchestration, auth, DB, CDP/WS proxy, serves web SPA
 - **Entry:** `control-plane/main.go`
 - **Port:** 8080
 
@@ -46,6 +47,7 @@
 
 ### Architecture
 - [Project Overview](./project-overview.md) — Product summary, tech stack, key capabilities
+- [Dazzle CLI Design](./dazzle-cli-design.md) — CLI commands, auth flow, proto service changes, implementation plan
 - [Architecture: Control Plane](./architecture-control-plane.md) — Go backend: routes, stage lifecycle, CDP proxy, MCP, env vars
 - [Architecture: Web Frontend](./architecture-web.md) — React SPA: pages, routing, ConnectRPC client setup
 - [Architecture: Streamer Pod](./architecture-streamer.md) — Node.js: panel system, Chrome, OBS, Vite HMR
@@ -89,15 +91,17 @@ make proto
 
 ## Key Architectural Decisions
 
-1. **Control plane as unified gateway** — All external traffic (API, CDP, MCP, WebSocket, SPA) routes through one Go binary. Simplifies TLS termination and auth.
+1. **CLI and Web UI as primary consumers** — The Dazzle CLI (`dazzle`) is the main interface for developers and AI agents, providing full stage lifecycle, scripting, and OBS control via ConnectRPC. The Web UI serves as the dashboard for account management, monitoring, and configuration.
 
-2. **Stages are persistent, pods are ephemeral** — A `Stage` DB record survives pod restarts. `GetStage` activates (creates pod) on demand; `DeleteStage` removes everything; `DeactivateStage` deletes pod but keeps record.
+2. **Control plane as unified gateway** — All external traffic (CLI, Web UI, CDP, WebSocket) routes through one Go binary. Simplifies TLS termination and auth.
 
-3. **Panel system replaces template engine** — The streamer's Vite HMR panel system hot-swaps JavaScript/JSX without page reloads. Panels persist state via `emit_event` + `window.__state`.
+3. **Stages are persistent, pods are ephemeral** — A `Stage` DB record survives pod restarts. `GetStage` activates (creates pod) on demand; `DeleteStage` removes everything; `DeactivateStage` deletes pod but keeps record.
 
-4. **Protobuf as service contract** — All control-plane ↔ web communication uses generated ConnectRPC code from `proto/api/v1/`. No hand-written API clients.
+4. **Panel system replaces template engine** — The streamer's Vite HMR panel system hot-swaps JavaScript/JSX without page reloads. Panels persist state via `emit_event` + `window.__state`.
 
-5. **SOPS for secrets** — All production secrets are Age-encrypted at rest (4 recipients); decrypted at apply time by CI/CD or locally via Age key. AES-256-GCM used for stream keys within the DB.
+5. **Protobuf as service contract** — All control-plane ↔ CLI/web communication uses generated ConnectRPC code from `proto/api/v1/`. No hand-written API clients.
+
+6. **SOPS for secrets** — All production secrets are Age-encrypted at rest (4 recipients); decrypted at apply time by CI/CD or locally via Age key. AES-256-GCM used for stream keys within the DB.
 
 ---
 

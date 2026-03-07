@@ -4,7 +4,7 @@
 
 ## Overview
 
-Agent Streamer (Dazzle) is a monorepo with 4 parts. The **control plane** is the central hub: it orchestrates Kubernetes pods, proxies all traffic, and serves the web SPA. All external traffic enters through Traefik and flows to the control plane.
+Agent Streamer (Dazzle) is a monorepo with 4 parts. The **control plane** is the central hub: it orchestrates Kubernetes pods, proxies all traffic, and serves the web SPA. The two primary consumers are the **Dazzle CLI** (`dazzle`) and the **Web UI** — both communicate with the control plane via ConnectRPC. All external traffic enters through Traefik and flows to the control plane.
 
 ---
 
@@ -12,8 +12,9 @@ Agent Streamer (Dazzle) is a monorepo with 4 parts. The **control plane** is the
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│                      External Clients                        │
-│   (Browser, AI Agents, Claude Code MCP, CDP tools)           │
+│                    Primary Consumers                         │
+│   CLI (dazzle) ─── ConnectRPC ──┐                            │
+│   Web UI ──────── ConnectRPC ───┘                            │
 └─────────────────────┬────────────────────────────────────────┘
                       │ HTTPS (stream.dazzle.fm)
                       ▼
@@ -25,10 +26,10 @@ Agent Streamer (Dazzle) is a monorepo with 4 parts. The **control plane** is the
 ┌──────────────────────────────────────────────────────────────┐
 │                   Control Plane (Go)                         │
 │                                                              │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐    │
-│  │  Web SPA │  │ConnectRPC│  │   MCP    │  │CDP/Stage │    │
-│  │ (GET /)  │  │  /api.v1 │  │ /stage/* │  │  Proxy   │    │
-│  └──────────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘    │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐               │
+│  │  Web SPA │  │ConnectRPC│  │CDP/Stage │               │
+│  │ (GET /)  │  │  /api.v1 │  │  Proxy   │               │
+│  └──────────┘  └────┬─────┘  └────┬─────┘               │
 │                     │             │              │           │
 │  ┌──────────────────┴─────────────┴──────────────┘           │
 │  │              Pod Lifecycle Manager                        │
@@ -60,7 +61,9 @@ Agent Streamer (Dazzle) is a monorepo with 4 parts. The **control plane** is the
 
 ## Integration Points
 
-### 1. Web Frontend → Control Plane (ConnectRPC)
+### 1. CLI / Web Frontend → Control Plane (ConnectRPC)
+
+The CLI and Web UI are the primary consumers of the ConnectRPC API. The CLI authenticates with API keys (`bstr_*`); the Web UI uses Clerk JWT.
 
 | Protocol | Path | Description |
 |----------|------|-------------|
@@ -107,17 +110,15 @@ In development, Vite proxies these paths from `:5173` to `:8080`.
 
 **Connection:** `postgres://browser_streamer:<password>@postgres:5432/browser_streamer` (configurable via env)
 
-### 5. MCP Client → Control Plane (MCP Protocol)
+### 5. MCP Client → Control Plane *(legacy, being superseded by CLI)*
 
 | Protocol | Path | Description |
 |----------|------|-------------|
 | HTTP (StreamableHTTP) | `/stage/<stage-id>/mcp/*` | MCP tool invocation for this stage |
 
-**Auth:** Clerk JWT or API key. Stage ID in path routes tools to the correct pod.
+> **Note:** MCP is being superseded by the Dazzle CLI. All operations available via MCP are now accessible through `dazzle` CLI commands using ConnectRPC. The MCP endpoint remains functional but is no longer the recommended integration path.
 
-MCP tools available: `start`, `stop`, `set_script`, `edit_script`, `get_script`, `emit_event`, `screenshot`, OBS controls via `obs`.
-
-### 6. Control Plane MCP → Streamer Pod
+### 6. Control Plane MCP → Streamer Pod *(legacy)*
 
 MCP tool implementations in `mcp.go` call the streamer pod's panel API:
 
@@ -135,17 +136,17 @@ MCP tool implementations in `mcp.go` call the streamer pod's panel API:
 ## Stage Lifecycle Data Flow
 
 ```
-1. User authenticates (Clerk JWT or API key)
-2. User calls CreateStage (ConnectRPC) → DB record created (status: inactive)
-3. User calls GetStage (ConnectRPC) → control plane activates stage:
+1. User authenticates (CLI uses API key, Web UI uses Clerk JWT)
+2. User calls CreateStage (ConnectRPC — via CLI or Web UI) → DB record created (status: inactive)
+3. User calls GetStage/ActivateStage (ConnectRPC) → control plane activates stage:
    a. Creates k8s Pod (streamer image, labels: app=streamer-stage, stage-id=<id>)
    b. Polls pod status every 500ms until Running + PodIP set
    c. Returns stage with status=running and pod_ip
 4. Client interacts via:
-   - ConnectRPC API  → stage management
+   - CLI (dazzle)    → ConnectRPC: stage lifecycle, script, screenshots, OBS, destinations
+   - Web UI          → ConnectRPC: stage monitoring, API keys, destinations
+   - /stage/<id>/cdp → Chrome DevTools Protocol (programmatic access)
    - /stage/<id>/*   → HTTP/WS proxy to streamer panel API
-   - /stage/<id>/cdp → Chrome DevTools Protocol
-   - /stage/<id>/mcp → MCP server (AI agents)
 5. Background GC loop (5s):
    - Refreshes pod statuses from k8s
    - Deletes stages stuck in "starting" >3 minutes

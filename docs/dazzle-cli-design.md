@@ -2,7 +2,7 @@
 
 ## Overview
 
-Public CLI for Dazzle that replaces direct MCP usage with gRPC/Connect calls to the control-plane. Ships as a separate repo, git submodule'd into agent-streamer.
+Public CLI for Dazzle — the **primary interface** for developers and AI agents. All stage lifecycle, scripting, screenshots, OBS, and streaming operations are available via ConnectRPC calls to the control-plane. Ships as a separate repo, git submodule'd into agent-streamer. Supersedes the legacy MCP integration.
 
 ## CLI Commands
 
@@ -211,15 +211,11 @@ message ObsCommandResponse {
 - `RtmpDestinationService` — Clerk JWT or API key (change from Clerk-only, so CLI can manage destinations)
 - `UserService` — Clerk JWT or API key (change from Clerk-only, for `dazzle whoami`)
 
-## MCP as thin wrapper
+## MCP (legacy)
 
-After the RuntimeService exists, MCP handlers become:
-1. Resolve stage ID from URL path context
-2. Build the proto request message
-3. Call the same handler logic (shared `runtimeServer` methods or internal interface)
-4. Convert proto response back to MCP response format
+MCP is being superseded by the CLI. The MCP endpoint remains functional for backward compatibility but is no longer the recommended integration path. All operations available via MCP are accessible through `dazzle` CLI commands.
 
-The MCP-specific concerns (tool descriptions, image content type for screenshots) stay in the MCP layer, but all business logic lives in the Connect handlers.
+After the RuntimeService exists, MCP handlers become thin wrappers that call the same business logic as the Connect handlers.
 
 ### Shared interface approach
 ```go

@@ -11,12 +11,12 @@
 ## Overview
 
 The control plane is the central Go backend. It:
-- Exposes a ConnectRPC API (protobuf over HTTP/2) for stage, API key, stream destination, and user management
+- Exposes a ConnectRPC API (protobuf over HTTP/2) consumed by the **Dazzle CLI** and **Web UI** for stage lifecycle, runtime operations, API key, stream destination, and user management
 - Uses the Kubernetes client to create/delete/monitor streamer pods on demand
 - Proxies CDP (Chrome DevTools Protocol) and WebSocket connections from clients to the correct stage pod
-- Hosts an MCP (Model Context Protocol) server per stage for AI agent integration
 - Serves the compiled web SPA as a static file server
 - Runs DB migrations and persists all state to PostgreSQL
+- Hosts a legacy MCP server per stage (being superseded by CLI)
 
 ---
 

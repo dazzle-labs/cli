@@ -7,7 +7,9 @@
 
 ## Executive Summary
 
-Agent Streamer (branded as **Dazzle**) is a cloud-native platform that provides on-demand, isolated browser environments controllable via AI agents and the web. Each "stage" is a Kubernetes pod running Chrome on a headless display, accessible through Chrome DevTools Protocol (CDP), an MCP (Model Context Protocol) server, and a React web dashboard.
+Agent Streamer (branded as **Dazzle**) is a cloud-native platform that provides on-demand, isolated browser environments for AI-driven live streaming and browser automation. Each "stage" is a Kubernetes pod running Chrome on a headless display with OBS for streaming.
+
+**Primary consumers are the Dazzle CLI (`dazzle`) and the Web UI.** The CLI is the main interface for AI agents and developers — it provides full stage lifecycle management, script control, screenshots, OBS operations, and streaming via ConnectRPC. The Web UI is the dashboard for account management, stage monitoring, API keys, and stream destination configuration.
 
 Primary use cases: AI agents that need a persistent browser (Claude Code, OpenAI Agents, etc.), live streaming to Twitch/YouTube/Kick via RTMP, and programmatic browser automation.
 
@@ -53,18 +55,18 @@ Primary use cases: AI agents that need a persistent browser (Claude Code, OpenAI
 ## Architecture Pattern
 
 ```
-User/Agent ──► Traefik Ingress (TLS termination)
-                    │
-                    ▼
-           Control Plane (Go :8080)
+CLI (dazzle) ──► Traefik Ingress (TLS termination)
+Web UI ────────►         │
+                         ▼
+                Control Plane (Go :8080)
            ├── ConnectRPC API (/api.v1.*)
            │   ├── StageService (create/list/get/delete)
            │   ├── ApiKeyService (CRUD, Clerk-only)
-           │   ├── RtmpDestinationService (RTMP destinations, Clerk-only)
+           │   ├── RuntimeService (script, screenshots, OBS, logs)
+           │   ├── RtmpDestinationService (RTMP destinations)
            │   └── UserService (profile)
            ├── CDP Proxy (/stage/<stage-id>/cdp)
            ├── Stage HTTP/WS Proxy (/stage/<id>/*)
-           ├── MCP Server (/stage/<id>/mcp/*)
            ├── Health (/health)
            └── Web SPA (fallback /)
                     │
@@ -85,13 +87,15 @@ User/Agent ──► Traefik Ingress (TLS termination)
 
 ## Key Capabilities
 
-1. **Stage lifecycle** — Create/activate/deactivate/delete browser pods with status tracking (inactive → starting → running → stopping)
-2. **CDP access** — Full Chrome DevTools Protocol access proxied through control plane; WebSocket URL rewriting for external access
-3. **MCP server** — Per-stage Model Context Protocol tools: `set_script`, `edit_script`, `get_script`, `emit_event`, `screenshot`, `start`, `stop`, OBS controls (`obs`)
-4. **Panel system** — Streamer manages named panels; supports hot-swap via Vite HMR without page reload
-5. **Stream destinations** — RTMP stream keys for Twitch, YouTube, Kick, custom; AES-256-GCM encrypted at rest
-6. **API keys** — `bstr_*` prefix format, HMAC-SHA256 hashed, with last-used tracking; programmatic auth alongside Clerk JWT
-7. **Stage recovery** — On restart, reconciles in-memory state with live Kubernetes pods and resets orphaned DB records
+1. **CLI (`dazzle`)** — Primary developer/agent interface: stage lifecycle, script set/get/edit, screenshots, logs, OBS control, destination management — all via ConnectRPC
+2. **Web UI** — Dashboard for stage monitoring, API key management, stream destination configuration, and account settings
+3. **Stage lifecycle** — Create/activate/deactivate/delete browser pods with status tracking (inactive → starting → running → stopping)
+4. **CDP access** — Full Chrome DevTools Protocol access proxied through control plane; WebSocket URL rewriting for external access
+5. **MCP server** *(legacy)* — Per-stage Model Context Protocol endpoint; being superseded by the CLI
+6. **Panel system** — Streamer manages named panels; supports hot-swap via Vite HMR without page reload
+7. **Stream destinations** — RTMP stream keys for Twitch, YouTube, Kick, custom; AES-256-GCM encrypted at rest
+8. **API keys** — `bstr_*` prefix format, HMAC-SHA256 hashed, with last-used tracking; used by CLI and programmatic clients
+9. **Stage recovery** — On restart, reconciles in-memory state with live Kubernetes pods and resets orphaned DB records
 
 ---
 

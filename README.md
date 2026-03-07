@@ -1,6 +1,8 @@
 # Agent Streamer (Dazzle)
 
-On-demand cloud browser environments for AI agents and live streaming. Each **stage** is a Kubernetes pod running Chrome on a headless display, accessible via Chrome DevTools Protocol (CDP) and a web dashboard.
+On-demand cloud browser environments for AI-driven live streaming and automation. Each **stage** is a Kubernetes pod running Chrome + OBS on a headless display.
+
+**Primary consumers: the [Dazzle CLI](https://github.com/dazzle-labs/cli) (`dazzle`) and the Web UI.** The CLI is the main interface for developers and AI agents — full stage lifecycle, scripting, screenshots, OBS, and streaming via ConnectRPC. The Web UI is the dashboard for account management, stage monitoring, and configuration.
 
 **Production:** https://stream.dazzle.fm
 
@@ -10,7 +12,9 @@ On-demand cloud browser environments for AI agents and live streaming. Each **st
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│  Client (Browser / AI Agent / curl)                                 │
+│  Primary Consumers                                                   │
+│    CLI (dazzle) ─── ConnectRPC ──┐                                   │
+│    Web UI ──────── ConnectRPC ───┘                                   │
 └──────────────────────────────┬──────────────────────────────────────┘
                                │ HTTPS / WSS  :443
                                ▼
@@ -127,11 +131,13 @@ make prod/status    # Show prod cluster nodes and pods
 
 ## Key Capabilities
 
-- **Stage lifecycle** — browser pods move through states: `inactive → starting → running → stopping`. `GetStage` activates on demand; `DeactivateStage` removes the pod but keeps the DB record; `DeleteStage` removes everything.
+- **CLI (`dazzle`)** — primary developer/agent interface: `dazzle stage start`, `dazzle script set`, `dazzle screenshot`, `dazzle obs`, etc.
+- **Web UI** — dashboard for stage monitoring, API key management, stream destination configuration, and account settings
+- **Stage lifecycle** — browser pods move through states: `inactive → starting → running → stopping`. Activate/deactivate via CLI or Web UI; pods are ephemeral, DB records persist.
 - **CDP access** — full Chrome DevTools Protocol proxied through control plane at `/stage/<stage-id>/cdp`
 - **Panel system** — hot-swap JavaScript/JSX via Vite HMR without page reload; state persists via `emit_event` + `window.__state`
 - **Stream destinations** — RTMP keys for Twitch, YouTube, Kick, custom; AES-256-GCM encrypted at rest
-- **API keys** — `bstr_*` prefix, HMAC-SHA256 hashed, with last-used tracking; authenticate via `Authorization: Bearer <key>`
+- **API keys** — `bstr_*` prefix, HMAC-SHA256 hashed, with last-used tracking; used by CLI and programmatic clients
 - **Stage recovery** — on restart, reconciles in-memory state with live K8s pods and resets orphaned DB records
 
 ---
@@ -140,7 +146,7 @@ make prod/status    # Show prod cluster nodes and pods
 
 - **Cluster:** Hetzner Cloud k3s HA (3 control-plane nodes, 2 workers, 0–3 autoscaler), provisioned via OpenTofu + kube-hetzner
 - **TLS:** cert-manager + Let's Encrypt (automatic)
-- **Auth:** Clerk JWT (dashboard/API) + internal `bstr_*` API keys (programmatic)
+- **Auth:** Clerk JWT (Web UI) + `bstr_*` API keys (CLI, programmatic)
 - **Secrets:** SOPS Age-encrypted YAML — decrypted automatically by Make targets and CI/CD
 - **Builds:** GitHub Actions CI/CD — pushes images to Docker Hub, deploys to cluster
 - **Networking:** WireGuard node-to-node encryption, Hetzner Load Balancer
@@ -152,6 +158,7 @@ make prod/status    # Show prod cluster nodes and pods
 Full docs in [`docs/`](docs/index.md):
 
 - [Project Overview](docs/project-overview.md)
+- [Dazzle CLI Design](docs/dazzle-cli-design.md)
 - [Architecture: Control Plane](docs/architecture-control-plane.md)
 - [Architecture: Web Frontend](docs/architecture-web.md)
 - [Architecture: Streamer Pod](docs/architecture-streamer.md)
