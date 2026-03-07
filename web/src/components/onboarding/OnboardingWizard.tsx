@@ -178,9 +178,41 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
           Connect an account or add a custom RTMP destination.
         </p>
 
-        {/* Platforms */}
+        {/* Existing destinations */}
+        {destinations.length > 0 && (
+          <div className="w-full max-w-md mb-6">
+            <p className="text-xs font-medium text-zinc-400 mb-3">Select a destination</p>
+            <div className="flex flex-col gap-2">
+              {destinations.map((d) => (
+                <button
+                  key={d.id}
+                  type="button"
+                  onClick={() => setSelectedDestId(d.id)}
+                  className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-all cursor-pointer ${
+                    selectedDestId === d.id
+                      ? "border-emerald-500/30 bg-emerald-500/[0.06]"
+                      : "border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12]"
+                  }`}
+                >
+                  <PlatformIcon platform={d.platform} size="sm" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-zinc-300 truncate">{d.name || d.platformUsername || d.platform}</p>
+                    <p className="text-xs text-zinc-600">{d.platform}</p>
+                  </div>
+                  {selectedDestId === d.id && (
+                    <div className="h-2 w-2 rounded-full bg-emerald-400 shrink-0" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Connect new destination */}
         <div className="mb-6">
-          <p className="text-xs font-medium text-zinc-400 mb-3 text-center">Platforms</p>
+          <p className="text-xs font-medium text-zinc-400 mb-3 text-center">
+            {destinations.length > 0 ? "Connect a new one" : "Platforms"}
+          </p>
           <div className="flex flex-wrap gap-3 justify-center">
             {OAUTH_PLATFORMS.filter(p => availablePlatforms.includes(p)).map((platform) => {
               const label = PLATFORM_LIST.find((p) => p.value === platform)?.label ?? platform;
@@ -218,36 +250,6 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
                 if (data) handleCreateCustomDest(data);
               }}
             />
-          </div>
-        )}
-
-        {/* Existing destinations */}
-        {destinations.length > 0 && (
-          <div className="w-full max-w-md">
-            <p className="text-xs text-zinc-500 mb-2">Select a destination:</p>
-            <div className="flex flex-col gap-2">
-              {destinations.map((d) => (
-                <button
-                  key={d.id}
-                  type="button"
-                  onClick={() => setSelectedDestId(d.id)}
-                  className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-all cursor-pointer ${
-                    selectedDestId === d.id
-                      ? "border-emerald-500/30 bg-emerald-500/[0.06]"
-                      : "border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12]"
-                  }`}
-                >
-                  <PlatformIcon platform={d.platform} size="sm" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-zinc-300 truncate">{d.name || d.platformUsername || d.platform}</p>
-                    <p className="text-xs text-zinc-600">{d.platform}</p>
-                  </div>
-                  {selectedDestId === d.id && (
-                    <div className="h-2 w-2 rounded-full bg-emerald-400 shrink-0" />
-                  )}
-                </button>
-              ))}
-            </div>
           </div>
         )}
 
