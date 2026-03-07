@@ -2,6 +2,8 @@
 # Used by CI (no KUBE_ARGS needed), root Makefile local (--context kind-*),
 # and root Makefile prod (--kubeconfig <decrypted>)
 
+SHELL := /bin/bash
+
 KUBE_ARGS ?=
 KUBECTL   := kubectl $(KUBE_ARGS)
 HELM      := helm $(KUBE_ARGS)

@@ -213,7 +213,7 @@ prod/nodes: ## Show prod cluster nodes
 	@bash -c '$(RKCTL) get nodes -o wide'
 
 prod/k8s/%: ## Run k8s/ Makefile target against prod (e.g. make prod/k8s/prometheus)
-	@bash -c '$(MAKE) -C k8s $* KUBE_ARGS="--kubeconfig <(sops -d k8s/hetzner/kubeconfig.yaml.enc)"'
+	@bash -c '$(MAKE) -C k8s $* KUBE_ARGS="--kubeconfig <(sops -d $(CURDIR)/k8s/hetzner/kubeconfig.yaml.enc)"'
 
 # ══════════════════════════════════════════════════════
 # Production infrastructure (OpenTofu) — CAUTION
