@@ -68,7 +68,7 @@ dazzle s sc set ./my-overlay.jsx
 dazzle s ss -o preview.png
 
 # Start streaming (requires a configured destination)
-dazzle s live on
+dazzle s bc on
 ```
 
 ### 5. Update content live
@@ -156,9 +156,9 @@ Read `window.__state` at any time for accumulated state from all prior events. A
 1. dazzle s up                → Activate a stage
 2. dazzle s sc set app.jsx    → Render content (hot-swapped via HMR)
 3. dazzle s ss                → Verify output looks correct
-4. dazzle s live on          → Go live on configured destination
+4. dazzle s bc on          → Go live on configured destination
 5. dazzle s sc edit / s ev e  → Update content live
-6. dazzle s live off           → Stop streaming
+6. dazzle s bc off           → Stop streaming
 7. dazzle s down              → Deactivate stage
 ```
 EOF

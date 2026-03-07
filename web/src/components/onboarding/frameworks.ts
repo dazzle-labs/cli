@@ -30,7 +30,7 @@ dazzle s sc set ./my-overlay.jsx
 dazzle s ss -o preview.png
 
 # Go live
-dazzle s live on`,
+dazzle s bc on`,
   },
   {
     id: "openai-agents",
@@ -48,7 +48,7 @@ dazzle s up
 
 # Push content and stream
 dazzle s sc set app.jsx
-dazzle s live on`,
+dazzle s bc on`,
   },
   {
     id: "crewai",
@@ -66,7 +66,7 @@ dazzle s up
 
 # Push content and stream
 dazzle s sc set app.jsx
-dazzle s live on`,
+dazzle s bc on`,
   },
   {
     id: "langgraph",
@@ -84,7 +84,7 @@ dazzle s up
 
 # Push content and stream
 dazzle s sc set app.jsx
-dazzle s live on`,
+dazzle s bc on`,
   },
   {
     id: "autogen",
@@ -102,6 +102,6 @@ dazzle s up
 
 # Push content and stream
 dazzle s sc set app.jsx
-dazzle s live on`,
+dazzle s bc on`,
   },
 ];

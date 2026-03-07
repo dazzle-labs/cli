@@ -58,7 +58,7 @@ dazzle s sc set ./my-overlay.jsx
 dazzle s ss -o preview.png
 
 # Go live
-dazzle s live on`;
+dazzle s bc on`;
 
   return (
     <div>

@@ -96,7 +96,7 @@ dazzle s sc set app.jsx -s ${stage?.name || stageId}
 dazzle s ss -s ${stage?.name || stageId}
 
 # Go live
-dazzle s live on -s ${stage?.name || stageId}`;
+dazzle s bc on -s ${stage?.name || stageId}`;
 
   return (
     <div>
