@@ -82,7 +82,7 @@ module "kube-hetzner" {
       server_type = var.agent_server_type
       location    = "ash"
       min_nodes   = 0
-      max_nodes   = 3
+      max_nodes   = 6
     }
   ]
 
