@@ -15,7 +15,7 @@ jobs:
         run: buf lint proto
       - name: Breaking change detection
         if: github.event_name == 'pull_request'
-        run: buf breaking proto --against '.git#branch=main,subdir=proto'
+        run: buf breaking proto --against 'https://github.com/${{ github.repository }}.git#branch=main,subdir=proto'
 
   build:
     runs-on: ubuntu-latest
