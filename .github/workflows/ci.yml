@@ -196,10 +196,10 @@ jobs:
       - name: Set up kubectl
         uses: azure/setup-kubectl@v4
 
-      - name: Configure k3s Kubeconfig
+      - name: Decrypt kubeconfig
         run: |
           mkdir -p ~/.kube
-          echo "${{ secrets.K3S_KUBECONFIG }}" > ~/.kube/config
+          sops -d k8s/hetzner/kubeconfig.yaml.enc > ~/.kube/config
           chmod 600 ~/.kube/config
 
       - name: Log In To Docker Hub
@@ -286,16 +286,7 @@ jobs:
         with:
           version: 'v3.17.3'
 
-      - name: Decrypt and apply secrets
-        run: |
-          kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
-          for secret in k8s/secrets/*.yaml k8s/clerk/*.secrets.yaml k8s/infrastructure/*.secrets.yaml; do
-            [ -f "$secret" ] || continue
-            echo "Applying $secret"
-            sops --decrypt "$secret" | kubectl apply -f -
-          done
-
-      - name: Deploy infrastructure and manifests
+      - name: Deploy
         run: |
           cd k8s
           kustomize edit set image ${{ env.CP_REPO }}:${{ needs.control-plane.outputs.image_tag }}

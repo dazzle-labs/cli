@@ -13,7 +13,17 @@ _reset  = \033[0m
 STEP    = @printf "$(_bold)$(_cyan)── %s ──$(_reset)\n"
 OK      = @printf "$(_bold)$(_green)✓ %s$(_reset)\n"
 
-.PHONY: prometheus prometheus/install prometheus/uninstall trimaran trimaran/install trimaran/uninstall deploy
+.PHONY: secrets prometheus prometheus/install prometheus/uninstall trimaran trimaran/install trimaran/uninstall deploy
+
+secrets: ## Decrypt and apply all SOPS-encrypted secrets
+	$(STEP) "Applying secrets"
+	@$(KUBECTL) create namespace monitoring --dry-run=client -o yaml | $(KUBECTL) apply -f -
+	@for secret in secrets/*.yaml clerk/*.secrets.yaml infrastructure/*.secrets.yaml; do \
+		[ -f "$$secret" ] || continue; \
+		echo "  $$secret"; \
+		sops --decrypt "$$secret" | $(KUBECTL) apply -f -; \
+	done
+	$(OK) "Secrets applied"
 
 prometheus: prometheus/install
 
@@ -47,7 +57,7 @@ trimaran/uninstall: ## Uninstall Trimaran scheduler
 	$(HELM) uninstall trimaran -n kube-system || true
 	$(OK) "Trimaran removed"
 
-deploy: prometheus ## Deploy Helm charts then Kustomize manifests
+deploy: secrets prometheus ## Apply secrets, Helm charts, then Kustomize manifests
 	$(STEP) "Applying Kustomize manifests"
 	kustomize build --enable-helm . | $(KUBECTL) apply -f -
 	$(OK) "Kustomize deploy complete"
