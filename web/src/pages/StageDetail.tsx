@@ -232,9 +232,9 @@ dazzle stage broadcast on`;
             </div>
           </div>
 
-          {/* Streaming */}
+          {/* Broadcast destination */}
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
-            <p className="text-xs font-medium text-zinc-400 mb-3">Streaming</p>
+            <p className="text-xs font-medium text-zinc-400 mb-3">Broadcast Destination</p>
             {destinations.length > 0 ? (
               <>
                 <select
