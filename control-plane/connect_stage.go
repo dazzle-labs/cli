@@ -297,20 +297,40 @@ func (s *stageServer) RegeneratePreviewToken(ctx context.Context, req *connect.R
 	}), nil
 }
 
-func (s *stageServer) RenameStage(ctx context.Context, req *connect.Request[apiv1.RenameStageRequest]) (*connect.Response[apiv1.RenameStageResponse], error) {
+func (s *stageServer) UpdateStage(ctx context.Context, req *connect.Request[apiv1.UpdateStageRequest]) (*connect.Response[apiv1.UpdateStageResponse], error) {
 	info := mustAuth(ctx)
 
-	if req.Msg.Name == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name is required"))
+	if req.Msg.Stage == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("stage is required"))
+	}
+	if req.Msg.UpdateMask == nil || len(req.Msg.UpdateMask.Paths) == 0 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("update_mask is required"))
 	}
 
-	row, err := dbRenameStage(s.mgr.db, req.Msg.Id, info.UserID, req.Msg.Name)
+	for _, path := range req.Msg.UpdateMask.Paths {
+		switch path {
+		case "name":
+			if req.Msg.Stage.Name == "" {
+				return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name cannot be empty"))
+			}
+			if _, err := dbRenameStage(s.mgr.db, req.Msg.Stage.Id, info.UserID, req.Msg.Stage.Name); err != nil {
+				return nil, connect.NewError(connect.CodeNotFound, err)
+			}
+		default:
+			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("unsupported update path: %s", path))
+		}
+	}
+
+	row, err := dbGetStage(s.mgr.db, req.Msg.Stage.Id)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeNotFound, err)
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	if row == nil || row.UserID != info.UserID {
+		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("stage not found"))
 	}
 
 	st := stageRowToStruct(row, s.mgr)
-	return connect.NewResponse(&apiv1.RenameStageResponse{
+	return connect.NewResponse(&apiv1.UpdateStageResponse{
 		Stage: stageToProto(st),
 	}), nil
 }
