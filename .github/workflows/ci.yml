@@ -6,6 +6,17 @@ on:
   pull_request:
 
 jobs:
+  buf:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bufbuild/buf-setup-action@v1
+      - name: Lint
+        run: buf lint proto
+      - name: Breaking change detection
+        if: github.event_name == 'pull_request'
+        run: buf breaking proto --against '.git#branch=main,subdir=proto'
+
   build:
     runs-on: ubuntu-latest
     steps:
