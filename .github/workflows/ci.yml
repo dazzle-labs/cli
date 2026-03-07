@@ -295,20 +295,12 @@ jobs:
             sops --decrypt "$secret" | kubectl apply -f -
           done
 
-      - name: Deploy Prometheus stack
-        run: |
-          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-          helm repo update prometheus-community
-          helm upgrade --install prometheus prometheus-community/kube-prometheus-stack \
-            -n monitoring --create-namespace \
-            -f k8s/monitoring/prometheus-values.yaml
-
-      - name: Deploy with Kustomize
+      - name: Deploy infrastructure and manifests
         run: |
           cd k8s
           kustomize edit set image ${{ env.CP_REPO }}:${{ needs.control-plane.outputs.image_tag }}
           kustomize edit set image ${{ env.STREAMER_REPO }}:${{ needs.streamer.outputs.image_tag }}
-          kustomize build --enable-helm . | kubectl apply -f -
+          make deploy
 
       - name: Update STREAMER_IMAGE env var
         run: |
