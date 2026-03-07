@@ -35,6 +35,15 @@ dazzle s new my-stage
 dazzle s up
 ```
 
+If you have multiple stages, specify which one with `-s` or set a default:
+
+```bash
+dazzle s ls                          # list all stages
+dazzle s up -s my-stage              # activate a specific stage
+dazzle s sc set app.jsx -s my-stage  # target a specific stage
+dazzle s default my-stage             # set default for all commands
+```
+
 ### 4. Push content and go live
 
 ```bash
@@ -71,7 +80,7 @@ Destinations are linked to stages and configured automatically in OBS.
 ```
 Usage: dazzle <command> [flags]
 
-The Dazzle CLI — manage your streaming stages from the terminal.
+Dazzle — cloud stages for live streaming and AI agents. https://stream.dazzle.fm
 
 Flags:
   -h, --help              Show context-sensitive help.
@@ -92,26 +101,27 @@ Commands:
   stage (s) deactivate (stop,down)
                                    Deactivate a stage.
   stage (s) status (st)            Show stage status.
-  stage (s) use                    Set default stage.
-  stage (s) script (sc) set        Set script from file or stdin.
-  stage (s) script (sc) get        Print current script to stdout.
-  stage (s) script (sc) edit       Find and replace in the live script.
+  stage (s) default (use)          Set the default stage for all commands.
+  stage (s) script (sc) set        Push JS/JSX to the stage from file or stdin.
+  stage (s) script (sc) get        Print the current script to stdout.
+  stage (s) script (sc) edit       Find and replace in the running script.
   stage (s) event (ev) emit (e)    Push an event to the running script.
-  stage (s) logs (l)               Retrieve console logs.
-  stage (s) screenshot (ss)        Capture a screenshot.
+  stage (s) logs (l)               Retrieve stage console logs.
+  stage (s) screenshot (ss)        Capture a screenshot of the stage.
   stage (s) live (stream) on (start)
-                                   Start streaming (go live).
+                                   Go live on the configured destination.
   stage (s) live (stream) off (stop)
-                                   Stop streaming.
+                                   Stop the live stream.
   stage (s) live (stream) status (st)
-                                   Show streaming status.
-  destination (dest) list (ls)     List destinations.
+                                   Check if currently live.
+  destination (dest) list (ls)     List stream destinations.
   destination (dest) create (new)
-                                   Create a destination (interactive).
+                                   Add a stream destination (interactive).
   destination (dest) delete (rm)
-                                   Delete a destination.
-  destination (dest) set           Assign destination to stage.
-  obs (o)                          Raw OBS commands on the active stage.
+                                   Remove a stream destination.
+  destination (dest) set           Assign a destination to the active stage.
+  obs (o)                          Advanced OBS control (scenes, recording,
+                                   etc).
 
 Run "dazzle <command> --help" for more information on a command.
 ```

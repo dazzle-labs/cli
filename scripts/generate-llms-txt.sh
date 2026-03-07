@@ -49,6 +49,15 @@ dazzle s new my-stage
 dazzle s up
 ```
 
+If you have multiple stages, specify which one with `-s` or set a default:
+
+```bash
+dazzle s ls                          # list all stages
+dazzle s up -s my-stage              # activate a specific stage
+dazzle s sc set app.jsx -s my-stage  # target a specific stage
+dazzle s default my-stage             # set default for all commands
+```
+
 ### 4. Push content and go live
 
 ```bash
