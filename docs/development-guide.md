@@ -18,7 +18,7 @@
 ## Repository Layout
 
 ```
-browser-streamer/
+agent-streamer/
 ├── control-plane/      # Go backend (API, K8s orchestration, CDP proxy, MCP)
 │   ├── docker/         # Dockerfile for control-plane
 │   ├── migrations/     # PostgreSQL .up.sql files

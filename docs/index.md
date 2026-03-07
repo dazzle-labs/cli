@@ -1,4 +1,4 @@
-# Browser Streamer — Documentation Index
+# Agent Streamer — Documentation Index
 
 > Generated: 2026-03-03 | Last Updated: 2026-03-07 (infrastructure docs updated for Hetzner HA cluster)
 

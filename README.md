@@ -1,4 +1,4 @@
-# Browser Streamer (Dazzle)
+# Agent Streamer (Dazzle)
 
 On-demand cloud browser environments for AI agents and live streaming. Each **stage** is a Kubernetes pod running Chrome on a headless display, accessible via Chrome DevTools Protocol (CDP) and a web dashboard.
 

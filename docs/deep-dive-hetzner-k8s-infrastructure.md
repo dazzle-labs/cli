@@ -8,9 +8,9 @@
 
 ## Overview
 
-This deep-dive covers the Hetzner Cloud k3s cluster provisioning (via the kube-hetzner Terraform module) and the Kubernetes manifests that deploy the browser-streamer application onto it. This is a **significant infrastructure upgrade** from the previous single-VPS setup — the cluster now has 3 HA control-plane nodes, 2 dedicated worker nodes, and an autoscaler pool (0–3 burst nodes).
+This deep-dive covers the Hetzner Cloud k3s cluster provisioning (via the kube-hetzner Terraform module) and the Kubernetes manifests that deploy the agent-streamer application onto it. This is a **significant infrastructure upgrade** from the previous single-VPS setup — the cluster now has 3 HA control-plane nodes, 2 dedicated worker nodes, and an autoscaler pool (0–3 burst nodes).
 
-**Purpose:** Provision and manage a production-grade multi-node k3s cluster on Hetzner Cloud, deploy the browser-streamer stack (control-plane, PostgreSQL, networking/TLS), and provide operational tooling for remote cluster management.
+**Purpose:** Provision and manage a production-grade multi-node k3s cluster on Hetzner Cloud, deploy the agent-streamer stack (control-plane, PostgreSQL, networking/TLS), and provide operational tooling for remote cluster management.
 
 **Key Responsibilities:**
 - Cluster provisioning via OpenTofu + kube-hetzner module

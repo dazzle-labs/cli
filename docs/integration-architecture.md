@@ -4,7 +4,7 @@
 
 ## Overview
 
-Browser Streamer (Dazzle) is a monorepo with 4 parts. The **control plane** is the central hub: it orchestrates Kubernetes pods, proxies all traffic, and serves the web SPA. All external traffic enters through Traefik and flows to the control plane.
+Agent Streamer (Dazzle) is a monorepo with 4 parts. The **control plane** is the central hub: it orchestrates Kubernetes pods, proxies all traffic, and serves the web SPA. All external traffic enters through Traefik and flows to the control plane.
 
 ---
 

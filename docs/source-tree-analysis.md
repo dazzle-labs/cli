@@ -7,7 +7,7 @@
 ## Full Directory Structure
 
 ```
-browser-streamer/                    # Monorepo root
+agent-streamer/                    # Monorepo root
 ├── Makefile                         # All build/deploy targets
 ├── provision.sh                     # Full VPS provisioning script
 ├── package.json                     # Root-level Playwright (integration testing)

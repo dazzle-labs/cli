@@ -1,4 +1,4 @@
-# Browser Streamer — Project Overview
+# Agent Streamer — Project Overview
 
 **Last updated:** 2026-03-03
 **Repository type:** Monorepo (4 parts)
@@ -7,7 +7,7 @@
 
 ## Executive Summary
 
-Browser Streamer (branded as **Dazzle**) is a cloud-native platform that provides on-demand, isolated browser environments controllable via AI agents and the web. Each "stage" is a Kubernetes pod running Chrome on a headless display, accessible through Chrome DevTools Protocol (CDP), an MCP (Model Context Protocol) server, and a React web dashboard.
+Agent Streamer (branded as **Dazzle**) is a cloud-native platform that provides on-demand, isolated browser environments controllable via AI agents and the web. Each "stage" is a Kubernetes pod running Chrome on a headless display, accessible through Chrome DevTools Protocol (CDP), an MCP (Model Context Protocol) server, and a React web dashboard.
 
 Primary use cases: AI agents that need a persistent browser (Claude Code, OpenAI Agents, etc.), live streaming to Twitch/YouTube/Kick via RTMP, and programmatic browser automation.
 
