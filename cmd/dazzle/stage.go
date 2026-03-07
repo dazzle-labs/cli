@@ -18,7 +18,7 @@ type StageCmd struct {
 	Activate   StageStartCmd  `cmd:"" aliases:"start,up" help:"Activate a stage."`
 	Deactivate StageStopCmd   `cmd:"" aliases:"stop,down" help:"Deactivate a stage."`
 	Status     StageStatusCmd `cmd:"" aliases:"st" help:"Show stage status."`
-	Use        StageUseCmd    `cmd:"" help:"Set default stage."`
+	Default    StageUseCmd    `cmd:"" aliases:"use" help:"Set the default stage for all commands."`
 
 	// Stage operations
 	Script     ScriptCmd     `cmd:"" aliases:"sc" help:"Manage the JS/JSX rendered on stage."`
