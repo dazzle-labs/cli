@@ -6,8 +6,10 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 )
 
 // version is set at build time via -X main.version=<tag>.
@@ -68,6 +70,76 @@ func fetchLatestTag() (string, error) {
 		return "", fmt.Errorf("no releases found")
 	}
 	return release.TagName, nil
+}
+
+const updateCheckInterval = 24 * time.Hour
+
+type updateState struct {
+	LastCheck  time.Time `json:"last_check"`
+	LastWarned time.Time `json:"last_warned"`
+	LatestTag  string    `json:"latest_tag"`
+}
+
+func loadUpdateState() (*updateState, error) {
+	dir, err := dazzleConfigDir()
+	if err != nil {
+		return nil, err
+	}
+	data, err := os.ReadFile(filepath.Join(dir, "state.json"))
+	if err != nil {
+		return &updateState{}, nil
+	}
+	var s updateState
+	if err := json.Unmarshal(data, &s); err != nil {
+		return &updateState{}, nil
+	}
+	return &s, nil
+}
+
+func saveUpdateState(s *updateState) {
+	dir, err := dazzleConfigDir()
+	if err != nil {
+		return
+	}
+	data, _ := json.Marshal(s)
+	_ = os.WriteFile(filepath.Join(dir, "state.json"), data, 0600)
+}
+
+// checkForUpdate prints a warning to stderr if a newer version is available.
+// It checks GitHub at most once per 24 hours, caching the result.
+func checkForUpdate() {
+	if version == "dev" {
+		return
+	}
+
+	state, _ := loadUpdateState()
+	now := time.Now()
+
+	// Fetch from GitHub at most once per day
+	if now.Sub(state.LastCheck) >= updateCheckInterval || state.LatestTag == "" {
+		latest, err := fetchLatestTag()
+		if err != nil {
+			return
+		}
+		state.LastCheck = now
+		state.LatestTag = latest
+	}
+
+	// Warn at most once per day
+	if stripV(state.LatestTag) != stripV(version) && now.Sub(state.LastWarned) >= updateCheckInterval {
+		printUpdateWarning(state.LatestTag)
+		state.LastWarned = now
+	}
+
+	saveUpdateState(state)
+}
+
+func stripV(s string) string {
+	return strings.TrimPrefix(s, "v")
+}
+
+func printUpdateWarning(latest string) {
+	fmt.Fprintf(os.Stderr, "\nUpdate available: %s → %s — run 'dazzle update'\n", version, latest)
 }
 
 func downloadAndReplace(tag string) error {
