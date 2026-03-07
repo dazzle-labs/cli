@@ -16,6 +16,7 @@ service StageService {
   rpc ActivateStage(ActivateStageRequest) returns (ActivateStageResponse);
   rpc DeactivateStage(DeactivateStageRequest) returns (DeactivateStageResponse);
   rpc UpdateStage(UpdateStageRequest) returns (UpdateStageResponse);
+  rpc RegeneratePreviewToken(RegeneratePreviewTokenRequest) returns (RegeneratePreviewTokenResponse);
 }
 
 message Stage {
@@ -29,6 +30,12 @@ message Stage {
   string owner_user_id = 8;
   string name = 9;
   string destination_id = 10;
+  StagePreview preview = 11;
+}
+
+message StagePreview {
+  string watch_url = 1;
+  string hls_url = 2;
 }
 
 message CreateStageRequest {
@@ -90,5 +97,13 @@ message UpdateStageRequest {
 }
 
 message UpdateStageResponse {
+  Stage stage = 1;
+}
+
+message RegeneratePreviewTokenRequest {
+  string id = 1;
+}
+
+message RegeneratePreviewTokenResponse {
   Stage stage = 1;
 }

@@ -55,6 +55,9 @@ const (
 	// StageServiceUpdateStageProcedure is the fully-qualified name of the StageService's UpdateStage
 	// RPC.
 	StageServiceUpdateStageProcedure = "/dazzle.v1.StageService/UpdateStage"
+	// StageServiceRegeneratePreviewTokenProcedure is the fully-qualified name of the StageService's
+	// RegeneratePreviewToken RPC.
+	StageServiceRegeneratePreviewTokenProcedure = "/dazzle.v1.StageService/RegeneratePreviewToken"
 )
 
 // StageServiceClient is a client for the dazzle.v1.StageService service.
@@ -67,6 +70,7 @@ type StageServiceClient interface {
 	ActivateStage(context.Context, *connect.Request[v1.ActivateStageRequest]) (*connect.Response[v1.ActivateStageResponse], error)
 	DeactivateStage(context.Context, *connect.Request[v1.DeactivateStageRequest]) (*connect.Response[v1.DeactivateStageResponse], error)
 	UpdateStage(context.Context, *connect.Request[v1.UpdateStageRequest]) (*connect.Response[v1.UpdateStageResponse], error)
+	RegeneratePreviewToken(context.Context, *connect.Request[v1.RegeneratePreviewTokenRequest]) (*connect.Response[v1.RegeneratePreviewTokenResponse], error)
 }
 
 // NewStageServiceClient constructs a client for the dazzle.v1.StageService service. By default, it
@@ -128,19 +132,26 @@ func NewStageServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(stageServiceMethods.ByName("UpdateStage")),
 			connect.WithClientOptions(opts...),
 		),
+		regeneratePreviewToken: connect.NewClient[v1.RegeneratePreviewTokenRequest, v1.RegeneratePreviewTokenResponse](
+			httpClient,
+			baseURL+StageServiceRegeneratePreviewTokenProcedure,
+			connect.WithSchema(stageServiceMethods.ByName("RegeneratePreviewToken")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // stageServiceClient implements StageServiceClient.
 type stageServiceClient struct {
-	createStage         *connect.Client[v1.CreateStageRequest, v1.CreateStageResponse]
-	listStages          *connect.Client[v1.ListStagesRequest, v1.ListStagesResponse]
-	getStage            *connect.Client[v1.GetStageRequest, v1.GetStageResponse]
-	deleteStage         *connect.Client[v1.DeleteStageRequest, v1.DeleteStageResponse]
-	setStageDestination *connect.Client[v1.SetStageDestinationRequest, v1.SetStageDestinationResponse]
-	activateStage       *connect.Client[v1.ActivateStageRequest, v1.ActivateStageResponse]
-	deactivateStage     *connect.Client[v1.DeactivateStageRequest, v1.DeactivateStageResponse]
-	updateStage         *connect.Client[v1.UpdateStageRequest, v1.UpdateStageResponse]
+	createStage            *connect.Client[v1.CreateStageRequest, v1.CreateStageResponse]
+	listStages             *connect.Client[v1.ListStagesRequest, v1.ListStagesResponse]
+	getStage               *connect.Client[v1.GetStageRequest, v1.GetStageResponse]
+	deleteStage            *connect.Client[v1.DeleteStageRequest, v1.DeleteStageResponse]
+	setStageDestination    *connect.Client[v1.SetStageDestinationRequest, v1.SetStageDestinationResponse]
+	activateStage          *connect.Client[v1.ActivateStageRequest, v1.ActivateStageResponse]
+	deactivateStage        *connect.Client[v1.DeactivateStageRequest, v1.DeactivateStageResponse]
+	updateStage            *connect.Client[v1.UpdateStageRequest, v1.UpdateStageResponse]
+	regeneratePreviewToken *connect.Client[v1.RegeneratePreviewTokenRequest, v1.RegeneratePreviewTokenResponse]
 }
 
 // CreateStage calls dazzle.v1.StageService.CreateStage.
@@ -183,6 +194,11 @@ func (c *stageServiceClient) UpdateStage(ctx context.Context, req *connect.Reque
 	return c.updateStage.CallUnary(ctx, req)
 }
 
+// RegeneratePreviewToken calls dazzle.v1.StageService.RegeneratePreviewToken.
+func (c *stageServiceClient) RegeneratePreviewToken(ctx context.Context, req *connect.Request[v1.RegeneratePreviewTokenRequest]) (*connect.Response[v1.RegeneratePreviewTokenResponse], error) {
+	return c.regeneratePreviewToken.CallUnary(ctx, req)
+}
+
 // StageServiceHandler is an implementation of the dazzle.v1.StageService service.
 type StageServiceHandler interface {
 	CreateStage(context.Context, *connect.Request[v1.CreateStageRequest]) (*connect.Response[v1.CreateStageResponse], error)
@@ -193,6 +209,7 @@ type StageServiceHandler interface {
 	ActivateStage(context.Context, *connect.Request[v1.ActivateStageRequest]) (*connect.Response[v1.ActivateStageResponse], error)
 	DeactivateStage(context.Context, *connect.Request[v1.DeactivateStageRequest]) (*connect.Response[v1.DeactivateStageResponse], error)
 	UpdateStage(context.Context, *connect.Request[v1.UpdateStageRequest]) (*connect.Response[v1.UpdateStageResponse], error)
+	RegeneratePreviewToken(context.Context, *connect.Request[v1.RegeneratePreviewTokenRequest]) (*connect.Response[v1.RegeneratePreviewTokenResponse], error)
 }
 
 // NewStageServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -250,6 +267,12 @@ func NewStageServiceHandler(svc StageServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(stageServiceMethods.ByName("UpdateStage")),
 		connect.WithHandlerOptions(opts...),
 	)
+	stageServiceRegeneratePreviewTokenHandler := connect.NewUnaryHandler(
+		StageServiceRegeneratePreviewTokenProcedure,
+		svc.RegeneratePreviewToken,
+		connect.WithSchema(stageServiceMethods.ByName("RegeneratePreviewToken")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/dazzle.v1.StageService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case StageServiceCreateStageProcedure:
@@ -268,6 +291,8 @@ func NewStageServiceHandler(svc StageServiceHandler, opts ...connect.HandlerOpti
 			stageServiceDeactivateStageHandler.ServeHTTP(w, r)
 		case StageServiceUpdateStageProcedure:
 			stageServiceUpdateStageHandler.ServeHTTP(w, r)
+		case StageServiceRegeneratePreviewTokenProcedure:
+			stageServiceRegeneratePreviewTokenHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -307,4 +332,8 @@ func (UnimplementedStageServiceHandler) DeactivateStage(context.Context, *connec
 
 func (UnimplementedStageServiceHandler) UpdateStage(context.Context, *connect.Request[v1.UpdateStageRequest]) (*connect.Response[v1.UpdateStageResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.StageService.UpdateStage is not implemented"))
+}
+
+func (UnimplementedStageServiceHandler) RegeneratePreviewToken(context.Context, *connect.Request[v1.RegeneratePreviewTokenRequest]) (*connect.Response[v1.RegeneratePreviewTokenResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.StageService.RegeneratePreviewToken is not implemented"))
 }

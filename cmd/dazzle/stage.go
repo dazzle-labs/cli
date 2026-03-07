@@ -18,6 +18,7 @@ type StageCmd struct {
 	Activate   StageStartCmd  `cmd:"" aliases:"start,up" help:"Activate a stage."`
 	Deactivate StageStopCmd   `cmd:"" aliases:"stop,down" help:"Deactivate a stage."`
 	Status     StageStatusCmd `cmd:"" aliases:"st" help:"Show stage status."`
+	Preview    StagePreviewCmd `cmd:"" help:"Show the shareable preview URL for a running stage."`
 	Default    StageUseCmd    `cmd:"" aliases:"use" help:"Set the default stage for all commands."`
 
 	// Stage operations
@@ -169,6 +170,9 @@ func (c *StageStartCmd) Run(ctx *Context) error {
 	}
 
 	printText("Stage %q activated (status: %s)", resp.Msg.Stage.Name, resp.Msg.Stage.Status)
+	if resp.Msg.Stage.Preview != nil {
+		printText("Watch:  %s", resp.Msg.Stage.Preview.WatchUrl)
+	}
 	return nil
 }
 
@@ -228,6 +232,43 @@ func (c *StageStatusCmd) Run(ctx *Context) error {
 	}
 
 	printText("Name:   %s\nID:     %s\nStatus: %s", stage.Name, stage.Id, stage.Status)
+	if stage.Preview != nil {
+		printText("Watch:  %s\nHLS:    %s", stage.Preview.WatchUrl, stage.Preview.HlsUrl)
+	}
+	return nil
+}
+
+// StagePreviewCmd shows the shareable preview URL for a running stage.
+type StagePreviewCmd struct{}
+
+func (c *StagePreviewCmd) Run(ctx *Context) error {
+	if err := ctx.requireAuth(); err != nil {
+		return err
+	}
+	if err := ctx.resolveStage(); err != nil {
+		return err
+	}
+
+	client := apiv1connect.NewStageServiceClient(ctx.HTTPClient, ctx.APIURL)
+	req := connect.NewRequest(&apiv1.GetStageRequest{Id: ctx.StageID})
+	req.Header().Set("Authorization", ctx.authHeader())
+	resp, err := client.GetStage(context.Background(), req)
+	if err != nil {
+		return err
+	}
+
+	stage := resp.Msg.Stage
+	if ctx.JSON {
+		printJSON(stage.Preview)
+		return nil
+	}
+
+	if stage.Preview == nil {
+		printText("No preview available — stage is not running.")
+		return nil
+	}
+
+	printText("%s", stage.Preview.WatchUrl)
 	return nil
 }
 
