@@ -44,8 +44,8 @@ func (c *LoginCmd) Run(ctx *Context) error {
 	if apiKey == "" {
 		return errors.New("api key cannot be empty")
 	}
-	if !strings.HasPrefix(apiKey, "bstr_") {
-		return errors.New("invalid api key format -- must start with bstr_")
+	if !strings.HasPrefix(apiKey, "dzl_") && !strings.HasPrefix(apiKey, "bstr_") {
+		return errors.New("invalid api key format -- must start with dzl_")
 	}
 
 	if err := saveCredentials(&Credentials{APIKey: apiKey}); err != nil {

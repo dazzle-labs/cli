@@ -111,7 +111,7 @@ Config files are stored in `~/.config/dazzle/`:
 ```
 ~/.config/dazzle/
   config.json        # { "default_stage": "my-stage" }
-  credentials.json   # { "api_key": "bstr_..." }
+  credentials.json   # { "api_key": "dzl_..." }
 ```
 
 ## Security
