@@ -53,7 +53,7 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
           2,
         ),
         notes:
-          "Stage is inactive until activated via the CLI with 'dazzle s up'.",
+          "Stage is inactive until activated via the CLI with 'dazzle stage activate'.",
       },
       {
         id: "list-stages",

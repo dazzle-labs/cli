@@ -91,9 +91,9 @@ export function StreamPreview({ stageId, status }: StreamPreviewProps) {
           className="text-sm text-zinc-600 text-center px-8 leading-relaxed"
           style={{ fontFamily: "'Outfit', sans-serif" }}
         >
-          Your agent's stage is dark.
+          Your stage is dark.
           <br />
-          It'll light up when your agent connects.
+          It'll light up when the stage is activated.
         </p>
       </div>
     );

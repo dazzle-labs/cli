@@ -115,17 +115,20 @@ export function StageDetail() {
     );
   }
 
-  const cliSnippet = `# Activate this stage
-dazzle s up -s ${stage?.name || stageId}
+  const cliSnippet = `# Set as default stage (then -s flag is optional)
+dazzle stage default "${stage?.name || stageId}"
+
+# Activate this stage
+dazzle stage activate
 
 # Push content
-dazzle s sc set app.jsx -s ${stage?.name || stageId}
+dazzle stage script set app.jsx
 
 # Screenshot to verify
-dazzle s ss -s ${stage?.name || stageId}
+dazzle stage screenshot
 
 # Go live
-dazzle s bc on -s ${stage?.name || stageId}`;
+dazzle stage broadcast on`;
 
   const displayName = stage.name && stage.name !== "default" ? stage.name : "Untitled Stage";
 

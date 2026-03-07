@@ -20,17 +20,17 @@ curl -sSL https://stream.dazzle.fm/install.sh | sh
 dazzle login
 
 # Create and activate a stage
-dazzle s new my-stage
-dazzle s up
+dazzle stage create my-stage
+dazzle stage activate
 
 # Push content (JS or JSX, hot-swapped via HMR)
-dazzle s sc set ./my-overlay.jsx
+dazzle stage script set ./my-overlay.jsx
 
 # Take a screenshot to verify
-dazzle s ss -o preview.png
+dazzle stage screenshot -o preview.png
 
 # Go live
-dazzle s bc on`,
+dazzle stage broadcast on`,
   },
   {
     id: "openai-agents",
@@ -43,12 +43,12 @@ curl -sSL https://stream.dazzle.fm/install.sh | sh
 
 # Authenticate and create a stage
 dazzle login
-dazzle s new my-stage
-dazzle s up
+dazzle stage create my-stage
+dazzle stage activate
 
 # Push content and stream
-dazzle s sc set app.jsx
-dazzle s bc on`,
+dazzle stage script set app.jsx
+dazzle stage broadcast on`,
   },
   {
     id: "crewai",
@@ -61,12 +61,12 @@ curl -sSL https://stream.dazzle.fm/install.sh | sh
 
 # Authenticate and create a stage
 dazzle login
-dazzle s new my-stage
-dazzle s up
+dazzle stage create my-stage
+dazzle stage activate
 
 # Push content and stream
-dazzle s sc set app.jsx
-dazzle s bc on`,
+dazzle stage script set app.jsx
+dazzle stage broadcast on`,
   },
   {
     id: "langgraph",
@@ -79,12 +79,12 @@ curl -sSL https://stream.dazzle.fm/install.sh | sh
 
 # Authenticate and create a stage
 dazzle login
-dazzle s new my-stage
-dazzle s up
+dazzle stage create my-stage
+dazzle stage activate
 
 # Push content and stream
-dazzle s sc set app.jsx
-dazzle s bc on`,
+dazzle stage script set app.jsx
+dazzle stage broadcast on`,
   },
   {
     id: "autogen",
@@ -97,11 +97,11 @@ curl -sSL https://stream.dazzle.fm/install.sh | sh
 
 # Authenticate and create a stage
 dazzle login
-dazzle s new my-stage
-dazzle s up
+dazzle stage create my-stage
+dazzle stage activate
 
 # Push content and stream
-dazzle s sc set app.jsx
-dazzle s bc on`,
+dazzle stage script set app.jsx
+dazzle stage broadcast on`,
   },
 ];
