@@ -37,8 +37,9 @@ prometheus/install: ## Install/upgrade kube-prometheus-stack Helm chart to the c
 	helm repo update prometheus-community
 	$(HELM) upgrade --install prometheus prometheus-community/kube-prometheus-stack \
 		-n monitoring --create-namespace \
-		-f monitoring/prometheus-values.yaml
-	$(OK) "Prometheus deployed to monitoring namespace"
+		-f monitoring/prometheus-values.yaml \
+	|| { echo "⚠️  Prometheus install/upgrade failed (may need manual intervention). Continuing..."; true; }
+	$(OK) "Prometheus step complete"
 
 prometheus/uninstall: ## Remove kube-prometheus-stack and monitoring namespace from the cluster
 	$(HELM) uninstall prometheus -n monitoring || true
