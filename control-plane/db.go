@@ -296,12 +296,12 @@ func dbGetStreamDestForUser(db *sql.DB, destID, userID string) (*streamDestRow, 
 // Used by OAuth callback to create or update destinations with stream keys + tokens.
 func dbUpsertStreamDest(db *sql.DB, userID, platform, platformUserID, platformUsername, rtmpURL, encStreamKey, encAccessToken, encRefreshToken string, tokenExpiresAt sql.NullTime, scopes string) (*streamDestRow, error) {
 	row := db.QueryRow(`
-		INSERT INTO stream_destinations (user_id, platform, platform_user_id, platform_username, rtmp_url, stream_key, access_token, refresh_token, token_expires_at, scopes)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		INSERT INTO stream_destinations (user_id, name, platform, platform_user_id, platform_username, rtmp_url, stream_key, access_token, refresh_token, token_expires_at, scopes)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		ON CONFLICT (user_id, platform, platform_username) DO UPDATE SET
-			platform_user_id=$3, rtmp_url=$5, stream_key=$6, access_token=$7, refresh_token=$8, token_expires_at=$9, scopes=$10, updated_at=NOW()
+			name=$2, platform_user_id=$4, rtmp_url=$6, stream_key=$7, access_token=$8, refresh_token=$9, token_expires_at=$10, scopes=$11, updated_at=NOW()
 		RETURNING `+streamDestColumns,
-		userID, platform, platformUserID, platformUsername, rtmpURL, encStreamKey, encAccessToken, encRefreshToken, tokenExpiresAt, scopes)
+		userID, platformUsername, platform, platformUserID, platformUsername, rtmpURL, encStreamKey, encAccessToken, encRefreshToken, tokenExpiresAt, scopes)
 	return scanStreamDest(row)
 }
 
