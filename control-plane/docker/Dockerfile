@@ -15,7 +15,8 @@ RUN go mod download
 COPY control-plane/*.go ./
 COPY control-plane/internal/ ./internal/
 COPY control-plane/migrations/ ./migrations/
-RUN CGO_ENABLED=0 GOOS=linux go build -o control-plane .
+ARG GIT_COMMIT=main
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "-X main.gitCommit=${GIT_COMMIT}" -o control-plane .
 
 # Build gobs-cli
 RUN CGO_ENABLED=0 GOOS=linux go install github.com/onyx-and-iris/gobs-cli@latest

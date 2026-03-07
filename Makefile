@@ -3,7 +3,8 @@ NS       := browser-streamer
 KCTL     := kubectl --context kind-browser-streamer -n browser-streamer
 CP_IMG   := dazzlefm/agent-streamer-control-plane:main
 STR_IMG  := dazzlefm/agent-streamer-stage:main
-CP_BUILD := docker build -f control-plane/docker/Dockerfile --build-arg VITE_CLERK_PUBLISHABLE_KEY=$(CLERK_PK) -t $(CP_IMG) .
+CLI_COMMIT := $(shell git -C dazzle-cli rev-parse HEAD 2>/dev/null || echo main)
+CP_BUILD := docker build -f control-plane/docker/Dockerfile --build-arg VITE_CLERK_PUBLISHABLE_KEY=$(CLERK_PK) --build-arg GIT_COMMIT=$(CLI_COMMIT) -t $(CP_IMG) .
 STR_BUILD := docker build --platform linux/amd64 -f streamer/docker/Dockerfile -t $(STR_IMG) streamer/
 
 # Colored log helpers

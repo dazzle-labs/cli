@@ -34,6 +34,9 @@ import (
 	apiv1internalconnect "github.com/browser-streamer/control-plane/internal/gen/api/v1/apiv1internalconnect"
 )
 
+// Set via -ldflags at build time; falls back to "main".
+var gitCommit = "main"
+
 // Ensure compile-time interface satisfaction.
 var (
 	_ apiv1connect.StageServiceHandler           = (*stageServer)(nil)
@@ -1022,6 +1025,12 @@ func main() {
 			}
 			mgr.auth.authMiddlewareHTTP(http.HandlerFunc(mgr.handleStageProxy)).ServeHTTP(w, r)
 		}
+	})
+
+	// CLI installer redirect: curl -sSL https://stream.dazzle.fm/setup.sh | sh
+	// Uses the dazzle-cli submodule commit baked into this build for cache-busting.
+	mux.HandleFunc("/setup.sh", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "https://raw.githubusercontent.com/dazzle-labs/cli/"+gitCommit+"/install.sh", http.StatusFound)
 	})
 
 	// Web SPA (fallback route)
