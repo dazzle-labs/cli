@@ -24,14 +24,14 @@ var cli struct {
 
 	// Resource commands
 	Stage_      StageCmd       `cmd:"" name:"stage" aliases:"s" help:"Manage stages."`
-	Destination DestinationCmd `cmd:"" name:"destination" aliases:"dest" help:"Manage RTMP destinations."`
-	Obs         ObsCmd         `cmd:"" name:"obs" aliases:"o" help:"Raw OBS commands on the active stage."`
+	Destination DestinationCmd `cmd:"" name:"destination" aliases:"dest" help:"Manage stream destinations (Twitch, YouTube, etc)."`
+	Obs         ObsCmd         `cmd:"" name:"obs" aliases:"o" help:"Advanced OBS control (scenes, recording, etc)."`
 }
 
 func main() {
 	k := kong.Parse(&cli,
 		kong.Name("dazzle"),
-		kong.Description("The Dazzle CLI — manage your streaming stages from the terminal."),
+		kong.Description("Dazzle — cloud stages for live streaming and AI agents. https://stream.dazzle.fm"),
 		kong.UsageOnError(),
 		kong.ConfigureHelp(kong.HelpOptions{Compact: true}),
 	)

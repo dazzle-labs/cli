@@ -21,11 +21,11 @@ type StageCmd struct {
 	Use        StageUseCmd    `cmd:"" help:"Set default stage."`
 
 	// Stage operations
-	Script     ScriptCmd     `cmd:"" aliases:"sc" help:"Manage stage scripts."`
-	Event      EventCmd      `cmd:"" aliases:"ev" help:"Manage stage events."`
-	Logs       LogsCmd       `cmd:"" name:"logs" aliases:"l" help:"Retrieve console logs."`
-	Screenshot ScreenshotCmd `cmd:"" name:"screenshot" aliases:"ss" help:"Capture a screenshot."`
-	Live       StreamCmd     `cmd:"" aliases:"stream" help:"Start or stop streaming."`
+	Script     ScriptCmd     `cmd:"" aliases:"sc" help:"Manage the JS/JSX rendered on stage."`
+	Event      EventCmd      `cmd:"" aliases:"ev" help:"Push data to the running script."`
+	Logs       LogsCmd       `cmd:"" name:"logs" aliases:"l" help:"Retrieve stage console logs."`
+	Screenshot ScreenshotCmd `cmd:"" name:"screenshot" aliases:"ss" help:"Capture a screenshot of the stage."`
+	Live       StreamCmd     `cmd:"" aliases:"stream" help:"Go live — stream to a destination."`
 }
 
 // resolveStageByNameOrID tries to resolve a stage name or ID to its ID.

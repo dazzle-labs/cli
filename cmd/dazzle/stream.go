@@ -11,9 +11,9 @@ import (
 
 // StreamCmd groups streaming subcommands.
 type StreamCmd struct {
-	On  StreamStartCmd  `cmd:"" aliases:"start" help:"Start streaming (go live)."`
-	Off StreamStopCmd   `cmd:"" aliases:"stop" help:"Stop streaming."`
-	Status StreamStatusCmd `cmd:"" aliases:"st" help:"Show streaming status."`
+	On     StreamStartCmd  `cmd:"" aliases:"start" help:"Go live on the configured destination."`
+	Off    StreamStopCmd   `cmd:"" aliases:"stop" help:"Stop the live stream."`
+	Status StreamStatusCmd `cmd:"" aliases:"st" help:"Check if currently live."`
 }
 
 // StreamStartCmd starts streaming on the active stage.

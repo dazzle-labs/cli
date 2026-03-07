@@ -13,9 +13,9 @@ import (
 
 // ScriptCmd groups script subcommands.
 type ScriptCmd struct {
-	Set  ScriptSetCmd  `cmd:"" help:"Set script from file or stdin."`
-	Get  ScriptGetCmd  `cmd:"" help:"Print current script to stdout."`
-	Edit ScriptEditCmd `cmd:"" help:"Find and replace in the live script."`
+	Set  ScriptSetCmd  `cmd:"" help:"Push JS/JSX to the stage from file or stdin."`
+	Get  ScriptGetCmd  `cmd:"" help:"Print the current script to stdout."`
+	Edit ScriptEditCmd `cmd:"" help:"Find and replace in the running script."`
 }
 
 // ScriptSetCmd sets the script on the active stage.

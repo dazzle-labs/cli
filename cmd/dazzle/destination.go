@@ -15,10 +15,10 @@ import (
 
 // DestinationCmd groups destination subcommands.
 type DestinationCmd struct {
-	List   DestinationListCmd   `cmd:"" aliases:"ls" help:"List destinations."`
-	Create DestinationCreateCmd `cmd:"" aliases:"new" help:"Create a destination (interactive)."`
-	Delete DestinationDeleteCmd `cmd:"" aliases:"rm" help:"Delete a destination."`
-	Set    DestinationSetCmd    `cmd:"" help:"Assign destination to stage."`
+	List   DestinationListCmd   `cmd:"" aliases:"ls" help:"List stream destinations."`
+	Create DestinationCreateCmd `cmd:"" aliases:"new" help:"Add a stream destination (interactive)."`
+	Delete DestinationDeleteCmd `cmd:"" aliases:"rm" help:"Remove a stream destination."`
+	Set    DestinationSetCmd    `cmd:"" help:"Assign a destination to the active stage."`
 }
 
 // listStreamDestinations is a helper that fetches all destinations from the API.
