@@ -25,7 +25,7 @@ COPY control-plane/*.go ./
 COPY control-plane/internal/ ./internal/
 COPY control-plane/migrations/ ./migrations/
 ARG GIT_COMMIT=main
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "-X main.gitCommit=${GIT_COMMIT}" -o control-plane .
+RUN cd control-plane && CGO_ENABLED=0 GOOS=linux go build -ldflags "-X main.gitCommit=${GIT_COMMIT}" -o /app/control-plane .
 
 FROM alpine:3.19
 RUN apk add --no-cache ca-certificates
