@@ -17,7 +17,7 @@ const VALUE_PROPS = [
   {
     icon: Plug,
     title: "One line to connect",
-    body: "Add your MCP stage to any agent framework. Claude Code, OpenAI, CrewAI, and more.",
+    body: "Install the CLI, push content, and go live. Works with any agent framework.",
   },
 ];
 
@@ -115,7 +115,7 @@ export function LandingPage() {
             style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 300 }}
           >
             Every agent deserves an audience. Dazzle gives yours a production
-            stage — visible, streamable, controllable via MCP.
+            stage — visible, streamable, controllable via CLI.
           </p>
         </div>
 
@@ -192,7 +192,7 @@ export function LandingPage() {
             className="text-xl md:text-2xl text-white mb-3"
             style={{ fontFamily: "'DM Serif Display', serif" }}
           >
-            One MCP stage. Every agent framework.
+            One CLI. Every agent framework.
           </h3>
           <p
             className="text-xs uppercase tracking-[0.2em] text-zinc-500 mb-6"

@@ -13,14 +13,12 @@ interface ConnectionDetailsProps {
   verbose?: boolean;
 }
 
-export function ConnectionDetails({ framework, endpointId, apiKey: initialKey, onDone, verbose }: ConnectionDetailsProps) {
+export function ConnectionDetails({ framework, endpointId: _endpointId, apiKey: initialKey, onDone, verbose }: ConnectionDetailsProps) {
   const [copiedSnippet, setCopiedSnippet] = useState(false);
   const [copiedKey, setCopiedKey] = useState(false);
   const [activeKey, setActiveKey] = useState(initialKey);
   const [hasExistingKeys, setHasExistingKeys] = useState<boolean | null>(null);
   const [creatingKey, setCreatingKey] = useState(false);
-
-  const mcpUrl = `${window.location.origin}/stage/${endpointId}/mcp`;
 
   // If no key was provided, check if user has existing keys
   useEffect(() => {
@@ -58,8 +56,7 @@ export function ConnectionDetails({ framework, endpointId, apiKey: initialKey, o
     }
   }
 
-  // Snippet always uses env var — never the raw key
-  const snippet = framework.getSnippet(mcpUrl, "");
+  const snippet = framework.getSnippet();
 
   async function handleCopySnippet() {
     await navigator.clipboard.writeText(snippet);
@@ -93,12 +90,12 @@ export function ConnectionDetails({ framework, endpointId, apiKey: initialKey, o
         className="text-2xl tracking-[-0.02em] text-white mb-2"
         style={{ fontFamily: "'DM Serif Display', serif" }}
       >
-        {verbose ? "Connect your agent" : "Connect"}
+        {verbose ? "Get started with the CLI" : "Get Started"}
       </h2>
       <p className="text-sm text-zinc-500 mb-6 max-w-md text-center">
         {verbose
-          ? `Add this ${framework.name} configuration to connect your agent.`
-          : `Add this to your ${framework.name} config.`}
+          ? "Install the Dazzle CLI to control your stage."
+          : "Use the CLI to manage your stage."}
       </p>
 
       <div className="w-full max-w-lg">
@@ -132,10 +129,10 @@ export function ConnectionDetails({ framework, endpointId, apiKey: initialKey, o
         <div className="mt-4 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
           <div className="mb-3">
             <p className="text-xs font-medium text-zinc-400 mb-1">
-              Set <code className="text-emerald-400 bg-white/[0.04] px-1 py-0.5 rounded">DAZZLE_API_KEY</code> in your environment
+              Authenticate with <code className="text-emerald-400 bg-white/[0.04] px-1 py-0.5 rounded">dazzle login</code>
             </p>
             <p className="text-xs text-zinc-600">
-              Add <code className="text-zinc-500">export DAZZLE_API_KEY=&lt;key&gt;</code> to your shell profile, or use a <code className="text-zinc-500">.env</code> file.
+              Or set <code className="text-zinc-500">export DAZZLE_API_KEY=&lt;key&gt;</code> in your shell profile.
             </p>
           </div>
 
@@ -175,22 +172,6 @@ export function ConnectionDetails({ framework, endpointId, apiKey: initialKey, o
             </div>
           ) : null}
         </div>
-
-        {verbose && (
-          <div className="mt-4 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
-            <p className="text-xs font-medium text-zinc-400 mb-2">Field reference</p>
-            <div className="flex flex-col gap-1.5 text-xs">
-              <div className="flex items-start gap-2">
-                <code className="text-emerald-400 bg-white/[0.04] px-1.5 py-0.5 rounded shrink-0">url</code>
-                <span className="text-zinc-500">MCP endpoint URL — routes commands to your stage</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <code className="text-emerald-400 bg-white/[0.04] px-1.5 py-0.5 rounded shrink-0">DAZZLE_API_KEY</code>
-                <span className="text-zinc-500">Set this env var to your API key — never hardcode it</span>
-              </div>
-            </div>
-          </div>
-        )}
 
         <div className="mt-8 flex flex-col items-center gap-3">
           <div className="flex items-center gap-2 text-emerald-400">

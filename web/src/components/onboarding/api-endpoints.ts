@@ -28,14 +28,14 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
     id: "stage",
     name: "StageService",
     description:
-      "Manage browser stages. Accepts Clerk JWT or API key authentication.",
+      "Manage stages. Accepts Clerk JWT or API key authentication.",
     endpoints: [
       {
         id: "create-stage",
         method: "POST",
-        path: "/api.v1.StageService/CreateStage",
+        path: "/dazzle.v1.StageService/CreateStage",
         description:
-          "Create a stage record. Returns immediately with status 'inactive' — no pod is provisioned yet. The agent calls the 'start' MCP tool to activate it.",
+          "Create a stage record. Returns immediately with status 'inactive' — no pod is provisioned yet. Use the CLI to activate it.",
         auth: "Clerk JWT or API Key",
         params: [
           { name: "name", type: "string", required: false, description: "Display name for the stage" },
@@ -53,12 +53,12 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
           2,
         ),
         notes:
-          "Stage is inactive until an agent connects to /stage/<id>/mcp and calls the 'start' tool.",
+          "Stage is inactive until activated via the CLI with 'dazzle s up'.",
       },
       {
         id: "list-stages",
         method: "POST",
-        path: "/api.v1.StageService/ListStages",
+        path: "/dazzle.v1.StageService/ListStages",
         description: "List all stages owned by the authenticated user. Includes inactive stages.",
         auth: "Clerk JWT or API Key",
         params: [],
@@ -71,7 +71,7 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
       {
         id: "get-stage",
         method: "POST",
-        path: "/api.v1.StageService/GetStage",
+        path: "/dazzle.v1.StageService/GetStage",
         description: "Get details of a specific stage by ID.",
         auth: "Clerk JWT or API Key",
         params: [
@@ -97,7 +97,7 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
       {
         id: "delete-stage",
         method: "POST",
-        path: "/api.v1.StageService/DeleteStage",
+        path: "/dazzle.v1.StageService/DeleteStage",
         description: "Delete a stage by ID. If the stage is active, the pod is stopped first.",
         auth: "Clerk JWT or API Key",
         params: [
@@ -120,7 +120,7 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
       {
         id: "create-apikey",
         method: "POST",
-        path: "/api.v1.ApiKeyService/CreateApiKey",
+        path: "/dazzle.v1.ApiKeyService/CreateApiKey",
         description:
           "Create a new API key. The full key is returned only once — store it securely.",
         auth: "Clerk JWT only",
@@ -149,7 +149,7 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
       {
         id: "list-apikeys",
         method: "POST",
-        path: "/api.v1.ApiKeyService/ListApiKeys",
+        path: "/dazzle.v1.ApiKeyService/ListApiKeys",
         description: "List all API keys for the authenticated user.",
         auth: "Clerk JWT only",
         params: [],
@@ -162,7 +162,7 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
       {
         id: "delete-apikey",
         method: "POST",
-        path: "/api.v1.ApiKeyService/DeleteApiKey",
+        path: "/dazzle.v1.ApiKeyService/DeleteApiKey",
         description: "Delete an API key by ID.",
         auth: "Clerk JWT only",
         params: [
@@ -186,7 +186,7 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
       {
         id: "create-stream-dest",
         method: "POST",
-        path: "/api.v1.RtmpDestinationService/CreateStreamDestination",
+        path: "/dazzle.v1.RtmpDestinationService/CreateStreamDestination",
         description:
           "Create a new stream destination. Stream keys are encrypted with AES-256-GCM before storage.",
         auth: "Clerk JWT only",
@@ -218,7 +218,7 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
       {
         id: "list-stream-dests",
         method: "POST",
-        path: "/api.v1.RtmpDestinationService/ListStreamDestinations",
+        path: "/dazzle.v1.RtmpDestinationService/ListStreamDestinations",
         description:
           "List stream destinations. Stream keys are masked (first 4 chars + ***).",
         auth: "Clerk JWT only",
@@ -238,7 +238,7 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
       {
         id: "update-stream-dest",
         method: "POST",
-        path: "/api.v1.RtmpDestinationService/UpdateStreamDestination",
+        path: "/dazzle.v1.RtmpDestinationService/UpdateStreamDestination",
         description: "Update a stream destination's settings.",
         auth: "Clerk JWT only",
         params: [
@@ -254,7 +254,7 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
       {
         id: "delete-stream-dest",
         method: "POST",
-        path: "/api.v1.RtmpDestinationService/DeleteStreamDestination",
+        path: "/dazzle.v1.RtmpDestinationService/DeleteStreamDestination",
         description: "Delete a stream destination.",
         auth: "Clerk JWT only",
         params: [
@@ -272,7 +272,7 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
       {
         id: "get-profile",
         method: "POST",
-        path: "/api.v1.UserService/GetProfile",
+        path: "/dazzle.v1.UserService/GetProfile",
         description:
           "Get the authenticated user's profile including stage and API key counts.",
         auth: "Clerk JWT only",
@@ -312,7 +312,7 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
         method: "GET",
         path: "/stage/<uuid>/cdp",
         description:
-          "CDP endpoint. Returns Chrome DevTools Protocol discovery info with rewritten WebSocket URLs. Requires the stage to be active (call the 'start' MCP tool first). Returns 503 if stage is not active.",
+          "CDP endpoint. Returns Chrome DevTools Protocol discovery info with rewritten WebSocket URLs. Requires the stage to be active. Returns 503 if stage is not active.",
         auth: "Clerk JWT or API Key",
         params: [],
         responseExample: JSON.stringify(

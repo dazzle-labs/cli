@@ -74,7 +74,7 @@ export function ApiKeys() {
           API Keys
         </h1>
         <p className="text-sm text-zinc-500">
-          Keys for agent and MCP authentication. The full key is shown only once.
+          Keys for CLI and agent authentication. The full key is shown only once.
         </p>
       </div>
 

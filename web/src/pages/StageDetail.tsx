@@ -7,8 +7,6 @@ import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Trash2, Cpu, Globe, ArrowLeft, Copy, Check, ArrowUpRight } from "lucide-react";
-import { FRAMEWORKS } from "@/components/onboarding/frameworks";
-import { FrameworkIcon } from "@/components/FrameworkIcon";
 import { StreamPreview } from "@/components/StreamPreview";
 
 export function StageDetail() {
@@ -17,7 +15,6 @@ export function StageDetail() {
   const [stage, setStage] = useState<Stage | null>(null);
   const [destinations, setDestinations] = useState<StreamDestination[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeFramework, setActiveFramework] = useState(FRAMEWORKS[0].id);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
@@ -89,14 +86,17 @@ export function StageDetail() {
     );
   }
 
-  const mcpUrl = `${window.location.origin}/stage/${stageId}/mcp`;
-  const activeFw = FRAMEWORKS.find((fw) => fw.id === activeFramework) ?? FRAMEWORKS[0];
-  const snippet = activeFw.getSnippet(mcpUrl, "");
+  const cliSnippet = `# Activate this stage
+dazzle s up -s ${stage?.name || stageId}
 
-  const claudeJsonSnippet = JSON.stringify(
-    { mcpServers: { dazzle: { type: "http", url: mcpUrl, headers: { Authorization: "Bearer ${DAZZLE_API_KEY}" } } } },
-    null, 2
-  );
+# Push content
+dazzle s sc set app.jsx -s ${stage?.name || stageId}
+
+# Screenshot to verify
+dazzle s ss -s ${stage?.name || stageId}
+
+# Go live
+dazzle s live on -s ${stage?.name || stageId}`;
 
   return (
     <div>
@@ -203,54 +203,20 @@ export function StageDetail() {
         </div>
       </div>
 
-      {/* Connect section */}
+      {/* CLI usage section */}
       <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 mb-8">
-        <p className="text-xs font-medium text-zinc-400 mb-4">Connect</p>
-        <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
-          {FRAMEWORKS.map((fw) => (
-            <button
-              key={fw.id}
-              type="button"
-              onClick={() => { setActiveFramework(fw.id); setCopiedId(null); }}
-              className={
-                fw.id === activeFramework
-                  ? "flex items-center gap-2 bg-emerald-500/10 text-emerald-400 text-xs px-3 py-1.5 rounded-lg font-medium shrink-0 cursor-pointer"
-                  : "flex items-center gap-2 text-zinc-500 hover:text-zinc-300 text-xs px-3 py-1.5 rounded-lg shrink-0 cursor-pointer hover:bg-white/[0.03]"
-              }
-            >
-              <FrameworkIcon id={fw.id} className="h-3.5 w-3.5" />
-              {fw.name}
-            </button>
-          ))}
-        </div>
+        <p className="text-xs font-medium text-zinc-400 mb-4">CLI Usage</p>
         <div className="relative">
           <pre className="font-mono text-sm text-zinc-300 bg-zinc-950/50 rounded-lg px-4 py-3 border border-white/[0.06] whitespace-pre-wrap overflow-x-auto">
-            {snippet}
+            {cliSnippet}
           </pre>
           <button
-            onClick={() => handleCopy(snippet, activeFw.id)}
+            onClick={() => handleCopy(cliSnippet, "cli")}
             className="absolute top-2 right-2 text-zinc-500 hover:text-emerald-400 p-1.5 rounded-md transition-colors cursor-pointer"
           >
-            {copiedId === activeFw.id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            {copiedId === "cli" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
           </button>
         </div>
-
-        {activeFramework === "claude-code" && (
-          <div className="mt-4">
-            <p className="text-xs text-zinc-500 mb-2">Or add to your project's <code className="text-zinc-400 bg-white/[0.04] px-1 py-0.5 rounded">.mcp.json</code>:</p>
-            <div className="relative">
-              <pre className="font-mono text-sm text-zinc-300 bg-zinc-950/50 rounded-lg px-4 py-3 border border-white/[0.06] whitespace-pre-wrap overflow-x-auto">
-                {claudeJsonSnippet}
-              </pre>
-              <button
-                onClick={() => handleCopy(claudeJsonSnippet, "claude-json")}
-                className="absolute top-2 right-2 text-zinc-500 hover:text-emerald-400 p-1.5 rounded-md transition-colors cursor-pointer"
-              >
-                {copiedId === "claude-json" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Danger zone */}

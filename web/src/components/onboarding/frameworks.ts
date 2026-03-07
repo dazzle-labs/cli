@@ -3,7 +3,7 @@ export interface Framework {
   name: string;
   language: string;
   description: string;
-  getSnippet: (mcpUrl: string, apiKey: string) => string;
+  getSnippet: () => string;
 }
 
 export const FRAMEWORKS: Framework[] = [
@@ -12,93 +12,96 @@ export const FRAMEWORKS: Framework[] = [
     name: "Claude Code",
     language: "Shell",
     description: "Anthropic's CLI coding agent",
-    getSnippet: (mcpUrl) =>
-      `claude mcp add dazzle ${mcpUrl} \\\n  --transport http \\\n  --header "Authorization: Bearer $DAZZLE_API_KEY"`,
+    getSnippet: () =>
+      `# Install the Dazzle CLI
+go install github.com/dazzle-labs/cli/cmd/dazzle@latest
+
+# Authenticate
+dazzle login
+
+# Create and activate a stage
+dazzle s new my-stage
+dazzle s up
+
+# Push content (JS or JSX, hot-swapped via HMR)
+dazzle s sc set ./my-overlay.jsx
+
+# Take a screenshot to verify
+dazzle s ss -o preview.png
+
+# Go live
+dazzle s live on`,
   },
   {
     id: "openai-agents",
     name: "OpenAI Agents SDK",
-    language: "Python",
+    language: "Shell",
     description: "OpenAI's multi-agent framework",
-    getSnippet: (mcpUrl) =>
-      `import os
-from agents.mcp import MCPServerStreamableHTTP
+    getSnippet: () =>
+      `# Install the Dazzle CLI
+go install github.com/dazzle-labs/cli/cmd/dazzle@latest
 
-dazzle = MCPServerStreamableHTTP(
-    url="${mcpUrl}",
-    headers={"Authorization": f"Bearer {os.environ['DAZZLE_API_KEY']}"},
-)
+# Authenticate and create a stage
+dazzle login
+dazzle s new my-stage
+dazzle s up
 
-agent = Agent(
-    name="my-agent",
-    mcp_servers=[dazzle],
-)`,
-  },
-  {
-    id: "openclaw",
-    name: "OpenClaw",
-    language: "YAML",
-    description: "Declarative agent orchestration",
-    getSnippet: (mcpUrl) =>
-      `mcp_servers:
-  dazzle:
-    url: "${mcpUrl}"
-    headers:
-      Authorization: "Bearer \${DAZZLE_API_KEY}"`,
+# Push content and stream
+dazzle s sc set app.jsx
+dazzle s live on`,
   },
   {
     id: "crewai",
     name: "CrewAI",
-    language: "Python",
+    language: "Shell",
     description: "Role-based agent collaboration",
-    getSnippet: (mcpUrl) =>
-      `import os
-from crewai.tools import MCPServerAdapter
+    getSnippet: () =>
+      `# Install the Dazzle CLI
+go install github.com/dazzle-labs/cli/cmd/dazzle@latest
 
-dazzle = MCPServerAdapter(
-    server_url="${mcpUrl}",
-    headers={"Authorization": f"Bearer {os.environ['DAZZLE_API_KEY']}"},
-)
+# Authenticate and create a stage
+dazzle login
+dazzle s new my-stage
+dazzle s up
 
-agent = Agent(
-    role="My Agent",
-    tools=[dazzle],
-)`,
+# Push content and stream
+dazzle s sc set app.jsx
+dazzle s live on`,
   },
   {
     id: "langgraph",
     name: "LangGraph",
-    language: "Python",
+    language: "Shell",
     description: "LangChain's stateful agent graphs",
-    getSnippet: (mcpUrl) =>
-      `import os
-from langchain_mcp_adapters.client import MCPClient
+    getSnippet: () =>
+      `# Install the Dazzle CLI
+go install github.com/dazzle-labs/cli/cmd/dazzle@latest
 
-client = MCPClient(
-    transport="streamable_http",
-    url="${mcpUrl}",
-    headers={"Authorization": f"Bearer {os.environ['DAZZLE_API_KEY']}"},
-)
+# Authenticate and create a stage
+dazzle login
+dazzle s new my-stage
+dazzle s up
 
-tools = await client.get_tools()`,
+# Push content and stream
+dazzle s sc set app.jsx
+dazzle s live on`,
   },
   {
     id: "autogen",
     name: "AutoGen",
-    language: "Python",
+    language: "Shell",
     description: "Microsoft's multi-agent framework",
-    getSnippet: (mcpUrl) =>
-      `import os
-from autogen_ext.tools.mcp import McpWorkbench
+    getSnippet: () =>
+      `# Install the Dazzle CLI
+go install github.com/dazzle-labs/cli/cmd/dazzle@latest
 
-workbench = McpWorkbench(
-    server_url="${mcpUrl}",
-    headers={"Authorization": f"Bearer {os.environ['DAZZLE_API_KEY']}"},
-)
+# Authenticate and create a stage
+dazzle login
+dazzle s new my-stage
+dazzle s up
 
-agent = AssistantAgent(
-    name="my_agent",
-    tools=await workbench.get_tools(),
-)`,
+# Push content and stream
+dazzle s sc set app.jsx
+dazzle s live on`,
   },
 ];
