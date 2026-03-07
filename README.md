@@ -41,17 +41,17 @@ Pre-built binaries for macOS (arm64/amd64), Linux (amd64/arm64), and Windows (am
 dazzle login
 
 # Create and activate a stage
-dazzle s new my-stage
-dazzle s up
+dazzle stage create my-stage
+dazzle stage activate
 
 # Push content (JS or JSX, hot-swapped via HMR)
-dazzle s sc set my-overlay.jsx
+dazzle stage script set my-overlay.jsx
 
 # Take a screenshot to verify
-dazzle s ss -o preview.png
+dazzle stage screenshot -o preview.png
 
 # Go live on a configured destination
-dazzle s live on
+dazzle stage live on
 ```
 
 ## Commands
@@ -69,23 +69,23 @@ dazzle s live on
 
 ### Stage subcommands
 
-| Command | Alias | Description |
-|---------|-------|-------------|
-| `dazzle s ls` | `list` | List stages |
-| `dazzle s new <name>` | `create` | Create a stage |
-| `dazzle s rm <name>` | `delete` | Delete a stage |
-| `dazzle s up` | `activate`, `start` | Activate a stage |
-| `dazzle s down` | `deactivate`, `stop` | Deactivate a stage |
-| `dazzle s st` | `status` | Show stage status |
-| `dazzle s default <name>` | `use` | Set default stage |
-| `dazzle s sc set <file>` | `script set` | Push JS/JSX to stage |
-| `dazzle s sc get` | `script get` | Get current script |
-| `dazzle s sc edit` | `script edit` | Find & replace in script |
-| `dazzle s ev e <name> <json>` | `event emit` | Push event to script |
-| `dazzle s ss` | `screenshot` | Capture a screenshot |
-| `dazzle s l` | `logs` | Retrieve console logs |
-| `dazzle s live on` | `stream start` | Go live |
-| `dazzle s live off` | `stream stop` | Stop streaming |
+| Command | Shorthand | Description |
+|---------|-----------|-------------|
+| `dazzle stage list` | `s ls` | List stages |
+| `dazzle stage create <name>` | `s new` | Create a stage |
+| `dazzle stage delete <name>` | `s rm` | Delete a stage |
+| `dazzle stage activate` | `s up` | Activate a stage |
+| `dazzle stage deactivate` | `s down` | Deactivate a stage |
+| `dazzle stage status` | `s st` | Show stage status |
+| `dazzle stage default <name>` | `s default` | Set default stage |
+| `dazzle stage script set <file>` | `s sc set` | Push JS/JSX to stage |
+| `dazzle stage script get` | `s sc get` | Get current script |
+| `dazzle stage script edit` | `s sc edit` | Find & replace in script |
+| `dazzle stage event emit <name> <json>` | `s ev e` | Push event to script |
+| `dazzle stage screenshot` | `s ss` | Capture a screenshot |
+| `dazzle stage logs` | `s l` | Retrieve console logs |
+| `dazzle stage live on` | `s live on` | Go live |
+| `dazzle stage live off` | `s live off` | Stop streaming |
 
 ## Global Flags
 
@@ -101,7 +101,7 @@ For stage-scoped commands, the stage is resolved in this order:
 
 1. `-s` / `--stage` flag
 2. `DAZZLE_STAGE` environment variable
-3. Default from `~/.config/dazzle/config.json` (set via `dazzle s default`)
+3. Default from `~/.config/dazzle/config.json` (set via `dazzle stage default`)
 4. Auto-select if you have exactly one stage
 
 ## Configuration
