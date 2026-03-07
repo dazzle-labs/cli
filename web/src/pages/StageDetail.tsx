@@ -6,7 +6,7 @@ import type { StreamDestination } from "../gen/api/v1/stream_pb.js";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Cpu, Globe, ArrowLeft, Copy, Check, ArrowUpRight, Pencil, X as XIcon, Link2, RefreshCw } from "lucide-react";
+import { Trash2, Cpu, Globe, ArrowLeft, Copy, Check, ArrowUpRight, Pencil, X as XIcon, Link2, RefreshCw, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
 import { StreamPreview } from "@/components/StreamPreview";
 import { CodeBlock } from "@/components/ui/code-block";
 
@@ -19,6 +19,7 @@ export function StageDetail() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [confirmingRegen, setConfirmingRegen] = useState(false);
+  const [showHlsUrl, setShowHlsUrl] = useState(false);
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
 
   // Inline name editing
@@ -208,26 +209,50 @@ dazzle stage broadcast on`;
                 <Link2 className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
                 <span className="text-xs font-medium text-zinc-400">Preview URL</span>
               </div>
-              <div className="flex items-center gap-2 mb-2">
-                <code className="flex-1 text-xs font-mono text-zinc-400 truncate">{stage.preview.watchUrl}</code>
+              {/* Watch URL — primary, masked */}
+              <div className="flex items-center gap-1.5 mb-2">
+                <code className="flex-1 text-xs font-mono text-zinc-500 truncate">
+                  {stage.preview.watchUrl.replace(/token=.*/, "token=••••••••")}
+                </code>
                 <button
                   onClick={() => handleCopy(stage.preview!.watchUrl, "preview-watch")}
                   className="text-zinc-500 hover:text-emerald-400 p-1 rounded transition-colors cursor-pointer shrink-0"
-                  title="Copy watch URL"
+                  title="Copy preview URL"
                 >
                   {copiedId === "preview-watch" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                 </button>
-              </div>
-              <div className="flex items-center gap-2 mb-2">
-                <code className="flex-1 text-xs font-mono text-zinc-500 truncate">{stage.preview.hlsUrl}</code>
-                <button
-                  onClick={() => handleCopy(stage.preview!.hlsUrl, "preview-hls")}
-                  className="text-zinc-500 hover:text-emerald-400 p-1 rounded transition-colors cursor-pointer shrink-0"
-                  title="Copy HLS URL"
+                <a
+                  href={stage.preview.watchUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-zinc-500 hover:text-emerald-400 p-1 rounded transition-colors shrink-0"
+                  title="Open preview"
                 >
-                  {copiedId === "preview-hls" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                </button>
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
               </div>
+              {/* HLS URL — secondary, toggled */}
+              <button
+                onClick={() => setShowHlsUrl(!showHlsUrl)}
+                className="inline-flex items-center gap-1 text-xs text-zinc-600 hover:text-zinc-400 transition-colors cursor-pointer mb-2"
+              >
+                {showHlsUrl ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                HLS URL
+              </button>
+              {showHlsUrl && (
+                <div className="flex items-center gap-1.5 mb-2">
+                  <code className="flex-1 text-xs font-mono text-zinc-500 truncate">
+                    {stage.preview.hlsUrl.replace(/token=.*/, "token=••••••••")}
+                  </code>
+                  <button
+                    onClick={() => handleCopy(stage.preview!.hlsUrl, "preview-hls")}
+                    className="text-zinc-500 hover:text-emerald-400 p-1 rounded transition-colors cursor-pointer shrink-0"
+                    title="Copy HLS URL"
+                  >
+                    {copiedId === "preview-hls" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                  </button>
+                </div>
+              )}
               <div className="flex items-center">
                 {!confirmingRegen ? (
                   <button
