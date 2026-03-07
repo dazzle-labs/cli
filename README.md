@@ -7,18 +7,22 @@ The official CLI for [Dazzle](https://stream.dazzle.fm) — manage your cloud st
 ### macOS / Linux
 
 ```bash
-curl -sSL https://stream.dazzle.fm/setup.sh | sh
+curl -sSL https://stream.dazzle.fm/install.sh | sh
 ```
 
 Installs to `~/.local/bin/dazzle`. Override with `INSTALL_DIR`:
 
 ```bash
-INSTALL_DIR=/usr/local/bin curl -sSL https://stream.dazzle.fm/setup.sh | sh
+INSTALL_DIR=/usr/local/bin curl -sSL https://stream.dazzle.fm/install.sh | sh
 ```
 
-### Windows
+### Windows (PowerShell)
 
-Download `dazzle_Windows_x86_64` (or `arm64`) from the [releases page](https://github.com/dazzle-labs/cli/releases), rename it to `dazzle.exe`, and place it somewhere on your `PATH`.
+```powershell
+irm https://stream.dazzle.fm/install.ps1 | iex
+```
+
+Or download `dazzle_Windows_x86_64.exe` (or `arm64`) from the [releases page](https://github.com/dazzle-labs/cli/releases) and add it to your `PATH`.
 
 ### go install
 
