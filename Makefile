@@ -22,7 +22,7 @@ define _confirm
 endef
 OK       = @printf "$(_bold)$(_green)✓ %s$(_reset)\n"
 
-RKCTL = kubectl --kubeconfig <(sops -d k8s/hetzner/kubeconfig.yaml.enc)
+RKCTL = kubectl --kubeconfig <(sops -d --input-type yaml --output-type yaml k8s/hetzner/kubeconfig.yaml.enc)
 INFRA_DIR := k8s/hetzner
 TFSTATE   := $(INFRA_DIR)/terraform.tfstate
 TFSTATE_ENC := $(INFRA_DIR)/terraform.tfstate.enc
@@ -215,7 +215,7 @@ prod/nodes: ## Show prod cluster nodes
 prod/k8s/%: ## Run k8s/ Makefile target against prod (e.g. make prod/k8s/prometheus)
 	@tmpkc=$$(mktemp) && \
 		trap "rm -f $$tmpkc" EXIT && \
-		sops -d k8s/hetzner/kubeconfig.yaml.enc > $$tmpkc && \
+		sops -d --input-type yaml --output-type yaml k8s/hetzner/kubeconfig.yaml.enc > $$tmpkc && \
 		KUBECONFIG=$$tmpkc $(MAKE) -C k8s $*
 
 # ══════════════════════════════════════════════════════
