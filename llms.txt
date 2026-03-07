@@ -108,12 +108,12 @@ Commands:
   stage (s) event (ev) emit (e)    Push an event to the running script.
   stage (s) logs (l)               Retrieve stage console logs.
   stage (s) screenshot (ss)        Capture a screenshot of the stage.
-  stage (s) broadcast (bc,live,stream) on (start)
+  stage (s) broadcast (bc) on (start)
                                    Start broadcasting to the configured
                                    destination.
-  stage (s) broadcast (bc,live,stream) off (stop)
+  stage (s) broadcast (bc) off (stop)
                                    Stop the broadcast.
-  stage (s) broadcast (bc,live,stream) status (st)
+  stage (s) broadcast (bc) status (st)
                                    Check broadcast status.
   destination (dest) list (ls)     List stream destinations.
   destination (dest) create (new)
