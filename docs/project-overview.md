@@ -1,7 +1,7 @@
 # Agent Streamer — Project Overview
 
 **Last updated:** 2026-03-03
-**Repository type:** Monorepo (4 parts)
+**Repository type:** Monorepo (5 parts)
 
 ---
 
@@ -19,8 +19,9 @@ Primary use cases: AI agents that need a persistent browser (Claude Code, OpenAI
 
 | Part | Path | Language | Purpose |
 |------|------|----------|---------|
-| **control-plane** | `control-plane/` | Go 1.24 | Backend API, Kubernetes orchestration, auth, DB, CDP/WS proxy, MCP server, serves web SPA |
-| **web** | `web/` | TypeScript / React 19 | Web dashboard SPA (stage management, API keys, stream destinations) |
+| **cli** | `cli/` (git submodule → `dazzle-labs/cli`) | Go 1.24 | Primary interface for developers and AI agents — stage lifecycle, scripting, OBS, streaming |
+| **control-plane** | `control-plane/` | Go 1.24 | Backend API, Kubernetes orchestration, auth, DB, CDP/WS proxy, serves web SPA |
+| **web** | `web/` | TypeScript / React 19 | Web dashboard SPA (stage monitoring, API keys, stream destinations, account settings) |
 | **streamer** | `streamer/` | Node.js | Per-stage browser container: Express HTTP, Chrome CDP, Vite panel rendering |
 | **k8s** | `k8s/` | YAML | Kubernetes manifests, Traefik ingress, TLS, SOPS-encrypted secrets |
 

@@ -4,7 +4,7 @@
 
 ## Overview
 
-Agent Streamer (Dazzle) is a monorepo with 4 parts. The **control plane** is the central hub: it orchestrates Kubernetes pods, proxies all traffic, and serves the web SPA. The two primary consumers are the **Dazzle CLI** (`dazzle`) and the **Web UI** — both communicate with the control plane via ConnectRPC. All external traffic enters through Traefik and flows to the control plane.
+Agent Streamer (Dazzle) is a monorepo with 5 parts. The **control plane** is the central hub: it orchestrates Kubernetes pods, proxies all traffic, and serves the web SPA. The two primary consumers are the **Dazzle CLI** (`dazzle`) and the **Web UI** — both communicate with the control plane via ConnectRPC. All external traffic enters through Traefik and flows to the control plane.
 
 ---
 

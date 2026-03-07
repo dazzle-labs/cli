@@ -11,7 +11,7 @@
 | **Product** | Dazzle — on-demand cloud browser environments for AI-driven live streaming and automation |
 | **Primary Consumers** | Dazzle CLI (`dazzle`) and Web UI |
 | **Production URL** | https://stream.dazzle.fm |
-| **Repo Type** | Monorepo (4 parts) |
+| **Repo Type** | Monorepo (5 parts) |
 | **Infrastructure** | Hetzner Cloud k3s HA cluster (3 CP + 2 workers + autoscaler 0–3), provisioned via OpenTofu + kube-hetzner |
 | **Auth** | Clerk (JWT) + internal API keys (`bstr_*`) |
 | **API Protocol** | ConnectRPC (protobuf/HTTP2) |
@@ -19,6 +19,11 @@
 ---
 
 ## Quick Reference by Part
+
+### cli (Go CLI — git submodule)
+- **Path:** `cli/` (submodule → `github.com/dazzle-labs/cli`)
+- **Role:** Primary interface for developers and AI agents — stage lifecycle, scripting, screenshots, OBS, streaming
+- **Install:** `go install github.com/dazzle-labs/cli@latest`
 
 ### control-plane (Go backend)
 - **Path:** `control-plane/`
@@ -28,7 +33,7 @@
 
 ### web (React SPA)
 - **Path:** `web/`
-- **Role:** Dashboard for stage management, API keys, stream destinations
+- **Role:** Dashboard for stage monitoring, API keys, stream destinations, account settings
 - **Entry:** `web/src/main.tsx`
 - **Dev:** `cd web && npm run dev`
 

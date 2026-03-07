@@ -196,12 +196,6 @@ jobs:
       - name: Set up kubectl
         uses: azure/setup-kubectl@v4
 
-      - name: Decrypt kubeconfig
-        run: |
-          mkdir -p ~/.kube
-          sops -d k8s/hetzner/kubeconfig.yaml.enc > ~/.kube/config
-          chmod 600 ~/.kube/config
-
       - name: Log In To Docker Hub
         uses: docker/login-action@v3
         with:
@@ -241,7 +235,7 @@ jobs:
           }
 
           # Check control-plane
-          CP_CURRENT_IMAGE=$(kubectl get deployment control-plane -n browser-streamer -o jsonpath='{.spec.template.spec.containers[?(@.name=="control-plane")].image}' 2>/dev/null || echo "")
+          CP_CURRENT_IMAGE=$(make prod/k8s/current-cp-image)
           CP_CURRENT_TAG="${CP_CURRENT_IMAGE##*:}"
 
           CP_CURRENT_DIGEST=""
@@ -291,21 +285,17 @@ jobs:
           cd k8s
           kustomize edit set image ${{ env.CP_REPO }}:${{ needs.control-plane.outputs.image_tag }}
           kustomize edit set image ${{ env.STREAMER_REPO }}:${{ needs.streamer.outputs.image_tag }}
-          make deploy
+          cd ..
+          make prod/k8s/deploy
 
       - name: Update STREAMER_IMAGE env var
         run: |
-          kubectl set env deployment/control-plane -n browser-streamer \
+          make prod/k8s/set-streamer-env \
             STREAMER_IMAGE=${{ env.STREAMER_REPO }}:${{ needs.streamer.outputs.image_tag }}
 
       - name: Verify Deployment
         if: steps.compare.outputs.changed == 'true'
-        run: |
-          kubectl rollout status deployment/control-plane -n browser-streamer --timeout=300s
-          echo ""
-          echo "=== Recent logs ==="
-          POD=$(kubectl get pods -n browser-streamer -l app=control-plane --sort-by=.metadata.creationTimestamp -o jsonpath='{.items[-1].metadata.name}')
-          kubectl logs -n browser-streamer "$POD" --tail=50
+        run: make prod/k8s/verify
 
       - name: Notify Discord
         if: success()

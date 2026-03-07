@@ -75,8 +75,9 @@ On-demand cloud browser environments for AI-driven live streaming and automation
 
 | Part | Path | Language | Purpose |
 |------|------|----------|---------|
+| **cli** | `cli/` (git submodule) | Go 1.24 | Primary interface for developers and AI agents — stage lifecycle, scripting, OBS, streaming |
 | **control-plane** | `control-plane/` | Go 1.24 | API server, K8s orchestration, auth, DB, CDP proxy, serves web SPA |
-| **web** | `web/` | TypeScript / React 19 | Dashboard — stage management, API keys, stream destinations |
+| **web** | `web/` | TypeScript / React 19 | Dashboard — stage monitoring, API keys, stream destinations, account settings |
 | **streamer** | `streamer/` | Node.js 20 | Per-stage browser pod: Chrome, OBS, Vite panel rendering |
 | **k8s** | `k8s/` | YAML + HCL | Kubernetes manifests, Traefik ingress, TLS, SOPS secrets, cluster provisioning |
 
