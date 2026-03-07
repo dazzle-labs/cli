@@ -39,9 +39,6 @@ const (
 	// RtmpDestinationServiceListStreamDestinationsProcedure is the fully-qualified name of the
 	// RtmpDestinationService's ListStreamDestinations RPC.
 	RtmpDestinationServiceListStreamDestinationsProcedure = "/dazzle.v1.RtmpDestinationService/ListStreamDestinations"
-	// RtmpDestinationServiceUpdateStreamDestinationProcedure is the fully-qualified name of the
-	// RtmpDestinationService's UpdateStreamDestination RPC.
-	RtmpDestinationServiceUpdateStreamDestinationProcedure = "/dazzle.v1.RtmpDestinationService/UpdateStreamDestination"
 	// RtmpDestinationServiceDeleteStreamDestinationProcedure is the fully-qualified name of the
 	// RtmpDestinationService's DeleteStreamDestination RPC.
 	RtmpDestinationServiceDeleteStreamDestinationProcedure = "/dazzle.v1.RtmpDestinationService/DeleteStreamDestination"
@@ -51,7 +48,6 @@ const (
 type RtmpDestinationServiceClient interface {
 	CreateStreamDestination(context.Context, *connect.Request[v1.CreateStreamDestinationRequest]) (*connect.Response[v1.CreateStreamDestinationResponse], error)
 	ListStreamDestinations(context.Context, *connect.Request[v1.ListStreamDestinationsRequest]) (*connect.Response[v1.ListStreamDestinationsResponse], error)
-	UpdateStreamDestination(context.Context, *connect.Request[v1.UpdateStreamDestinationRequest]) (*connect.Response[v1.UpdateStreamDestinationResponse], error)
 	DeleteStreamDestination(context.Context, *connect.Request[v1.DeleteStreamDestinationRequest]) (*connect.Response[v1.DeleteStreamDestinationResponse], error)
 }
 
@@ -78,12 +74,6 @@ func NewRtmpDestinationServiceClient(httpClient connect.HTTPClient, baseURL stri
 			connect.WithSchema(rtmpDestinationServiceMethods.ByName("ListStreamDestinations")),
 			connect.WithClientOptions(opts...),
 		),
-		updateStreamDestination: connect.NewClient[v1.UpdateStreamDestinationRequest, v1.UpdateStreamDestinationResponse](
-			httpClient,
-			baseURL+RtmpDestinationServiceUpdateStreamDestinationProcedure,
-			connect.WithSchema(rtmpDestinationServiceMethods.ByName("UpdateStreamDestination")),
-			connect.WithClientOptions(opts...),
-		),
 		deleteStreamDestination: connect.NewClient[v1.DeleteStreamDestinationRequest, v1.DeleteStreamDestinationResponse](
 			httpClient,
 			baseURL+RtmpDestinationServiceDeleteStreamDestinationProcedure,
@@ -97,7 +87,6 @@ func NewRtmpDestinationServiceClient(httpClient connect.HTTPClient, baseURL stri
 type rtmpDestinationServiceClient struct {
 	createStreamDestination *connect.Client[v1.CreateStreamDestinationRequest, v1.CreateStreamDestinationResponse]
 	listStreamDestinations  *connect.Client[v1.ListStreamDestinationsRequest, v1.ListStreamDestinationsResponse]
-	updateStreamDestination *connect.Client[v1.UpdateStreamDestinationRequest, v1.UpdateStreamDestinationResponse]
 	deleteStreamDestination *connect.Client[v1.DeleteStreamDestinationRequest, v1.DeleteStreamDestinationResponse]
 }
 
@@ -111,11 +100,6 @@ func (c *rtmpDestinationServiceClient) ListStreamDestinations(ctx context.Contex
 	return c.listStreamDestinations.CallUnary(ctx, req)
 }
 
-// UpdateStreamDestination calls dazzle.v1.RtmpDestinationService.UpdateStreamDestination.
-func (c *rtmpDestinationServiceClient) UpdateStreamDestination(ctx context.Context, req *connect.Request[v1.UpdateStreamDestinationRequest]) (*connect.Response[v1.UpdateStreamDestinationResponse], error) {
-	return c.updateStreamDestination.CallUnary(ctx, req)
-}
-
 // DeleteStreamDestination calls dazzle.v1.RtmpDestinationService.DeleteStreamDestination.
 func (c *rtmpDestinationServiceClient) DeleteStreamDestination(ctx context.Context, req *connect.Request[v1.DeleteStreamDestinationRequest]) (*connect.Response[v1.DeleteStreamDestinationResponse], error) {
 	return c.deleteStreamDestination.CallUnary(ctx, req)
@@ -126,7 +110,6 @@ func (c *rtmpDestinationServiceClient) DeleteStreamDestination(ctx context.Conte
 type RtmpDestinationServiceHandler interface {
 	CreateStreamDestination(context.Context, *connect.Request[v1.CreateStreamDestinationRequest]) (*connect.Response[v1.CreateStreamDestinationResponse], error)
 	ListStreamDestinations(context.Context, *connect.Request[v1.ListStreamDestinationsRequest]) (*connect.Response[v1.ListStreamDestinationsResponse], error)
-	UpdateStreamDestination(context.Context, *connect.Request[v1.UpdateStreamDestinationRequest]) (*connect.Response[v1.UpdateStreamDestinationResponse], error)
 	DeleteStreamDestination(context.Context, *connect.Request[v1.DeleteStreamDestinationRequest]) (*connect.Response[v1.DeleteStreamDestinationResponse], error)
 }
 
@@ -149,12 +132,6 @@ func NewRtmpDestinationServiceHandler(svc RtmpDestinationServiceHandler, opts ..
 		connect.WithSchema(rtmpDestinationServiceMethods.ByName("ListStreamDestinations")),
 		connect.WithHandlerOptions(opts...),
 	)
-	rtmpDestinationServiceUpdateStreamDestinationHandler := connect.NewUnaryHandler(
-		RtmpDestinationServiceUpdateStreamDestinationProcedure,
-		svc.UpdateStreamDestination,
-		connect.WithSchema(rtmpDestinationServiceMethods.ByName("UpdateStreamDestination")),
-		connect.WithHandlerOptions(opts...),
-	)
 	rtmpDestinationServiceDeleteStreamDestinationHandler := connect.NewUnaryHandler(
 		RtmpDestinationServiceDeleteStreamDestinationProcedure,
 		svc.DeleteStreamDestination,
@@ -167,8 +144,6 @@ func NewRtmpDestinationServiceHandler(svc RtmpDestinationServiceHandler, opts ..
 			rtmpDestinationServiceCreateStreamDestinationHandler.ServeHTTP(w, r)
 		case RtmpDestinationServiceListStreamDestinationsProcedure:
 			rtmpDestinationServiceListStreamDestinationsHandler.ServeHTTP(w, r)
-		case RtmpDestinationServiceUpdateStreamDestinationProcedure:
-			rtmpDestinationServiceUpdateStreamDestinationHandler.ServeHTTP(w, r)
 		case RtmpDestinationServiceDeleteStreamDestinationProcedure:
 			rtmpDestinationServiceDeleteStreamDestinationHandler.ServeHTTP(w, r)
 		default:
@@ -186,10 +161,6 @@ func (UnimplementedRtmpDestinationServiceHandler) CreateStreamDestination(contex
 
 func (UnimplementedRtmpDestinationServiceHandler) ListStreamDestinations(context.Context, *connect.Request[v1.ListStreamDestinationsRequest]) (*connect.Response[v1.ListStreamDestinationsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.RtmpDestinationService.ListStreamDestinations is not implemented"))
-}
-
-func (UnimplementedRtmpDestinationServiceHandler) UpdateStreamDestination(context.Context, *connect.Request[v1.UpdateStreamDestinationRequest]) (*connect.Response[v1.UpdateStreamDestinationResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.RtmpDestinationService.UpdateStreamDestination is not implemented"))
 }
 
 func (UnimplementedRtmpDestinationServiceHandler) DeleteStreamDestination(context.Context, *connect.Request[v1.DeleteStreamDestinationRequest]) (*connect.Response[v1.DeleteStreamDestinationResponse], error) {

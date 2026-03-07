@@ -45,9 +45,9 @@ func resolveDestinationByNameOrID(ctx *Context, nameOrID string) (string, error)
 			return d.Id, nil
 		}
 	}
-	// Try name match
+	// Try platform_username match
 	for _, d := range destinations {
-		if d.Name == nameOrID {
+		if d.PlatformUsername == nameOrID {
 			return d.Id, nil
 		}
 	}
@@ -72,9 +72,9 @@ func (c *DestinationListCmd) Run(ctx *Context) error {
 		return nil
 	}
 
-	tableHeader("NAME", "PLATFORM", "ID")
+	tableHeader("USERNAME", "PLATFORM", "ID")
 	for _, d := range destinations {
-		printText("%s", tableRow(d.Name, d.Platform, d.Id))
+		printText("%s", tableRow(d.PlatformUsername, d.Platform, d.Id))
 	}
 	return nil
 }
@@ -89,13 +89,13 @@ func (c *DestinationCreateCmd) Run(ctx *Context) error {
 
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Print("Name: ")
-	name, _ := reader.ReadString('\n')
-	name = strings.TrimSpace(name)
-
 	fmt.Print("Platform (e.g. youtube, twitch, custom): ")
 	platform, _ := reader.ReadString('\n')
 	platform = strings.TrimSpace(platform)
+
+	fmt.Print("Platform username: ")
+	platformUsername, _ := reader.ReadString('\n')
+	platformUsername = strings.TrimSpace(platformUsername)
 
 	fmt.Print("RTMP URL: ")
 	rtmpURL, _ := reader.ReadString('\n')
@@ -111,10 +111,10 @@ func (c *DestinationCreateCmd) Run(ctx *Context) error {
 
 	client := apiv1connect.NewRtmpDestinationServiceClient(ctx.HTTPClient, ctx.APIURL)
 	req := connect.NewRequest(&apiv1.CreateStreamDestinationRequest{
-		Name:      name,
-		Platform:  platform,
-		RtmpUrl:   rtmpURL,
-		StreamKey: streamKey,
+		Platform:         platform,
+		PlatformUsername: platformUsername,
+		RtmpUrl:          rtmpURL,
+		StreamKey:        streamKey,
 	})
 	req.Header().Set("Authorization", ctx.authHeader())
 	resp, err := client.CreateStreamDestination(context.Background(), req)
@@ -128,7 +128,7 @@ func (c *DestinationCreateCmd) Run(ctx *Context) error {
 		return nil
 	}
 
-	printText("Destination %q created (ID: %s)", dest.Name, dest.Id)
+	printText("Destination %q created (ID: %s)", dest.PlatformUsername, dest.Id)
 	return nil
 }
 

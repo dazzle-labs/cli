@@ -14,6 +14,7 @@ service StageService {
   rpc SetStageDestination(SetStageDestinationRequest) returns (SetStageDestinationResponse);
   rpc ActivateStage(ActivateStageRequest) returns (ActivateStageResponse);
   rpc DeactivateStage(DeactivateStageRequest) returns (DeactivateStageResponse);
+  rpc RenameStage(RenameStageRequest) returns (RenameStageResponse);
 }
 
 message Stage {
@@ -79,5 +80,14 @@ message DeactivateStageRequest {
 }
 
 message DeactivateStageResponse {
+  Stage stage = 1;
+}
+
+message RenameStageRequest {
+  string id = 1;
+  string name = 2;
+}
+
+message RenameStageResponse {
   Stage stage = 1;
 }

@@ -23,16 +23,16 @@ const (
 )
 
 type StreamDestination struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Platform      string                 `protobuf:"bytes,3,opt,name=platform,proto3" json:"platform,omitempty"`
-	RtmpUrl       string                 `protobuf:"bytes,4,opt,name=rtmp_url,json=rtmpUrl,proto3" json:"rtmp_url,omitempty"`
-	StreamKey     string                 `protobuf:"bytes,5,opt,name=stream_key,json=streamKey,proto3" json:"stream_key,omitempty"`
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Id               string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Platform         string                 `protobuf:"bytes,3,opt,name=platform,proto3" json:"platform,omitempty"`
+	RtmpUrl          string                 `protobuf:"bytes,4,opt,name=rtmp_url,json=rtmpUrl,proto3" json:"rtmp_url,omitempty"`
+	StreamKey        string                 `protobuf:"bytes,5,opt,name=stream_key,json=streamKey,proto3" json:"stream_key,omitempty"`
+	CreatedAt        *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt        *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	PlatformUsername string                 `protobuf:"bytes,9,opt,name=platform_username,json=platformUsername,proto3" json:"platform_username,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *StreamDestination) Reset() {
@@ -72,13 +72,6 @@ func (x *StreamDestination) GetId() string {
 	return ""
 }
 
-func (x *StreamDestination) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
 func (x *StreamDestination) GetPlatform() string {
 	if x != nil {
 		return x.Platform
@@ -114,14 +107,21 @@ func (x *StreamDestination) GetUpdatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *StreamDestination) GetPlatformUsername() string {
+	if x != nil {
+		return x.PlatformUsername
+	}
+	return ""
+}
+
 type CreateStreamDestinationRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Platform      string                 `protobuf:"bytes,2,opt,name=platform,proto3" json:"platform,omitempty"`
-	RtmpUrl       string                 `protobuf:"bytes,3,opt,name=rtmp_url,json=rtmpUrl,proto3" json:"rtmp_url,omitempty"`
-	StreamKey     string                 `protobuf:"bytes,4,opt,name=stream_key,json=streamKey,proto3" json:"stream_key,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Platform         string                 `protobuf:"bytes,2,opt,name=platform,proto3" json:"platform,omitempty"`
+	RtmpUrl          string                 `protobuf:"bytes,3,opt,name=rtmp_url,json=rtmpUrl,proto3" json:"rtmp_url,omitempty"`
+	StreamKey        string                 `protobuf:"bytes,4,opt,name=stream_key,json=streamKey,proto3" json:"stream_key,omitempty"`
+	PlatformUsername string                 `protobuf:"bytes,5,opt,name=platform_username,json=platformUsername,proto3" json:"platform_username,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *CreateStreamDestinationRequest) Reset() {
@@ -154,13 +154,6 @@ func (*CreateStreamDestinationRequest) Descriptor() ([]byte, []int) {
 	return file_api_v1_stream_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *CreateStreamDestinationRequest) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
 func (x *CreateStreamDestinationRequest) GetPlatform() string {
 	if x != nil {
 		return x.Platform
@@ -178,6 +171,13 @@ func (x *CreateStreamDestinationRequest) GetRtmpUrl() string {
 func (x *CreateStreamDestinationRequest) GetStreamKey() string {
 	if x != nil {
 		return x.StreamKey
+	}
+	return ""
+}
+
+func (x *CreateStreamDestinationRequest) GetPlatformUsername() string {
+	if x != nil {
+		return x.PlatformUsername
 	}
 	return ""
 }
@@ -271,10 +271,11 @@ func (x *ListStreamDestinationsRequest) GetStageId() string {
 }
 
 type ListStreamDestinationsResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Destinations  []*StreamDestination   `protobuf:"bytes,1,rep,name=destinations,proto3" json:"destinations,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Destinations       []*StreamDestination   `protobuf:"bytes,1,rep,name=destinations,proto3" json:"destinations,omitempty"`
+	AvailablePlatforms []string               `protobuf:"bytes,2,rep,name=available_platforms,json=availablePlatforms,proto3" json:"available_platforms,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *ListStreamDestinationsResponse) Reset() {
@@ -314,122 +315,9 @@ func (x *ListStreamDestinationsResponse) GetDestinations() []*StreamDestination 
 	return nil
 }
 
-type UpdateStreamDestinationRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Platform      string                 `protobuf:"bytes,3,opt,name=platform,proto3" json:"platform,omitempty"`
-	RtmpUrl       string                 `protobuf:"bytes,4,opt,name=rtmp_url,json=rtmpUrl,proto3" json:"rtmp_url,omitempty"`
-	StreamKey     string                 `protobuf:"bytes,5,opt,name=stream_key,json=streamKey,proto3" json:"stream_key,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *UpdateStreamDestinationRequest) Reset() {
-	*x = UpdateStreamDestinationRequest{}
-	mi := &file_api_v1_stream_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UpdateStreamDestinationRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UpdateStreamDestinationRequest) ProtoMessage() {}
-
-func (x *UpdateStreamDestinationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_stream_proto_msgTypes[5]
+func (x *ListStreamDestinationsResponse) GetAvailablePlatforms() []string {
 	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use UpdateStreamDestinationRequest.ProtoReflect.Descriptor instead.
-func (*UpdateStreamDestinationRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_stream_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *UpdateStreamDestinationRequest) GetId() string {
-	if x != nil {
-		return x.Id
-	}
-	return ""
-}
-
-func (x *UpdateStreamDestinationRequest) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *UpdateStreamDestinationRequest) GetPlatform() string {
-	if x != nil {
-		return x.Platform
-	}
-	return ""
-}
-
-func (x *UpdateStreamDestinationRequest) GetRtmpUrl() string {
-	if x != nil {
-		return x.RtmpUrl
-	}
-	return ""
-}
-
-func (x *UpdateStreamDestinationRequest) GetStreamKey() string {
-	if x != nil {
-		return x.StreamKey
-	}
-	return ""
-}
-
-type UpdateStreamDestinationResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Destination   *StreamDestination     `protobuf:"bytes,1,opt,name=destination,proto3" json:"destination,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *UpdateStreamDestinationResponse) Reset() {
-	*x = UpdateStreamDestinationResponse{}
-	mi := &file_api_v1_stream_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UpdateStreamDestinationResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UpdateStreamDestinationResponse) ProtoMessage() {}
-
-func (x *UpdateStreamDestinationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_stream_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use UpdateStreamDestinationResponse.ProtoReflect.Descriptor instead.
-func (*UpdateStreamDestinationResponse) Descriptor() ([]byte, []int) {
-	return file_api_v1_stream_proto_rawDescGZIP(), []int{6}
-}
-
-func (x *UpdateStreamDestinationResponse) GetDestination() *StreamDestination {
-	if x != nil {
-		return x.Destination
+		return x.AvailablePlatforms
 	}
 	return nil
 }
@@ -443,7 +331,7 @@ type DeleteStreamDestinationRequest struct {
 
 func (x *DeleteStreamDestinationRequest) Reset() {
 	*x = DeleteStreamDestinationRequest{}
-	mi := &file_api_v1_stream_proto_msgTypes[7]
+	mi := &file_api_v1_stream_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -455,7 +343,7 @@ func (x *DeleteStreamDestinationRequest) String() string {
 func (*DeleteStreamDestinationRequest) ProtoMessage() {}
 
 func (x *DeleteStreamDestinationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_stream_proto_msgTypes[7]
+	mi := &file_api_v1_stream_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -468,7 +356,7 @@ func (x *DeleteStreamDestinationRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteStreamDestinationRequest.ProtoReflect.Descriptor instead.
 func (*DeleteStreamDestinationRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_stream_proto_rawDescGZIP(), []int{7}
+	return file_api_v1_stream_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *DeleteStreamDestinationRequest) GetId() string {
@@ -486,7 +374,7 @@ type DeleteStreamDestinationResponse struct {
 
 func (x *DeleteStreamDestinationResponse) Reset() {
 	*x = DeleteStreamDestinationResponse{}
-	mi := &file_api_v1_stream_proto_msgTypes[8]
+	mi := &file_api_v1_stream_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -498,7 +386,7 @@ func (x *DeleteStreamDestinationResponse) String() string {
 func (*DeleteStreamDestinationResponse) ProtoMessage() {}
 
 func (x *DeleteStreamDestinationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_stream_proto_msgTypes[8]
+	mi := &file_api_v1_stream_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -511,17 +399,16 @@ func (x *DeleteStreamDestinationResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteStreamDestinationResponse.ProtoReflect.Descriptor instead.
 func (*DeleteStreamDestinationResponse) Descriptor() ([]byte, []int) {
-	return file_api_v1_stream_proto_rawDescGZIP(), []int{8}
+	return file_api_v1_stream_proto_rawDescGZIP(), []int{6}
 }
 
 var File_api_v1_stream_proto protoreflect.FileDescriptor
 
 const file_api_v1_stream_proto_rawDesc = "" +
 	"\n" +
-	"\x13api/v1/stream.proto\x12\tdazzle.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x83\x02\n" +
+	"\x13api/v1/stream.proto\x12\tdazzle.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x9c\x02\n" +
 	"\x11StreamDestination\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1a\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
 	"\bplatform\x18\x03 \x01(\tR\bplatform\x12\x19\n" +
 	"\brtmp_url\x18\x04 \x01(\tR\artmpUrl\x12\x1d\n" +
 	"\n" +
@@ -529,35 +416,27 @@ const file_api_v1_stream_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
-	"updated_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\x8a\x01\n" +
-	"\x1eCreateStreamDestinationRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
+	"updated_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12+\n" +
+	"\x11platform_username\x18\t \x01(\tR\x10platformUsername\"\xa3\x01\n" +
+	"\x1eCreateStreamDestinationRequest\x12\x1a\n" +
 	"\bplatform\x18\x02 \x01(\tR\bplatform\x12\x19\n" +
 	"\brtmp_url\x18\x03 \x01(\tR\artmpUrl\x12\x1d\n" +
 	"\n" +
-	"stream_key\x18\x04 \x01(\tR\tstreamKey\"a\n" +
+	"stream_key\x18\x04 \x01(\tR\tstreamKey\x12+\n" +
+	"\x11platform_username\x18\x05 \x01(\tR\x10platformUsername\"a\n" +
 	"\x1fCreateStreamDestinationResponse\x12>\n" +
 	"\vdestination\x18\x01 \x01(\v2\x1c.dazzle.v1.StreamDestinationR\vdestination\":\n" +
 	"\x1dListStreamDestinationsRequest\x12\x19\n" +
-	"\bstage_id\x18\x01 \x01(\tR\astageId\"b\n" +
+	"\bstage_id\x18\x01 \x01(\tR\astageId\"\x93\x01\n" +
 	"\x1eListStreamDestinationsResponse\x12@\n" +
-	"\fdestinations\x18\x01 \x03(\v2\x1c.dazzle.v1.StreamDestinationR\fdestinations\"\x9a\x01\n" +
-	"\x1eUpdateStreamDestinationRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1a\n" +
-	"\bplatform\x18\x03 \x01(\tR\bplatform\x12\x19\n" +
-	"\brtmp_url\x18\x04 \x01(\tR\artmpUrl\x12\x1d\n" +
-	"\n" +
-	"stream_key\x18\x05 \x01(\tR\tstreamKey\"a\n" +
-	"\x1fUpdateStreamDestinationResponse\x12>\n" +
-	"\vdestination\x18\x01 \x01(\v2\x1c.dazzle.v1.StreamDestinationR\vdestination\"0\n" +
+	"\fdestinations\x18\x01 \x03(\v2\x1c.dazzle.v1.StreamDestinationR\fdestinations\x12/\n" +
+	"\x13available_platforms\x18\x02 \x03(\tR\x12availablePlatforms\"0\n" +
 	"\x1eDeleteStreamDestinationRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"!\n" +
-	"\x1fDeleteStreamDestinationResponse2\xdd\x03\n" +
+	"\x1fDeleteStreamDestinationResponse2\xeb\x02\n" +
 	"\x16RtmpDestinationService\x12p\n" +
 	"\x17CreateStreamDestination\x12).dazzle.v1.CreateStreamDestinationRequest\x1a*.dazzle.v1.CreateStreamDestinationResponse\x12m\n" +
 	"\x16ListStreamDestinations\x12(.dazzle.v1.ListStreamDestinationsRequest\x1a).dazzle.v1.ListStreamDestinationsResponse\x12p\n" +
-	"\x17UpdateStreamDestination\x12).dazzle.v1.UpdateStreamDestinationRequest\x1a*.dazzle.v1.UpdateStreamDestinationResponse\x12p\n" +
 	"\x17DeleteStreamDestination\x12).dazzle.v1.DeleteStreamDestinationRequest\x1a*.dazzle.v1.DeleteStreamDestinationResponseB-Z+github.com/dazzle-labs/cli/gen/api/v1;apiv1b\x06proto3"
 
 var (
@@ -572,38 +451,33 @@ func file_api_v1_stream_proto_rawDescGZIP() []byte {
 	return file_api_v1_stream_proto_rawDescData
 }
 
-var file_api_v1_stream_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_api_v1_stream_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_api_v1_stream_proto_goTypes = []any{
 	(*StreamDestination)(nil),               // 0: dazzle.v1.StreamDestination
 	(*CreateStreamDestinationRequest)(nil),  // 1: dazzle.v1.CreateStreamDestinationRequest
 	(*CreateStreamDestinationResponse)(nil), // 2: dazzle.v1.CreateStreamDestinationResponse
 	(*ListStreamDestinationsRequest)(nil),   // 3: dazzle.v1.ListStreamDestinationsRequest
 	(*ListStreamDestinationsResponse)(nil),  // 4: dazzle.v1.ListStreamDestinationsResponse
-	(*UpdateStreamDestinationRequest)(nil),  // 5: dazzle.v1.UpdateStreamDestinationRequest
-	(*UpdateStreamDestinationResponse)(nil), // 6: dazzle.v1.UpdateStreamDestinationResponse
-	(*DeleteStreamDestinationRequest)(nil),  // 7: dazzle.v1.DeleteStreamDestinationRequest
-	(*DeleteStreamDestinationResponse)(nil), // 8: dazzle.v1.DeleteStreamDestinationResponse
-	(*timestamppb.Timestamp)(nil),           // 9: google.protobuf.Timestamp
+	(*DeleteStreamDestinationRequest)(nil),  // 5: dazzle.v1.DeleteStreamDestinationRequest
+	(*DeleteStreamDestinationResponse)(nil), // 6: dazzle.v1.DeleteStreamDestinationResponse
+	(*timestamppb.Timestamp)(nil),           // 7: google.protobuf.Timestamp
 }
 var file_api_v1_stream_proto_depIdxs = []int32{
-	9, // 0: dazzle.v1.StreamDestination.created_at:type_name -> google.protobuf.Timestamp
-	9, // 1: dazzle.v1.StreamDestination.updated_at:type_name -> google.protobuf.Timestamp
+	7, // 0: dazzle.v1.StreamDestination.created_at:type_name -> google.protobuf.Timestamp
+	7, // 1: dazzle.v1.StreamDestination.updated_at:type_name -> google.protobuf.Timestamp
 	0, // 2: dazzle.v1.CreateStreamDestinationResponse.destination:type_name -> dazzle.v1.StreamDestination
 	0, // 3: dazzle.v1.ListStreamDestinationsResponse.destinations:type_name -> dazzle.v1.StreamDestination
-	0, // 4: dazzle.v1.UpdateStreamDestinationResponse.destination:type_name -> dazzle.v1.StreamDestination
-	1, // 5: dazzle.v1.RtmpDestinationService.CreateStreamDestination:input_type -> dazzle.v1.CreateStreamDestinationRequest
-	3, // 6: dazzle.v1.RtmpDestinationService.ListStreamDestinations:input_type -> dazzle.v1.ListStreamDestinationsRequest
-	5, // 7: dazzle.v1.RtmpDestinationService.UpdateStreamDestination:input_type -> dazzle.v1.UpdateStreamDestinationRequest
-	7, // 8: dazzle.v1.RtmpDestinationService.DeleteStreamDestination:input_type -> dazzle.v1.DeleteStreamDestinationRequest
-	2, // 9: dazzle.v1.RtmpDestinationService.CreateStreamDestination:output_type -> dazzle.v1.CreateStreamDestinationResponse
-	4, // 10: dazzle.v1.RtmpDestinationService.ListStreamDestinations:output_type -> dazzle.v1.ListStreamDestinationsResponse
-	6, // 11: dazzle.v1.RtmpDestinationService.UpdateStreamDestination:output_type -> dazzle.v1.UpdateStreamDestinationResponse
-	8, // 12: dazzle.v1.RtmpDestinationService.DeleteStreamDestination:output_type -> dazzle.v1.DeleteStreamDestinationResponse
-	9, // [9:13] is the sub-list for method output_type
-	5, // [5:9] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	1, // 4: dazzle.v1.RtmpDestinationService.CreateStreamDestination:input_type -> dazzle.v1.CreateStreamDestinationRequest
+	3, // 5: dazzle.v1.RtmpDestinationService.ListStreamDestinations:input_type -> dazzle.v1.ListStreamDestinationsRequest
+	5, // 6: dazzle.v1.RtmpDestinationService.DeleteStreamDestination:input_type -> dazzle.v1.DeleteStreamDestinationRequest
+	2, // 7: dazzle.v1.RtmpDestinationService.CreateStreamDestination:output_type -> dazzle.v1.CreateStreamDestinationResponse
+	4, // 8: dazzle.v1.RtmpDestinationService.ListStreamDestinations:output_type -> dazzle.v1.ListStreamDestinationsResponse
+	6, // 9: dazzle.v1.RtmpDestinationService.DeleteStreamDestination:output_type -> dazzle.v1.DeleteStreamDestinationResponse
+	7, // [7:10] is the sub-list for method output_type
+	4, // [4:7] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_api_v1_stream_proto_init() }
@@ -617,7 +491,7 @@ func file_api_v1_stream_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_v1_stream_proto_rawDesc), len(file_api_v1_stream_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

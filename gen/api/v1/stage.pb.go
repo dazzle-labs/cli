@@ -746,6 +746,102 @@ func (x *DeactivateStageResponse) GetStage() *Stage {
 	return nil
 }
 
+type RenameStageRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RenameStageRequest) Reset() {
+	*x = RenameStageRequest{}
+	mi := &file_api_v1_stage_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RenameStageRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RenameStageRequest) ProtoMessage() {}
+
+func (x *RenameStageRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_stage_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RenameStageRequest.ProtoReflect.Descriptor instead.
+func (*RenameStageRequest) Descriptor() ([]byte, []int) {
+	return file_api_v1_stage_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *RenameStageRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *RenameStageRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type RenameStageResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Stage         *Stage                 `protobuf:"bytes,1,opt,name=stage,proto3" json:"stage,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RenameStageResponse) Reset() {
+	*x = RenameStageResponse{}
+	mi := &file_api_v1_stage_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RenameStageResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RenameStageResponse) ProtoMessage() {}
+
+func (x *RenameStageResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_stage_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RenameStageResponse.ProtoReflect.Descriptor instead.
+func (*RenameStageResponse) Descriptor() ([]byte, []int) {
+	return file_api_v1_stage_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *RenameStageResponse) GetStage() *Stage {
+	if x != nil {
+		return x.Stage
+	}
+	return nil
+}
+
 var File_api_v1_stage_proto protoreflect.FileDescriptor
 
 const file_api_v1_stage_proto_rawDesc = "" +
@@ -791,7 +887,12 @@ const file_api_v1_stage_proto_rawDesc = "" +
 	"\x16DeactivateStageRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"A\n" +
 	"\x17DeactivateStageResponse\x12&\n" +
-	"\x05stage\x18\x01 \x01(\v2\x10.dazzle.v1.StageR\x05stage2\xce\x04\n" +
+	"\x05stage\x18\x01 \x01(\v2\x10.dazzle.v1.StageR\x05stage\"8\n" +
+	"\x12RenameStageRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\"=\n" +
+	"\x13RenameStageResponse\x12&\n" +
+	"\x05stage\x18\x01 \x01(\v2\x10.dazzle.v1.StageR\x05stage2\x9c\x05\n" +
 	"\fStageService\x12L\n" +
 	"\vCreateStage\x12\x1d.dazzle.v1.CreateStageRequest\x1a\x1e.dazzle.v1.CreateStageResponse\x12I\n" +
 	"\n" +
@@ -800,7 +901,8 @@ const file_api_v1_stage_proto_rawDesc = "" +
 	"\vDeleteStage\x12\x1d.dazzle.v1.DeleteStageRequest\x1a\x1e.dazzle.v1.DeleteStageResponse\x12d\n" +
 	"\x13SetStageDestination\x12%.dazzle.v1.SetStageDestinationRequest\x1a&.dazzle.v1.SetStageDestinationResponse\x12R\n" +
 	"\rActivateStage\x12\x1f.dazzle.v1.ActivateStageRequest\x1a .dazzle.v1.ActivateStageResponse\x12X\n" +
-	"\x0fDeactivateStage\x12!.dazzle.v1.DeactivateStageRequest\x1a\".dazzle.v1.DeactivateStageResponseB-Z+github.com/dazzle-labs/cli/gen/api/v1;apiv1b\x06proto3"
+	"\x0fDeactivateStage\x12!.dazzle.v1.DeactivateStageRequest\x1a\".dazzle.v1.DeactivateStageResponse\x12L\n" +
+	"\vRenameStage\x12\x1d.dazzle.v1.RenameStageRequest\x1a\x1e.dazzle.v1.RenameStageResponseB-Z+github.com/dazzle-labs/cli/gen/api/v1;apiv1b\x06proto3"
 
 var (
 	file_api_v1_stage_proto_rawDescOnce sync.Once
@@ -814,7 +916,7 @@ func file_api_v1_stage_proto_rawDescGZIP() []byte {
 	return file_api_v1_stage_proto_rawDescData
 }
 
-var file_api_v1_stage_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_api_v1_stage_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_api_v1_stage_proto_goTypes = []any{
 	(*Stage)(nil),                       // 0: dazzle.v1.Stage
 	(*CreateStageRequest)(nil),          // 1: dazzle.v1.CreateStageRequest
@@ -831,36 +933,41 @@ var file_api_v1_stage_proto_goTypes = []any{
 	(*ActivateStageResponse)(nil),       // 12: dazzle.v1.ActivateStageResponse
 	(*DeactivateStageRequest)(nil),      // 13: dazzle.v1.DeactivateStageRequest
 	(*DeactivateStageResponse)(nil),     // 14: dazzle.v1.DeactivateStageResponse
-	(*timestamppb.Timestamp)(nil),       // 15: google.protobuf.Timestamp
+	(*RenameStageRequest)(nil),          // 15: dazzle.v1.RenameStageRequest
+	(*RenameStageResponse)(nil),         // 16: dazzle.v1.RenameStageResponse
+	(*timestamppb.Timestamp)(nil),       // 17: google.protobuf.Timestamp
 }
 var file_api_v1_stage_proto_depIdxs = []int32{
-	15, // 0: dazzle.v1.Stage.created_at:type_name -> google.protobuf.Timestamp
-	15, // 1: dazzle.v1.Stage.last_activity:type_name -> google.protobuf.Timestamp
+	17, // 0: dazzle.v1.Stage.created_at:type_name -> google.protobuf.Timestamp
+	17, // 1: dazzle.v1.Stage.last_activity:type_name -> google.protobuf.Timestamp
 	0,  // 2: dazzle.v1.CreateStageResponse.stage:type_name -> dazzle.v1.Stage
 	0,  // 3: dazzle.v1.ListStagesResponse.stages:type_name -> dazzle.v1.Stage
 	0,  // 4: dazzle.v1.GetStageResponse.stage:type_name -> dazzle.v1.Stage
 	0,  // 5: dazzle.v1.SetStageDestinationResponse.stage:type_name -> dazzle.v1.Stage
 	0,  // 6: dazzle.v1.ActivateStageResponse.stage:type_name -> dazzle.v1.Stage
 	0,  // 7: dazzle.v1.DeactivateStageResponse.stage:type_name -> dazzle.v1.Stage
-	1,  // 8: dazzle.v1.StageService.CreateStage:input_type -> dazzle.v1.CreateStageRequest
-	3,  // 9: dazzle.v1.StageService.ListStages:input_type -> dazzle.v1.ListStagesRequest
-	5,  // 10: dazzle.v1.StageService.GetStage:input_type -> dazzle.v1.GetStageRequest
-	7,  // 11: dazzle.v1.StageService.DeleteStage:input_type -> dazzle.v1.DeleteStageRequest
-	9,  // 12: dazzle.v1.StageService.SetStageDestination:input_type -> dazzle.v1.SetStageDestinationRequest
-	11, // 13: dazzle.v1.StageService.ActivateStage:input_type -> dazzle.v1.ActivateStageRequest
-	13, // 14: dazzle.v1.StageService.DeactivateStage:input_type -> dazzle.v1.DeactivateStageRequest
-	2,  // 15: dazzle.v1.StageService.CreateStage:output_type -> dazzle.v1.CreateStageResponse
-	4,  // 16: dazzle.v1.StageService.ListStages:output_type -> dazzle.v1.ListStagesResponse
-	6,  // 17: dazzle.v1.StageService.GetStage:output_type -> dazzle.v1.GetStageResponse
-	8,  // 18: dazzle.v1.StageService.DeleteStage:output_type -> dazzle.v1.DeleteStageResponse
-	10, // 19: dazzle.v1.StageService.SetStageDestination:output_type -> dazzle.v1.SetStageDestinationResponse
-	12, // 20: dazzle.v1.StageService.ActivateStage:output_type -> dazzle.v1.ActivateStageResponse
-	14, // 21: dazzle.v1.StageService.DeactivateStage:output_type -> dazzle.v1.DeactivateStageResponse
-	15, // [15:22] is the sub-list for method output_type
-	8,  // [8:15] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	0,  // 8: dazzle.v1.RenameStageResponse.stage:type_name -> dazzle.v1.Stage
+	1,  // 9: dazzle.v1.StageService.CreateStage:input_type -> dazzle.v1.CreateStageRequest
+	3,  // 10: dazzle.v1.StageService.ListStages:input_type -> dazzle.v1.ListStagesRequest
+	5,  // 11: dazzle.v1.StageService.GetStage:input_type -> dazzle.v1.GetStageRequest
+	7,  // 12: dazzle.v1.StageService.DeleteStage:input_type -> dazzle.v1.DeleteStageRequest
+	9,  // 13: dazzle.v1.StageService.SetStageDestination:input_type -> dazzle.v1.SetStageDestinationRequest
+	11, // 14: dazzle.v1.StageService.ActivateStage:input_type -> dazzle.v1.ActivateStageRequest
+	13, // 15: dazzle.v1.StageService.DeactivateStage:input_type -> dazzle.v1.DeactivateStageRequest
+	15, // 16: dazzle.v1.StageService.RenameStage:input_type -> dazzle.v1.RenameStageRequest
+	2,  // 17: dazzle.v1.StageService.CreateStage:output_type -> dazzle.v1.CreateStageResponse
+	4,  // 18: dazzle.v1.StageService.ListStages:output_type -> dazzle.v1.ListStagesResponse
+	6,  // 19: dazzle.v1.StageService.GetStage:output_type -> dazzle.v1.GetStageResponse
+	8,  // 20: dazzle.v1.StageService.DeleteStage:output_type -> dazzle.v1.DeleteStageResponse
+	10, // 21: dazzle.v1.StageService.SetStageDestination:output_type -> dazzle.v1.SetStageDestinationResponse
+	12, // 22: dazzle.v1.StageService.ActivateStage:output_type -> dazzle.v1.ActivateStageResponse
+	14, // 23: dazzle.v1.StageService.DeactivateStage:output_type -> dazzle.v1.DeactivateStageResponse
+	16, // 24: dazzle.v1.StageService.RenameStage:output_type -> dazzle.v1.RenameStageResponse
+	17, // [17:25] is the sub-list for method output_type
+	9,  // [9:17] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_api_v1_stage_proto_init() }
@@ -874,7 +981,7 @@ func file_api_v1_stage_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_v1_stage_proto_rawDesc), len(file_api_v1_stage_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   15,
+			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

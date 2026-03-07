@@ -52,6 +52,9 @@ const (
 	// StageServiceDeactivateStageProcedure is the fully-qualified name of the StageService's
 	// DeactivateStage RPC.
 	StageServiceDeactivateStageProcedure = "/dazzle.v1.StageService/DeactivateStage"
+	// StageServiceRenameStageProcedure is the fully-qualified name of the StageService's RenameStage
+	// RPC.
+	StageServiceRenameStageProcedure = "/dazzle.v1.StageService/RenameStage"
 )
 
 // StageServiceClient is a client for the dazzle.v1.StageService service.
@@ -63,6 +66,7 @@ type StageServiceClient interface {
 	SetStageDestination(context.Context, *connect.Request[v1.SetStageDestinationRequest]) (*connect.Response[v1.SetStageDestinationResponse], error)
 	ActivateStage(context.Context, *connect.Request[v1.ActivateStageRequest]) (*connect.Response[v1.ActivateStageResponse], error)
 	DeactivateStage(context.Context, *connect.Request[v1.DeactivateStageRequest]) (*connect.Response[v1.DeactivateStageResponse], error)
+	RenameStage(context.Context, *connect.Request[v1.RenameStageRequest]) (*connect.Response[v1.RenameStageResponse], error)
 }
 
 // NewStageServiceClient constructs a client for the dazzle.v1.StageService service. By default, it
@@ -118,6 +122,12 @@ func NewStageServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(stageServiceMethods.ByName("DeactivateStage")),
 			connect.WithClientOptions(opts...),
 		),
+		renameStage: connect.NewClient[v1.RenameStageRequest, v1.RenameStageResponse](
+			httpClient,
+			baseURL+StageServiceRenameStageProcedure,
+			connect.WithSchema(stageServiceMethods.ByName("RenameStage")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -130,6 +140,7 @@ type stageServiceClient struct {
 	setStageDestination *connect.Client[v1.SetStageDestinationRequest, v1.SetStageDestinationResponse]
 	activateStage       *connect.Client[v1.ActivateStageRequest, v1.ActivateStageResponse]
 	deactivateStage     *connect.Client[v1.DeactivateStageRequest, v1.DeactivateStageResponse]
+	renameStage         *connect.Client[v1.RenameStageRequest, v1.RenameStageResponse]
 }
 
 // CreateStage calls dazzle.v1.StageService.CreateStage.
@@ -167,6 +178,11 @@ func (c *stageServiceClient) DeactivateStage(ctx context.Context, req *connect.R
 	return c.deactivateStage.CallUnary(ctx, req)
 }
 
+// RenameStage calls dazzle.v1.StageService.RenameStage.
+func (c *stageServiceClient) RenameStage(ctx context.Context, req *connect.Request[v1.RenameStageRequest]) (*connect.Response[v1.RenameStageResponse], error) {
+	return c.renameStage.CallUnary(ctx, req)
+}
+
 // StageServiceHandler is an implementation of the dazzle.v1.StageService service.
 type StageServiceHandler interface {
 	CreateStage(context.Context, *connect.Request[v1.CreateStageRequest]) (*connect.Response[v1.CreateStageResponse], error)
@@ -176,6 +192,7 @@ type StageServiceHandler interface {
 	SetStageDestination(context.Context, *connect.Request[v1.SetStageDestinationRequest]) (*connect.Response[v1.SetStageDestinationResponse], error)
 	ActivateStage(context.Context, *connect.Request[v1.ActivateStageRequest]) (*connect.Response[v1.ActivateStageResponse], error)
 	DeactivateStage(context.Context, *connect.Request[v1.DeactivateStageRequest]) (*connect.Response[v1.DeactivateStageResponse], error)
+	RenameStage(context.Context, *connect.Request[v1.RenameStageRequest]) (*connect.Response[v1.RenameStageResponse], error)
 }
 
 // NewStageServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -227,6 +244,12 @@ func NewStageServiceHandler(svc StageServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(stageServiceMethods.ByName("DeactivateStage")),
 		connect.WithHandlerOptions(opts...),
 	)
+	stageServiceRenameStageHandler := connect.NewUnaryHandler(
+		StageServiceRenameStageProcedure,
+		svc.RenameStage,
+		connect.WithSchema(stageServiceMethods.ByName("RenameStage")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/dazzle.v1.StageService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case StageServiceCreateStageProcedure:
@@ -243,6 +266,8 @@ func NewStageServiceHandler(svc StageServiceHandler, opts ...connect.HandlerOpti
 			stageServiceActivateStageHandler.ServeHTTP(w, r)
 		case StageServiceDeactivateStageProcedure:
 			stageServiceDeactivateStageHandler.ServeHTTP(w, r)
+		case StageServiceRenameStageProcedure:
+			stageServiceRenameStageHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -278,4 +303,8 @@ func (UnimplementedStageServiceHandler) ActivateStage(context.Context, *connect.
 
 func (UnimplementedStageServiceHandler) DeactivateStage(context.Context, *connect.Request[v1.DeactivateStageRequest]) (*connect.Response[v1.DeactivateStageResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.StageService.DeactivateStage is not implemented"))
+}
+
+func (UnimplementedStageServiceHandler) RenameStage(context.Context, *connect.Request[v1.RenameStageRequest]) (*connect.Response[v1.RenameStageResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.StageService.RenameStage is not implemented"))
 }
