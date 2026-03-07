@@ -277,11 +277,11 @@ func (m *Manager) createStage(requestedID string) (*Stage, error) {
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
 							corev1.ResourceCPU:    resource.MustParse("2"),
-							corev1.ResourceMemory: resource.MustParse("4Gi"),
+							corev1.ResourceMemory: resource.MustParse("8Gi"),
 						},
 						Limits: corev1.ResourceList{
-							corev1.ResourceCPU:    resource.MustParse("4"),
-							corev1.ResourceMemory: resource.MustParse("8Gi"),
+							corev1.ResourceCPU:    resource.MustParse("3500m"),
+							corev1.ResourceMemory: resource.MustParse("14Gi"),
 						},
 					},
 					VolumeMounts: []corev1.VolumeMount{
