@@ -28,7 +28,7 @@ Primary use cases: AI agents that need a persistent visual environment, live str
 ### 1. Install the CLI
 
 ```bash
-curl -sSL https://stream.dazzle.fm/setup.sh | sh
+curl -sSL https://stream.dazzle.fm/install.sh | sh
 ```
 
 Or `go install github.com/dazzle-labs/cli/cmd/dazzle@latest`, or download a binary from the [releases page](https://github.com/dazzle-labs/cli/releases). Source: https://github.com/dazzle-labs/cli

@@ -2,8 +2,17 @@ import { useState } from "react";
 import { Copy, Check } from "lucide-react";
 import { CopyAgentPromptButton } from "@/components/CopyAgentPromptButton";
 
+function useOS(): "windows" | "mac" | "linux" {
+  const ua = navigator.userAgent.toLowerCase();
+  if (ua.includes("win")) return "windows";
+  if (ua.includes("mac")) return "mac";
+  return "linux";
+}
+
 export function Docs() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const os = useOS();
+
   async function copy(text: string, id: string) {
     await navigator.clipboard.writeText(text);
     setCopiedId(id);
@@ -25,7 +34,15 @@ export function Docs() {
     );
   }
 
-  const installSnippet = `curl -sSL https://stream.dazzle.fm/setup.sh | sh`;
+  const installSnippet = os === "windows"
+    ? `irm https://stream.dazzle.fm/install.ps1 | iex`
+    : `curl -sSL https://stream.dazzle.fm/install.sh | sh`;
+
+  const altSnippet = os === "windows"
+    ? `curl -sSL https://stream.dazzle.fm/install.sh | sh`
+    : `irm https://stream.dazzle.fm/install.ps1 | iex`;
+
+  const altLabel = os === "windows" ? "macOS / Linux" : "Windows (PowerShell)";
 
   const quickStartSnippet = `# Authenticate
 dazzle login
@@ -76,11 +93,11 @@ dazzle s live on`;
           </button>
         </div>
         <p className="text-xs text-zinc-600 mt-3">
-          Or <code className="text-zinc-500">go install github.com/dazzle-labs/cli/cmd/dazzle@latest</code>. Windows users: download from the <a href="https://github.com/dazzle-labs/cli/releases" target="_blank" rel="noopener noreferrer" className="text-zinc-500 hover:text-emerald-400 transition-colors underline underline-offset-2">releases page</a>.
+          {altLabel}: <code className="text-zinc-500">{altSnippet}</code>. Or <code className="text-zinc-500">go install github.com/dazzle-labs/cli/cmd/dazzle@latest</code>.
         </p>
       </div>
 
-      {/* Env var */}
+      {/* Authenticate */}
       <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 mb-6">
         <p className="text-xs font-medium text-zinc-400 mb-2">Authenticate</p>
         <div className="flex items-center gap-2">

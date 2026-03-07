@@ -1027,10 +1027,27 @@ func main() {
 		}
 	})
 
-	// CLI installer redirect: curl -sSL https://stream.dazzle.fm/setup.sh | sh
+	// CLI installer endpoints.
+	// Each detects if the caller meant the other platform and redirects transparently.
 	// Uses the dazzle-cli submodule commit baked into this build for cache-busting.
-	mux.HandleFunc("/setup.sh", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "https://raw.githubusercontent.com/dazzle-labs/cli/"+gitCommit+"/install.sh", http.StatusFound)
+	rawBase := "https://raw.githubusercontent.com/dazzle-labs/cli/" + gitCommit + "/"
+	isWindows := func(r *http.Request) bool {
+		ua := strings.ToLower(r.Header.Get("User-Agent"))
+		return strings.Contains(ua, "powershell") || strings.Contains(ua, "windowspowershell")
+	}
+	mux.HandleFunc("/install.sh", func(w http.ResponseWriter, r *http.Request) {
+		if isWindows(r) {
+			http.Redirect(w, r, rawBase+"install.ps1", http.StatusMovedPermanently)
+			return
+		}
+		http.Redirect(w, r, rawBase+"install.sh", http.StatusFound)
+	})
+	mux.HandleFunc("/install.ps1", func(w http.ResponseWriter, r *http.Request) {
+		if !isWindows(r) {
+			http.Redirect(w, r, rawBase+"install.sh", http.StatusMovedPermanently)
+			return
+		}
+		http.Redirect(w, r, rawBase+"install.ps1", http.StatusFound)
 	})
 
 	// Web SPA (fallback route)
