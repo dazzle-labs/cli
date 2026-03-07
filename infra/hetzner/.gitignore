@@ -1,0 +1,13 @@
+terraform.tfvars
+*.tfstate
+*.tfstate.backup
+!terraform.tfstate.enc
+.terraform/
+.terraform.lock.hcl
+kubeconfig.yaml
+k3s_kubeconfig.yaml
+k3s_kustomization_backup.yaml
+ssh_key
+!ssh_key.pub
+!ssh_key.enc
+!kubeconfig.yaml.enc

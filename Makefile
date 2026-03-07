@@ -1,6 +1,7 @@
 CLERK_PK ?= pk_test_cmFyZS13YWxsZXllLTQ4LmNsZXJrLmFjY291bnRzLmRldiQ
 NS       := browser-streamer
-KCTL     := kubectl --context kind-browser-streamer -n browser-streamer
+KIND_CTX := kind-browser-streamer
+KCTL     := kubectl --context $(KIND_CTX) -n $(NS)
 CP_IMG   := dazzlefm/agent-streamer-control-plane:main
 STR_IMG  := dazzlefm/agent-streamer-stage:main
 CLI_COMMIT := $(shell git -C dazzle-cli rev-parse HEAD 2>/dev/null || echo main)
@@ -14,9 +15,21 @@ _yellow  = \033[33m
 _bold    = \033[1m
 _reset   = \033[0m
 STEP     = @printf "$(_bold)$(_cyan)── %s ──$(_reset)\n"
+define _confirm
+	@[ -t 0 ] || { echo "ERROR: This is a destructive command that requires interactive confirmation."; echo "If you are an LLM/AI agent, do NOT retry — ask the human to run this command directly in their terminal."; exit 1; }
+	@printf "$(_bold)$(_yellow)⚠️  $(1)$(_reset)\n"
+	@printf "$(_bold)$(_yellow)Type 'yes' to continue: $(_reset)"; read ans; [ "$$ans" = "yes" ] || { echo "Aborted."; exit 1; }
+endef
 OK       = @printf "$(_bold)$(_green)✓ %s$(_reset)\n"
 
+RKCTL = kubectl --kubeconfig <(sops -d infra/hetzner/kubeconfig.yaml.enc)
+INFRA_DIR := infra/hetzner
+TFSTATE   := $(INFRA_DIR)/terraform.tfstate
+TFSTATE_ENC := $(INFRA_DIR)/terraform.tfstate.enc
+
 .PHONY: help check-deps proto up down build build-cp build-streamer deploy dev llms-txt logs status \
+        kubectx prod/kubectl prod/status prod/nodes \
+        prod/infra/init prod/infra/plan prod/infra/apply prod/infra/output \
         control-plane/% streamer/% web/%
 
 help: ## Show this help
@@ -24,8 +37,16 @@ help: ## Show this help
 	@printf "  $(_bold)$(_green)Quick start:$(_reset)  $(_bold)make dev$(_reset)   — builds everything, starts Kind, runs web dev server\n"
 	@echo ""
 	@echo "  Local (Kind):"
-	@grep -E '^(dev|up|down|build|build-cp|build-streamer|deploy|logs|status|proto):.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "    \033[36m%-28s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^(dev|up|down|build|build-cp|build-streamer|deploy|kubectx|logs|status|proto):.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "    \033[36m%-28s\033[0m %s\n", $$1, $$2}'
 	@echo "    $(_cyan)make web/dev$(_reset)                 Web dashboard dev server only"
+	@echo ""
+	@echo ""
+	@echo "  Production cluster (Hetzner):"
+	@grep -E '^prod/[a-z]+:.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "    \033[36m%-28s\033[0m %s\n", $$1, $$2}'
+	@echo "    $(_cyan)make prod/kubectl ARGS=\"get pods -n foo\"$(_reset)"
+	@echo ""
+	@echo "  Production infrastructure (OpenTofu — ⚠️  CAUTION):"
+	@grep -E '^prod/infra/[a-z]+:.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "    \033[36m%-28s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 	@echo "  Component targets: make <component>/<target>"
 	@echo "    make control-plane/proto   make web/dev"
@@ -53,6 +74,10 @@ check-deps:
 		exit 1; \
 	fi
 
+check-cluster:
+	@kind get clusters 2>/dev/null | grep -q '^$(NS)$$' || { echo "ERROR: Kind cluster not running. Run 'make up' first."; exit 1; }
+	@kubectl --context $(KIND_CTX) cluster-info >/dev/null 2>&1 || { echo "ERROR: Kind cluster not reachable. Try 'make down && make up'."; exit 1; }
+
 proto: ## Generate protobuf code (Go + TypeScript)
 	$(MAKE) -C dazzle-cli proto
 	$(MAKE) -C control-plane proto
@@ -68,12 +93,12 @@ up: check-deps ## Create Kind cluster, build images, deploy full stack
 	@if kind get clusters 2>/dev/null | grep -q '^browser-streamer$$'; then \
 		echo "  cluster already exists, reusing"; \
 	else \
-		kind create cluster --name browser-streamer --config k8s/local/kind-config.yaml; \
+		kind create cluster --name $(NS) --config k8s/local/kind-config.yaml; \
 	fi
 	$(STEP) "Loading images into Kind"
-	kubectl --context kind-browser-streamer create namespace browser-streamer --dry-run=client -o yaml | kubectl --context kind-browser-streamer apply -f -
-	kind load docker-image $(CP_IMG) --name browser-streamer
-	kind load docker-image $(STR_IMG) --name browser-streamer
+	kubectl --context $(KIND_CTX) create namespace $(NS) --dry-run=client -o yaml | kubectl --context $(KIND_CTX) apply -f -
+	kind load docker-image $(CP_IMG) --name $(NS)
+	kind load docker-image $(STR_IMG) --name $(NS)
 	$(STEP) "Applying secrets"
 	sops -d k8s/local/local.secrets.yaml | $(KCTL) apply -f -
 	@if sops -d k8s/control-plane/oauth.secrets.yaml 2>/dev/null | $(KCTL) apply -f - 2>/dev/null; then \
@@ -92,23 +117,23 @@ up: check-deps ## Create Kind cluster, build images, deploy full stack
 	$(OK) "Local stack ready — http://localhost:8080"
 
 down: ## Delete the Kind cluster
-	kind delete cluster --name browser-streamer
+	kind delete cluster --name $(NS)
 
 build: check-deps build-cp build-streamer llms-txt ## Build all images, regenerate llms.txt, load into Kind
 
-build-cp: check-deps ## Build control-plane image and load into Kind
+build-cp: check-deps check-cluster ## Build control-plane image and load into Kind
 	$(STEP) "Building control-plane image"
 	$(CP_BUILD)
 	$(STEP) "Loading into Kind"
-	kind load docker-image $(CP_IMG) --name browser-streamer
+	kind load docker-image $(CP_IMG) --name $(NS)
 
-build-streamer: check-deps ## Build streamer image and load into Kind
+build-streamer: check-deps check-cluster ## Build streamer image and load into Kind
 	$(STEP) "Building streamer image"
 	$(STR_BUILD)
 	$(STEP) "Loading into Kind"
-	kind load docker-image $(STR_IMG) --name browser-streamer
+	kind load docker-image $(STR_IMG) --name $(NS)
 
-deploy: check-deps ## Apply manifests and restart control-plane in Kind
+deploy: check-deps check-cluster ## Apply manifests and restart control-plane in Kind
 	$(STEP) "Applying secrets"
 	sops -d k8s/local/local.secrets.yaml | $(KCTL) apply -f -
 	@if sops -d k8s/control-plane/oauth.secrets.yaml 2>/dev/null | $(KCTL) apply -f - 2>/dev/null; then \
@@ -137,7 +162,7 @@ dev: up ## ★ Full local dev — build, deploy, watch everything
 		printf "$(_bold)$(_yellow)Tear down Kind cluster? [y/N] $(_reset)"; \
 		read ans; \
 		if [ "$$ans" = "y" ] || [ "$$ans" = "Y" ]; then \
-			kind delete cluster --name browser-streamer; \
+			kind delete cluster --name $(NS); \
 			printf "$(_bold)$(_green)✓ Cluster deleted$(_reset)\n"; \
 		else \
 			printf "Cluster kept running. Use $(_cyan)make down$(_reset) to delete later.\n"; \
@@ -153,15 +178,82 @@ llms-txt: ## Regenerate llms.txt
 	cp llms.txt web/public/llms.txt
 	$(OK) "llms.txt updated"
 
-logs: ## Tail control-plane logs in Kind
+kubectx: check-cluster ## Set kubectl context to local Kind cluster + browser-streamer namespace
+	@kubectl config use-context $(KIND_CTX)
+	@kubectl config set-context --current --namespace=$(NS)
+	$(OK) "kubectl now targets $(KIND_CTX)/$(NS)"
+
+logs: check-cluster ## Tail control-plane logs in Kind
 	$(KCTL) logs -f deployment/control-plane
 
-status: ## Show pods and services in Kind
+status: check-cluster ## Show pods and services in Kind
 	@echo "── Pods ──"
 	$(KCTL) get pods -o wide
 	@echo ""
 	@echo "── Services ──"
 	$(KCTL) get svc
+
+# ══════════════════════════════════════════════════════
+# Production cluster (Hetzner)
+# ══════════════════════════════════════════════════════
+
+prod/kubectl: ## Run kubectl against prod cluster (use ARGS="get pods")
+	@bash -c '$(RKCTL) $(ARGS)'
+
+prod/status: ## Show prod cluster nodes and pods
+	@bash -c '\
+		echo "── Nodes ──"; \
+		$(RKCTL) get nodes -o wide; \
+		echo ""; \
+		echo "── Pods (all namespaces) ──"; \
+		$(RKCTL) get pods -A'
+
+prod/nodes: ## Show prod cluster nodes
+	@bash -c '$(RKCTL) get nodes -o wide'
+
+# ══════════════════════════════════════════════════════
+# Production infrastructure (OpenTofu) — CAUTION
+# These targets modify live production infrastructure.
+# ══════════════════════════════════════════════════════
+
+# Decrypt state before tofu, re-encrypt after
+prod/infra/decrypt-state:
+	@if [ -f "$(TFSTATE_ENC)" ]; then \
+		sops -d $(TFSTATE_ENC) > $(TFSTATE); \
+	fi
+
+prod/infra/encrypt-state:
+	@if [ -f "$(TFSTATE)" ]; then \
+		sops --encrypt $(TFSTATE) > $(TFSTATE_ENC); \
+		rm -f $(TFSTATE) $(TFSTATE).backup; \
+		$(OK) "State encrypted to $(TFSTATE_ENC)"; \
+	fi
+
+prod/infra/init: ## Initialize OpenTofu providers
+	cd $(INFRA_DIR) && tofu init
+
+prod/infra/plan: prod/infra/decrypt-state ## Plan infrastructure changes (read-only)
+	@cd $(INFRA_DIR) && tofu plan; \
+		EXIT=$$?; \
+		cd ->/dev/null; \
+		$(MAKE) prod/infra/encrypt-state; \
+		exit $$EXIT
+
+prod/infra/apply: ## ⚠️  Apply infrastructure changes (DESTRUCTIVE)
+	$(call _confirm,This will modify LIVE PRODUCTION infrastructure.)
+	@$(MAKE) prod/infra/decrypt-state
+	@cd $(INFRA_DIR) && tofu apply; \
+		EXIT=$$?; \
+		cd ->/dev/null; \
+		$(MAKE) prod/infra/encrypt-state; \
+		exit $$EXIT
+
+prod/infra/output: prod/infra/decrypt-state ## Show OpenTofu outputs
+	@cd $(INFRA_DIR) && tofu output; \
+		EXIT=$$?; \
+		cd ->/dev/null; \
+		$(MAKE) prod/infra/encrypt-state; \
+		exit $$EXIT
 
 # ══════════════════════════════════════════════════════
 # Nested component targets

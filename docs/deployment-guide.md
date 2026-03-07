@@ -1,22 +1,36 @@
 # Deployment Guide
 
-**Last updated:** 2026-03-03
+**Last updated:** 2026-03-07
 
 ---
 
 ## Infrastructure Overview
 
-- **Platform:** Single VPS with k3s (lightweight Kubernetes, single-node)
+- **Platform:** Hetzner Cloud k3s HA cluster (provisioned via OpenTofu + kube-hetzner)
 - **Domain:** `stream.dazzle.fm`
 - **Ingress:** Traefik (bundled with k3s)
 - **TLS:** Let's Encrypt via cert-manager (HTTP01 challenge)
+- **CI/CD:** GitHub Actions (build, push to Docker Hub, deploy)
+
+### Cluster Topology
+
+| Pool | Type | Server | Location | Count | Notes |
+|------|------|--------|----------|-------|-------|
+| cp-ash1/2/3 | Control Plane | cpx21 (3 vCPU / 4 GB) | ash | 3 | HA, backups enabled |
+| worker-ash/2 | Agent | ccx43 (16 dedicated vCPU / 64 GB) | ash | 2 | Streamer workloads |
+| autoscaled-workers | Autoscaler | ccx43 | ash | 0–3 | Burst capacity (~2 min cold start) |
 
 ---
 
 ## Architecture on k3s
 
 ```
+Hetzner Load Balancer (lb11, ash)
+    │
+    v
 Traefik Ingress (HTTPS :443)
+    │  HTTP → HTTPS redirect
+    │  TLS terminated (cert-manager + Let's Encrypt)
     │
     └── stream.dazzle.fm → control-plane:8080
                                 │
@@ -30,7 +44,7 @@ Traefik Ingress (HTTPS :443)
                                       ├── Vite HMR panel server
                                       └── Node.js Express API
 
-PostgreSQL (StatefulSet, 5Gi PVC)
+PostgreSQL (StatefulSet, 5Gi PVC via Hetzner CSI)
 ```
 
 ---
@@ -39,9 +53,11 @@ PostgreSQL (StatefulSet, 5Gi PVC)
 
 | Resource | Type | Namespace | Image |
 |----------|------|-----------|-------|
-| `control-plane` | Deployment (1 replica) | `browser-streamer` | `control-plane:latest` |
+| `control-plane` | Deployment (1 replica) | `browser-streamer` | `dazzlefm/agent-streamer-control-plane:main` |
 | `postgres` | StatefulSet (1 replica) | `browser-streamer` | `postgres:16-alpine` |
-| `streamer-<id>` | Pod (ephemeral, per stage) | `browser-streamer` | `browser-streamer:latest` |
+| `streamer-<id>` | Pod (ephemeral, per stage) | `browser-streamer` | `dazzlefm/agent-streamer-stage:main` |
+
+Images are pulled from Docker Hub using `imagePullSecrets` (`dazzlefm-dockerhub-secret`).
 
 ---
 
@@ -59,18 +75,18 @@ Streamer pods also get a 2Gi `/dev/shm` volume (Chrome shared memory).
 
 ## Kubernetes Secrets
 
-All production secrets are SOPS Age-encrypted:
+All production secrets are SOPS Age-encrypted (4 Age recipients):
 
 | K8s Secret Name | Keys | Source File |
 |-----------------|------|-------------|
-| `clerk-auth` | `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY` | `k8s/clerk/clerk-auth.secrets.yaml` |
-| `encryption-key` | `ENCRYPTION_KEY` | `k8s/infrastructure/encryption-key.secrets.yaml` |
-| `postgres-auth` | `POSTGRES_PASSWORD` | `k8s/infrastructure/postgres-auth.secrets.yaml` |
-| `browserless-auth` | `token` | `k8s/infrastructure/browserless-secret.yaml` |
+| `clerk-auth` | `secret-key`, `publishable-key` | `k8s/clerk/clerk-auth.secrets.yaml` |
+| `encryption-key` | `key` | `k8s/infrastructure/encryption-key.secrets.yaml` |
+| `postgres-auth` | `password` | `k8s/infrastructure/postgres-auth.secrets.yaml` |
+| `browserless-auth` | `token` | `k8s/networking/browserless-secret.yaml` (plaintext) |
+| `oauth-platform` | `twitch-*`, `google-*`, `kick-*` | `k8s/control-plane/oauth.secrets.yaml` |
+| `dazzlefm-dockerhub-secret` | `.dockerconfigjson` | `k8s/secrets/dockerhub-secret.yaml` |
 
-```bash
-make secrets           # Decrypt and apply all secrets
-```
+Secrets are applied automatically — by CI/CD for production, and by `make up`/`make deploy` for local Kind. You generally do not need to decrypt secrets manually.
 
 ---
 
@@ -81,63 +97,55 @@ make secrets           # Decrypt and apply all secrets
 
 ---
 
-## Build Process
+## CI/CD Pipeline
 
-Images are built **remotely via SSH + BuildKit** (no local Docker required).
+Images are built and deployed automatically by **GitHub Actions** on push to `main`.
 
-```bash
-# Build all images
-make build HOST=x.x.x.x
+### Pipeline Steps
+1. Build `control-plane` image (includes `web/` SPA build)
+2. Build `streamer` image
+3. Push both to Docker Hub (`dazzlefm/agent-streamer-control-plane`, `dazzlefm/agent-streamer-stage`)
+4. Compare image config digests — skip deploy if unchanged
+5. Apply Kustomize manifests + SOPS-decrypted secrets
+6. Update `STREAMER_IMAGE` env var via `kubectl set env`
+7. Wait for rollout (300s timeout)
+8. Post Discord notification
 
-# Build individual images
-make build-streamer HOST=x.x.x.x
-make build-control-plane HOST=x.x.x.x CLERK_PK=pk_live_...
-```
-
-The control-plane build:
-1. Runs `npm run build` inside `web/` (builds React SPA)
-2. Copies `web/dist/` into the control-plane container at `/app/web/`
-3. Go binary serves the SPA from `/app/web/`
-
-Both images use `imagePullPolicy: Never` (pre-loaded into k3s containerd via `ctr images import`).
+### Kustomize Resources Applied
+1. `k8s/namespace.yaml`
+2. `k8s/infrastructure/postgres.yaml`
+3. `k8s/control-plane/rbac.yaml`
+4. `k8s/control-plane/deployment.yaml` + `service.yaml`
+5. `k8s/networking/ingress.yaml`
+6. `k8s/networking/cluster-issuer.yaml`
+7. `k8s/networking/traefik-config.yaml`
 
 ---
 
-## Deployment Steps
+## Infrastructure Provisioning
 
-### Quick Deploy (code changes)
+The cluster is provisioned via OpenTofu + the kube-hetzner module. Configuration lives in `infra/hetzner/`.
+
 ```bash
-make build deploy
+cd infra/hetzner
+cp terraform.tfvars.example terraform.tfvars   # Fill in hcloud_token
+make prod/infra/init
+make prod/infra/plan
+make prod/infra/apply
 ```
 
-### Full Deploy Breakdown
+Terraform state is SOPS-encrypted in the repo (`terraform.tfstate.enc`). The `infra/*` Make targets automatically decrypt before running and re-encrypt after — plaintext state is never left on disk.
+
+> **No state locking.** Unlike a remote backend (S3, Consul), SOPS-encrypted state in git has no locking mechanism. Only one person should run `infra/plan` or `infra/apply` at a time. Always pull latest before running infra commands, and commit+push the updated `.enc` file immediately after `infra/apply`.
+
+After provisioning, encrypt the kubeconfig for storage:
 ```bash
-make build-streamer          # Build streamer image remotely
-make build-control-plane     # Build control-plane + web SPA remotely
-make deploy                  # Apply manifests + rollout restart
+tofu output -raw kubeconfig | sops --encrypt --age "<recipients>" /dev/stdin > kubeconfig.yaml.enc
 ```
 
-`make deploy` applies:
-1. `k8s/infrastructure/postgres.yaml`
-2. `k8s/control-plane/rbac.yaml`
-3. `k8s/control-plane/deployment.yaml` + `service.yaml`
-4. `k8s/networking/ingress.yaml`
-5. Rollout restart `control-plane` deployment
-6. Wait for rollout (60s timeout)
+> **Avoid leaving decrypted secrets on disk.** The Makefile, CI/CD, and OpenTofu all handle decryption automatically and transiently. The `prod/*` Make targets decrypt the kubeconfig via process substitution — nothing is written to disk.
 
-### Fresh Infrastructure Provisioning
-```bash
-make provision HOST=x.x.x.x TOKEN=<deploy-token>
-```
-
-Runs `provision.sh` via SSH:
-1. Install k3s (single-node)
-2. Create namespace `browser-streamer`
-3. Apply secrets (`make secrets`)
-4. Build + load images
-5. Deploy control-plane + postgres
-6. Install cert-manager
-7. Apply Traefik config, ClusterIssuer, Ingress
+See [Hetzner k3s Infrastructure Deep-Dive](./deep-dive-hetzner-k8s-infrastructure.md) for full details.
 
 ---
 
@@ -151,12 +159,9 @@ Challenge: HTTP01 via Traefik
 Certificate Secret: stream-dazzle-fm-tls
 ```
 
-Traefik is configured with HTTP → HTTPS redirect.
+Traefik is configured with HTTP → HTTPS redirect via `HelmChartConfig`.
 
-```bash
-make install-cert-manager    # Install cert-manager CRDs + controller
-make setup-tls               # Apply Traefik config, ClusterIssuer, Ingress
-```
+cert-manager must be installed on the cluster. TLS certificates are automatically provisioned and renewed.
 
 ---
 
@@ -168,14 +173,15 @@ make setup-tls               # Apply Traefik config, ClusterIssuer, Ingress
 | `postgres` | ClusterIP | 5432 | Internal only |
 | Streamer pods | (no service) | 8080 | Via control-plane proxy (pod IP direct) |
 
+Node-to-node traffic is encrypted via WireGuard.
+
 ---
 
 ## Monitoring
 
 ```bash
-make status                  # Pods, services, ingress, TLS certificates
-make logs-cp                 # Tail control-plane logs
-make clean                   # Delete all stage pods
+make prod/status               # Show pods, services on prod cluster
+make prod/logs                 # Tail control-plane logs
 ```
 
 Control-plane logs include:
@@ -185,3 +191,21 @@ Control-plane logs include:
 - Stage GC activity (pods stuck >3 min)
 - DB migration status on startup
 - Stage recovery on restart
+
+---
+
+## Adding a New Secret
+
+1. Create `k8s/<category>/<name>.secrets.yaml` with the Secret manifest
+2. Encrypt: `sops --encrypt --age "<recipients>" --encrypted-regex '^(stringData)$' --in-place <file>`
+3. Add to `k8s/kustomization.yaml` resources (or update CI glob pattern)
+4. Reference from `deployment.yaml` env vars
+5. For local dev, add the secret to `k8s/local/local.secrets.yaml`
+
+---
+
+## PostgreSQL Notes
+
+- Uses `PGDATA=/var/lib/postgresql/data/pgdata` — required for Hetzner volume compatibility (`lost+found` in mount root)
+- PVC is `ReadWriteOnce` (5Gi) — postgres can only run on one node
+- Storage provisioned via Hetzner CSI driver

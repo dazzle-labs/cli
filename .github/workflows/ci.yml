@@ -118,6 +118,18 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for streamer changes
+        id: changes
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- streamer/ | head -1)
+          else
+            CHANGED=$(git diff --name-only HEAD~1 -- streamer/ | head -1)
+          fi
+          echo "streamer_changed=$( [ -n "$CHANGED" ] && echo true || echo false )" >> $GITHUB_OUTPUT
 
       - name: Set Up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -153,7 +165,7 @@ jobs:
           load: ${{ github.event_name == 'pull_request' }}
 
       - name: Docker Scout Scan
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && steps.changes.outputs.streamer_changed == 'true'
         uses: docker/scout-action@v1
         with:
           command: cves

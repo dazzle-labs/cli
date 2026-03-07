@@ -98,5 +98,5 @@ User/Agent ──► Traefik Ingress (TLS termination)
 ## Domain & Hosting
 
 - **Production URL:** `https://stream.dazzle.fm`
-- **Infrastructure:** Single Hetzner VPS, k3s (single-node Kubernetes)
+- **Infrastructure:** Hetzner Cloud k3s HA cluster (3 CP + 2 workers + autoscaler 0–3), provisioned via OpenTofu + kube-hetzner
 - **TLS:** Automatic via cert-manager + Let's Encrypt ACME

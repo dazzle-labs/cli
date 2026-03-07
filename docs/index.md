@@ -1,6 +1,6 @@
 # Browser Streamer — Documentation Index
 
-> Generated: 2026-03-03 | Last Updated: 2026-03-05
+> Generated: 2026-03-03 | Last Updated: 2026-03-07 (infrastructure docs updated for Hetzner HA cluster)
 
 ---
 
@@ -11,7 +11,7 @@
 | **Product** | Dazzle — on-demand cloud browser environments for AI agents and live streaming |
 | **Production URL** | https://stream.dazzle.fm |
 | **Repo Type** | Monorepo (4 parts) |
-| **Infrastructure** | Single Hetzner VPS, k3s (single-node Kubernetes) |
+| **Infrastructure** | Hetzner Cloud k3s HA cluster (3 CP + 2 workers + autoscaler 0–3), provisioned via OpenTofu + kube-hetzner |
 | **Auth** | Clerk (JWT) + internal API keys (`bstr_*`) |
 | **API Protocol** | ConnectRPC (protobuf/HTTP2) |
 
@@ -67,26 +67,17 @@
 
 ### Local development (recommended)
 ```bash
-# Start full stack locally (secrets are SOPS-encrypted, decrypted automatically)
-make local-up
-
-# Start web dev server (in another terminal)
-cd web && npm install && npm run dev
-# Open http://localhost:5173
+make dev    # Builds everything, starts Kind cluster, runs web dev server + log tail
 ```
 
 See **[Local Development (Kind)](./local-dev.md)** for the full guide.
 
-### Remote build and deploy
-```bash
-make build HOST=<vps-ip> CLERK_PK=pk_live_...
-make deploy HOST=<vps-ip>
-```
+### Remote deployment
+Remote builds and deploys are managed by **CI/CD** (GitHub Actions). Pushing to `main` triggers the pipeline which builds images, pushes to Docker Hub, and deploys to the Hetzner cluster.
 
 ### Check production status
 ```bash
-make status
-make logs-cp
+make prod/status    # Show pods and services on prod cluster
 ```
 
 ### Regenerate protobuf code
@@ -106,7 +97,7 @@ make proto
 
 4. **Protobuf as service contract** — All control-plane ↔ web communication uses generated ConnectRPC code from `proto/api/v1/`. No hand-written API clients.
 
-5. **SOPS for secrets** — All production secrets are encrypted at rest; decrypted only during `make secrets`. AES-256-GCM used for stream keys within the DB.
+5. **SOPS for secrets** — All production secrets are Age-encrypted at rest (4 recipients); decrypted at apply time by CI/CD or locally via Age key. AES-256-GCM used for stream keys within the DB.
 
 ---
 
@@ -116,3 +107,11 @@ The following old docs exist but have been replaced by the updated files above:
 - `architecture-dashboard.md` → replaced by `architecture-web.md`
 - `architecture-session-manager.md` → replaced by `architecture-control-plane.md`
 - `RESCAN-INDEX.md`, `rescan-summary.md`, `rescan-findings.json` → superseded by this 2026-03-03 rescan
+
+---
+
+## Deep-Dive Documentation
+
+Detailed exhaustive analysis of specific areas:
+
+- [Hetzner k3s Infrastructure & K8s Manifests Deep-Dive](./deep-dive-hetzner-k8s-infrastructure.md) - Comprehensive analysis of `infra/hetzner/` + `k8s/`: cluster provisioning via kube-hetzner, Kubernetes manifests, secrets management, CI/CD deployment pipeline (28 files, ~650 LOC) - Generated 2026-03-07

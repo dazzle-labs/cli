@@ -1,0 +1,11 @@
+# Copy to terraform.tfvars and fill in your values
+hcloud_token = ""
+
+# SSH keys are managed via SOPS (ssh_key.enc + ssh_key.pub)
+
+# Network region: "us-east" (default) or "eu-central"
+# network_region = "us-east"
+
+# Server types — see https://www.hetzner.com/cloud
+# control_plane_server_type = "cpx21"  # 3 vCPU / 4 GB
+# agent_server_type         = "ccx43"  # 16 dedicated vCPU / 64 GB RAM

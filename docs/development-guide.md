@@ -1,6 +1,6 @@
 # Development Guide
 
-**Last updated:** 2026-03-03
+**Last updated:** 2026-03-07
 
 ---
 
@@ -8,7 +8,7 @@
 
 - **Go** 1.24+ (control-plane)
 - **Node.js** 20+ (streamer), 20+ (web)
-- **SSH access** to deployment host (remote builds)
+- **Docker** (for Kind local cluster)
 - **SOPS + Age** (secret management)
 - **kubectl** (optional, direct k8s access)
 - **buf** CLI (protobuf code generation, optional)
@@ -22,20 +22,24 @@ browser-streamer/
 ├── control-plane/      # Go backend (API, K8s orchestration, CDP proxy, MCP)
 │   ├── docker/         # Dockerfile for control-plane
 │   ├── migrations/     # PostgreSQL .up.sql files
-│   ├── proto/api/v1/   # Protobuf service definitions
-│   └── gen/api/v1/     # Generated Go code (commit this)
+│   ├── proto/api/v1/   # Internal protobuf definitions (ApiKey)
+│   └── internal/gen/   # Generated Go code (commit this)
+├── dazzle-cli/         # Git submodule — public proto definitions + generated Go
+│   └── proto/api/v1/   # Public protobuf (Stage, Runtime, Stream, User)
 ├── streamer/           # Node.js browser pod service
 │   └── docker/         # Dockerfile + entrypoint for streamer
 ├── web/                # React/TypeScript SPA
 │   └── src/gen/api/v1/ # Generated TypeScript protobuf (commit this)
 ├── k8s/                # Kubernetes YAML manifests
-│   ├── control-plane/  # Deployment, RBAC, service
+│   ├── control-plane/  # Deployment, RBAC, service, oauth secrets
 │   ├── infrastructure/ # PostgreSQL, encryption-key, postgres-auth secrets
 │   ├── local/          # Kind cluster config, NodePort service, dev secrets
 │   ├── networking/     # Traefik config, ClusterIssuer, Ingress
-│   └── clerk/          # Clerk auth secrets
-├── Makefile            # Build/deploy automation
-└── provision.sh        # Full server provisioning script
+│   ├── clerk/          # Clerk auth secrets
+│   └── secrets/        # Docker Hub pull secret
+├── infra/hetzner/      # OpenTofu cluster provisioning (kube-hetzner)
+├── .github/workflows/  # CI/CD pipeline
+└── Makefile            # Build/deploy automation
 ```
 
 ---
@@ -47,8 +51,13 @@ browser-streamer/
 The fastest way to develop locally is with Kind, which runs the entire stack (postgres, control-plane, streamer) in a local Kubernetes cluster.
 
 ```bash
-make local-up   # Build + deploy to Kind
-cd web && npm run dev                 # Start web dev server
+make dev    # Builds everything, starts Kind cluster, runs web dev server + log tail
+```
+
+Or step by step:
+```bash
+make up     # Create Kind cluster, build images, deploy full stack
+make web/dev  # Start web dev server (in another terminal)
 ```
 
 See **[Local Development (Kind)](./local-dev.md)** for prerequisites, first-time setup, and the full workflow.
@@ -82,69 +91,66 @@ The streamer runs inside Docker/Kubernetes with Chrome, OBS, Xvfb, and PulseAudi
 
 ## Build & Deploy
 
-All Docker image builds happen remotely via SSH + BuildKit. No local Docker required.
-
-### Build Commands
+### Local Development (Kind)
 
 ```bash
-make build                   # Build all images (control-plane + streamer) on remote host
-make build-streamer          # Build streamer image only
-make build-control-plane     # Build control-plane image only (includes web SPA build)
+make dev                     # Full local dev — build, deploy, watch everything
+make up                      # Create Kind cluster, build images, deploy full stack
+make down                    # Delete the Kind cluster
+make build                   # Build all images and load into Kind
+make build-cp                # Build control-plane image and load into Kind
+make build-streamer          # Build streamer image and load into Kind
+make deploy                  # Apply manifests and restart control-plane in Kind
+make logs                    # Tail control-plane logs in Kind
+make status                  # Show pods and services in Kind
+make kubectx                 # Set kubectl context to Kind cluster (then just use kubectl directly)
+make web/dev                 # Run web dev server only
 ```
 
-The control-plane build automatically runs `npm run build` in `web/` and embeds the output into the Go server.
+### Remote (Production)
 
-### Deploy Commands
+Remote builds and deploys are managed by **CI/CD** (GitHub Actions). Pushing to `main` triggers the pipeline which builds images, pushes to Docker Hub, and deploys to the Hetzner cluster.
 
 ```bash
-make deploy                  # Apply k8s manifests + restart control-plane
-make restart                 # Restart control-plane pod (picks up latest image)
+make prod/status           # Show pods and services on prod cluster
 ```
 
 ### Typical Change Cycle
 
 ```bash
-# For control-plane or web changes:
-make build deploy            # Build remote + apply manifests
+# Local development:
+make dev                     # Start everything locally
 
-# For quick control-plane-only restart:
-make restart
+# For targeted rebuilds during dev:
+make build-cp deploy         # Rebuild control-plane + redeploy
+make build-streamer deploy   # Rebuild streamer + redeploy
 
-# Watch logs:
-make logs-cp
-make status
-```
-
-### Component-Level Targets
-
-```bash
-make control-plane/build     # Same as: cd control-plane && make build
-make control-plane/deploy    # Same as: make deploy (limited to CP)
-make control-plane/logs      # Tail control-plane logs
-make streamer/build          # Build streamer image
-make web/build               # Build React SPA
-make web/dev                 # Start Vite dev server
+# Production: push to main, CI/CD handles the rest
 ```
 
 ---
 
 ## Protobuf Code Generation
 
-Proto files: `control-plane/proto/api/v1/*.proto`
+Proto interfaces are split into **public** and **internal**:
 
-Generated output:
-- Go: `control-plane/gen/api/v1/`
-- TypeScript: `web/src/gen/api/v1/`
+- **Public** (`dazzle.v1`) — Stage, Runtime, Stream, User. Proto source + generated Go live in `dazzle-cli/` (git submodule). These are the client-facing APIs.
+- **Internal** (`dazzle.internal.v1`) — ApiKey. Proto source in `control-plane/proto/api/v1/`, generated Go in `control-plane/internal/gen/`.
 
 ```bash
 make proto                   # Generate both Go + TypeScript (uses buf)
 ```
 
-Or manually:
-```bash
-cd control-plane
-buf generate                 # Uses buf.gen.yaml config
-```
+### Changing public proto definitions
+1. Edit `.proto` files in `dazzle-cli/proto/api/v1/`
+2. Regenerate: `cd dazzle-cli && make proto`
+3. Build locally to verify: `cd control-plane && go build ./...` (go.work picks up local changes)
+4. When ready to ship: commit + tag dazzle-cli, then `cd control-plane && go get github.com/dazzle-labs/cli@<new-tag>`
+
+### Changing internal proto definitions
+1. Edit `control-plane/proto/api/v1/apikey.proto`
+2. Regenerate: `cd control-plane/proto && buf generate`
+3. Commit the updated files in `control-plane/internal/gen/`
 
 > Generated files are committed to the repo. Only regenerate when `.proto` files change.
 
@@ -152,26 +158,31 @@ buf generate                 # Uses buf.gen.yaml config
 
 ## Secret Management
 
-Secrets are SOPS-encrypted using Age encryption. Recipients configured in `.sops.yaml`.
+Secrets are SOPS-encrypted using Age encryption (4 recipients). Recipients configured in `.sops.yaml`.
 
 **Encrypted files:**
 
 | File | Contains |
 |------|----------|
-| `k8s/clerk/clerk-auth.secrets.yaml` | `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY` |
-| `k8s/infrastructure/encryption-key.secrets.yaml` | `ENCRYPTION_KEY` (AES-256) |
-| `k8s/infrastructure/postgres-auth.secrets.yaml` | `POSTGRES_PASSWORD` |
-| `k8s/infrastructure/browserless-secret.yaml` | `POD_TOKEN` (internal auth) |
+| `k8s/clerk/clerk-auth.secrets.yaml` | `secret-key`, `publishable-key` |
+| `k8s/infrastructure/encryption-key.secrets.yaml` | `key` (AES-256-GCM) |
+| `k8s/infrastructure/postgres-auth.secrets.yaml` | `password` |
+| `k8s/control-plane/oauth.secrets.yaml` | Twitch, Google, Kick OAuth credentials |
+| `k8s/secrets/dockerhub-secret.yaml` | Docker Hub pull credentials |
+| `k8s/networking/browserless-secret.yaml` | `token` (plaintext — not SOPS encrypted) |
+| `k8s/local/local.secrets.yaml` | Combined local dev secrets |
+| `infra/hetzner/ssh_key.enc` | SSH private key for cluster nodes |
+| `infra/hetzner/kubeconfig.yaml.enc` | Remote cluster kubeconfig |
 
+**Do not decrypt secrets to disk.** The Makefile, CI/CD pipeline, and OpenTofu all handle decryption automatically and transiently:
+- `make up` / `make deploy` decrypts and applies local secrets
+- CI/CD decrypts and applies production secrets on deploy
+- `tofu plan`/`apply` decrypts SSH keys and kubeconfig via the SOPS provider
+- `make prod/*` targets auto-decrypt the kubeconfig
+
+To edit a secret value (decrypts in-memory, re-encrypts on save):
 ```bash
-# Decrypt and apply all secrets
-make secrets
-
-# Edit a secret
 sops k8s/infrastructure/encryption-key.secrets.yaml
-
-# Decrypt manually
-sops -d k8s/infrastructure/postgres-auth.secrets.yaml | kubectl apply -f -
 ```
 
 ---
@@ -184,17 +195,22 @@ sops -d k8s/infrastructure/postgres-auth.secrets.yaml | kubectl apply -f -
 | `web/vite.config.ts` | Vite dev proxy config |
 | `control-plane/proto/buf.gen.yaml` | buf codegen config (Go + TypeScript targets) |
 | `.sops.yaml` | SOPS Age encryption recipients |
-| `Makefile` | All build/deploy targets; `HOST` variable for remote SSH |
-| `provision.sh` | Full VPS provisioning (k3s, cert-manager, image builds, deploy) |
+| `Makefile` | All build/deploy targets (local Kind + remote) |
+| `infra/hetzner/main.tf` | Cluster topology and provisioning |
+| `.github/workflows/ci.yml` | CI/CD pipeline (build, push, deploy) |
 
 ---
 
 ## Monitoring
 
 ```bash
-make status                  # Show pods, services, ingress, certificates
-make logs-cp                 # Tail control-plane logs
-make clean                   # Delete all active stage pods
+# Local (Kind)
+make kubectx                 # Set kubectl context — then just use kubectl directly
+make status                  # Show pods and services in Kind
+make logs                    # Tail control-plane logs in Kind
+
+# Remote (Hetzner)
+make prod/status           # Show pods and services on prod cluster
 ```
 
 ---
@@ -209,15 +225,17 @@ No automated test suite. Current validation approach:
 
 ---
 
-## Infrastructure Provisioning (Fresh Host)
+## Infrastructure Provisioning
+
+The Hetzner k3s cluster is provisioned via OpenTofu + the kube-hetzner module. See [Deployment Guide](./deployment-guide.md) and the [Hetzner Infrastructure Deep-Dive](./deep-dive-hetzner-k8s-infrastructure.md) for details.
 
 ```bash
-make provision HOST=x.x.x.x TOKEN=<deploy-token>
+make prod/infra/init              # Initialize OpenTofu providers
+make prod/infra/plan              # Plan changes (decrypts/re-encrypts state automatically)
+make prod/infra/apply             # Apply changes (decrypts/re-encrypts state automatically)
+make prod/infra/output            # Show outputs
 ```
 
-Runs `provision.sh` via SSH, which:
-1. Installs k3s (single-node)
-2. Installs cert-manager
-3. Builds all Docker images
-4. Deploys all k8s manifests
-5. Configures Traefik TLS + Let's Encrypt
+Terraform state is SOPS-encrypted in the repo. **Do not run `tofu` directly** — use the Make targets which handle state decryption/re-encryption so plaintext state is never left on disk.
+
+> **No state locking.** Only one person should run infra commands at a time. Pull latest before running, and commit+push the updated `terraform.tfstate.enc` immediately after `infra/apply`.

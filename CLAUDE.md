@@ -29,6 +29,20 @@ make web/dev                     # Run web dev server only
 
 Secrets are SOPS-encrypted in `k8s/local/local.secrets.yaml` (requires Age key). See [docs/local-dev.md](docs/local-dev.md).
 
+### Production cluster
+```bash
+make prod/status                 # Show prod cluster nodes and pods
+make prod/kubectl ARGS="..."     # Run kubectl against prod
+```
+
+### Production infrastructure (OpenTofu) — REQUIRES HUMAN APPROVAL
+```bash
+make prod/infra/plan             # Plan changes (read-only, safe)
+make prod/infra/apply            # ⚠️  Apply changes (DESTRUCTIVE — modifies live infra)
+```
+
+**LLM SAFETY RULE: NEVER run `make prod/infra/apply` or `tofu apply` without explicit human approval.** These commands modify live production infrastructure (servers, load balancers, networking). Always run `prod/infra/plan` first and have the user review the plan output before applying. Terraform state is SOPS-encrypted in the repo — no state locking exists, so only one person should run infra commands at a time.
+
 Remote builds and deploys are managed by CI/CD. See [docs/index.md](docs/index.md) for everything else.
 
 ## llms.txt
