@@ -4,6 +4,7 @@ const httpProxy = require('http-proxy');
 const WebSocket = require('ws');
 const fs = require('fs');
 const path = require('path');
+const promClient = require('prom-client');
 
 const app = express();
 app.use(express.json({ limit: '5mb' }));
@@ -309,6 +310,56 @@ class OBSConnection {
 
 const obs = new OBSConnection();
 
+// --- Prometheus Metrics ---
+const STAGE_ID = process.env.STAGE_ID || 'unknown';
+const USER_ID = process.env.USER_ID || 'unknown';
+
+const metricsRegistry = new promClient.Registry();
+promClient.collectDefaultMetrics({ register: metricsRegistry });
+metricsRegistry.setDefaultLabels({ stage_id: STAGE_ID, user_id: USER_ID });
+
+const obsGauges = {
+    cpuUsage: new promClient.Gauge({ name: 'obs_cpu_usage', help: 'OBS CPU usage percentage', registers: [metricsRegistry] }),
+    memoryUsage: new promClient.Gauge({ name: 'obs_memory_usage_bytes', help: 'OBS memory usage in bytes', registers: [metricsRegistry] }),
+    activeFps: new promClient.Gauge({ name: 'obs_active_fps', help: 'OBS active FPS', registers: [metricsRegistry] }),
+    // Cumulative from OBS, resets on OBS restart — Gauge is correct since values can reset
+    renderSkippedFrames: new promClient.Gauge({ name: 'obs_render_skipped_frames_total', help: 'OBS render skipped frames (cumulative)', registers: [metricsRegistry] }),
+    outputSkippedFrames: new promClient.Gauge({ name: 'obs_output_skipped_frames_total', help: 'OBS output skipped frames (cumulative)', registers: [metricsRegistry] }),
+    outputActive: new promClient.Gauge({ name: 'obs_output_active', help: 'Whether OBS output is active (0 or 1)', registers: [metricsRegistry] }),
+    outputBytes: new promClient.Gauge({ name: 'obs_output_bytes_total', help: 'Total OBS output bytes sent (cumulative)', registers: [metricsRegistry] }),
+    activePanels: new promClient.Gauge({ name: 'streamer_active_panels', help: 'Number of active panels', registers: [metricsRegistry] }),
+};
+
+let obsStatsInterval = null;
+let obsStatsFails = 0;
+
+async function pollOBSStats() {
+    try {
+        const stats = await obs.request('GetStats');
+        obsGauges.cpuUsage.set(stats.cpuUsage || 0);
+        obsGauges.memoryUsage.set(stats.memoryUsage || 0);
+        obsGauges.activeFps.set(stats.activeFps || 0);
+        obsGauges.renderSkippedFrames.set(stats.renderSkippedFrames || 0);
+        obsGauges.outputSkippedFrames.set(stats.outputSkippedFrames || 0);
+        obsStatsFails = 0;
+    } catch {
+        obsStatsFails++;
+        if (obsStatsFails === 3) console.warn('OBS stats: poll failing (OBS may be disconnected)');
+    }
+    try {
+        const output = await obs.request('GetOutputStatus', { outputName: 'adv_stream' });
+        obsGauges.outputActive.set(output.outputActive ? 1 : 0);
+        obsGauges.outputBytes.set(output.outputBytes || 0);
+    } catch {}
+    obsGauges.activePanels.set(panels.size);
+}
+
+function startOBSStatsPolling() {
+    if (obsStatsInterval) return;
+    obsStatsInterval = setInterval(pollOBSStats, 15000);
+    pollOBSStats();
+}
+
 // Panel URL now points to the Vite-served shell (which loads main.jsx via HMR)
 function panelUrl(panelName) { return `http://localhost:${PORT}/@panel/${panelName}/`; }
 
@@ -409,6 +460,12 @@ app.use((req, res, next) => {
 // Health check (no auth)
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', lastActivity, uptime: process.uptime() });
+});
+
+// Prometheus metrics (no auth — scraped internally)
+app.get('/metrics', async (req, res) => {
+    res.set('Content-Type', metricsRegistry.contentType);
+    res.end(await metricsRegistry.metrics());
 });
 
 // HLS preview (served from /tmp/hls, written by ffmpeg in entrypoint.sh)
@@ -668,6 +725,7 @@ async function start() {
             await obs.connect(30000);
             await ensureXshmSource();
             await ensureAudioSource();
+            startOBSStatsPolling();
             console.log('OBS sources ready.');
         } catch (err) {
             console.error('OBS startup error:', err.message);

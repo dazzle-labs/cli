@@ -61,6 +61,10 @@ spec:
               value: dazzlefm-dockerhub-secret
             - name: MAX_SESSIONS
               value: "3"
+            - name: SCHEDULER_NAME
+              value: trimaran
+            - name: PRIORITY_CLASS_NAME
+              value: streamer-priority
             - name: TWITCH_CLIENT_ID
               valueFrom:
                 secretKeyRef:

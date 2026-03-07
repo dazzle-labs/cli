@@ -1,0 +1,16 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: streamer-stage
+  namespace: browser-streamer
+spec:
+  selector:
+    matchLabels:
+      app: streamer-stage
+  namespaceSelector:
+    matchNames:
+      - browser-streamer
+  podMetricsEndpoints:
+    - targetPort: 8080
+      path: /metrics
+      interval: 15s

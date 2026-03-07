@@ -1,0 +1,36 @@
+grafana:
+  enabled: false
+
+alertmanager:
+  enabled: false
+
+prometheus:
+  prometheusSpec:
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    remoteWrite:
+      - url: "https://prometheus-prod-36-prod-us-west-0.grafana.net/api/prom/push"
+        basicAuth:
+          username:
+            name: grafana-cloud
+            key: username
+          password:
+            name: grafana-cloud
+            key: api-key
+    # Retain locally for 2h only — Grafana Cloud is the durable store
+    retention: 2h
+    storageSpec: {}
+
+# Keep node-exporter and kube-state-metrics for cluster-level metrics
+nodeExporter:
+  enabled: true
+
+kubeStateMetrics:
+  enabled: true

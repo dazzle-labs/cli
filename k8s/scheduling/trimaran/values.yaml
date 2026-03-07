@@ -1,0 +1,32 @@
+# Helm values for scheduler-plugins chart (as-a-second-scheduler mode)
+# Chart: https://github.com/kubernetes-sigs/scheduler-plugins/tree/master/manifests/install/charts/as-a-second-scheduler
+#
+# Install:
+#   helm install trimaran scheduler-plugins/as-a-second-scheduler \
+#     -n kube-system -f k8s/scheduling/trimaran/values.yaml
+
+scheduler:
+  name: trimaran
+  replicaCount: 1
+  image: registry.k8s.io/scheduler-plugins/kube-scheduler:v0.29.7
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+plugins:
+  enabled:
+    - TargetLoadPacking
+
+pluginConfig:
+  - name: TargetLoadPacking
+    args:
+      targetUtilization: 65
+      defaultRequests:
+        cpu: 500m
+      defaultRequestsMultiplier: "1"
+      metricProvider:
+        type: KubernetesMetricsServer

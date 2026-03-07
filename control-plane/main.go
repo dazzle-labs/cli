@@ -230,7 +230,7 @@ func (m *Manager) recoverStages() error {
 	return nil
 }
 
-func (m *Manager) createStage(requestedID string) (*Stage, error) {
+func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -257,7 +257,9 @@ func (m *Manager) createStage(requestedID string) (*Stage, error) {
 			},
 		},
 		Spec: corev1.PodSpec{
-			RestartPolicy: corev1.RestartPolicyNever,
+			RestartPolicy:     corev1.RestartPolicyNever,
+			SchedulerName:     os.Getenv("SCHEDULER_NAME"),
+			PriorityClassName: os.Getenv("PRIORITY_CLASS_NAME"),
 			ImagePullSecrets: m.imagePullSecrets,
 			Containers: []corev1.Container{
 				{
@@ -279,6 +281,8 @@ func (m *Manager) createStage(requestedID string) (*Stage, error) {
 								},
 							},
 						},
+						{Name: "STAGE_ID", Value: id},
+						{Name: "USER_ID", Value: userID},
 					},
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
@@ -440,7 +444,7 @@ func (m *Manager) activateStage(ctx context.Context, id, userID string) (*Stage,
 		}
 	}
 
-	stage, err := m.createStage(id)
+	stage, err := m.createStage(id, userID)
 	if err != nil {
 		if strings.Contains(err.Error(), "already exists") {
 			s, err := m.waitForStage(ctx, id)

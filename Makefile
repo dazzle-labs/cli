@@ -30,6 +30,8 @@ TFSTATE_ENC := $(INFRA_DIR)/terraform.tfstate.enc
 .PHONY: help check-deps proto up down build build-cp build-streamer deploy dev llms-txt logs status \
         kubectx prod/kubectl prod/status prod/nodes \
         prod/infra/init prod/infra/plan prod/infra/apply prod/infra/output \
+        prod/prometheus prod/prometheus/install prod/prometheus/uninstall \
+        prod/trimaran prod/trimaran/install prod/trimaran/uninstall \
         control-plane/% streamer/% web/%
 
 help: ## Show this help
@@ -210,6 +212,47 @@ prod/status: ## Show prod cluster nodes and pods
 
 prod/nodes: ## Show prod cluster nodes
 	@bash -c '$(RKCTL) get nodes -o wide'
+
+prod/prometheus: prod/prometheus/install ## Deploy Prometheus stack with Grafana Cloud remote_write
+
+prod/prometheus/install: ## Install kube-prometheus-stack on prod
+	$(STEP) "Applying Grafana Cloud secret"
+	@bash -c 'sops -d k8s/monitoring/grafana-cloud.secrets.yaml | $(RKCTL) -n monitoring apply -f -'
+	$(STEP) "Applying PodMonitor"
+	@bash -c '$(RKCTL) apply -f k8s/monitoring/streamer-podmonitor.yaml'
+	$(STEP) "Installing kube-prometheus-stack"
+	helm repo add prometheus-community https://prometheus-community.github.io/helm-charts 2>/dev/null || true
+	helm repo update prometheus-community
+	@bash -c 'helm upgrade --install prometheus prometheus-community/kube-prometheus-stack \
+		--kubeconfig <(sops -d k8s/hetzner/kubeconfig.yaml.enc) \
+		-n monitoring --create-namespace \
+		-f k8s/monitoring/prometheus-values.yaml'
+	$(OK) "Prometheus deployed to monitoring namespace"
+
+prod/prometheus/uninstall: ## Uninstall kube-prometheus-stack from prod
+	@bash -c 'helm uninstall prometheus \
+		--kubeconfig <(sops -d k8s/hetzner/kubeconfig.yaml.enc) \
+		-n monitoring || true'
+	@bash -c '$(RKCTL) delete namespace monitoring --ignore-not-found'
+	$(OK) "Prometheus removed"
+
+prod/trimaran: prod/trimaran/install ## Deploy Trimaran load-aware scheduler on prod
+
+prod/trimaran/install: ## Install Trimaran secondary scheduler on prod
+	$(STEP) "Installing Trimaran scheduler"
+	helm repo add scheduler-plugins https://scheduler-plugins.sigs.k8s.io 2>/dev/null || true
+	helm repo update scheduler-plugins
+	@bash -c 'helm upgrade --install trimaran scheduler-plugins/as-a-second-scheduler \
+		--kubeconfig <(sops -d k8s/hetzner/kubeconfig.yaml.enc) \
+		-n kube-system \
+		-f k8s/scheduling/trimaran/values.yaml'
+	$(OK) "Trimaran scheduler deployed"
+
+prod/trimaran/uninstall: ## Uninstall Trimaran scheduler from prod
+	@bash -c 'helm uninstall trimaran \
+		--kubeconfig <(sops -d k8s/hetzner/kubeconfig.yaml.enc) \
+		-n kube-system || true'
+	$(OK) "Trimaran removed"
 
 # ══════════════════════════════════════════════════════
 # Production infrastructure (OpenTofu) — CAUTION
