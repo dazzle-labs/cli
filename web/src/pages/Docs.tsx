@@ -48,17 +48,17 @@ export function Docs() {
 dazzle login
 
 # Create and activate a stage
-dazzle s new my-stage
-dazzle s up
+dazzle stage create my-stage
+dazzle stage activate
 
 # Push content (JS or JSX, hot-swapped via HMR)
-dazzle s sc set ./my-overlay.jsx
+dazzle stage script set ./my-overlay.jsx
 
 # Take a screenshot to verify
-dazzle s ss -o preview.png
+dazzle stage screenshot -o preview.png
 
 # Go live
-dazzle s bc on`;
+dazzle stage broadcast on`;
 
   return (
     <div>
@@ -141,14 +141,14 @@ dazzle s bc on`;
       <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 mb-6">
         <p className="text-xs font-medium text-zinc-400 mb-3">Working with multiple stages</p>
         <pre className="text-sm font-mono text-zinc-300 bg-zinc-950/50 rounded-lg px-4 py-3 border border-white/[0.06] overflow-x-auto leading-relaxed whitespace-pre-wrap">{`# List all stages
-dazzle s ls
+dazzle stage list
 
 # Target a specific stage
-dazzle s up -s my-stage
-dazzle s sc set app.jsx -s my-stage
+dazzle stage activate -s my-stage
+dazzle stage script set app.jsx -s my-stage
 
 # Set a default stage for all commands
-dazzle s default my-stage`}</pre>
+dazzle stage default my-stage`}</pre>
       </div>
 
       {/* CLI reference link */}
@@ -158,7 +158,7 @@ dazzle s default my-stage`}</pre>
           dazzle --help
         </pre>
         <p className="text-xs text-zinc-600 mt-2">
-          Run <code className="text-zinc-500">dazzle s --help</code> for stage commands, or <code className="text-zinc-500">dazzle s sc --help</code> for script commands.
+          Run <code className="text-zinc-500">dazzle stage --help</code> for stage commands, or <code className="text-zinc-500">dazzle stage script --help</code> for script commands.
         </p>
       </div>
 
