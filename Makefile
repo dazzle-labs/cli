@@ -217,9 +217,7 @@ prod/prometheus: prod/prometheus/install ## Deploy Prometheus stack with Grafana
 
 prod/prometheus/install: ## Install kube-prometheus-stack on prod
 	$(STEP) "Applying Grafana Cloud secret"
-	@bash -c 'sops -d k8s/monitoring/grafana-cloud.secrets.yaml | $(RKCTL) -n monitoring apply -f -'
-	$(STEP) "Applying PodMonitor"
-	@bash -c '$(RKCTL) apply -f k8s/monitoring/streamer-podmonitor.yaml'
+	@bash -c 'sops -d k8s/secrets/grafana-cloud.secrets.yaml | $(RKCTL) -n monitoring apply -f -'
 	$(STEP) "Installing kube-prometheus-stack"
 	helm repo add prometheus-community https://prometheus-community.github.io/helm-charts 2>/dev/null || true
 	helm repo update prometheus-community

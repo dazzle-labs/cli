@@ -208,13 +208,15 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Install crane and sops
+      - name: Install crane, sops, and kustomize
         run: |
           curl -sL "https://github.com/google/go-containerregistry/releases/latest/download/go-containerregistry_Linux_x86_64.tar.gz" | tar -xzf - crane
           sudo mv crane /usr/local/bin/
           curl -sLO "https://github.com/getsops/sops/releases/download/v3.11.0/sops-v3.11.0.linux.amd64"
           sudo mv sops-v3.11.0.linux.amd64 /usr/local/bin/sops
           sudo chmod +x /usr/local/bin/sops
+          curl -sL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.6.0/kustomize_v5.6.0_linux_amd64.tar.gz" | tar -xzf -
+          sudo mv kustomize /usr/local/bin/
 
       - name: Setup age key
         run: |
@@ -279,6 +281,9 @@ jobs:
             echo "Decision: SKIP (images unchanged)"
           fi
 
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
       - name: Decrypt and apply secrets
         run: |
           for secret in k8s/secrets/*.yaml k8s/clerk/*.secrets.yaml k8s/infrastructure/*.secrets.yaml; do
@@ -292,7 +297,7 @@ jobs:
           cd k8s
           kustomize edit set image ${{ env.CP_REPO }}:${{ needs.control-plane.outputs.image_tag }}
           kustomize edit set image ${{ env.STREAMER_REPO }}:${{ needs.streamer.outputs.image_tag }}
-          kubectl apply -k .
+          kustomize build --enable-helm . | kubectl apply -f -
 
       - name: Update STREAMER_IMAGE env var
         run: |
