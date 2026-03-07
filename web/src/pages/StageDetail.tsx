@@ -10,18 +10,12 @@ import { Trash2, Cpu, Globe, ArrowLeft, Copy, Check, ArrowUpRight, Pencil, X as 
 import { StreamPreview } from "@/components/StreamPreview";
 import { CodeBlock } from "@/components/ui/code-block";
 
-const FRAMEWORK_STORAGE_KEY = "dazzle-last-framework";
-
 export function StageDetail() {
   const { stageId } = useParams<{ stageId: string }>();
   const navigate = useNavigate();
   const [stage, setStage] = useState<Stage | null>(null);
   const [destinations, setDestinations] = useState<StreamDestination[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeFramework, setActiveFramework] = useState(() => {
-    const saved = localStorage.getItem(FRAMEWORK_STORAGE_KEY);
-    return saved && FRAMEWORKS.some(fw => fw.id === saved) ? saved : FRAMEWORKS[0].id;
-  });
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [confirmingRegen, setConfirmingRegen] = useState(false);
@@ -57,12 +51,6 @@ export function StageDetail() {
       if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
     };
   }, []);
-
-  function handleSelectFramework(id: string) {
-    setActiveFramework(id);
-    localStorage.setItem(FRAMEWORK_STORAGE_KEY, id);
-    setCopiedId(null);
-  }
 
   async function handleCopy(text: string, id: string) {
     if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
