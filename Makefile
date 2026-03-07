@@ -4,7 +4,7 @@ KIND_CTX := kind-browser-streamer
 KCTL     := kubectl --context $(KIND_CTX) -n $(NS)
 CP_IMG   := dazzlefm/agent-streamer-control-plane:main
 STR_IMG  := dazzlefm/agent-streamer-stage:main
-CLI_COMMIT := $(shell git -C dazzle-cli rev-parse HEAD 2>/dev/null || echo main)
+CLI_COMMIT := $(shell git -C cli rev-parse HEAD 2>/dev/null || echo main)
 CP_BUILD := docker build -f control-plane/docker/Dockerfile --build-arg VITE_CLERK_PUBLISHABLE_KEY=$(CLERK_PK) --build-arg GIT_COMMIT=$(CLI_COMMIT) -t $(CP_IMG) .
 STR_BUILD := docker build --platform linux/amd64 -f streamer/docker/Dockerfile -t $(STR_IMG) streamer/
 
@@ -79,7 +79,7 @@ check-cluster:
 	@kubectl --context $(KIND_CTX) cluster-info >/dev/null 2>&1 || { echo "ERROR: Kind cluster not reachable. Try 'make down && make up'."; exit 1; }
 
 proto: ## Generate protobuf code (Go + TypeScript)
-	$(MAKE) -C dazzle-cli proto
+	$(MAKE) -C cli proto
 	$(MAKE) -C control-plane proto
 
 up: check-deps ## Create Kind cluster, build images, deploy full stack

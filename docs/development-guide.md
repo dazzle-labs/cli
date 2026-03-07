@@ -24,7 +24,7 @@ agent-streamer/
 │   ├── migrations/     # PostgreSQL .up.sql files
 │   ├── proto/api/v1/   # Internal protobuf definitions (ApiKey)
 │   └── internal/gen/   # Generated Go code (commit this)
-├── dazzle-cli/         # Git submodule — public proto definitions + generated Go
+├── cli/                # Git submodule — public proto definitions + generated Go
 │   └── proto/api/v1/   # Public protobuf (Stage, Runtime, Stream, User)
 ├── streamer/           # Node.js browser pod service
 │   └── docker/         # Dockerfile + entrypoint for streamer
@@ -134,7 +134,7 @@ make build-streamer deploy   # Rebuild streamer + redeploy
 
 Proto interfaces are split into **public** and **internal**:
 
-- **Public** (`dazzle.v1`) — Stage, Runtime, Stream, User. Proto source + generated Go live in `dazzle-cli/` (git submodule). These are the client-facing APIs.
+- **Public** (`dazzle.v1`) — Stage, Runtime, Stream, User. Proto source + generated Go live in `cli/` (git submodule). These are the client-facing APIs.
 - **Internal** (`dazzle.internal.v1`) — ApiKey. Proto source in `control-plane/proto/api/v1/`, generated Go in `control-plane/internal/gen/`.
 
 ```bash
@@ -142,10 +142,10 @@ make proto                   # Generate both Go + TypeScript (uses buf)
 ```
 
 ### Changing public proto definitions
-1. Edit `.proto` files in `dazzle-cli/proto/api/v1/`
-2. Regenerate: `cd dazzle-cli && make proto`
+1. Edit `.proto` files in `cli/proto/api/v1/`
+2. Regenerate: `cd cli && make proto`
 3. Build locally to verify: `cd control-plane && go build ./...` (go.work picks up local changes)
-4. When ready to ship: commit + tag dazzle-cli, then `cd control-plane && go get github.com/dazzle-labs/cli@<new-tag>`
+4. When ready to ship: commit + tag cli, then `cd control-plane && go get github.com/dazzle-labs/cli@<new-tag>`
 
 ### Changing internal proto definitions
 1. Edit `control-plane/proto/api/v1/apikey.proto`

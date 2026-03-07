@@ -53,17 +53,17 @@ Remote builds and deploys are managed by CI/CD. See [docs/index.md](docs/index.m
 
 Proto interfaces are split into public and internal:
 
-- **Public** (`dazzle.v1`) — Stage, Runtime, Stream, User. Proto source + generated Go live in `dazzle-cli/` (git submodule → `github.com/dazzle-labs/cli`). These are the client-facing APIs.
+- **Public** (`dazzle.v1`) — Stage, Runtime, Stream, User. Proto source + generated Go live in `cli/` (git submodule → `github.com/dazzle-labs/cli`). These are the client-facing APIs.
 - **Internal** (`dazzle.internal.v1`) — ApiKey. Proto source in `control-plane/proto/api/v1/`, generated Go in `control-plane/internal/gen/`. Go's `internal/` directory enforces access restriction.
 
-A `go.work` file at the repo root wires up `./control-plane` and `./dazzle-cli` so local builds always use the local submodule — no tagging needed during development.
+A `go.work` file at the repo root wires up `./control-plane` and `./cli` so local builds always use the local submodule — no tagging needed during development.
 
 ### Changing public proto definitions
 
-1. Edit the `.proto` files in `dazzle-cli/proto/api/v1/`
-2. Regenerate: `cd dazzle-cli && make proto`
+1. Edit the `.proto` files in `cli/proto/api/v1/`
+2. Regenerate: `cd cli && make proto`
 3. Build locally to verify: `cd control-plane && go build ./...` (go.work picks up local changes)
-4. When ready to ship: commit + tag dazzle-cli, then `cd control-plane && go get github.com/dazzle-labs/cli@<new-tag>`
+4. When ready to ship: commit + tag cli, then `cd control-plane && go get github.com/dazzle-labs/cli@<new-tag>`
 
 ### Changing internal proto definitions
 

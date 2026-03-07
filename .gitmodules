@@ -1,3 +1,3 @@
-[submodule "dazzle-cli"]
-	path = dazzle-cli
+[submodule "cli"]
+	path = cli
 	url = git@github.com:dazzle-labs/cli.git

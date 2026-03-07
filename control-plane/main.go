@@ -1055,7 +1055,7 @@ func main() {
 
 	// CLI installer endpoints.
 	// Each detects if the caller meant the other platform and redirects transparently.
-	// Uses the dazzle-cli submodule commit baked into this build for cache-busting.
+	// Uses the CLI submodule commit baked into this build for cache-busting.
 	rawBase := "https://raw.githubusercontent.com/dazzle-labs/cli/" + gitCommit + "/"
 	isWindows := func(r *http.Request) bool {
 		ua := strings.ToLower(r.Header.Get("User-Agent"))

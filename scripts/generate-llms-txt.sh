@@ -8,7 +8,7 @@ cd "$(dirname "$0")/.."
 # Build and run the local CLI to capture help output
 DAZZLE_BIN=$(mktemp)
 trap 'rm -f "$DAZZLE_BIN"' EXIT
-go build -o "$DAZZLE_BIN" ./dazzle-cli/cmd/dazzle
+go build -o "$DAZZLE_BIN" ./cli/cmd/dazzle
 CLI_HELP=$("$DAZZLE_BIN" --help 2>&1)
 
 cat <<'EOF'

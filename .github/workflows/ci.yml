@@ -27,8 +27,8 @@ jobs:
           git config --global credential.helper store
           git config --global url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "git@github.com:"
 
-      - name: Fetch dazzle-cli submodule
-        run: git submodule update --init dazzle-cli
+      - name: Fetch CLI submodule
+        run: git submodule update --init cli
 
       - name: Setup Buf
         uses: bufbuild/buf-setup-action@v1
@@ -37,13 +37,13 @@ jobs:
         run: buf lint control-plane/proto
 
       - name: Lint public protos
-        run: buf lint dazzle-cli/proto
+        run: buf lint cli/proto
 
       - name: Breaking change detection (internal)
         if: github.event_name == 'pull_request'
         run: buf breaking control-plane/proto --against 'https://github.com/${{ github.repository }}.git#branch=main,subdir=control-plane/proto'
 
-      # Public proto breaking changes are checked in dazzle-cli's own CI
+      # Public proto breaking changes are checked in the CLI repo's own CI
 
   control-plane:
     runs-on: ubuntu-latest
@@ -73,9 +73,9 @@ jobs:
           echo "image_tag=${{ env.CP_REPO }}:${SHORT_SHA}" >> $GITHUB_OUTPUT
           echo "branch_tag=${{ env.CP_REPO }}:${BRANCH}" >> $GITHUB_OUTPUT
 
-      - name: Get dazzle-cli submodule commit
+      - name: Get CLI submodule commit
         id: cli
-        run: echo "commit=$(git ls-tree HEAD dazzle-cli | awk '{print $3}')" >> $GITHUB_OUTPUT
+        run: echo "commit=$(git ls-tree HEAD cli | awk '{print $3}')" >> $GITHUB_OUTPUT
 
       - name: Build Docker Image
         id: build
