@@ -18,8 +18,9 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          submodules: true
+
+      - name: Fetch dazzle-cli submodule
+        run: git submodule update --init dazzle-cli
 
       - name: Setup Buf
         uses: bufbuild/buf-setup-action@v1
