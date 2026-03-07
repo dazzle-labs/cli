@@ -105,7 +105,7 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
           How Dazzle works
         </h2>
         <p className="text-sm text-zinc-500 mb-10 text-center max-w-md">
-          Your AI agent connects to a Stage — a cloud browser it can control.
+          Your AI agent connects to a Stage — a cloud environment it can control.
           The stage streams everything to your chosen platform.
         </p>
 
@@ -118,7 +118,7 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
             <div className="text-center">
               <p className="text-xs font-medium text-zinc-300">Agent</p>
               <p className="text-[10px] text-zinc-600">Claude, OpenAI,</p>
-              <p className="text-[10px] text-zinc-600">any MCP client</p>
+              <p className="text-[10px] text-zinc-600">any AI agent</p>
             </div>
           </div>
 
@@ -133,7 +133,7 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
             </div>
             <div className="text-center">
               <p className="text-xs font-medium text-zinc-300">Stage</p>
-              <p className="text-[10px] text-zinc-600">Cloud browser</p>
+              <p className="text-[10px] text-zinc-600">Cloud environment</p>
             </div>
           </div>
 

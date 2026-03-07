@@ -43,7 +43,7 @@ export function EndpointCreator({ onCreated, onNavigate }: EndpointCreatorProps)
         Set up your stage
       </h2>
       <p className="text-sm text-zinc-500 mb-6 max-w-md text-center">
-        A cloud browser your agent can control.
+        A cloud environment your agent can control.
       </p>
 
       <div className="w-full max-w-md flex flex-col gap-4">

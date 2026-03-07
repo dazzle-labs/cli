@@ -111,7 +111,7 @@ export function Dashboard() {
             Stages
           </h1>
           <p className="text-sm text-zinc-500">
-            Cloud browsers your agents can control.
+            Cloud environments your agents can control.
           </p>
         </div>
         {stages.length > 0 && (
