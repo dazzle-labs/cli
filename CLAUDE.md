@@ -33,12 +33,7 @@ Remote builds and deploys are managed by CI/CD. See [docs/index.md](docs/index.m
 
 ## llms.txt
 
-`llms.txt` is generated from sources of truth — run `make llms-txt` to regenerate it. Sources:
-- **MCP tool definitions** — extracted from `control-plane/mcp.go` via Go AST (`scripts/extract-mcp-tools.go`)
-- **Framework examples** — extracted from `web/src/components/onboarding/frameworks.ts` (`scripts/extract-frameworks.cjs`)
-- **Static sections** — getting started, auth, API, OBS (in `scripts/generate-llms-txt.sh`)
-
-When updating MCP tools or framework examples, regenerate with `make llms-txt`. Static sections (getting started flow, API tables, OBS commands) must be updated manually in `scripts/generate-llms-txt.sh`.
+`llms.txt` is a static heredoc in `scripts/generate-llms-txt.sh`. Run `make llms-txt` to regenerate. Edit the shell script directly to update content.
 
 ## Proto / API types
 

@@ -139,8 +139,9 @@ dev: up ## ★ Full local dev — build, deploy, watch everything
 	$(KCTL) logs -f deployment/control-plane & \
 	wait
 
-llms-txt: ## Regenerate llms.txt from sources of truth
+llms-txt: ## Regenerate llms.txt
 	./scripts/generate-llms-txt.sh > llms.txt
+	cp llms.txt web/public/llms.txt
 	$(OK) "llms.txt updated"
 
 logs: ## Tail control-plane logs in Kind

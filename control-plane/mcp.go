@@ -41,14 +41,14 @@ func (m *Manager) setupMCP() http.Handler {
 
 	s.AddTool(
 		mcp.NewTool("start",
-			mcp.WithDescription("Activate your stage. Call this before using any other tools. Returns status when ready. Your stage gives you a browser you can render content in, capture screenshots, and stream to platforms like Twitch and YouTube. A stream destination is not required to start — you can preview your stage on stream.dazzle.fm by viewing your stage in the sidebar. Starting the stage does NOT begin streaming — use the obs tool with [\"st\", \"s\"] to go live when you're ready (requires a configured destination)."),
+			mcp.WithDescription("Activate your stage. Call this before using any other tools. Returns status when ready. Your stage gives you a cloud environment you can render content in, capture screenshots, and stream to platforms like Twitch and YouTube. A stream destination is not required to start — you can preview your stage on stream.dazzle.fm by viewing your stage in the sidebar. Starting the stage does NOT begin streaming — use the obs tool with [\"st\", \"s\"] to go live when you're ready (requires a configured destination)."),
 		),
 		m.handleMCPCreateStage,
 	)
 
 	s.AddTool(
 		mcp.NewTool("stop",
-			mcp.WithDescription("Deactivate your stage. Shuts down the browser and releases cloud resources. Call start to bring it back — stream destinations are preserved, but the panel script will need to be re-set."),
+			mcp.WithDescription("Deactivate your stage. Shuts down and releases cloud resources. Call start to bring it back — stream destinations are preserved, but the panel script will need to be re-set."),
 		),
 		m.handleMCPDestroyStage,
 	)
@@ -62,7 +62,7 @@ func (m *Manager) setupMCP() http.Handler {
 
 	s.AddTool(
 		mcp.NewTool("set_script",
-			mcp.WithDescription(`Set JavaScript content to render in your stage's browser. Write vanilla JS or JSX. The page is full-viewport with a black background. Changes are hot-swapped with zero page reloads. Requires an active stage (call start first).
+			mcp.WithDescription(`Set JavaScript content to render in your stage. Write vanilla JS or JSX. The page is full-viewport with a black background. Changes are hot-swapped with zero page reloads. Requires an active stage (call start first).
 
 Two modes:
 1. Vanilla JS — create DOM elements / canvas and append to document.body
@@ -95,7 +95,7 @@ Read window.__state at any time for accumulated state from all prior emit_event 
 
 	s.AddTool(
 		mcp.NewTool("get_script",
-			mcp.WithDescription("Get the current JavaScript content being rendered in your stage's browser. Requires an active stage (call start first)."),
+			mcp.WithDescription("Get the current JavaScript content being rendered in your stage. Requires an active stage (call start first)."),
 		),
 		m.handleMCPGetScript,
 	)
@@ -129,7 +129,7 @@ Accumulated state is merged into window.__state. An '__init' event fires on scri
 
 	s.AddTool(
 		mcp.NewTool("get_logs",
-			mcp.WithDescription("Retrieve recent browser console logs (errors, warnings, info, debug). Returns the last N entries like tail. Requires an active stage (call start first)."),
+			mcp.WithDescription("Retrieve recent console logs (errors, warnings, info, debug). Returns the last N entries like tail. Requires an active stage (call start first)."),
 			mcp.WithNumber("limit", mcp.Description("Number of most recent log entries to return (default 100, max 1000)")),
 		),
 		m.handleMCPGetLogs,

@@ -1,212 +1,180 @@
-# Dazzle — Agent Connection Guide
+# Dazzle
 
-> Dazzle gives AI agents a cloud browser environment they can control via MCP (Model Context Protocol). This document explains how to connect your agent.
+> Cloud stages for AI agents and live streaming.
+> https://stream.dazzle.fm
 
-## Setup Prompt
+## Overview
 
-If you are an AI agent being configured to use Dazzle, follow these steps:
+Dazzle gives you cloud stages — isolated environments with a full rendering engine, OBS for streaming, and hot-reloading script support. Control everything from the `dazzle` CLI.
 
-1. Ask the user for their Dazzle API key (or have them create one at the dashboard under API Keys)
-2. Set it as an environment variable: `export DAZZLE_API_KEY=<key>`
-3. Create a stage via the dashboard or API, and note the stage UUID
-4. Configure your MCP connection using the URL format below
+Primary use cases: AI agents that need a persistent visual environment, live streaming to Twitch/YouTube/Kick via RTMP, and programmatic automation.
 
-## MCP Endpoint
+## Getting Started
 
-```
-URL: https://<your-host>/stage/<stage-id>/mcp
-Auth: Bearer <api-key>
-Transport: http (Streamable HTTP)
+### 1. Install the CLI
+
+```bash
+go install github.com/dazzle-labs/cli/cmd/dazzle@latest
 ```
 
-Each stage UUID maps to an isolated environment. Use a consistent UUID per project.
+Or download a binary from the [releases page](https://github.com/dazzle-labs/cli/releases). Source: https://github.com/dazzle-labs/cli
 
-## Framework Configuration
+### 2. Authenticate
 
-### Claude Code (CLI)
+Sign up at https://stream.dazzle.fm, create an API key (Settings > API Keys), then:
 
-```shell
-claude mcp add dazzle https://<your-host>/stage/<stage-id>/mcp \
-  --transport http \
-  --header "Authorization: Bearer $DAZZLE_API_KEY"
+```bash
+dazzle login
+# Paste your API key (bstr_...) when prompted
 ```
 
-### Claude Code (.mcp.json)
+### 3. Create and activate a stage
 
-```json
-{
-  "mcpServers": {
-    "dazzle": {
-      "type": "http",
-      "url": "https://<your-host>/stage/<stage-id>/mcp",
-      "headers": {
-        "Authorization": "Bearer ${DAZZLE_API_KEY}"
-      }
-    }
-  }
-}
+```bash
+dazzle s new my-stage
+dazzle s up
 ```
 
-### OpenAI Agents SDK (Python)
+### 4. Push content and go live
 
-```python
-import os
-from agents.mcp import MCPServerStreamableHTTP
+```bash
+# Set a script (JS or JSX, hot-swapped via HMR)
+dazzle s sc set ./my-overlay.jsx
 
-dazzle = MCPServerStreamableHTTP(
-    url="https://<your-host>/stage/<stage-id>/mcp",
-    headers={"Authorization": f"Bearer {os.environ['DAZZLE_API_KEY']}"},
-)
+# Take a screenshot to verify
+dazzle s ss -o preview.png
 
-agent = Agent(
-    name="my-agent",
-    mcp_servers=[dazzle],
-)
+# Start streaming (requires a configured destination)
+dazzle s live on
 ```
 
-### OpenClaw (YAML)
+### 5. Update content live
 
-```yaml
-mcp_servers:
-  dazzle:
-    url: "https://<your-host>/stage/<stage-id>/mcp"
-    headers:
-      Authorization: "Bearer ${DAZZLE_API_KEY}"
+```bash
+# Edit in-place (find & replace)
+dazzle s sc edit --old "Hello" --new "World"
+
+# Push live data without rewriting the script
+dazzle s ev e score '{"points": 42}'
 ```
 
-### CrewAI (Python)
+### 6. (Optional) Add a stream destination
 
-```python
-import os
-from crewai.tools import MCPServerAdapter
-
-dazzle = MCPServerAdapter(
-    server_url="https://<your-host>/stage/<stage-id>/mcp",
-    headers={"Authorization": f"Bearer {os.environ['DAZZLE_API_KEY']}"},
-)
-
-agent = Agent(
-    role="My Agent",
-    tools=[dazzle],
-)
+```bash
+dazzle dest new
 ```
 
-### LangGraph (Python)
+Destinations are linked to stages and configured automatically in OBS.
 
-```python
-import os
-from langchain_mcp_adapters.client import MCPClient
+## CLI Reference
 
-client = MCPClient(
-    transport="streamable_http",
-    url="https://<your-host>/stage/<stage-id>/mcp",
-    headers={"Authorization": f"Bearer {os.environ['DAZZLE_API_KEY']}"},
-)
+```
+Usage: dazzle <command> [flags]
 
-tools = await client.get_tools()
+The Dazzle CLI — manage your streaming stages from the terminal.
+
+Flags:
+  -h, --help              Show context-sensitive help.
+  -j, --json              Output as JSON.
+  -s, --stage=STRING      Stage name or ID ($DAZZLE_STAGE).
+      --api-url=STRING    API URL ($DAZZLE_API_URL).
+
+Commands:
+  version                          Print version information.
+  update                           Update dazzle to the latest release.
+  login                            Authenticate with your API key.
+  logout                           Clear stored credentials.
+  whoami                           Show current user.
+  stage (s) list (ls)              List stages.
+  stage (s) create (new)           Create a stage.
+  stage (s) delete (rm)            Delete a stage.
+  stage (s) activate (start,up)    Activate a stage.
+  stage (s) deactivate (stop,down)
+                                   Deactivate a stage.
+  stage (s) status (st)            Show stage status.
+  stage (s) use                    Set default stage.
+  stage (s) script (sc) set        Set script from file or stdin.
+  stage (s) script (sc) get        Print current script to stdout.
+  stage (s) script (sc) edit       Find and replace in the live script.
+  stage (s) event (ev) emit (e)    Push an event to the running script.
+  stage (s) logs (l)               Retrieve console logs.
+  stage (s) screenshot (ss)        Capture a screenshot.
+  stage (s) live (stream) on (start)
+                                   Start streaming (go live).
+  stage (s) live (stream) off (stop)
+                                   Stop streaming.
+  stage (s) live (stream) status (st)
+                                   Show streaming status.
+  destination (dest) list (ls)     List destinations.
+  destination (dest) create (new)
+                                   Create a destination (interactive).
+  destination (dest) delete (rm)
+                                   Delete a destination.
+  destination (dest) set           Assign destination to stage.
+  obs (o)                          Raw OBS commands on the active stage.
+
+Run "dazzle <command> --help" for more information on a command.
 ```
 
-### AutoGen (Python)
+## Authentication
 
-```python
-import os
-from autogen_ext.tools.mcp import McpWorkbench
+All requests require an API key in `bstr_<secret>` format, created via the dashboard (Settings > API Keys).
 
-workbench = McpWorkbench(
-    server_url="https://<your-host>/stage/<stage-id>/mcp",
-    headers={"Authorization": f"Bearer {os.environ['DAZZLE_API_KEY']}"},
-)
-
-agent = AssistantAgent(
-    name="my_agent",
-    tools=await workbench.get_tools(),
-)
+The CLI stores your key locally after `dazzle login`. For programmatic use, set:
+```bash
+export DAZZLE_API_KEY=bstr_your_key_here
 ```
 
-## MCP Tools
+## Scripting
 
-Once connected via MCP, your agent has access to these tools:
+`dazzle s sc set` pushes JavaScript or JSX to your stage. The page is full-viewport with a black background. Changes are hot-swapped with zero page reloads.
 
-### start
-Activate your stage. Call this before using any other tools. Returns status when ready. Your stage gives you a browser you can render content in, capture screenshots, and stream to platforms like Twitch and YouTube. Starting the stage does NOT begin streaming — use the obs tool with ["st", "s"] to go live when you're ready.
-- No parameters.
+Two modes:
+1. **Vanilla JS** — create DOM elements / canvas and append to `document.body`
+2. **React JSX** — define an `App` component and it will be auto-mounted:
+   ```jsx
+   const App = () => <div>Hello</div>;
+   ```
+   Do NOT call `createRoot` or `ReactDOM.render` — the runtime auto-mounts your App.
 
-### stop
-Deactivate your stage. Shuts down the browser and releases cloud resources. Call start to bring it back — stream destinations are preserved, but the panel script will need to be re-set.
-- No parameters.
+Available globals (no imports needed):
+```
+React, useState, useEffect, useRef, useMemo, useCallback, useReducer, Fragment,
+useContext, useLayoutEffect, useImperativeHandle, useDebugValue,
+useDeferredValue, useTransition, useId, useSyncExternalStore,
+createContext, forwardRef, memo, lazy, Suspense
+createPortal (from react-dom)
+create, persist (from zustand — use for persistent state via localStorage)
+```
 
-### status
-Get the current status of your stage (active/inactive/starting).
-- No parameters.
+Tailwind CSS v4 utility classes work in `className` (e.g. `"text-4xl font-bold text-white"`).
 
-### set_script
-Set JavaScript or JSX content to render in your stage's browser. Write vanilla JS (append to document.body) or React JSX (define const App and it auto-mounts). React hooks, Zustand, and Tailwind CSS are available as globals — no imports needed. Changes are hot-swapped with no page reload. Requires an active stage (call start first).
-- `script` (string, required): JavaScript or JSX code to render.
+### Live events
 
-### get_script
-Get the current JavaScript content being rendered in your stage's browser. Requires an active stage (call start first).
-- No parameters.
+Use `dazzle s ev e` to push data to a running script without rewriting it:
 
-### edit_script
-Edit the current JavaScript content by finding and replacing a string. The old_string must exist exactly once in the current code. Changes are hot-swapped with no page reload. Requires an active stage (call start first).
-- `old_string` (string, required): The exact string to find in the current code.
-- `new_string` (string, required): The replacement string.
+```bash
+dazzle s ev e score '{"points": 42}'
+```
 
-### screenshot
-Capture a screenshot of your stage's current output as a PNG image. Requires an active stage (call start first).
-- No parameters.
+Your script listens via:
+```js
+window.addEventListener('event', (e) => {
+  const { event, data } = e.detail;
+  if (event === 'score') el.textContent = data.points;
+});
+```
 
-### obs
-Control OBS — manage scenes, inputs, streaming, recording, and audio. Requires an active stage (call start first). Note: starting a stage does NOT go live automatically — use "st s" to start streaming when ready, and "st st" to stop.
-- `args` (string[], required): OBS command arguments, e.g. ["st", "s"] to start streaming, ["sc", "ls"] to list scenes.
+Read `window.__state` at any time for accumulated state from all prior events. An `__init` event fires on script load if prior state exists.
 
-## Stage Lifecycle
+## Typical Workflow
 
-1. **Create**: Create a stage via the dashboard or `POST /api.v1.StageService/CreateStage`. The stage starts as `inactive` — no pod is provisioned yet.
-2. **Activate**: Connect your agent to `https://<host>/stage/<stage-id>/mcp` and call the `start` MCP tool. The stage transitions to `starting`, then `running`.
-3. **Use**: Once running, your agent can set scripts, take screenshots, and control OBS.
-4. **Stream**: Optionally start streaming with `obs ["st", "s"]`. Requires a stream destination to be configured and linked to the stage.
-5. **Stop**: Call the `stop` MCP tool or delete the stage via dashboard/API.
-
-## API Reference (ConnectRPC)
-
-All services use `POST` with path `https://<host>/api.v1.<Service>/<Method>`.
-Authenticate with `Authorization: Bearer <token>` header.
-Supports Connect, gRPC, and gRPC-Web protocols with Protobuf and JSON codecs.
-
-### StageService
-
-- `POST /api.v1.StageService/CreateStage` — Create a stage record. Body: `{name?: string}`. Returns `{stage: {id, name, status}}`.
-- `POST /api.v1.StageService/ListStages` — List all stages. Body: `{}`. Returns `{stages: [...]}`.
-- `POST /api.v1.StageService/GetStage` — Get stage by ID. Body: `{id: string}`. Returns `{stage: {...}}`.
-- `POST /api.v1.StageService/DeleteStage` — Delete stage. Body: `{id: string}`. Returns `{}`.
-
-### ApiKeyService
-
-- `POST /api.v1.ApiKeyService/CreateApiKey` — Create API key. Body: `{name: string}`. Returns `{key: {id, name, prefix}, secret: string}`. The secret is only shown once.
-- `POST /api.v1.ApiKeyService/ListApiKeys` — List API keys. Body: `{}`. Returns `{keys: [...]}`.
-- `POST /api.v1.ApiKeyService/DeleteApiKey` — Delete API key. Body: `{id: string}`. Returns `{}`.
-
-### RtmpDestinationService
-
-- `POST /api.v1.RtmpDestinationService/CreateStreamDestination` — Create stream destination. Body: `{name, platform, rtmpUrl, streamKey, enabled}`.
-- `POST /api.v1.RtmpDestinationService/ListStreamDestinations` — List destinations. Body: `{}`.
-- `POST /api.v1.RtmpDestinationService/UpdateStreamDestination` — Update destination. Body: `{id, name?, platform?, rtmpUrl?, streamKey?, enabled?}`.
-- `POST /api.v1.RtmpDestinationService/DeleteStreamDestination` — Delete destination. Body: `{id: string}`.
-
-### UserService
-
-- `POST /api.v1.UserService/GetProfile` — Get user profile. Body: `{}`. Returns `{userId, email, name, stageCount, apiKeyCount}`.
-
-### HTTP Endpoints
-
-- `GET /health` — Health check. Returns `{status: "ok"}`. No auth required.
-- `GET /stage/<uuid>/cdp` — Chrome DevTools Protocol discovery (requires active stage).
-- `ANY /stage/<id>/*` — Reverse proxy to active stage.
-
-## Concepts
-
-- **Stage**: An isolated cloud browser environment your agent controls. Each stage has a unique UUID and a dedicated MCP endpoint. Stages are inactive by default and must be activated via the `start` MCP tool.
-- **API Key**: Authentication credential for API and MCP endpoints. Prefix: `bstr_`.
-- **MCP (Model Context Protocol)**: The protocol agents use to interact with stages. Dazzle exposes an MCP server per stage via Streamable HTTP transport.
-- **Stream Destination**: An RTMP destination (Twitch, YouTube, Kick, Restream, or custom) that a stage can stream to.
+```
+1. dazzle s up                → Activate a stage
+2. dazzle s sc set app.jsx    → Render content (hot-swapped via HMR)
+3. dazzle s ss                → Verify output looks correct
+4. dazzle s live on          → Go live on configured destination
+5. dazzle s sc edit / s ev e  → Update content live
+6. dazzle s live off           → Stop streaming
+7. dazzle s down              → Deactivate stage
+```
