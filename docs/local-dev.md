@@ -7,46 +7,40 @@ Run the full stack locally using [Kind](https://kind.sigs.k8s.io/) (Kubernetes-i
 - **Docker Desktop** with **8GB+ RAM** allocated (Settings > Resources)
 - **Kind**: `brew install kind`
 - **kubectl**: `brew install kubectl`
+- **SOPS**: `brew install sops` (+ Age key in `~/.config/sops/age/keys.txt`)
 
-## First-Time Setup
-
-1. Build and deploy:
-
-```bash
-make local-up
-```
-
-This creates a Kind cluster, builds both images, and deploys everything. Secrets are SOPS-encrypted and decrypted automatically (requires an Age key listed in `.sops.yaml`). First run takes a while (streamer image is ~2GB).
-
-3. Start the web dev server:
+## Quick Start
 
 ```bash
-cd web && npm run dev
+make dev
 ```
 
-Open http://localhost:5173 — the dashboard proxies API calls to the local control-plane at http://localhost:8080.
+This builds all images, creates a Kind cluster, deploys the full stack, then starts the web dev server + control-plane log tail. First run takes a while (streamer image is ~2GB).
+
+- **Dashboard:** http://localhost:5173
+- **Control plane API:** http://localhost:8080
 
 ## Daily Workflow
 
 ```bash
-make local-up        # Start cluster (idempotent if already running)
-cd web && npm run dev # Start frontend
+make dev         # Start everything (idempotent if cluster already running)
 # ... develop ...
-make local-down      # Tear down when done (destroys all DB data)
+# Ctrl-C to stop watchers (prompted to tear down cluster)
+make down        # Or tear down manually (destroys all DB data)
 ```
 
-**Note:** `make local-down` deletes the entire Kind cluster including postgres data. Any seeded test data will be lost.
+**Note:** `make down` deletes the entire Kind cluster including postgres data.
 
 ## Rebuilding After Code Changes
 
 **Control-plane changes:**
 ```bash
-make local-build-cp && make local-deploy
+make build-cp deploy
 ```
 
 **Streamer changes:**
 ```bash
-make local-build-streamer
+make build-streamer
 # Next stage created will use the new image
 ```
 
@@ -56,9 +50,12 @@ make local-build-streamer
 
 | Command | Description |
 |---------|-------------|
-| `make local-status` | Show pods and services |
-| `make local-logs` | Tail control-plane logs |
-| `make local-down` | Delete the Kind cluster |
+| `make up` | Build + deploy to Kind (without starting watchers) |
+| `make kubectx` | Set kubectl context to Kind cluster (then use kubectl directly) |
+| `make status` | Show pods and services |
+| `make logs` | Tail control-plane logs |
+| `make down` | Delete the Kind cluster |
+| `make web/dev` | Run web dev server only |
 
 ## Troubleshooting
 
@@ -66,10 +63,10 @@ make local-build-streamer
 Increase Docker Desktop memory to 8GB+ (Settings > Resources > Memory).
 
 **Control-plane not reachable on localhost:8080:**
-Check `make local-status` — the control-plane pod should be Running/Ready. If not, check logs with `make local-logs`.
+Check `make status` — the control-plane pod should be Running/Ready. If not, check logs with `make logs`.
 
 **Image not updating after rebuild:**
-Make sure you ran `make local-build-cp` (or `local-build-streamer`) which loads the image into Kind. Then `make local-deploy` to restart the pod.
+Make sure you ran `make build-cp` (or `build-streamer`) which loads the image into Kind. Then `make deploy` to restart the pod.
 
 **`kind create cluster` fails:**
-If the cluster already exists, run `make local-down` first, then `make local-up`.
+If the cluster already exists, run `make down` first, then `make up`.

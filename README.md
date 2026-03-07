@@ -1,6 +1,6 @@
 # Browser Streamer (Dazzle)
 
-On-demand cloud browser environments for AI agents and live streaming. Each **stage** is a Kubernetes pod running Chrome on a headless display, accessible via Chrome DevTools Protocol (CDP), an MCP server, and a web dashboard.
+On-demand cloud browser environments for AI agents and live streaming. Each **stage** is a Kubernetes pod running Chrome on a headless display, accessible via Chrome DevTools Protocol (CDP) and a web dashboard.
 
 **Production:** https://stream.dazzle.fm
 
@@ -15,7 +15,7 @@ On-demand cloud browser environments for AI agents and live streaming. Each **st
                                │ HTTPS / WSS  :443
                                ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│  Traefik Ingress  (TLS termination, cert-manager + Let's Encrypt)   │
+│  Hetzner Load Balancer → Traefik Ingress (TLS, Let's Encrypt)       │
 └──────────────────────────────┬──────────────────────────────────────┘
                                │ HTTP / WS  :8080
                                ▼
@@ -25,13 +25,12 @@ On-demand cloud browser environments for AI agents and live streaming. Each **st
 │  ConnectRPC (POST, Clerk JWT or API key)                            │
 │    /api.v1.StageService/*      stage CRUD + lifecycle               │
 │    /api.v1.ApiKeyService/*     API key management  [Clerk only]     │
-│    /api.v1.RtmpDestinationService/*     RTMP destinations   [Clerk only]     │
+│    /api.v1.RtmpDestinationService/*  RTMP destinations [Clerk only] │
 │    /api.v1.UserService/*       user profile        [Clerk only]     │
 │                                                                     │
 │  Stage routes  (all require Clerk JWT or API key)                   │
 │    GET/WS /stage/<id>/cdp          CDP WebSocket proxy to Chrome    │
 │    GET    /stage/<id>/cdp/json/*   CDP discovery (WS URL rewritten) │
-│    *      /stage/<id>/mcp/*        MCP server (AI agent tools)      │
 │    *      /stage/<id>/hls/*        HLS live preview (m3u8 + .ts)    │
 │    *      /stage/<id>/*            HTTP/WS reverse proxy to pod     │
 │                                                                     │
@@ -71,10 +70,10 @@ On-demand cloud browser environments for AI agents and live streaming. Each **st
 
 | Part | Path | Language | Purpose |
 |------|------|----------|---------|
-| **control-plane** | `control-plane/` | Go 1.24 | API server, K8s orchestration, auth, DB, CDP proxy, MCP, serves web SPA |
+| **control-plane** | `control-plane/` | Go 1.24 | API server, K8s orchestration, auth, DB, CDP proxy, serves web SPA |
 | **web** | `web/` | TypeScript / React 19 | Dashboard — stage management, API keys, stream destinations |
 | **streamer** | `streamer/` | Node.js 20 | Per-stage browser pod: Chrome, OBS, Vite panel rendering |
-| **k8s** | `k8s/` | YAML | Kubernetes manifests, Traefik ingress, TLS, SOPS secrets |
+| **k8s** | `k8s/` | YAML + HCL | Kubernetes manifests, Traefik ingress, TLS, SOPS secrets, cluster provisioning |
 
 ---
 
@@ -82,14 +81,10 @@ On-demand cloud browser environments for AI agents and live streaming. Each **st
 
 | Tool | Purpose |
 |------|---------|
-| Go 1.24+ | Build the control-plane |
-| Node.js 20+ | Build/run the web frontend and streamer |
-| kubectl | Interact with the k3s cluster |
-| [SOPS](https://github.com/getsops/sops) | Decrypt secrets (used automatically by `make local-up` and `make deploy-secrets`) |
-| SSH access to VPS | Remote builds via buildkit |
-| [Clerk](https://clerk.com) account | Auth — provides your `CLERK_PK` public key |
-
-Builds happen **remotely** on the VPS via SSH + buildkit. No local Docker daemon required.
+| Docker Desktop (8GB+ RAM) | Local Kind cluster |
+| [Kind](https://kind.sigs.k8s.io/) | Local Kubernetes cluster |
+| kubectl | Interact with the cluster |
+| [SOPS](https://github.com/getsops/sops) + Age key | Decrypt secrets (handled automatically by Make targets) |
 
 ---
 
@@ -99,14 +94,14 @@ Builds happen **remotely** on the VPS via SSH + buildkit. No local Docker daemon
 make dev    # Build everything, start Kind cluster, run all dev watchers
 ```
 
-This single command builds all images, creates a Kind cluster, deploys the full stack, then starts runtime watcher + web dev server + control-plane log tail. Requires Docker Desktop (8GB+ RAM), Kind, kubectl, and SOPS. See [Local Development](docs/local-dev.md) for details.
+This single command builds all images, creates a Kind cluster, deploys the full stack, then starts web dev server + control-plane log tail. See [Local Development](docs/local-dev.md) for details.
 
 - **Control plane API:** http://localhost:8080
 - **Web dashboard:** http://localhost:5173
 
 ### Develop web frontend only
 
-Requires the control-plane running on `:8080` (via `make up` or remote).
+Requires the control-plane running on `:8080` (via `make up`).
 
 ```bash
 make web/dev
@@ -118,20 +113,14 @@ make web/dev
 cd control-plane && go build -o /dev/null . && go vet ./...
 ```
 
-### Build and deploy to production
+### Deploy to production
 
-`HOST` is your VPS IP. `CLERK_PK` is your Clerk publishable key (`pk_live_...` or `pk_test_...`), found in the Clerk dashboard under API Keys.
-
-```bash
-make build HOST=<vps-ip> CLERK_PK=pk_live_...
-make deploy HOST=<vps-ip>
-```
+Production builds and deploys are handled by **CI/CD** (GitHub Actions). Push to `main` to trigger the pipeline.
 
 ### Monitor production
 
 ```bash
-make status    # pods, services, ingress, certificates
-make logs-cp   # tail control-plane logs
+make prod/status    # Show prod cluster nodes and pods
 ```
 
 ---
@@ -140,7 +129,6 @@ make logs-cp   # tail control-plane logs
 
 - **Stage lifecycle** — browser pods move through states: `inactive → starting → running → stopping`. `GetStage` activates on demand; `DeactivateStage` removes the pod but keeps the DB record; `DeleteStage` removes everything.
 - **CDP access** — full Chrome DevTools Protocol proxied through control plane at `/stage/<stage-id>/cdp`
-- **MCP server** — per-stage Model Context Protocol tools: `set_script`, `edit_script`, `emit_event`, `screenshot`, OBS controls
 - **Panel system** — hot-swap JavaScript/JSX via Vite HMR without page reload; state persists via `emit_event` + `window.__state`
 - **Stream destinations** — RTMP keys for Twitch, YouTube, Kick, custom; AES-256-GCM encrypted at rest
 - **API keys** — `bstr_*` prefix, HMAC-SHA256 hashed, with last-used tracking; authenticate via `Authorization: Bearer <key>`
@@ -150,12 +138,12 @@ make logs-cp   # tail control-plane logs
 
 ## Infrastructure
 
-- **Host:** Single Hetzner VPS, k3s (single-node Kubernetes)
+- **Cluster:** Hetzner Cloud k3s HA (3 control-plane nodes, 2 workers, 0–3 autoscaler), provisioned via OpenTofu + kube-hetzner
 - **TLS:** cert-manager + Let's Encrypt (automatic)
 - **Auth:** Clerk JWT (dashboard/API) + internal `bstr_*` API keys (programmatic)
-- **Secrets:** SOPS-encrypted YAML — decrypted automatically during `make local-up` / `make deploy`; `make deploy-secrets` for manual application
-- **Builds:** Remote SSH + buildkit — no local Docker required
-- **Limits:** HostPort range 31000–31099 caps concurrent sessions at 100
+- **Secrets:** SOPS Age-encrypted YAML — decrypted automatically by Make targets and CI/CD
+- **Builds:** GitHub Actions CI/CD — pushes images to Docker Hub, deploys to cluster
+- **Networking:** WireGuard node-to-node encryption, Hetzner Load Balancer
 
 ---
 
@@ -171,3 +159,4 @@ Full docs in [`docs/`](docs/index.md):
 - [API Contracts](docs/api-contracts.md)
 - [Development Guide](docs/development-guide.md)
 - [Deployment Guide](docs/deployment-guide.md)
+- [Hetzner Infrastructure Deep-Dive](docs/deep-dive-hetzner-k8s-infrastructure.md)
