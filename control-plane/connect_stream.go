@@ -19,7 +19,11 @@ func (s *rtmpDestinationServer) CreateStreamDestination(ctx context.Context, req
 	info := mustAuth(ctx)
 	msg := req.Msg
 
-	if msg.Name == "" || msg.RtmpUrl == "" || msg.StreamKey == "" {
+	name := msg.Name
+	if name == "" {
+		name = msg.PlatformUsername
+	}
+	if name == "" || msg.RtmpUrl == "" || msg.StreamKey == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name, rtmp_url, and stream_key are required"))
 	}
 
@@ -33,7 +37,7 @@ func (s *rtmpDestinationServer) CreateStreamDestination(ctx context.Context, req
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	row, err := dbCreateStreamDest(s.mgr.db, info.UserID, msg.Name, platform, msg.RtmpUrl, encKey)
+	row, err := dbCreateStreamDest(s.mgr.db, info.UserID, name, platform, msg.RtmpUrl, encKey)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -55,7 +59,10 @@ func (s *rtmpDestinationServer) ListStreamDestinations(ctx context.Context, req 
 	for _, r := range rows {
 		dests = append(dests, streamDestToProto(&r, false))
 	}
-	return connect.NewResponse(&apiv1.ListStreamDestinationsResponse{Destinations: dests}), nil
+	return connect.NewResponse(&apiv1.ListStreamDestinationsResponse{
+		Destinations:       dests,
+		AvailablePlatforms: s.mgr.oauth.availablePlatforms(),
+	}), nil
 }
 
 func (s *rtmpDestinationServer) UpdateStreamDestination(ctx context.Context, req *connect.Request[apiv1.UpdateStreamDestinationRequest]) (*connect.Response[apiv1.UpdateStreamDestinationResponse], error) {
@@ -100,12 +107,13 @@ func streamDestToProto(r *streamDestRow, showKey bool) *apiv1.StreamDestination 
 		key = r.StreamKey
 	}
 	return &apiv1.StreamDestination{
-		Id:        r.ID,
-		Name:      r.Name,
-		Platform:  r.Platform,
-		RtmpUrl:   r.RtmpURL,
-		StreamKey: key,
-		CreatedAt: timestamppb.New(r.CreatedAt),
-		UpdatedAt: timestamppb.New(r.UpdatedAt),
+		Id:               r.ID,
+		Name:             r.Name,
+		Platform:         r.Platform,
+		PlatformUsername:  r.PlatformUsername,
+		RtmpUrl:          r.RtmpURL,
+		StreamKey:        key,
+		CreatedAt:        timestamppb.New(r.CreatedAt),
+		UpdatedAt:        timestamppb.New(r.UpdatedAt),
 	}
 }

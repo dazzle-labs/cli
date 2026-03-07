@@ -81,6 +81,7 @@ type Manager struct {
 	auth          *authenticator
 	encryptionKey []byte
 	pc            *podClient
+	oauth         *oauthHandler
 }
 
 func envOrDefault(key, def string) string {
@@ -148,6 +149,11 @@ func NewManager() (*Manager, error) {
 
 	if secret := os.Getenv("IMAGE_PULL_SECRET"); secret != "" {
 		m.imagePullSecrets = []corev1.LocalObjectReference{{Name: secret}}
+	}
+
+	m.oauth = newOAuthHandler(m)
+	if platforms := m.oauth.availablePlatforms(); len(platforms) > 0 {
+		log.Printf("OAuth configured for: %v", platforms)
 	}
 
 	if err := m.recoverStages(); err != nil {
@@ -991,6 +997,26 @@ func main() {
 		connect.WithInterceptors(authInterceptor),
 	)
 	mux.Handle(runtimePath, corsMiddleware(runtimeHandler))
+
+	// OAuth routes
+	mux.HandleFunc("/oauth/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Authorization")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		if strings.Contains(r.URL.Path, "/callback") {
+			mgr.oauth.handleCallback(w, r)
+		} else if strings.Contains(r.URL.Path, "/check") {
+			mgr.oauth.handleCheck(w, r)
+		} else if strings.Contains(r.URL.Path, "/authorize") {
+			mgr.oauth.handleAuthorize(w, r)
+		} else {
+			http.NotFound(w, r)
+		}
+	})
 
 	// Stage handler: all stage-specific routes under /stage/<uuid>/
 	//   /stage/<uuid>/cdp           — CDP WebSocket proxy and HTTP discovery

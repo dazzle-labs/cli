@@ -194,33 +194,62 @@ func dbTouchAPIKey(db *sql.DB, keyID string) {
 // --- Stream destination queries ---
 
 type streamDestRow struct {
-	ID        string
-	UserID    string
-	Name      string
-	Platform  string
-	RtmpURL   string
-	StreamKey string // encrypted
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID               string
+	UserID           string
+	Name             string
+	Platform         string
+	PlatformUserID   string
+	PlatformUsername string
+	RtmpURL          string
+	StreamKey        string // encrypted
+	AccessToken      string // encrypted
+	RefreshToken     string // encrypted
+	TokenExpiresAt   sql.NullTime
+	Scopes           string
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 }
 
-func dbCreateStreamDest(db *sql.DB, userID, name, platform, rtmpURL, encStreamKey string) (*streamDestRow, error) {
-	row := &streamDestRow{}
-	err := db.QueryRow(`
-		INSERT INTO stream_destinations (user_id, name, platform, rtmp_url, stream_key)
-		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id, user_id, name, platform, rtmp_url, stream_key, created_at, updated_at`,
-		userID, name, platform, rtmpURL, encStreamKey).
-		Scan(&row.ID, &row.UserID, &row.Name, &row.Platform, &row.RtmpURL, &row.StreamKey, &row.CreatedAt, &row.UpdatedAt)
+const streamDestColumns = `id, user_id, name, platform, platform_user_id, platform_username, rtmp_url, stream_key, access_token, refresh_token, token_expires_at, scopes, created_at, updated_at`
+
+func scanStreamDest(scanner interface{ Scan(...any) error }) (*streamDestRow, error) {
+	var d streamDestRow
+	err := scanner.Scan(&d.ID, &d.UserID, &d.Name, &d.Platform, &d.PlatformUserID, &d.PlatformUsername, &d.RtmpURL, &d.StreamKey, &d.AccessToken, &d.RefreshToken, &d.TokenExpiresAt, &d.Scopes, &d.CreatedAt, &d.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
-	return row, nil
+	return &d, nil
+}
+
+func dbCreateStreamDest(db *sql.DB, userID, name, platform, rtmpURL, encStreamKey string) (*streamDestRow, error) {
+	row := db.QueryRow(`
+		INSERT INTO stream_destinations (user_id, name, platform, rtmp_url, stream_key)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING `+streamDestColumns,
+		userID, name, platform, rtmpURL, encStreamKey)
+	return scanStreamDest(row)
+}
+
+func dbUpdateStreamDest(db *sql.DB, id, userID, name, platform, rtmpURL, encStreamKey string) (*streamDestRow, error) {
+	if encStreamKey != "" {
+		row := db.QueryRow(`
+			UPDATE stream_destinations SET name=$3, platform=$4, rtmp_url=$5, stream_key=$6, updated_at=NOW()
+			WHERE id=$1 AND user_id=$2
+			RETURNING `+streamDestColumns,
+			id, userID, name, platform, rtmpURL, encStreamKey)
+		return scanStreamDest(row)
+	}
+	row := db.QueryRow(`
+		UPDATE stream_destinations SET name=$3, platform=$4, rtmp_url=$5, updated_at=NOW()
+		WHERE id=$1 AND user_id=$2
+		RETURNING `+streamDestColumns,
+		id, userID, name, platform, rtmpURL)
+	return scanStreamDest(row)
 }
 
 func dbListStreamDests(db *sql.DB, userID string) ([]streamDestRow, error) {
 	rows, err := db.Query(`
-		SELECT id, user_id, name, platform, rtmp_url, stream_key, created_at, updated_at
+		SELECT `+streamDestColumns+`
 		FROM stream_destinations WHERE user_id=$1 ORDER BY created_at DESC`, userID)
 	if err != nil {
 		return nil, err
@@ -228,37 +257,13 @@ func dbListStreamDests(db *sql.DB, userID string) ([]streamDestRow, error) {
 	defer rows.Close()
 	var dests []streamDestRow
 	for rows.Next() {
-		var d streamDestRow
-		if err := rows.Scan(&d.ID, &d.UserID, &d.Name, &d.Platform, &d.RtmpURL, &d.StreamKey, &d.CreatedAt, &d.UpdatedAt); err != nil {
+		d, err := scanStreamDest(rows)
+		if err != nil {
 			return nil, err
 		}
-		dests = append(dests, d)
+		dests = append(dests, *d)
 	}
 	return dests, rows.Err()
-}
-
-func dbUpdateStreamDest(db *sql.DB, id, userID, name, platform, rtmpURL, encStreamKey string) (*streamDestRow, error) {
-	row := &streamDestRow{}
-	var err error
-	if encStreamKey != "" {
-		err = db.QueryRow(`
-			UPDATE stream_destinations SET name=$3, platform=$4, rtmp_url=$5, stream_key=$6, updated_at=NOW()
-			WHERE id=$1 AND user_id=$2
-			RETURNING id, user_id, name, platform, rtmp_url, stream_key, created_at, updated_at`,
-			id, userID, name, platform, rtmpURL, encStreamKey).
-			Scan(&row.ID, &row.UserID, &row.Name, &row.Platform, &row.RtmpURL, &row.StreamKey, &row.CreatedAt, &row.UpdatedAt)
-	} else {
-		err = db.QueryRow(`
-			UPDATE stream_destinations SET name=$3, platform=$4, rtmp_url=$5, updated_at=NOW()
-			WHERE id=$1 AND user_id=$2
-			RETURNING id, user_id, name, platform, rtmp_url, stream_key, created_at, updated_at`,
-			id, userID, name, platform, rtmpURL).
-			Scan(&row.ID, &row.UserID, &row.Name, &row.Platform, &row.RtmpURL, &row.StreamKey, &row.CreatedAt, &row.UpdatedAt)
-	}
-	if err != nil {
-		return nil, err
-	}
-	return row, nil
 }
 
 func dbDeleteStreamDest(db *sql.DB, id, userID string) error {
@@ -271,6 +276,41 @@ func dbDeleteStreamDest(db *sql.DB, id, userID string) error {
 		return fmt.Errorf("stream destination not found")
 	}
 	return nil
+}
+
+func dbGetStreamDestForUser(db *sql.DB, destID, userID string) (*streamDestRow, error) {
+	row := db.QueryRow(`
+		SELECT `+streamDestColumns+`
+		FROM stream_destinations WHERE id=$1 AND user_id=$2`, destID, userID)
+	d, err := scanStreamDest(row)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return d, nil
+}
+
+// dbUpsertStreamDest upserts a stream destination keyed on (user_id, platform, platform_username).
+// Used by OAuth callback to create or update destinations with stream keys + tokens.
+func dbUpsertStreamDest(db *sql.DB, userID, platform, platformUserID, platformUsername, rtmpURL, encStreamKey, encAccessToken, encRefreshToken string, tokenExpiresAt sql.NullTime, scopes string) (*streamDestRow, error) {
+	row := db.QueryRow(`
+		INSERT INTO stream_destinations (user_id, platform, platform_user_id, platform_username, rtmp_url, stream_key, access_token, refresh_token, token_expires_at, scopes)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		ON CONFLICT (user_id, platform, platform_username) DO UPDATE SET
+			platform_user_id=$3, rtmp_url=$5, stream_key=$6, access_token=$7, refresh_token=$8, token_expires_at=$9, scopes=$10, updated_at=NOW()
+		RETURNING `+streamDestColumns,
+		userID, platform, platformUserID, platformUsername, rtmpURL, encStreamKey, encAccessToken, encRefreshToken, tokenExpiresAt, scopes)
+	return scanStreamDest(row)
+}
+
+// dbUpdateStreamDestTokens updates only the OAuth tokens for a destination.
+func dbUpdateStreamDestTokens(db *sql.DB, destID, encAccessToken, encRefreshToken string, tokenExpiresAt sql.NullTime) error {
+	_, err := db.Exec(`
+		UPDATE stream_destinations SET access_token=$2, refresh_token=$3, token_expires_at=$4, updated_at=NOW()
+		WHERE id=$1`, destID, encAccessToken, encRefreshToken, tokenExpiresAt)
+	return err
 }
 
 // --- Stage queries ---
@@ -377,19 +417,20 @@ func dbSetStageDestination(db *sql.DB, stageID, userID, destinationID string) er
 	return nil
 }
 
-func dbGetStreamDestForUser(db *sql.DB, destID, userID string) (*streamDestRow, error) {
-	var d streamDestRow
+func dbRenameStage(db *sql.DB, id, userID, name string) (*stageRow, error) {
+	var s stageRow
 	err := db.QueryRow(`
-		SELECT id, user_id, name, platform, rtmp_url, stream_key, created_at, updated_at
-		FROM stream_destinations WHERE id=$1 AND user_id=$2`, destID, userID).
-		Scan(&d.ID, &d.UserID, &d.Name, &d.Platform, &d.RtmpURL, &d.StreamKey, &d.CreatedAt, &d.UpdatedAt)
+		UPDATE stages SET name=$3, updated_at=NOW()
+		WHERE id=$1 AND user_id=$2
+		RETURNING id, user_id, name, status, pod_name, pod_ip, destination_id, created_at, updated_at`,
+		id, userID, name).Scan(&s.ID, &s.UserID, &s.Name, &s.Status, &s.PodName, &s.PodIP, &s.DestinationID, &s.CreatedAt, &s.UpdatedAt)
 	if err == sql.ErrNoRows {
-		return nil, nil
+		return nil, fmt.Errorf("stage not found")
 	}
 	if err != nil {
 		return nil, err
 	}
-	return &d, nil
+	return &s, nil
 }
 
 // --- Encryption helpers ---

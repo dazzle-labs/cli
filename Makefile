@@ -76,12 +76,16 @@ up: check-deps ## Create Kind cluster, build images, deploy full stack
 	kind load docker-image $(STR_IMG) --name browser-streamer
 	$(STEP) "Applying secrets"
 	sops -d k8s/local/local.secrets.yaml | $(KCTL) apply -f -
+	@if sops -d k8s/control-plane/oauth.secrets.yaml 2>/dev/null | $(KCTL) apply -f - 2>/dev/null; then \
+		echo "  oauth secrets applied"; \
+	fi
 	$(STEP) "Deploying postgres"
 	$(KCTL) apply -f k8s/infrastructure/postgres.yaml
 	$(STEP) "Deploying control-plane"
 	$(KCTL) apply -f k8s/control-plane/rbac.yaml
 	$(KCTL) apply -f k8s/control-plane/deployment.yaml
 	$(KCTL) apply -f k8s/local/service.yaml
+	$(KCTL) set env deployment/control-plane OAUTH_REDIRECT_BASE_URL=http://localhost:8080
 	$(STEP) "Waiting for pods"
 	$(KCTL) wait --for=condition=ready pod -l app=postgres --timeout=120s
 	$(KCTL) rollout status deployment/control-plane --timeout=120s
@@ -107,12 +111,16 @@ build-streamer: check-deps ## Build streamer image and load into Kind
 deploy: check-deps ## Apply manifests and restart control-plane in Kind
 	$(STEP) "Applying secrets"
 	sops -d k8s/local/local.secrets.yaml | $(KCTL) apply -f -
+	@if sops -d k8s/control-plane/oauth.secrets.yaml 2>/dev/null | $(KCTL) apply -f - 2>/dev/null; then \
+		echo "  oauth secrets applied"; \
+	fi
 	$(STEP) "Deploying postgres"
 	$(KCTL) apply -f k8s/infrastructure/postgres.yaml
 	$(STEP) "Deploying control-plane"
 	$(KCTL) apply -f k8s/control-plane/rbac.yaml
 	$(KCTL) apply -f k8s/control-plane/deployment.yaml
 	$(KCTL) apply -f k8s/local/service.yaml
+	$(KCTL) set env deployment/control-plane OAUTH_REDIRECT_BASE_URL=http://localhost:8080
 	$(STEP) "Restarting control-plane"
 	$(KCTL) rollout restart deployment/control-plane
 	$(KCTL) rollout status deployment/control-plane --timeout=120s

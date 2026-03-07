@@ -1,0 +1,22 @@
+.hljs {
+  color: #d4d4d8; /* zinc-300 */
+  background: transparent;
+}
+.hljs-comment {
+  color: #71717a; /* zinc-500 */
+}
+.hljs-string {
+  color: #34d399; /* emerald-400 */
+}
+.hljs-variable {
+  color: #fbbf24; /* amber-400 */
+}
+.hljs-keyword {
+  color: #38bdf8; /* sky-400 */
+}
+.hljs-built_in {
+  color: inherit; /* don't highlight shell built-ins — these are CLI commands, not scripts */
+}
+.hljs-title {
+  color: #e4e4e7; /* zinc-200 */
+}

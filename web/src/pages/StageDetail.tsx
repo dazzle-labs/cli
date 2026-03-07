@@ -6,8 +6,9 @@ import type { StreamDestination } from "../gen/api/v1/stream_pb.js";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Cpu, Globe, ArrowLeft, Copy, Check, ArrowUpRight } from "lucide-react";
+import { Trash2, Cpu, Globe, ArrowLeft, Copy, Check, ArrowUpRight, Pencil, X as XIcon } from "lucide-react";
 import { StreamPreview } from "@/components/StreamPreview";
+import { CodeBlock } from "@/components/ui/code-block";
 
 export function StageDetail() {
   const { stageId } = useParams<{ stageId: string }>();
@@ -18,6 +19,11 @@ export function StageDetail() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+
+  // Inline name editing
+  const [editingName, setEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState("");
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   async function refresh() {
     if (!stageId) return;
@@ -66,6 +72,29 @@ export function StageDetail() {
     navigate("/");
   }
 
+  function startEditingName() {
+    setNameValue(stage?.name || "");
+    setEditingName(true);
+    setTimeout(() => nameInputRef.current?.focus(), 0);
+  }
+
+  async function saveName() {
+    if (!stageId || !nameValue.trim()) {
+      setEditingName(false);
+      return;
+    }
+    try {
+      const resp = await stageClient.updateStage({
+        stage: { id: stageId, name: nameValue.trim() },
+        updateMask: { paths: ["name"] },
+      });
+      setStage(resp.stage ?? null);
+    } catch {
+      // ignore
+    }
+    setEditingName(false);
+  }
+
   if (loading) {
     return (
       <div className="flex items-center gap-2 text-zinc-500 text-sm pt-12">
@@ -98,9 +127,11 @@ dazzle s ss -s ${stage?.name || stageId}
 # Go live
 dazzle s bc on -s ${stage?.name || stageId}`;
 
+  const displayName = stage.name && stage.name !== "default" ? stage.name : "Untitled Stage";
+
   return (
     <div>
-      {/* Back + header */}
+      {/* Back */}
       <Link
         to="/"
         className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-300 transition-colors mb-6"
@@ -109,10 +140,51 @@ dazzle s bc on -s ${stage?.name || stageId}`;
         Back to stages
       </Link>
 
+      {/* Stage name + status */}
       <div className="flex items-center gap-3 mb-8">
-        <code className="text-sm font-mono text-zinc-300 bg-white/[0.04] px-2.5 py-1 rounded-lg">
-          {stage.id}
-        </code>
+        {editingName ? (
+          <div className="flex items-center gap-2">
+            <input
+              ref={nameInputRef}
+              value={nameValue}
+              onChange={(e) => setNameValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") saveName();
+                if (e.key === "Escape") setEditingName(false);
+              }}
+              className="text-2xl tracking-[-0.02em] text-white bg-transparent border-b border-emerald-500/50 outline-none px-1 py-0.5"
+              style={{ fontFamily: "'DM Serif Display', serif" }}
+            />
+            <button
+              onClick={saveName}
+              className="text-emerald-400 hover:text-emerald-300 p-1 cursor-pointer"
+            >
+              <Check className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setEditingName(false)}
+              className="text-zinc-500 hover:text-zinc-300 p-1 cursor-pointer"
+            >
+              <XIcon className="h-4 w-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <h1
+              className="text-2xl tracking-[-0.02em] text-white"
+              style={{ fontFamily: "'DM Serif Display', serif" }}
+            >
+              {displayName}
+            </h1>
+            <button
+              onClick={startEditingName}
+              className="text-zinc-600 hover:text-zinc-300 p-1 cursor-pointer transition-colors"
+              title="Rename stage"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
         <Badge variant={stage.status === "running" ? "success" : stage.status === "starting" ? "warning" : "default"}>
           {stage.status === "running" ? "active" : stage.status || "inactive"}
         </Badge>
@@ -122,7 +194,6 @@ dazzle s bc on -s ${stage?.name || stageId}`;
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Left: Stream Preview */}
         <div>
-          <p className="text-xs font-medium text-zinc-400 mb-3">Preview</p>
           <StreamPreview
             stageId={stageId!}
             status={stage.status === "running" ? "running" : stage.status === "starting" ? "starting" : "stopped"}
@@ -135,6 +206,10 @@ dazzle s bc on -s ${stage?.name || stageId}`;
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
             <p className="text-xs font-medium text-zinc-400 mb-3">Details</p>
             <div className="flex flex-col gap-2.5">
+              <div className="flex items-center gap-2 text-xs text-zinc-500">
+                <span className="text-zinc-600 w-[52px]">ID</span>
+                <code className="font-mono text-zinc-400">{stage.id}</code>
+              </div>
               {stage.podName && (
                 <div className="flex items-center gap-2 text-xs text-zinc-500">
                   <Cpu className="h-3.5 w-3.5 shrink-0" />
@@ -151,12 +226,6 @@ dazzle s bc on -s ${stage?.name || stageId}`;
                 <span className="text-zinc-600 w-[52px]">Created</span>
                 <span>{stage.createdAt ? timestampDate(stage.createdAt).toLocaleDateString() : "\u2014"}</span>
               </div>
-              {stage.name && stage.name !== "default" && (
-                <div className="flex items-center gap-2 text-xs text-zinc-500">
-                  <span className="text-zinc-600 w-[52px]">Name</span>
-                  <span>{stage.name}</span>
-                </div>
-              )}
             </div>
           </div>
 
@@ -179,23 +248,43 @@ dazzle s bc on -s ${stage?.name || stageId}`;
                 >
                   <option value="">Select destination...</option>
                   {destinations.map((d) => (
-                    <option key={d.id} value={d.id}>{d.name} ({d.platform})</option>
+                    <option key={d.id} value={d.id}>{d.name || d.platformUsername || d.platform} ({d.platform})</option>
                   ))}
                 </select>
-                <Link
-                  to="/destinations"
-                  className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-emerald-400 transition-colors"
-                >
-                  Manage destinations
-                  <ArrowUpRight className="h-3 w-3" />
-                </Link>
+                {!stage.destinationId && (
+                  <Link
+                    to="/destinations"
+                    className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 text-zinc-950 font-semibold text-xs px-4 py-2 hover:bg-emerald-400 transition-colors"
+                  >
+                    Add a streaming destination
+                    <ArrowUpRight className="h-3 w-3" />
+                  </Link>
+                )}
+                {stage.destinationId && (
+                  <div className="flex flex-col gap-1.5">
+                    <Link
+                      to="/destinations"
+                      className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-emerald-400 transition-colors"
+                    >
+                      Manage destinations
+                      <ArrowUpRight className="h-3 w-3" />
+                    </Link>
+                    <Link
+                      to="/api-keys"
+                      className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-emerald-400 transition-colors"
+                    >
+                      Manage API keys
+                      <ArrowUpRight className="h-3 w-3" />
+                    </Link>
+                  </div>
+                )}
               </>
             ) : (
               <Link
                 to="/destinations"
-                className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-emerald-400 transition-colors"
+                className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 text-zinc-950 font-semibold text-xs px-4 py-2 hover:bg-emerald-400 transition-colors"
               >
-                No destinations yet. Create one
+                Add a streaming destination
                 <ArrowUpRight className="h-3 w-3" />
               </Link>
             )}
@@ -207,9 +296,7 @@ dazzle s bc on -s ${stage?.name || stageId}`;
       <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 mb-8">
         <p className="text-xs font-medium text-zinc-400 mb-4">CLI Usage</p>
         <div className="relative">
-          <pre className="font-mono text-sm text-zinc-300 bg-zinc-950/50 rounded-lg px-4 py-3 border border-white/[0.06] whitespace-pre-wrap overflow-x-auto">
-            {cliSnippet}
-          </pre>
+          <CodeBlock code={cliSnippet} />
           <button
             onClick={() => handleCopy(cliSnippet, "cli")}
             className="absolute top-2 right-2 text-zinc-500 hover:text-emerald-400 p-1.5 rounded-md transition-colors cursor-pointer"

@@ -174,6 +174,31 @@ Use ["<cmd>", "--help"] for flags on any command.`),
 		m.handleMCPObs,
 	)
 
+	s.AddTool(
+		mcp.NewTool("set_stream_info",
+			mcp.WithDescription("Update the title and/or category of your live stream on the connected platform (Twitch, YouTube, or Kick). Requires a connected platform account — connect one at the dashboard Destinations page if you haven't already."),
+			mcp.WithString("title", mcp.Description("New stream title")),
+			mcp.WithString("category", mcp.Description("Stream category or game name (e.g. 'Just Chatting', 'Software and Game Development')")),
+		),
+		m.handleMCPSetStreamInfo,
+	)
+
+	s.AddTool(
+		mcp.NewTool("get_chat",
+			mcp.WithDescription("Read recent chat messages from your live stream. Returns messages from the platform your stage is streaming to. Requires a connected platform account."),
+			mcp.WithNumber("limit", mcp.Description("Number of recent messages to return (default 20, max 100)")),
+		),
+		m.handleMCPGetChat,
+	)
+
+	s.AddTool(
+		mcp.NewTool("send_chat",
+			mcp.WithDescription("Send a message to your live stream's chat as the connected account. Requires a connected platform account."),
+			mcp.WithString("message", mcp.Required(), mcp.Description("Chat message to send")),
+		),
+		m.handleMCPSendChat,
+	)
+
 	return server.NewStreamableHTTPServer(s)
 }
 
@@ -368,11 +393,11 @@ func (m *Manager) validateStreamDestination(stageID, userID string) (*streamDest
 	}
 
 	if dest.RtmpURL == "" {
-		return nil, fmt.Errorf("stream destination '%s' has no RTMP URL configured", dest.Name)
+		return nil, fmt.Errorf("stream destination '%s' has no RTMP URL configured", dest.PlatformUsername)
 	}
 	decryptedKey, err := decryptString(m.encryptionKey, dest.StreamKey)
 	if err != nil {
-		return nil, fmt.Errorf("stream destination '%s' has an invalid stream key: %w", dest.Name, err)
+		return nil, fmt.Errorf("stream destination '%s' has an invalid stream key: %w", dest.PlatformUsername, err)
 	}
 	// Store decrypted key so configureOBSStream doesn't need to decrypt again
 	dest.StreamKey = decryptedKey
@@ -385,7 +410,7 @@ func (m *Manager) validateStreamDestination(stageID, userID string) (*streamDest
 // Retries with backoff since OBS WebSocket (port 4455) may not be ready immediately
 // after the pod readiness probe passes (which only checks Node.js on port 8080).
 func (m *Manager) configureOBSStream(stage *Stage, dest *streamDestRow) error {
-	log.Printf("Configuring OBS stream for stage %s (dest=%s, platform=%s)", stage.ID, dest.Name, dest.Platform)
+	log.Printf("Configuring OBS stream for stage %s (dest=%s, platform=%s)", stage.ID, dest.PlatformUsername, dest.Platform)
 
 	args := []string{
 		"--host", stage.PodIP, "--port", "4455",
@@ -879,4 +904,128 @@ func (m *Manager) handleMCPObs(ctx context.Context, req mcp.CallToolRequest) (*m
 
 	// Redact any stream credentials that might appear in output
 	return mcp.NewToolResultText(redactStreamSecrets(output)), nil
+}
+
+// resolvePlatformConnection finds the platform connection for the stage's active destination.
+// OAuth fields (access token, platform user ID) are now on the streamDestRow itself.
+func (m *Manager) resolvePlatformConnection(stageID, userID string) (PlatformClient, *streamDestRow, string, error) {
+	if m.db == nil {
+		return nil, nil, "", fmt.Errorf("database not available")
+	}
+
+	row, err := dbGetStage(m.db, stageID)
+	if err != nil {
+		return nil, nil, "", fmt.Errorf("failed to look up stage: %w", err)
+	}
+	if row == nil {
+		return nil, nil, "", fmt.Errorf("stage not found")
+	}
+	if !row.DestinationID.Valid || row.DestinationID.String == "" {
+		return nil, nil, "", fmt.Errorf("no stream destination configured for this stage — select one in the dashboard")
+	}
+
+	dest, err := dbGetStreamDestForUser(m.db, row.DestinationID.String, userID)
+	if err != nil {
+		return nil, nil, "", fmt.Errorf("failed to look up destination: %w", err)
+	}
+	if dest == nil {
+		return nil, nil, "", fmt.Errorf("stream destination not found")
+	}
+
+	if dest.AccessToken == "" {
+		return nil, nil, "", fmt.Errorf("no %s account connected — connect one at the dashboard Destinations page", dest.Platform)
+	}
+
+	client, err := GetPlatformClient(dest.Platform)
+	if err != nil {
+		return nil, nil, "", err
+	}
+
+	accessToken, err := refreshPlatformToken(m.db, m.encryptionKey, dest, m.oauth.configs)
+	if err != nil {
+		log.Printf("WARN: token refresh failed for %s/%s: %v", userID, dest.Platform, err)
+	}
+
+	return client, dest, accessToken, nil
+}
+
+func (m *Manager) handleMCPSetStreamInfo(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	agentID := agentIDFromCtx(ctx)
+	userID := userIDFromCtx(ctx)
+
+	title, _ := req.GetArguments()["title"].(string)
+	category, _ := req.GetArguments()["category"].(string)
+
+	if title == "" && category == "" {
+		return mcp.NewToolResultError("at least one of title or category must be provided"), nil
+	}
+
+	client, dest, accessToken, err := m.resolvePlatformConnection(agentID, userID)
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	if err := client.SetStreamInfo(ctx, accessToken, dest.PlatformUserID, title, category); err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("failed to update stream info: %v", err)), nil
+	}
+
+	result := map[string]string{"status": "updated"}
+	if title != "" {
+		result["title"] = title
+	}
+	if category != "" {
+		result["category"] = category
+	}
+	data, _ := json.Marshal(result)
+	return mcp.NewToolResultText(string(data)), nil
+}
+
+func (m *Manager) handleMCPGetChat(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	agentID := agentIDFromCtx(ctx)
+	userID := userIDFromCtx(ctx)
+
+	limit := 20
+	if v, ok := req.GetArguments()["limit"]; ok {
+		if n, ok := v.(float64); ok && n > 0 {
+			limit = int(n)
+		}
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	client, dest, accessToken, err := m.resolvePlatformConnection(agentID, userID)
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	messages, err := client.GetChatMessages(ctx, accessToken, dest.PlatformUserID, limit)
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("failed to get chat: %v", err)), nil
+	}
+
+	data, _ := json.Marshal(messages)
+	return mcp.NewToolResultText(string(data)), nil
+}
+
+func (m *Manager) handleMCPSendChat(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	agentID := agentIDFromCtx(ctx)
+	userID := userIDFromCtx(ctx)
+
+	message, err := req.RequireString("message")
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	client, dest, accessToken, err := m.resolvePlatformConnection(agentID, userID)
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	if err := client.SendChatMessage(ctx, accessToken, dest.PlatformUserID, message); err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("failed to send chat: %v", err)), nil
+	}
+
+	result, _ := json.Marshal(map[string]string{"status": "sent", "platform": dest.Platform})
+	return mcp.NewToolResultText(string(result)), nil
 }

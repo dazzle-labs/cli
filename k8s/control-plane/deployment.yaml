@@ -61,6 +61,44 @@ spec:
               value: dazzlefm-dockerhub-secret
             - name: MAX_SESSIONS
               value: "3"
+            - name: TWITCH_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: oauth-platform
+                  key: twitch-client-id
+                  optional: true
+            - name: TWITCH_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: oauth-platform
+                  key: twitch-client-secret
+                  optional: true
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: oauth-platform
+                  key: google-client-id
+                  optional: true
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: oauth-platform
+                  key: google-client-secret
+                  optional: true
+            - name: KICK_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: oauth-platform
+                  key: kick-client-id
+                  optional: true
+            - name: KICK_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: oauth-platform
+                  key: kick-client-secret
+                  optional: true
+            - name: OAUTH_REDIRECT_BASE_URL
+              value: "https://stream.dazzle.fm"
           resources:
             requests:
               cpu: 100m

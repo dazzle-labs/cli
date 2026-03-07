@@ -13,10 +13,12 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      "/api.v1": "http://localhost:8080",
+      "/dazzle.v1": "http://localhost:8080",
+      "/dazzle.internal.v1": "http://localhost:8080",
       "/cdp": "http://localhost:8080",
       "/session": "http://localhost:8080",
       "/health": "http://localhost:8080",
+      "/oauth": "http://localhost:8080",
     },
   },
 });

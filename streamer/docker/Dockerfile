@@ -44,6 +44,13 @@ RUN add-apt-repository ppa:obsproject/obs-studio \
     && apt-get install -y obs-studio ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
+# Remove outdated python3-cryptography installed as OBS dependency
+RUN apt-get update && apt-get install -y python3-pip \
+    && apt-get remove -y python3-cryptography \
+    && pip3 install cryptography --break-system-packages \
+    && apt-get purge -y python3-pip && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install Chromium from the official Google Chrome stable channel (real .deb, not snap)
 RUN wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
     && apt-get update \
@@ -51,8 +58,8 @@ RUN wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-
     && rm /tmp/chrome.deb \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Node.js 20
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+# Install Node.js 24 LTS
+RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
@@ -66,6 +73,9 @@ RUN npm install
 COPY index.js shell.html prelude.js style.css vite-init.mjs ./
 
 RUN mkdir -p /app/content
+
+# Remove npm (only needed for install, not runtime) to eliminate bundled dep vulns
+RUN rm -rf /usr/lib/node_modules/npm /usr/bin/npm /usr/bin/npx
 
 # Copy PulseAudio config
 COPY docker/pulse-default.pa /etc/pulse/default.pa

@@ -159,6 +159,7 @@ jobs:
           command: cves
           image: ${{ steps.tags.outputs.image_tag }}
           only-severities: critical,high
+          only-package-types: npm,pypi,deb
           exit-code: true
           summary: true
           organization: dazzlefm

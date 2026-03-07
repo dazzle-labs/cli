@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { stageClient, userClient, streamClient } from "../client.js";
+import { stageClient, streamClient } from "../client.js";
 import type { Stage } from "../gen/api/v1/stage_pb.js";
 import type { StreamDestination } from "../gen/api/v1/stream_pb.js";
-import type { GetProfileResponse } from "../gen/api/v1/user_pb.js";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +12,6 @@ import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 export function Dashboard() {
   const [stages, setStages] = useState<Stage[]>([]);
   const [destinations, setDestinations] = useState<StreamDestination[]>([]);
-  const [profile, setProfile] = useState<GetProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [creatingStage, setCreatingStage] = useState(false);
@@ -26,13 +24,11 @@ export function Dashboard() {
 
   async function refresh() {
     try {
-      const [stageResp, profResp, streamResp] = await Promise.all([
+      const [stageResp, streamResp] = await Promise.all([
         stageClient.listStages({}),
-        userClient.getProfile({}),
         streamClient.listStreamDestinations({}),
       ]);
       setStages(stageResp.stages);
-      setProfile(profResp);
       setDestinations(streamResp.destinations);
     } catch {
       // ignore
@@ -114,11 +110,9 @@ export function Dashboard() {
           >
             Stages
           </h1>
-          {profile && (
-            <p className="text-sm text-zinc-500">
-              {stages.length} stage{stages.length !== 1 ? "s" : ""} &middot; {profile.apiKeyCount} API key{profile.apiKeyCount !== 1 ? "s" : ""}
-            </p>
-          )}
+          <p className="text-sm text-zinc-500">
+            Cloud browsers your agents can control.
+          </p>
         </div>
         {stages.length > 0 && (
           <Button

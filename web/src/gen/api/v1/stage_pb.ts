@@ -4,15 +4,15 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
-import type { Timestamp } from "@bufbuild/protobuf/wkt";
-import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
+import type { FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
+import { file_google_protobuf_field_mask, file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file api/v1/stage.proto.
  */
 export const file_api_v1_stage: GenFile = /*@__PURE__*/
-  fileDesc("ChJhcGkvdjEvc3RhZ2UucHJvdG8SCWRhenpsZS52MSL6AQoFU3RhZ2USCgoCaWQYASABKAkSEAoIcG9kX25hbWUYAiABKAkSDgoGcG9kX2lwGAMgASgJEhMKC2RpcmVjdF9wb3J0GAQgASgFEi4KCmNyZWF0ZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjEKDWxhc3RfYWN0aXZpdHkYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEg4KBnN0YXR1cxgHIAEoCRIVCg1vd25lcl91c2VyX2lkGAggASgJEgwKBG5hbWUYCSABKAkSFgoOZGVzdGluYXRpb25faWQYCiABKAkiIgoSQ3JlYXRlU3RhZ2VSZXF1ZXN0EgwKBG5hbWUYASABKAkiNgoTQ3JlYXRlU3RhZ2VSZXNwb25zZRIfCgVzdGFnZRgBIAEoCzIQLmRhenpsZS52MS5TdGFnZSITChFMaXN0U3RhZ2VzUmVxdWVzdCI2ChJMaXN0U3RhZ2VzUmVzcG9uc2USIAoGc3RhZ2VzGAEgAygLMhAuZGF6emxlLnYxLlN0YWdlIh0KD0dldFN0YWdlUmVxdWVzdBIKCgJpZBgBIAEoCSIzChBHZXRTdGFnZVJlc3BvbnNlEh8KBXN0YWdlGAEgASgLMhAuZGF6emxlLnYxLlN0YWdlIiAKEkRlbGV0ZVN0YWdlUmVxdWVzdBIKCgJpZBgBIAEoCSIVChNEZWxldGVTdGFnZVJlc3BvbnNlIkYKGlNldFN0YWdlRGVzdGluYXRpb25SZXF1ZXN0EhAKCHN0YWdlX2lkGAEgASgJEhYKDmRlc3RpbmF0aW9uX2lkGAIgASgJIj4KG1NldFN0YWdlRGVzdGluYXRpb25SZXNwb25zZRIfCgVzdGFnZRgBIAEoCzIQLmRhenpsZS52MS5TdGFnZSIiChRBY3RpdmF0ZVN0YWdlUmVxdWVzdBIKCgJpZBgBIAEoCSI4ChVBY3RpdmF0ZVN0YWdlUmVzcG9uc2USHwoFc3RhZ2UYASABKAsyEC5kYXp6bGUudjEuU3RhZ2UiJAoWRGVhY3RpdmF0ZVN0YWdlUmVxdWVzdBIKCgJpZBgBIAEoCSI6ChdEZWFjdGl2YXRlU3RhZ2VSZXNwb25zZRIfCgVzdGFnZRgBIAEoCzIQLmRhenpsZS52MS5TdGFnZTLOBAoMU3RhZ2VTZXJ2aWNlEkwKC0NyZWF0ZVN0YWdlEh0uZGF6emxlLnYxLkNyZWF0ZVN0YWdlUmVxdWVzdBoeLmRhenpsZS52MS5DcmVhdGVTdGFnZVJlc3BvbnNlEkkKCkxpc3RTdGFnZXMSHC5kYXp6bGUudjEuTGlzdFN0YWdlc1JlcXVlc3QaHS5kYXp6bGUudjEuTGlzdFN0YWdlc1Jlc3BvbnNlEkMKCEdldFN0YWdlEhouZGF6emxlLnYxLkdldFN0YWdlUmVxdWVzdBobLmRhenpsZS52MS5HZXRTdGFnZVJlc3BvbnNlEkwKC0RlbGV0ZVN0YWdlEh0uZGF6emxlLnYxLkRlbGV0ZVN0YWdlUmVxdWVzdBoeLmRhenpsZS52MS5EZWxldGVTdGFnZVJlc3BvbnNlEmQKE1NldFN0YWdlRGVzdGluYXRpb24SJS5kYXp6bGUudjEuU2V0U3RhZ2VEZXN0aW5hdGlvblJlcXVlc3QaJi5kYXp6bGUudjEuU2V0U3RhZ2VEZXN0aW5hdGlvblJlc3BvbnNlElIKDUFjdGl2YXRlU3RhZ2USHy5kYXp6bGUudjEuQWN0aXZhdGVTdGFnZVJlcXVlc3QaIC5kYXp6bGUudjEuQWN0aXZhdGVTdGFnZVJlc3BvbnNlElgKD0RlYWN0aXZhdGVTdGFnZRIhLmRhenpsZS52MS5EZWFjdGl2YXRlU3RhZ2VSZXF1ZXN0GiIuZGF6emxlLnYxLkRlYWN0aXZhdGVTdGFnZVJlc3BvbnNlQi1aK2dpdGh1Yi5jb20vZGF6emxlLWxhYnMvY2xpL2dlbi9hcGkvdjE7YXBpdjFiBnByb3RvMw", [file_google_protobuf_timestamp]);
+  fileDesc("ChJhcGkvdjEvc3RhZ2UucHJvdG8SCWRhenpsZS52MSL6AQoFU3RhZ2USCgoCaWQYASABKAkSEAoIcG9kX25hbWUYAiABKAkSDgoGcG9kX2lwGAMgASgJEhMKC2RpcmVjdF9wb3J0GAQgASgFEi4KCmNyZWF0ZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjEKDWxhc3RfYWN0aXZpdHkYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEg4KBnN0YXR1cxgHIAEoCRIVCg1vd25lcl91c2VyX2lkGAggASgJEgwKBG5hbWUYCSABKAkSFgoOZGVzdGluYXRpb25faWQYCiABKAkiIgoSQ3JlYXRlU3RhZ2VSZXF1ZXN0EgwKBG5hbWUYASABKAkiNgoTQ3JlYXRlU3RhZ2VSZXNwb25zZRIfCgVzdGFnZRgBIAEoCzIQLmRhenpsZS52MS5TdGFnZSITChFMaXN0U3RhZ2VzUmVxdWVzdCI2ChJMaXN0U3RhZ2VzUmVzcG9uc2USIAoGc3RhZ2VzGAEgAygLMhAuZGF6emxlLnYxLlN0YWdlIh0KD0dldFN0YWdlUmVxdWVzdBIKCgJpZBgBIAEoCSIzChBHZXRTdGFnZVJlc3BvbnNlEh8KBXN0YWdlGAEgASgLMhAuZGF6emxlLnYxLlN0YWdlIiAKEkRlbGV0ZVN0YWdlUmVxdWVzdBIKCgJpZBgBIAEoCSIVChNEZWxldGVTdGFnZVJlc3BvbnNlIkYKGlNldFN0YWdlRGVzdGluYXRpb25SZXF1ZXN0EhAKCHN0YWdlX2lkGAEgASgJEhYKDmRlc3RpbmF0aW9uX2lkGAIgASgJIj4KG1NldFN0YWdlRGVzdGluYXRpb25SZXNwb25zZRIfCgVzdGFnZRgBIAEoCzIQLmRhenpsZS52MS5TdGFnZSIiChRBY3RpdmF0ZVN0YWdlUmVxdWVzdBIKCgJpZBgBIAEoCSI4ChVBY3RpdmF0ZVN0YWdlUmVzcG9uc2USHwoFc3RhZ2UYASABKAsyEC5kYXp6bGUudjEuU3RhZ2UiJAoWRGVhY3RpdmF0ZVN0YWdlUmVxdWVzdBIKCgJpZBgBIAEoCSI6ChdEZWFjdGl2YXRlU3RhZ2VSZXNwb25zZRIfCgVzdGFnZRgBIAEoCzIQLmRhenpsZS52MS5TdGFnZSJmChJVcGRhdGVTdGFnZVJlcXVlc3QSHwoFc3RhZ2UYASABKAsyEC5kYXp6bGUudjEuU3RhZ2USLwoLdXBkYXRlX21hc2sYAiABKAsyGi5nb29nbGUucHJvdG9idWYuRmllbGRNYXNrIjYKE1VwZGF0ZVN0YWdlUmVzcG9uc2USHwoFc3RhZ2UYASABKAsyEC5kYXp6bGUudjEuU3RhZ2UynAUKDFN0YWdlU2VydmljZRJMCgtDcmVhdGVTdGFnZRIdLmRhenpsZS52MS5DcmVhdGVTdGFnZVJlcXVlc3QaHi5kYXp6bGUudjEuQ3JlYXRlU3RhZ2VSZXNwb25zZRJJCgpMaXN0U3RhZ2VzEhwuZGF6emxlLnYxLkxpc3RTdGFnZXNSZXF1ZXN0Gh0uZGF6emxlLnYxLkxpc3RTdGFnZXNSZXNwb25zZRJDCghHZXRTdGFnZRIaLmRhenpsZS52MS5HZXRTdGFnZVJlcXVlc3QaGy5kYXp6bGUudjEuR2V0U3RhZ2VSZXNwb25zZRJMCgtEZWxldGVTdGFnZRIdLmRhenpsZS52MS5EZWxldGVTdGFnZVJlcXVlc3QaHi5kYXp6bGUudjEuRGVsZXRlU3RhZ2VSZXNwb25zZRJkChNTZXRTdGFnZURlc3RpbmF0aW9uEiUuZGF6emxlLnYxLlNldFN0YWdlRGVzdGluYXRpb25SZXF1ZXN0GiYuZGF6emxlLnYxLlNldFN0YWdlRGVzdGluYXRpb25SZXNwb25zZRJSCg1BY3RpdmF0ZVN0YWdlEh8uZGF6emxlLnYxLkFjdGl2YXRlU3RhZ2VSZXF1ZXN0GiAuZGF6emxlLnYxLkFjdGl2YXRlU3RhZ2VSZXNwb25zZRJYCg9EZWFjdGl2YXRlU3RhZ2USIS5kYXp6bGUudjEuRGVhY3RpdmF0ZVN0YWdlUmVxdWVzdBoiLmRhenpsZS52MS5EZWFjdGl2YXRlU3RhZ2VSZXNwb25zZRJMCgtVcGRhdGVTdGFnZRIdLmRhenpsZS52MS5VcGRhdGVTdGFnZVJlcXVlc3QaHi5kYXp6bGUudjEuVXBkYXRlU3RhZ2VSZXNwb25zZUItWitnaXRodWIuY29tL2RhenpsZS1sYWJzL2NsaS9nZW4vYXBpL3YxO2FwaXYxYgZwcm90bzM", [file_google_protobuf_field_mask, file_google_protobuf_timestamp]);
 
 /**
  * @generated from message dazzle.v1.Stage
@@ -316,6 +316,45 @@ export const DeactivateStageResponseSchema: GenMessage<DeactivateStageResponse> 
   messageDesc(file_api_v1_stage, 14);
 
 /**
+ * @generated from message dazzle.v1.UpdateStageRequest
+ */
+export type UpdateStageRequest = Message<"dazzle.v1.UpdateStageRequest"> & {
+  /**
+   * @generated from field: dazzle.v1.Stage stage = 1;
+   */
+  stage?: Stage;
+
+  /**
+   * @generated from field: google.protobuf.FieldMask update_mask = 2;
+   */
+  updateMask?: FieldMask;
+};
+
+/**
+ * Describes the message dazzle.v1.UpdateStageRequest.
+ * Use `create(UpdateStageRequestSchema)` to create a new message.
+ */
+export const UpdateStageRequestSchema: GenMessage<UpdateStageRequest> = /*@__PURE__*/
+  messageDesc(file_api_v1_stage, 15);
+
+/**
+ * @generated from message dazzle.v1.UpdateStageResponse
+ */
+export type UpdateStageResponse = Message<"dazzle.v1.UpdateStageResponse"> & {
+  /**
+   * @generated from field: dazzle.v1.Stage stage = 1;
+   */
+  stage?: Stage;
+};
+
+/**
+ * Describes the message dazzle.v1.UpdateStageResponse.
+ * Use `create(UpdateStageResponseSchema)` to create a new message.
+ */
+export const UpdateStageResponseSchema: GenMessage<UpdateStageResponse> = /*@__PURE__*/
+  messageDesc(file_api_v1_stage, 16);
+
+/**
  * @generated from service dazzle.v1.StageService
  */
 export const StageService: GenService<{
@@ -374,6 +413,14 @@ export const StageService: GenService<{
     methodKind: "unary";
     input: typeof DeactivateStageRequestSchema;
     output: typeof DeactivateStageResponseSchema;
+  },
+  /**
+   * @generated from rpc dazzle.v1.StageService.UpdateStage
+   */
+  updateStage: {
+    methodKind: "unary";
+    input: typeof UpdateStageRequestSchema;
+    output: typeof UpdateStageResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_api_v1_stage, 0);
