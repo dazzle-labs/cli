@@ -53,6 +53,7 @@ check-deps:
 	fi
 
 proto: ## Generate protobuf code (Go + TypeScript)
+	$(MAKE) -C dazzle-cli proto
 	$(MAKE) -C control-plane proto
 
 up: check-deps ## Create Kind cluster, build images, deploy full stack
