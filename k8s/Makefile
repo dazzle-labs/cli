@@ -1,6 +1,8 @@
 # K8s infrastructure Makefile
-# Used by CI (no KUBE_ARGS needed), root Makefile local (--context kind-*),
-# and root Makefile prod (--kubeconfig <decrypted>)
+# Modes:
+#   Local Kind:  KUBE_ARGS="--context kind-browser-streamer"
+#   Production:  KUBECONFIG=/path/to/decrypted-kubeconfig
+#   CI/direct:   KUBECONFIG already set in environment
 
 SHELL := /bin/bash
 
