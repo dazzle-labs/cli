@@ -4,6 +4,7 @@ package dazzle.v1;
 
 option go_package = "github.com/dazzle-labs/cli/gen/api/v1;apiv1";
 
+import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 
 service StageService {
@@ -14,6 +15,7 @@ service StageService {
   rpc SetStageDestination(SetStageDestinationRequest) returns (SetStageDestinationResponse);
   rpc ActivateStage(ActivateStageRequest) returns (ActivateStageResponse);
   rpc DeactivateStage(DeactivateStageRequest) returns (DeactivateStageResponse);
+  rpc UpdateStage(UpdateStageRequest) returns (UpdateStageResponse);
 }
 
 message Stage {
@@ -79,5 +81,14 @@ message DeactivateStageRequest {
 }
 
 message DeactivateStageResponse {
+  Stage stage = 1;
+}
+
+message UpdateStageRequest {
+  Stage stage = 1;
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message UpdateStageResponse {
   Stage stage = 1;
 }

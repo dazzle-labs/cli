@@ -45,9 +45,9 @@ func resolveDestinationByNameOrID(ctx *Context, nameOrID string) (string, error)
 			return d.Id, nil
 		}
 	}
-	// Try name match
+	// Try name or platform_username match
 	for _, d := range destinations {
-		if d.Name == nameOrID {
+		if d.Name == nameOrID || d.PlatformUsername == nameOrID {
 			return d.Id, nil
 		}
 	}
@@ -74,7 +74,11 @@ func (c *DestinationListCmd) Run(ctx *Context) error {
 
 	tableHeader("NAME", "PLATFORM", "ID")
 	for _, d := range destinations {
-		printText("%s", tableRow(d.Name, d.Platform, d.Id))
+		displayName := d.Name
+		if displayName == "" {
+			displayName = d.PlatformUsername
+		}
+		printText("%s", tableRow(displayName, d.Platform, d.Id))
 	}
 	return nil
 }
@@ -89,13 +93,13 @@ func (c *DestinationCreateCmd) Run(ctx *Context) error {
 
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Print("Name: ")
-	name, _ := reader.ReadString('\n')
-	name = strings.TrimSpace(name)
-
 	fmt.Print("Platform (e.g. youtube, twitch, custom): ")
 	platform, _ := reader.ReadString('\n')
 	platform = strings.TrimSpace(platform)
+
+	fmt.Print("Name: ")
+	name, _ := reader.ReadString('\n')
+	name = strings.TrimSpace(name)
 
 	fmt.Print("RTMP URL: ")
 	rtmpURL, _ := reader.ReadString('\n')

@@ -23,16 +23,17 @@ const (
 )
 
 type StreamDestination struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Platform      string                 `protobuf:"bytes,3,opt,name=platform,proto3" json:"platform,omitempty"`
-	RtmpUrl       string                 `protobuf:"bytes,4,opt,name=rtmp_url,json=rtmpUrl,proto3" json:"rtmp_url,omitempty"`
-	StreamKey     string                 `protobuf:"bytes,5,opt,name=stream_key,json=streamKey,proto3" json:"stream_key,omitempty"`
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Id               string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name             string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Platform         string                 `protobuf:"bytes,3,opt,name=platform,proto3" json:"platform,omitempty"`
+	RtmpUrl          string                 `protobuf:"bytes,4,opt,name=rtmp_url,json=rtmpUrl,proto3" json:"rtmp_url,omitempty"`
+	StreamKey        string                 `protobuf:"bytes,5,opt,name=stream_key,json=streamKey,proto3" json:"stream_key,omitempty"`
+	CreatedAt        *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt        *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	PlatformUsername string                 `protobuf:"bytes,9,opt,name=platform_username,json=platformUsername,proto3" json:"platform_username,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *StreamDestination) Reset() {
@@ -114,14 +115,22 @@ func (x *StreamDestination) GetUpdatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *StreamDestination) GetPlatformUsername() string {
+	if x != nil {
+		return x.PlatformUsername
+	}
+	return ""
+}
+
 type CreateStreamDestinationRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Platform      string                 `protobuf:"bytes,2,opt,name=platform,proto3" json:"platform,omitempty"`
-	RtmpUrl       string                 `protobuf:"bytes,3,opt,name=rtmp_url,json=rtmpUrl,proto3" json:"rtmp_url,omitempty"`
-	StreamKey     string                 `protobuf:"bytes,4,opt,name=stream_key,json=streamKey,proto3" json:"stream_key,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Name             string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Platform         string                 `protobuf:"bytes,2,opt,name=platform,proto3" json:"platform,omitempty"`
+	RtmpUrl          string                 `protobuf:"bytes,3,opt,name=rtmp_url,json=rtmpUrl,proto3" json:"rtmp_url,omitempty"`
+	StreamKey        string                 `protobuf:"bytes,4,opt,name=stream_key,json=streamKey,proto3" json:"stream_key,omitempty"`
+	PlatformUsername string                 `protobuf:"bytes,5,opt,name=platform_username,json=platformUsername,proto3" json:"platform_username,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *CreateStreamDestinationRequest) Reset() {
@@ -178,6 +187,13 @@ func (x *CreateStreamDestinationRequest) GetRtmpUrl() string {
 func (x *CreateStreamDestinationRequest) GetStreamKey() string {
 	if x != nil {
 		return x.StreamKey
+	}
+	return ""
+}
+
+func (x *CreateStreamDestinationRequest) GetPlatformUsername() string {
+	if x != nil {
+		return x.PlatformUsername
 	}
 	return ""
 }
@@ -271,10 +287,11 @@ func (x *ListStreamDestinationsRequest) GetStageId() string {
 }
 
 type ListStreamDestinationsResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Destinations  []*StreamDestination   `protobuf:"bytes,1,rep,name=destinations,proto3" json:"destinations,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Destinations       []*StreamDestination   `protobuf:"bytes,1,rep,name=destinations,proto3" json:"destinations,omitempty"`
+	AvailablePlatforms []string               `protobuf:"bytes,2,rep,name=available_platforms,json=availablePlatforms,proto3" json:"available_platforms,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *ListStreamDestinationsResponse) Reset() {
@@ -310,6 +327,13 @@ func (*ListStreamDestinationsResponse) Descriptor() ([]byte, []int) {
 func (x *ListStreamDestinationsResponse) GetDestinations() []*StreamDestination {
 	if x != nil {
 		return x.Destinations
+	}
+	return nil
+}
+
+func (x *ListStreamDestinationsResponse) GetAvailablePlatforms() []string {
+	if x != nil {
+		return x.AvailablePlatforms
 	}
 	return nil
 }
@@ -518,7 +542,7 @@ var File_api_v1_stream_proto protoreflect.FileDescriptor
 
 const file_api_v1_stream_proto_rawDesc = "" +
 	"\n" +
-	"\x13api/v1/stream.proto\x12\tdazzle.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x83\x02\n" +
+	"\x13api/v1/stream.proto\x12\tdazzle.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xb0\x02\n" +
 	"\x11StreamDestination\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1a\n" +
@@ -529,19 +553,22 @@ const file_api_v1_stream_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
-	"updated_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\x8a\x01\n" +
+	"updated_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12+\n" +
+	"\x11platform_username\x18\t \x01(\tR\x10platformUsername\"\xb7\x01\n" +
 	"\x1eCreateStreamDestinationRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
 	"\bplatform\x18\x02 \x01(\tR\bplatform\x12\x19\n" +
 	"\brtmp_url\x18\x03 \x01(\tR\artmpUrl\x12\x1d\n" +
 	"\n" +
-	"stream_key\x18\x04 \x01(\tR\tstreamKey\"a\n" +
+	"stream_key\x18\x04 \x01(\tR\tstreamKey\x12+\n" +
+	"\x11platform_username\x18\x05 \x01(\tR\x10platformUsername\"a\n" +
 	"\x1fCreateStreamDestinationResponse\x12>\n" +
 	"\vdestination\x18\x01 \x01(\v2\x1c.dazzle.v1.StreamDestinationR\vdestination\":\n" +
 	"\x1dListStreamDestinationsRequest\x12\x19\n" +
-	"\bstage_id\x18\x01 \x01(\tR\astageId\"b\n" +
+	"\bstage_id\x18\x01 \x01(\tR\astageId\"\x93\x01\n" +
 	"\x1eListStreamDestinationsResponse\x12@\n" +
-	"\fdestinations\x18\x01 \x03(\v2\x1c.dazzle.v1.StreamDestinationR\fdestinations\"\x9a\x01\n" +
+	"\fdestinations\x18\x01 \x03(\v2\x1c.dazzle.v1.StreamDestinationR\fdestinations\x12/\n" +
+	"\x13available_platforms\x18\x02 \x03(\tR\x12availablePlatforms\"\x9a\x01\n" +
 	"\x1eUpdateStreamDestinationRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1a\n" +

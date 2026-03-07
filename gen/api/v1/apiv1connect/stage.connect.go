@@ -52,6 +52,9 @@ const (
 	// StageServiceDeactivateStageProcedure is the fully-qualified name of the StageService's
 	// DeactivateStage RPC.
 	StageServiceDeactivateStageProcedure = "/dazzle.v1.StageService/DeactivateStage"
+	// StageServiceUpdateStageProcedure is the fully-qualified name of the StageService's UpdateStage
+	// RPC.
+	StageServiceUpdateStageProcedure = "/dazzle.v1.StageService/UpdateStage"
 )
 
 // StageServiceClient is a client for the dazzle.v1.StageService service.
@@ -63,6 +66,7 @@ type StageServiceClient interface {
 	SetStageDestination(context.Context, *connect.Request[v1.SetStageDestinationRequest]) (*connect.Response[v1.SetStageDestinationResponse], error)
 	ActivateStage(context.Context, *connect.Request[v1.ActivateStageRequest]) (*connect.Response[v1.ActivateStageResponse], error)
 	DeactivateStage(context.Context, *connect.Request[v1.DeactivateStageRequest]) (*connect.Response[v1.DeactivateStageResponse], error)
+	UpdateStage(context.Context, *connect.Request[v1.UpdateStageRequest]) (*connect.Response[v1.UpdateStageResponse], error)
 }
 
 // NewStageServiceClient constructs a client for the dazzle.v1.StageService service. By default, it
@@ -118,6 +122,12 @@ func NewStageServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(stageServiceMethods.ByName("DeactivateStage")),
 			connect.WithClientOptions(opts...),
 		),
+		updateStage: connect.NewClient[v1.UpdateStageRequest, v1.UpdateStageResponse](
+			httpClient,
+			baseURL+StageServiceUpdateStageProcedure,
+			connect.WithSchema(stageServiceMethods.ByName("UpdateStage")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -130,6 +140,7 @@ type stageServiceClient struct {
 	setStageDestination *connect.Client[v1.SetStageDestinationRequest, v1.SetStageDestinationResponse]
 	activateStage       *connect.Client[v1.ActivateStageRequest, v1.ActivateStageResponse]
 	deactivateStage     *connect.Client[v1.DeactivateStageRequest, v1.DeactivateStageResponse]
+	updateStage         *connect.Client[v1.UpdateStageRequest, v1.UpdateStageResponse]
 }
 
 // CreateStage calls dazzle.v1.StageService.CreateStage.
@@ -167,6 +178,11 @@ func (c *stageServiceClient) DeactivateStage(ctx context.Context, req *connect.R
 	return c.deactivateStage.CallUnary(ctx, req)
 }
 
+// UpdateStage calls dazzle.v1.StageService.UpdateStage.
+func (c *stageServiceClient) UpdateStage(ctx context.Context, req *connect.Request[v1.UpdateStageRequest]) (*connect.Response[v1.UpdateStageResponse], error) {
+	return c.updateStage.CallUnary(ctx, req)
+}
+
 // StageServiceHandler is an implementation of the dazzle.v1.StageService service.
 type StageServiceHandler interface {
 	CreateStage(context.Context, *connect.Request[v1.CreateStageRequest]) (*connect.Response[v1.CreateStageResponse], error)
@@ -176,6 +192,7 @@ type StageServiceHandler interface {
 	SetStageDestination(context.Context, *connect.Request[v1.SetStageDestinationRequest]) (*connect.Response[v1.SetStageDestinationResponse], error)
 	ActivateStage(context.Context, *connect.Request[v1.ActivateStageRequest]) (*connect.Response[v1.ActivateStageResponse], error)
 	DeactivateStage(context.Context, *connect.Request[v1.DeactivateStageRequest]) (*connect.Response[v1.DeactivateStageResponse], error)
+	UpdateStage(context.Context, *connect.Request[v1.UpdateStageRequest]) (*connect.Response[v1.UpdateStageResponse], error)
 }
 
 // NewStageServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -227,6 +244,12 @@ func NewStageServiceHandler(svc StageServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(stageServiceMethods.ByName("DeactivateStage")),
 		connect.WithHandlerOptions(opts...),
 	)
+	stageServiceUpdateStageHandler := connect.NewUnaryHandler(
+		StageServiceUpdateStageProcedure,
+		svc.UpdateStage,
+		connect.WithSchema(stageServiceMethods.ByName("UpdateStage")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/dazzle.v1.StageService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case StageServiceCreateStageProcedure:
@@ -243,6 +266,8 @@ func NewStageServiceHandler(svc StageServiceHandler, opts ...connect.HandlerOpti
 			stageServiceActivateStageHandler.ServeHTTP(w, r)
 		case StageServiceDeactivateStageProcedure:
 			stageServiceDeactivateStageHandler.ServeHTTP(w, r)
+		case StageServiceUpdateStageProcedure:
+			stageServiceUpdateStageHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -278,4 +303,8 @@ func (UnimplementedStageServiceHandler) ActivateStage(context.Context, *connect.
 
 func (UnimplementedStageServiceHandler) DeactivateStage(context.Context, *connect.Request[v1.DeactivateStageRequest]) (*connect.Response[v1.DeactivateStageResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.StageService.DeactivateStage is not implemented"))
+}
+
+func (UnimplementedStageServiceHandler) UpdateStage(context.Context, *connect.Request[v1.UpdateStageRequest]) (*connect.Response[v1.UpdateStageResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.StageService.UpdateStage is not implemented"))
 }

@@ -21,6 +21,7 @@ message StreamDestination {
   string stream_key = 5;
   google.protobuf.Timestamp created_at = 7;
   google.protobuf.Timestamp updated_at = 8;
+  string platform_username = 9;
 }
 
 message CreateStreamDestinationRequest {
@@ -28,6 +29,7 @@ message CreateStreamDestinationRequest {
   string platform = 2;
   string rtmp_url = 3;
   string stream_key = 4;
+  string platform_username = 5;
 }
 
 message CreateStreamDestinationResponse {
@@ -40,6 +42,7 @@ message ListStreamDestinationsRequest {
 
 message ListStreamDestinationsResponse {
   repeated StreamDestination destinations = 1;
+  repeated string available_platforms = 2;
 }
 
 message UpdateStreamDestinationRequest {
