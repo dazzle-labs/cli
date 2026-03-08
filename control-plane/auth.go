@@ -6,11 +6,13 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/clerk/clerk-sdk-go/v2/jwks"
 	"github.com/clerk/clerk-sdk-go/v2/jwt"
+	expirable "github.com/hashicorp/golang-lru/v2/expirable"
 )
 
 type authMethod int
@@ -48,10 +50,11 @@ type ensureUserFunc func(userID string)
 
 // authenticator holds state for Clerk JWT and API key validation.
 type authenticator struct {
-	db         *sql.DB
-	jwksClient *jwks.Client
-	jwkStore   *inMemoryJWKStore
-	ensureUser ensureUserFunc
+	db          *sql.DB
+	jwksClient  *jwks.Client
+	jwkStore    *inMemoryJWKStore
+	ensureUser  ensureUserFunc
+	apiKeyCache *expirable.LRU[string, authInfo] // keyHash -> authInfo
 }
 
 type inMemoryJWKStore struct {
@@ -62,9 +65,10 @@ func newAuthenticator(db *sql.DB, clerkSecretKey string) *authenticator {
 	config := &clerk.ClientConfig{}
 	config.Key = clerk.String(clerkSecretKey)
 	return &authenticator{
-		db:         db,
-		jwksClient: jwks.NewClient(config),
-		jwkStore:   &inMemoryJWKStore{},
+		db:          db,
+		jwksClient:  jwks.NewClient(config),
+		jwkStore:    &inMemoryJWKStore{},
+		apiKeyCache: expirable.NewLRU[string, authInfo](1000, nil, 5*time.Minute),
 		ensureUser: func(userID string) {
 			if db != nil {
 				dbUpsertUser(db, userID, "", "")
@@ -83,12 +87,18 @@ func (a *authenticator) authenticate(ctx context.Context, token string) (*authIn
 	// API key auth: tokens starting with dzl_ (or legacy bstr_)
 	if strings.HasPrefix(token, "dzl_") || strings.HasPrefix(token, "bstr_") {
 		hash := hashAPIKey(token)
+		if cached, ok := a.apiKeyCache.Get(hash); ok {
+			go dbTouchAPIKey(a.db, cached.KeyID)
+			return &cached, nil
+		}
 		userID, keyID, err := dbLookupAPIKey(a.db, hash)
 		if err != nil {
 			return nil, err
 		}
+		info := authInfo{UserID: userID, Method: authMethodAPIKey, KeyID: keyID}
+		a.apiKeyCache.Add(hash, info)
 		go dbTouchAPIKey(a.db, keyID)
-		return &authInfo{UserID: userID, Method: authMethodAPIKey, KeyID: keyID}, nil
+		return &info, nil
 	}
 
 	// Clerk JWT auth
