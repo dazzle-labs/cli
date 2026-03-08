@@ -6,7 +6,7 @@ import type { StreamDestination } from "../gen/api/v1/stream_pb.js";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Cpu, Globe, ArrowLeft, Copy, Check, ArrowUpRight, Pencil, X as XIcon, Link2, RefreshCw, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
+import { Trash2, Cpu, Globe, ArrowLeft, Copy, Check, ArrowUpRight, Pencil, X as XIcon, Link2, RefreshCw, ExternalLink } from "lucide-react";
 import { StreamPreview } from "@/components/StreamPreview";
 import { CodeBlock } from "@/components/ui/code-block";
 
@@ -204,13 +204,9 @@ dazzle stage broadcast on`;
             status={stage.status === "running" ? "running" : stage.status === "starting" ? "starting" : "stopped"}
           />
           {stage.preview && (
-            <div className="mt-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
-              <div className="flex items-center gap-2 mb-2">
-                <Link2 className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
-                <span className="text-xs font-medium text-zinc-400">Preview URL</span>
-              </div>
-              {/* Watch URL — primary, masked */}
-              <div className="flex items-center gap-1.5 mb-2">
+            <div className="mt-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2">
+              <div className="flex items-center gap-1.5">
+                <Link2 className="h-3 w-3 text-zinc-600 shrink-0" />
                 <code className="flex-1 text-xs font-mono text-zinc-500 truncate">
                   {stage.preview.watchUrl.replace(/token=.*/, "token=••••••••")}
                 </code>
@@ -219,7 +215,7 @@ dazzle stage broadcast on`;
                   className="text-zinc-500 hover:text-emerald-400 p-1 rounded transition-colors cursor-pointer shrink-0"
                   title="Copy preview URL"
                 >
-                  {copiedId === "preview-watch" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                  {copiedId === "preview-watch" ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                 </button>
                 <a
                   href={stage.preview.watchUrl}
@@ -228,43 +224,18 @@ dazzle stage broadcast on`;
                   className="text-zinc-500 hover:text-emerald-400 p-1 rounded transition-colors shrink-0"
                   title="Open preview"
                 >
-                  <ExternalLink className="h-3.5 w-3.5" />
+                  <ExternalLink className="h-3 w-3" />
                 </a>
-              </div>
-              {/* HLS URL — secondary, toggled */}
-              <button
-                onClick={() => setShowHlsUrl(!showHlsUrl)}
-                className="inline-flex items-center gap-1 text-xs text-zinc-600 hover:text-zinc-400 transition-colors cursor-pointer mb-2"
-              >
-                {showHlsUrl ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                HLS URL
-              </button>
-              {showHlsUrl && (
-                <div className="flex items-center gap-1.5 mb-2">
-                  <code className="flex-1 text-xs font-mono text-zinc-500 truncate">
-                    {stage.preview.hlsUrl.replace(/token=.*/, "token=••••••••")}
-                  </code>
-                  <button
-                    onClick={() => handleCopy(stage.preview!.hlsUrl, "preview-hls")}
-                    className="text-zinc-500 hover:text-emerald-400 p-1 rounded transition-colors cursor-pointer shrink-0"
-                    title="Copy HLS URL"
-                  >
-                    {copiedId === "preview-hls" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                  </button>
-                </div>
-              )}
-              <div className="flex items-center">
                 {!confirmingRegen ? (
                   <button
                     onClick={() => setConfirmingRegen(true)}
-                    className="inline-flex items-center gap-1 text-xs text-zinc-600 hover:text-zinc-400 transition-colors cursor-pointer"
+                    className="text-zinc-600 hover:text-zinc-400 p-1 rounded transition-colors cursor-pointer shrink-0"
+                    title="Regenerate preview URL"
                   >
                     <RefreshCw className="h-3 w-3" />
-                    Regenerate
                   </button>
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-zinc-500">This will disconnect current viewers. Continue?</span>
+                  <div className="flex items-center gap-1.5 shrink-0">
                     <button
                       onClick={async () => {
                         try {
@@ -273,19 +244,39 @@ dazzle stage broadcast on`;
                         } catch { /* ignore */ }
                         setConfirmingRegen(false);
                       }}
-                      className="text-xs text-emerald-400 hover:text-emerald-300 cursor-pointer"
+                      className="text-[10px] text-emerald-400 hover:text-emerald-300 cursor-pointer"
                     >
                       Confirm
                     </button>
                     <button
                       onClick={() => setConfirmingRegen(false)}
-                      className="text-xs text-zinc-500 hover:text-zinc-300 cursor-pointer"
+                      className="text-[10px] text-zinc-500 hover:text-zinc-300 cursor-pointer"
                     >
                       Cancel
                     </button>
                   </div>
                 )}
               </div>
+              {showHlsUrl && (
+                <div className="flex items-center gap-1.5 mt-1.5">
+                  <code className="flex-1 text-[10px] font-mono text-zinc-600 truncate pl-[18px]">
+                    {stage.preview.hlsUrl.replace(/token=.*/, "token=••••••••")}
+                  </code>
+                  <button
+                    onClick={() => handleCopy(stage.preview!.hlsUrl, "preview-hls")}
+                    className="text-zinc-600 hover:text-emerald-400 p-1 rounded transition-colors cursor-pointer shrink-0"
+                    title="Copy HLS URL"
+                  >
+                    {copiedId === "preview-hls" ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                  </button>
+                </div>
+              )}
+              <button
+                onClick={() => setShowHlsUrl(!showHlsUrl)}
+                className="text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors cursor-pointer mt-1 pl-[18px]"
+              >
+                {showHlsUrl ? "Hide HLS" : "Show HLS"}
+              </button>
             </div>
           )}
         </div>
