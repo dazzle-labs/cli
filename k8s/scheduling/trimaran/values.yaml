@@ -13,6 +13,7 @@ scheduler:
 plugins:
   enabled:
     - TargetLoadPacking
+  disabled: []  # override chart default that disables PrioritySort (needed as QueueSort)
 
 pluginConfig:
   - name: TargetLoadPacking

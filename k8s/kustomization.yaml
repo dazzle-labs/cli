@@ -13,6 +13,7 @@ resources:
   - monitoring/streamer-podmonitor.yaml
   - scheduling/priority-classes.yaml
   - scheduling/placeholder.yaml
+  - scheduling/trimaran/metrics-rbac.yaml
 
 helmCharts:
   - name: scheduler-plugins
