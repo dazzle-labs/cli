@@ -4,6 +4,7 @@ package dazzle.v1;
 
 option go_package = "github.com/dazzle-labs/cli/gen/api/v1;apiv1";
 
+import "api/v1/stream.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 
@@ -31,6 +32,7 @@ message Stage {
   string name = 9;
   string destination_id = 10;
   StagePreview preview = 11;
+  StreamDestination destination = 12;
 }
 
 message StagePreview {

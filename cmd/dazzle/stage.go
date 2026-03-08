@@ -10,6 +10,14 @@ import (
 	"connectrpc.com/connect"
 )
 
+// stageDisplayName returns the stage name prefixed with the destination platform if set.
+func stageDisplayName(s *apiv1.Stage) string {
+	if s.Destination != nil && s.Destination.Platform != "" {
+		return s.Destination.Platform + ":" + s.Name
+	}
+	return s.Name
+}
+
 // StageCmd groups stage subcommands.
 type StageCmd struct {
 	List       StageListCmd   `cmd:"" aliases:"ls" help:"List stages."`
@@ -81,7 +89,7 @@ func (c *StageListCmd) Run(ctx *Context) error {
 
 	tableHeader("NAME", "ID", "STATUS")
 	for _, s := range resp.Msg.Stages {
-		printText("%s", tableRow(s.Name, s.Id, s.Status))
+		printText("%s", tableRow(stageDisplayName(s), s.Id, s.Status))
 	}
 	return nil
 }
@@ -109,7 +117,7 @@ func (c *StageCreateCmd) Run(ctx *Context) error {
 		return nil
 	}
 
-	printText("Stage %q created (ID: %s)", resp.Msg.Stage.Name, resp.Msg.Stage.Id)
+	printText("Stage %q created (ID: %s)", stageDisplayName(resp.Msg.Stage), resp.Msg.Stage.Id)
 	return nil
 }
 
@@ -169,7 +177,7 @@ func (c *StageStartCmd) Run(ctx *Context) error {
 		return nil
 	}
 
-	printText("Stage %q activated (status: %s)", resp.Msg.Stage.Name, resp.Msg.Stage.Status)
+	printText("Stage %q activated (status: %s)", stageDisplayName(resp.Msg.Stage), resp.Msg.Stage.Status)
 	if resp.Msg.Stage.Preview != nil {
 		printText("Watch:  %s", resp.Msg.Stage.Preview.WatchUrl)
 	}
@@ -201,7 +209,7 @@ func (c *StageStopCmd) Run(ctx *Context) error {
 		return nil
 	}
 
-	printText("Stage %q deactivated.", resp.Msg.Stage.Name)
+	printText("Stage %q deactivated.", stageDisplayName(resp.Msg.Stage))
 	return nil
 }
 
@@ -231,7 +239,7 @@ func (c *StageStatusCmd) Run(ctx *Context) error {
 		return nil
 	}
 
-	printText("Name:   %s\nID:     %s\nStatus: %s", stage.Name, stage.Id, stage.Status)
+	printText("Name:   %s\nID:     %s\nStatus: %s", stageDisplayName(stage), stage.Id, stage.Status)
 	if stage.Preview != nil {
 		printText("Watch:  %s\nHLS:    %s", stage.Preview.WatchUrl, stage.Preview.HlsUrl)
 	}

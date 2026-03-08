@@ -36,6 +36,7 @@ type Stage struct {
 	Name          string                 `protobuf:"bytes,9,opt,name=name,proto3" json:"name,omitempty"`
 	DestinationId string                 `protobuf:"bytes,10,opt,name=destination_id,json=destinationId,proto3" json:"destination_id,omitempty"`
 	Preview       *StagePreview          `protobuf:"bytes,11,opt,name=preview,proto3" json:"preview,omitempty"`
+	Destination   *StreamDestination     `protobuf:"bytes,12,opt,name=destination,proto3" json:"destination,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -143,6 +144,13 @@ func (x *Stage) GetDestinationId() string {
 func (x *Stage) GetPreview() *StagePreview {
 	if x != nil {
 		return x.Preview
+	}
+	return nil
+}
+
+func (x *Stage) GetDestination() *StreamDestination {
+	if x != nil {
+		return x.Destination
 	}
 	return nil
 }
@@ -995,7 +1003,7 @@ var File_api_v1_stage_proto protoreflect.FileDescriptor
 
 const file_api_v1_stage_proto_rawDesc = "" +
 	"\n" +
-	"\x12api/v1/stage.proto\x12\tdazzle.v1\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x90\x03\n" +
+	"\x12api/v1/stage.proto\x12\tdazzle.v1\x1a\x13api/v1/stream.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xd0\x03\n" +
 	"\x05Stage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
 	"\bpod_name\x18\x02 \x01(\tR\apodName\x12\x15\n" +
@@ -1010,7 +1018,8 @@ const file_api_v1_stage_proto_rawDesc = "" +
 	"\x04name\x18\t \x01(\tR\x04name\x12%\n" +
 	"\x0edestination_id\x18\n" +
 	" \x01(\tR\rdestinationId\x121\n" +
-	"\apreview\x18\v \x01(\v2\x17.dazzle.v1.StagePreviewR\apreview\"D\n" +
+	"\apreview\x18\v \x01(\v2\x17.dazzle.v1.StagePreviewR\apreview\x12>\n" +
+	"\vdestination\x18\f \x01(\v2\x1c.dazzle.v1.StreamDestinationR\vdestination\"D\n" +
 	"\fStagePreview\x12\x1b\n" +
 	"\twatch_url\x18\x01 \x01(\tR\bwatchUrl\x12\x17\n" +
 	"\ahls_url\x18\x02 \x01(\tR\x06hlsUrl\"(\n" +
@@ -1098,45 +1107,47 @@ var file_api_v1_stage_proto_goTypes = []any{
 	(*RegeneratePreviewTokenRequest)(nil),  // 18: dazzle.v1.RegeneratePreviewTokenRequest
 	(*RegeneratePreviewTokenResponse)(nil), // 19: dazzle.v1.RegeneratePreviewTokenResponse
 	(*timestamppb.Timestamp)(nil),          // 20: google.protobuf.Timestamp
-	(*fieldmaskpb.FieldMask)(nil),          // 21: google.protobuf.FieldMask
+	(*StreamDestination)(nil),              // 21: dazzle.v1.StreamDestination
+	(*fieldmaskpb.FieldMask)(nil),          // 22: google.protobuf.FieldMask
 }
 var file_api_v1_stage_proto_depIdxs = []int32{
 	20, // 0: dazzle.v1.Stage.created_at:type_name -> google.protobuf.Timestamp
 	20, // 1: dazzle.v1.Stage.last_activity:type_name -> google.protobuf.Timestamp
 	1,  // 2: dazzle.v1.Stage.preview:type_name -> dazzle.v1.StagePreview
-	0,  // 3: dazzle.v1.CreateStageResponse.stage:type_name -> dazzle.v1.Stage
-	0,  // 4: dazzle.v1.ListStagesResponse.stages:type_name -> dazzle.v1.Stage
-	0,  // 5: dazzle.v1.GetStageResponse.stage:type_name -> dazzle.v1.Stage
-	0,  // 6: dazzle.v1.SetStageDestinationResponse.stage:type_name -> dazzle.v1.Stage
-	0,  // 7: dazzle.v1.ActivateStageResponse.stage:type_name -> dazzle.v1.Stage
-	0,  // 8: dazzle.v1.DeactivateStageResponse.stage:type_name -> dazzle.v1.Stage
-	0,  // 9: dazzle.v1.UpdateStageRequest.stage:type_name -> dazzle.v1.Stage
-	21, // 10: dazzle.v1.UpdateStageRequest.update_mask:type_name -> google.protobuf.FieldMask
-	0,  // 11: dazzle.v1.UpdateStageResponse.stage:type_name -> dazzle.v1.Stage
-	0,  // 12: dazzle.v1.RegeneratePreviewTokenResponse.stage:type_name -> dazzle.v1.Stage
-	2,  // 13: dazzle.v1.StageService.CreateStage:input_type -> dazzle.v1.CreateStageRequest
-	4,  // 14: dazzle.v1.StageService.ListStages:input_type -> dazzle.v1.ListStagesRequest
-	6,  // 15: dazzle.v1.StageService.GetStage:input_type -> dazzle.v1.GetStageRequest
-	8,  // 16: dazzle.v1.StageService.DeleteStage:input_type -> dazzle.v1.DeleteStageRequest
-	10, // 17: dazzle.v1.StageService.SetStageDestination:input_type -> dazzle.v1.SetStageDestinationRequest
-	12, // 18: dazzle.v1.StageService.ActivateStage:input_type -> dazzle.v1.ActivateStageRequest
-	14, // 19: dazzle.v1.StageService.DeactivateStage:input_type -> dazzle.v1.DeactivateStageRequest
-	16, // 20: dazzle.v1.StageService.UpdateStage:input_type -> dazzle.v1.UpdateStageRequest
-	18, // 21: dazzle.v1.StageService.RegeneratePreviewToken:input_type -> dazzle.v1.RegeneratePreviewTokenRequest
-	3,  // 22: dazzle.v1.StageService.CreateStage:output_type -> dazzle.v1.CreateStageResponse
-	5,  // 23: dazzle.v1.StageService.ListStages:output_type -> dazzle.v1.ListStagesResponse
-	7,  // 24: dazzle.v1.StageService.GetStage:output_type -> dazzle.v1.GetStageResponse
-	9,  // 25: dazzle.v1.StageService.DeleteStage:output_type -> dazzle.v1.DeleteStageResponse
-	11, // 26: dazzle.v1.StageService.SetStageDestination:output_type -> dazzle.v1.SetStageDestinationResponse
-	13, // 27: dazzle.v1.StageService.ActivateStage:output_type -> dazzle.v1.ActivateStageResponse
-	15, // 28: dazzle.v1.StageService.DeactivateStage:output_type -> dazzle.v1.DeactivateStageResponse
-	17, // 29: dazzle.v1.StageService.UpdateStage:output_type -> dazzle.v1.UpdateStageResponse
-	19, // 30: dazzle.v1.StageService.RegeneratePreviewToken:output_type -> dazzle.v1.RegeneratePreviewTokenResponse
-	22, // [22:31] is the sub-list for method output_type
-	13, // [13:22] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	21, // 3: dazzle.v1.Stage.destination:type_name -> dazzle.v1.StreamDestination
+	0,  // 4: dazzle.v1.CreateStageResponse.stage:type_name -> dazzle.v1.Stage
+	0,  // 5: dazzle.v1.ListStagesResponse.stages:type_name -> dazzle.v1.Stage
+	0,  // 6: dazzle.v1.GetStageResponse.stage:type_name -> dazzle.v1.Stage
+	0,  // 7: dazzle.v1.SetStageDestinationResponse.stage:type_name -> dazzle.v1.Stage
+	0,  // 8: dazzle.v1.ActivateStageResponse.stage:type_name -> dazzle.v1.Stage
+	0,  // 9: dazzle.v1.DeactivateStageResponse.stage:type_name -> dazzle.v1.Stage
+	0,  // 10: dazzle.v1.UpdateStageRequest.stage:type_name -> dazzle.v1.Stage
+	22, // 11: dazzle.v1.UpdateStageRequest.update_mask:type_name -> google.protobuf.FieldMask
+	0,  // 12: dazzle.v1.UpdateStageResponse.stage:type_name -> dazzle.v1.Stage
+	0,  // 13: dazzle.v1.RegeneratePreviewTokenResponse.stage:type_name -> dazzle.v1.Stage
+	2,  // 14: dazzle.v1.StageService.CreateStage:input_type -> dazzle.v1.CreateStageRequest
+	4,  // 15: dazzle.v1.StageService.ListStages:input_type -> dazzle.v1.ListStagesRequest
+	6,  // 16: dazzle.v1.StageService.GetStage:input_type -> dazzle.v1.GetStageRequest
+	8,  // 17: dazzle.v1.StageService.DeleteStage:input_type -> dazzle.v1.DeleteStageRequest
+	10, // 18: dazzle.v1.StageService.SetStageDestination:input_type -> dazzle.v1.SetStageDestinationRequest
+	12, // 19: dazzle.v1.StageService.ActivateStage:input_type -> dazzle.v1.ActivateStageRequest
+	14, // 20: dazzle.v1.StageService.DeactivateStage:input_type -> dazzle.v1.DeactivateStageRequest
+	16, // 21: dazzle.v1.StageService.UpdateStage:input_type -> dazzle.v1.UpdateStageRequest
+	18, // 22: dazzle.v1.StageService.RegeneratePreviewToken:input_type -> dazzle.v1.RegeneratePreviewTokenRequest
+	3,  // 23: dazzle.v1.StageService.CreateStage:output_type -> dazzle.v1.CreateStageResponse
+	5,  // 24: dazzle.v1.StageService.ListStages:output_type -> dazzle.v1.ListStagesResponse
+	7,  // 25: dazzle.v1.StageService.GetStage:output_type -> dazzle.v1.GetStageResponse
+	9,  // 26: dazzle.v1.StageService.DeleteStage:output_type -> dazzle.v1.DeleteStageResponse
+	11, // 27: dazzle.v1.StageService.SetStageDestination:output_type -> dazzle.v1.SetStageDestinationResponse
+	13, // 28: dazzle.v1.StageService.ActivateStage:output_type -> dazzle.v1.ActivateStageResponse
+	15, // 29: dazzle.v1.StageService.DeactivateStage:output_type -> dazzle.v1.DeactivateStageResponse
+	17, // 30: dazzle.v1.StageService.UpdateStage:output_type -> dazzle.v1.UpdateStageResponse
+	19, // 31: dazzle.v1.StageService.RegeneratePreviewToken:output_type -> dazzle.v1.RegeneratePreviewTokenResponse
+	23, // [23:32] is the sub-list for method output_type
+	14, // [14:23] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_api_v1_stage_proto_init() }
@@ -1144,6 +1155,7 @@ func file_api_v1_stage_proto_init() {
 	if File_api_v1_stage_proto != nil {
 		return
 	}
+	file_api_v1_stream_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
