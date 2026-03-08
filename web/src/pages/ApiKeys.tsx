@@ -12,7 +12,7 @@ export function ApiKeys() {
   const [name, setName] = useState("");
   const [newSecret, setNewSecret] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [copiedExport, setCopiedExport] = useState(false);
+
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   async function refresh() {
@@ -47,12 +47,6 @@ export function ApiKeys() {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  async function handleCopyExport() {
-    if (!newSecret) return;
-    await navigator.clipboard.writeText(`export DAZZLE_API_KEY=${newSecret}`);
-    setCopiedExport(true);
-    setTimeout(() => setCopiedExport(false), 2000);
-  }
 
   if (loading) {
     return (
@@ -127,21 +121,8 @@ export function ApiKeys() {
               {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
             </Button>
           </div>
-          <div className="flex items-center gap-2 mb-3">
-            <code className="flex-1 font-mono text-xs text-zinc-400 bg-zinc-950/50 rounded-lg px-4 py-2 border border-white/[0.06]">
-              export DAZZLE_API_KEY={newSecret}
-            </code>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCopyExport}
-              className="text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10 shrink-0"
-            >
-              {copiedExport ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-            </Button>
-          </div>
           <button
-            onClick={() => { setNewSecret(null); setCopied(false); setCopiedExport(false); }}
+            onClick={() => { setNewSecret(null); setCopied(false); }}
             className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors cursor-pointer"
           >
             I've saved it, dismiss
