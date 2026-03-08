@@ -19,7 +19,6 @@ export function StageDetail() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [confirmingRegen, setConfirmingRegen] = useState(false);
-  const [showHlsUrl, setShowHlsUrl] = useState(false);
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
 
   // Inline name editing
@@ -257,26 +256,6 @@ dazzle stage broadcast on`;
                   </div>
                 )}
               </div>
-              {showHlsUrl && (
-                <div className="flex items-center gap-1.5 mt-1.5">
-                  <code className="flex-1 text-[10px] font-mono text-zinc-600 truncate pl-[18px]">
-                    {stage.preview.hlsUrl.replace(/token=.*/, "token=••••••••")}
-                  </code>
-                  <button
-                    onClick={() => handleCopy(stage.preview!.hlsUrl, "preview-hls")}
-                    className="text-zinc-600 hover:text-emerald-400 p-1 rounded transition-colors cursor-pointer shrink-0"
-                    title="Copy HLS URL"
-                  >
-                    {copiedId === "preview-hls" ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                  </button>
-                </div>
-              )}
-              <button
-                onClick={() => setShowHlsUrl(!showHlsUrl)}
-                className="text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors cursor-pointer mt-1 pl-[18px]"
-              >
-                {showHlsUrl ? "Hide HLS" : "Show HLS"}
-              </button>
             </div>
           )}
         </div>
