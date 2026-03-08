@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
-	"time"
-
 	"strings"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
@@ -34,7 +34,7 @@ func (s *stageServer) CreateStage(ctx context.Context, req *connect.Request[apiv
 	}
 
 	return connect.NewResponse(&apiv1.CreateStageResponse{
-		Stage: stageToProto(stage, s.mgr.publicBaseURL),
+		Stage: stageToProto(stage, s.mgr.publicBaseURL, s.mgr.db),
 	}), nil
 }
 
@@ -49,7 +49,7 @@ func (s *stageServer) ListStages(ctx context.Context, req *connect.Request[apiv1
 	var pbStages []*apiv1.Stage
 	for _, row := range rows {
 		st := stageRowToStruct(&row, s.mgr)
-		pbStages = append(pbStages, stageToProto(st, s.mgr.publicBaseURL))
+		pbStages = append(pbStages, stageToProto(st, s.mgr.publicBaseURL, s.mgr.db))
 	}
 	return connect.NewResponse(&apiv1.ListStagesResponse{
 		Stages: pbStages,
@@ -69,7 +69,7 @@ func (s *stageServer) GetStage(ctx context.Context, req *connect.Request[apiv1.G
 
 	st := stageRowToStruct(row, s.mgr)
 	return connect.NewResponse(&apiv1.GetStageResponse{
-		Stage: stageToProto(st, s.mgr.publicBaseURL),
+		Stage: stageToProto(st, s.mgr.publicBaseURL, s.mgr.db),
 	}), nil
 }
 
@@ -126,7 +126,7 @@ func (s *stageServer) SetStageDestination(ctx context.Context, req *connect.Requ
 	}
 	st := stageRowToStruct(updated, s.mgr)
 	return connect.NewResponse(&apiv1.SetStageDestinationResponse{
-		Stage: stageToProto(st, s.mgr.publicBaseURL),
+		Stage: stageToProto(st, s.mgr.publicBaseURL, s.mgr.db),
 	}), nil
 }
 
@@ -178,7 +178,7 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 	}
 
 	return connect.NewResponse(&apiv1.ActivateStageResponse{
-		Stage: stageToProto(readyStage, s.mgr.publicBaseURL),
+		Stage: stageToProto(readyStage, s.mgr.publicBaseURL, s.mgr.db),
 	}), nil
 }
 
@@ -204,7 +204,7 @@ func (s *stageServer) DeactivateStage(ctx context.Context, req *connect.Request[
 	}
 	st := stageRowToStruct(updated, s.mgr)
 	return connect.NewResponse(&apiv1.DeactivateStageResponse{
-		Stage: stageToProto(st, s.mgr.publicBaseURL),
+		Stage: stageToProto(st, s.mgr.publicBaseURL, s.mgr.db),
 	}), nil
 }
 
@@ -242,7 +242,7 @@ func (s *stageServer) UpdateStage(ctx context.Context, req *connect.Request[apiv
 
 	st := stageRowToStruct(row, s.mgr)
 	return connect.NewResponse(&apiv1.UpdateStageResponse{
-		Stage: stageToProto(st, s.mgr.publicBaseURL),
+		Stage: stageToProto(st, s.mgr.publicBaseURL, s.mgr.db),
 	}), nil
 }
 
@@ -279,7 +279,7 @@ func (s *stageServer) RegeneratePreviewToken(ctx context.Context, req *connect.R
 	}
 	st := stageRowToStruct(updated, s.mgr)
 	return connect.NewResponse(&apiv1.RegeneratePreviewTokenResponse{
-		Stage: stageToProto(st, s.mgr.publicBaseURL),
+		Stage: stageToProto(st, s.mgr.publicBaseURL, s.mgr.db),
 	}), nil
 }
 
@@ -305,7 +305,7 @@ func stageRowToStruct(row *stageRow, mgr *Manager) *Stage {
 	return st
 }
 
-func stageToProto(s *Stage, publicBaseURL string) *apiv1.Stage {
+func stageToProto(s *Stage, publicBaseURL string, db *sql.DB) *apiv1.Stage {
 	pb := &apiv1.Stage{
 		Id:            s.ID,
 		Name:          s.Name,
@@ -321,6 +321,16 @@ func stageToProto(s *Stage, publicBaseURL string) *apiv1.Stage {
 		pb.Preview = &apiv1.StagePreview{
 			WatchUrl: publicBaseURL + "/stage/" + s.ID + "/preview?token=" + s.PreviewToken,
 			HlsUrl:   publicBaseURL + "/stage/" + s.ID + "/hls/stream.m3u8?token=" + s.PreviewToken,
+		}
+	}
+	if db != nil && s.DestinationID != "" && s.OwnerUserID != "" {
+		if dest, err := dbGetStreamDestForUser(db, s.DestinationID, s.OwnerUserID); err == nil && dest != nil {
+			pb.Destination = &apiv1.StreamDestination{
+				Id:               dest.ID,
+				Name:             dest.Name,
+				Platform:         dest.Platform,
+				PlatformUsername: dest.PlatformUsername,
+			}
 		}
 	}
 	return pb
