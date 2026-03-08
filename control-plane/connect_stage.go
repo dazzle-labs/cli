@@ -157,9 +157,6 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 	// Re-read token from DB (may have been regenerated during activation)
 	if freshRow, err := dbGetStage(s.mgr.db, req.Msg.Id); err == nil && freshRow != nil && freshRow.PreviewToken.Valid && freshRow.PreviewToken.String != "" {
 		readyStage.PreviewToken = freshRow.PreviewToken.String
-		s.mgr.mu.Lock()
-		s.mgr.previewTokens[freshRow.PreviewToken.String] = req.Msg.Id
-		s.mgr.mu.Unlock()
 	}
 
 	// Restore script
@@ -264,14 +261,12 @@ func (s *stageServer) RegeneratePreviewToken(ctx context.Context, req *connect.R
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	s.mgr.mu.Lock()
-	// Remove old token mapping
+	// Invalidate old token from cache
 	if row.PreviewToken.Valid && row.PreviewToken.String != "" {
-		delete(s.mgr.previewTokens, row.PreviewToken.String)
+		s.mgr.invalidatePreviewToken(row.PreviewToken.String)
 	}
-	// Add new token mapping
-	s.mgr.previewTokens[newToken] = req.Msg.Id
 	// Update live stage if active
+	s.mgr.mu.Lock()
 	if live, ok := s.mgr.stages[req.Msg.Id]; ok {
 		live.PreviewToken = newToken
 	}

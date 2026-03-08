@@ -12,6 +12,7 @@ import { StreamConfig } from "./pages/StreamConfig.js";
 import { ApiKeys } from "./pages/ApiKeys.js";
 import { Docs } from "./pages/Docs.js";
 import { LandingPage } from "./pages/LandingPage.js";
+import { PreviewPage } from "./pages/PreviewPage.js";
 
 function AuthSetup() {
   const { getToken } = useAuth();
@@ -21,9 +22,9 @@ function AuthSetup() {
   return null;
 }
 
-export function App() {
+function AuthenticatedApp() {
   return (
-    <BrowserRouter>
+    <>
       <Show when="signed-out">
         <LandingPage />
       </Show>
@@ -40,6 +41,17 @@ export function App() {
           </Routes>
         </Layout>
       </Show>
+    </>
+  );
+}
+
+export function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/stage/:stageId/preview" element={<PreviewPage />} />
+        <Route path="*" element={<AuthenticatedApp />} />
+      </Routes>
     </BrowserRouter>
   );
 }
