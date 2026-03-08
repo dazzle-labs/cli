@@ -154,7 +154,8 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	// Re-read token from DB (may have been regenerated during activation)
+	// Populate fields from DB that the in-memory stage doesn't track
+	readyStage.Name = row.Name
 	if freshRow, err := dbGetStage(s.mgr.db, req.Msg.Id); err == nil && freshRow != nil && freshRow.PreviewToken.Valid && freshRow.PreviewToken.String != "" {
 		readyStage.PreviewToken = freshRow.PreviewToken.String
 	}
