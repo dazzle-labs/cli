@@ -59,7 +59,7 @@ func resolveStageByNameOrID(ctx *Context, nameOrID string) (string, error) {
 		return "", err
 	}
 	for _, s := range listResp.Msg.Stages {
-		if s.Name == nameOrID {
+		if s.Name == nameOrID || stageDisplayName(s) == nameOrID {
 			return s.Id, nil
 		}
 	}
