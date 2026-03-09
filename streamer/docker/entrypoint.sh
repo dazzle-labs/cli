@@ -66,7 +66,7 @@ google-chrome-stable \
     --autoplay-policy=no-user-gesture-required \
     --remote-debugging-port=9222 \
     --remote-debugging-address=0.0.0.0 \
-    --user-data-dir=/tmp/chrome-data \
+    --user-data-dir=/data/chrome \
     --kiosk \
     --window-size=${SCREEN_WIDTH},${SCREEN_HEIGHT} \
     --window-position=0,0 \

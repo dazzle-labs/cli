@@ -6,7 +6,9 @@ CP_IMG   := dazzlefm/agent-streamer-control-plane:main
 STR_IMG  := dazzlefm/agent-streamer-stage:main
 CLI_COMMIT := $(shell git -C cli rev-parse HEAD 2>/dev/null || echo main)
 CP_BUILD := docker build -f control-plane/docker/Dockerfile --build-arg VITE_CLERK_PUBLISHABLE_KEY=$(CLERK_PK) --build-arg GIT_COMMIT=$(CLI_COMMIT) -t $(CP_IMG) .
+SIDECAR_IMG := dazzlefm/agent-streamer-sidecar:main
 STR_BUILD := docker build --platform linux/amd64 -f streamer/docker/Dockerfile -t $(STR_IMG) streamer/
+SIDECAR_BUILD := docker build --platform linux/amd64 -f streamer/docker/sidecar/Dockerfile -t $(SIDECAR_IMG) streamer/docker/sidecar/
 
 # Colored log helpers
 _cyan    = \033[36m
@@ -88,6 +90,8 @@ up: check-deps ## Create Kind cluster, build images, deploy full stack
 	$(CP_BUILD)
 	$(STEP) "Building streamer image"
 	$(STR_BUILD)
+	$(STEP) "Building sidecar image"
+	$(SIDECAR_BUILD)
 	$(STEP) "Regenerating llms.txt"
 	./scripts/generate-llms-txt.sh > llms.txt
 	$(STEP) "Creating Kind cluster"
@@ -100,10 +104,14 @@ up: check-deps ## Create Kind cluster, build images, deploy full stack
 	kubectl --context $(KIND_CTX) create namespace $(NS) --dry-run=client -o yaml | kubectl --context $(KIND_CTX) apply -f -
 	kind load docker-image $(CP_IMG) --name $(NS)
 	kind load docker-image $(STR_IMG) --name $(NS)
+	kind load docker-image $(SIDECAR_IMG) --name $(NS)
 	$(STEP) "Applying secrets"
 	sops -d k8s/local/local.secrets.yaml | $(KCTL) apply -f -
 	@if sops -d k8s/control-plane/oauth.secrets.yaml 2>/dev/null | $(KCTL) apply -f - 2>/dev/null; then \
 		echo "  oauth secrets applied"; \
+	fi
+	@if sops -d k8s/secrets/r2-credentials.secrets.yaml 2>/dev/null | $(KCTL) apply -f - 2>/dev/null; then \
+		echo "  r2 credentials applied"; \
 	fi
 	$(STEP) "Deploying postgres"
 	$(KCTL) apply -f k8s/infrastructure/postgres.yaml
@@ -120,7 +128,7 @@ up: check-deps ## Create Kind cluster, build images, deploy full stack
 down: ## Delete the Kind cluster
 	kind delete cluster --name $(NS)
 
-build: check-deps build-cp build-streamer llms-txt ## Build all images, regenerate llms.txt, load into Kind
+build: check-deps build-cp build-streamer build-sidecar llms-txt ## Build all images, regenerate llms.txt, load into Kind
 
 build-cp: check-deps check-cluster ## Build control-plane image and load into Kind
 	$(STEP) "Building control-plane image"
@@ -134,11 +142,20 @@ build-streamer: check-deps check-cluster ## Build streamer image and load into K
 	$(STEP) "Loading into Kind"
 	kind load docker-image $(STR_IMG) --name $(NS)
 
+build-sidecar: check-deps check-cluster ## Build sidecar image and load into Kind
+	$(STEP) "Building sidecar image"
+	$(SIDECAR_BUILD)
+	$(STEP) "Loading into Kind"
+	kind load docker-image $(SIDECAR_IMG) --name $(NS)
+
 deploy: check-deps check-cluster ## Apply manifests and restart control-plane in Kind
 	$(STEP) "Applying secrets"
 	sops -d k8s/local/local.secrets.yaml | $(KCTL) apply -f -
 	@if sops -d k8s/control-plane/oauth.secrets.yaml 2>/dev/null | $(KCTL) apply -f - 2>/dev/null; then \
 		echo "  oauth secrets applied"; \
+	fi
+	@if sops -d k8s/secrets/r2-credentials.secrets.yaml 2>/dev/null | $(KCTL) apply -f - 2>/dev/null; then \
+		echo "  r2 credentials applied"; \
 	fi
 	$(STEP) "Deploying postgres"
 	$(KCTL) apply -f k8s/infrastructure/postgres.yaml

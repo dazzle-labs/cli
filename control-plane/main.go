@@ -77,6 +77,9 @@ type Manager struct {
 	clientset     *kubernetes.Clientset
 	namespace     string
 	streamerImage string
+	sidecarImage  string
+	r2Client      *R2Client
+	r2Bucket      string
 	podToken         string // internal token for streamer pod auth
 	maxStages        int
 	imagePullSecrets []corev1.LocalObjectReference
@@ -171,12 +174,29 @@ func NewManager() (*Manager, error) {
 		clientset:     clientset,
 		namespace:     envOrDefault("NAMESPACE", "browser-streamer"),
 		streamerImage: envOrDefault("STREAMER_IMAGE", "browser-streamer:latest"),
+		sidecarImage:  envOrDefault("SIDECAR_IMAGE", "stage-sidecar:latest"),
+		r2Bucket:      os.Getenv("R2_BUCKET"),
 		podToken:      os.Getenv("POD_TOKEN"),
 		maxStages:     envIntOrDefault("MAX_STAGES", 3),
 		db:            db,
 		auth:          newAuthenticator(db, clerkSecretKey),
 		encryptionKey: encKey,
 		publicBaseURL: publicBaseURL,
+	}
+
+	// Initialize R2 client for stage storage (optional — graceful degradation)
+	if r2Endpoint := os.Getenv("R2_ENDPOINT"); r2Endpoint != "" {
+		r2AccessKey := os.Getenv("R2_ACCESS_KEY_ID")
+		r2SecretKey := os.Getenv("R2_SECRET_ACCESS_KEY")
+		if r2AccessKey != "" && r2SecretKey != "" {
+			r2c, err := NewR2Client(r2Endpoint, r2AccessKey, r2SecretKey, m.r2Bucket)
+			if err != nil {
+				log.Printf("WARN: failed to create R2 client: %v (stage storage disabled)", err)
+			} else {
+				m.r2Client = r2c
+				log.Printf("R2 stage storage enabled (bucket=%s)", m.r2Bucket)
+			}
+		}
 	}
 
 	m.pc = newPodClient(m.podToken)
@@ -294,10 +314,33 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 			},
 		},
 		Spec: corev1.PodSpec{
-			RestartPolicy:     corev1.RestartPolicyNever,
-			SchedulerName:     os.Getenv("SCHEDULER_NAME"),
-			PriorityClassName: os.Getenv("PRIORITY_CLASS_NAME"),
-			ImagePullSecrets: m.imagePullSecrets,
+			RestartPolicy:                 corev1.RestartPolicyNever,
+			TerminationGracePeriodSeconds: int64Ptr(30),
+			SchedulerName:                 os.Getenv("SCHEDULER_NAME"),
+			PriorityClassName:             os.Getenv("PRIORITY_CLASS_NAME"),
+			ImagePullSecrets:              m.imagePullSecrets,
+			InitContainers: []corev1.Container{
+				{
+					Name:    "restore",
+					Image:   m.sidecarImage,
+					Command: []string{"/bin/sh", "/scripts/restore.sh"},
+					Env:     r2EnvVars(userID, id, m.r2Bucket),
+					VolumeMounts: []corev1.VolumeMount{
+						{Name: "stage-data", MountPath: "/data"},
+					},
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceCPU:    resource.MustParse("100m"),
+							corev1.ResourceMemory: resource.MustParse("64Mi"),
+						},
+						Limits: corev1.ResourceList{
+							corev1.ResourceCPU:    resource.MustParse("500m"),
+							corev1.ResourceMemory: resource.MustParse("256Mi"),
+						},
+					},
+					ImagePullPolicy: corev1.PullIfNotPresent,
+				},
+			},
 			Containers: []corev1.Container{
 				{
 					Name:  "streamer",
@@ -333,6 +376,14 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 					},
 					VolumeMounts: []corev1.VolumeMount{
 						{Name: "dshm", MountPath: "/dev/shm"},
+						{Name: "stage-data", MountPath: "/data"},
+					},
+					Lifecycle: &corev1.Lifecycle{
+						PreStop: &corev1.LifecycleHandler{
+							Exec: &corev1.ExecAction{
+								Command: []string{"/bin/sh", "/scripts/prestop.sh"},
+							},
+						},
 					},
 					ReadinessProbe: &corev1.Probe{
 						ProbeHandler: corev1.ProbeHandler{
@@ -347,6 +398,26 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 					},
 					ImagePullPolicy: corev1.PullIfNotPresent,
 				},
+				{
+					Name:    "sidecar",
+					Image:   m.sidecarImage,
+					Command: []string{"/bin/sh", "/scripts/entrypoint.sh"},
+					Env:     r2EnvVars(userID, id, m.r2Bucket),
+					VolumeMounts: []corev1.VolumeMount{
+						{Name: "stage-data", MountPath: "/data"},
+					},
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceCPU:    resource.MustParse("50m"),
+							corev1.ResourceMemory: resource.MustParse("64Mi"),
+						},
+						Limits: corev1.ResourceList{
+							corev1.ResourceCPU:    resource.MustParse("250m"),
+							corev1.ResourceMemory: resource.MustParse("256Mi"),
+						},
+					},
+					ImagePullPolicy: corev1.PullIfNotPresent,
+				},
 			},
 			Volumes: []corev1.Volume{
 				{
@@ -354,6 +425,14 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 					VolumeSource: corev1.VolumeSource{
 						EmptyDir: &corev1.EmptyDirVolumeSource{
 							Medium:    corev1.StorageMediumMemory,
+							SizeLimit: resourcePtr(resource.MustParse("2Gi")),
+						},
+					},
+				},
+				{
+					Name: "stage-data",
+					VolumeSource: corev1.VolumeSource{
+						EmptyDir: &corev1.EmptyDirVolumeSource{
 							SizeLimit: resourcePtr(resource.MustParse("2Gi")),
 						},
 					},
@@ -386,6 +465,56 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 
 func resourcePtr(r resource.Quantity) *resource.Quantity {
 	return &r
+}
+
+func int64Ptr(i int64) *int64 {
+	return &i
+}
+
+func boolPtr(b bool) *bool {
+	return &b
+}
+
+// r2EnvVars returns the rclone env vars needed by the sidecar/init containers.
+func r2EnvVars(userID, stageID, bucket string) []corev1.EnvVar {
+	optional := boolPtr(true)
+	return []corev1.EnvVar{
+		{Name: "RCLONE_CONFIG_R2_TYPE", Value: "s3"},
+		{Name: "RCLONE_CONFIG_R2_PROVIDER", Value: "Cloudflare"},
+		{
+			Name: "RCLONE_CONFIG_R2_ENDPOINT",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "r2-credentials"},
+					Key:                  "endpoint",
+					Optional:             optional,
+				},
+			},
+		},
+		{
+			Name: "RCLONE_CONFIG_R2_ACCESS_KEY_ID",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "r2-credentials"},
+					Key:                  "access_key_id",
+					Optional:             optional,
+				},
+			},
+		},
+		{
+			Name: "RCLONE_CONFIG_R2_SECRET_ACCESS_KEY",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "r2-credentials"},
+					Key:                  "secret_access_key",
+					Optional:             optional,
+				},
+			},
+		},
+		{Name: "R2_BUCKET", Value: bucket},
+		{Name: "USER_ID", Value: userID},
+		{Name: "STAGE_ID", Value: stageID},
+	}
 }
 
 // deleteStage removes the pod (if active) and the DB record.

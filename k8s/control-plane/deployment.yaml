@@ -114,6 +114,28 @@ spec:
                   optional: true
             - name: OAUTH_REDIRECT_BASE_URL
               value: "https://stream.dazzle.fm"
+            - name: SIDECAR_IMAGE
+              value: dazzlefm/agent-streamer-sidecar:main
+            - name: R2_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: r2-credentials
+                  key: endpoint
+            - name: R2_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: r2-credentials
+                  key: access_key_id
+            - name: R2_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: r2-credentials
+                  key: secret_access_key
+            - name: R2_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: r2-credentials
+                  key: bucket
           resources:
             requests:
               cpu: 100m

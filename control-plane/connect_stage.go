@@ -84,8 +84,31 @@ func (s *stageServer) DeleteStage(ctx context.Context, req *connect.Request[apiv
 		return nil, connect.NewError(connect.CodeNotFound, nil)
 	}
 
+	// Capture pod name before deletion (needed for wait)
+	var podName string
+	if live, ok := s.mgr.getStage(req.Msg.Id); ok {
+		podName = live.PodName
+	}
+
 	// Stop pod if active
 	s.mgr.deleteStage(req.Msg.Id)
+
+	// Use background context so client cancellation doesn't skip cleanup
+	cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 45*time.Second)
+	defer cleanupCancel()
+
+	// Wait for pod termination (ensures sidecar final sync completes)
+	if podName != "" {
+		waitForPodTermination(cleanupCtx, s.mgr.clientset, s.mgr.namespace, podName, 35*time.Second)
+	}
+
+	// Best-effort R2 cleanup
+	if s.mgr.r2Client != nil {
+		prefix := "users/" + info.UserID + "/stages/" + req.Msg.Id + "/"
+		if err := s.mgr.r2Client.DeletePrefix(cleanupCtx, prefix); err != nil {
+			log.Printf("WARN: r2 cleanup for stage %s: %v", req.Msg.Id, err)
+		}
+	}
 
 	// Remove DB record
 	if err := dbDeleteStage(s.mgr.db, req.Msg.Id, info.UserID); err != nil {

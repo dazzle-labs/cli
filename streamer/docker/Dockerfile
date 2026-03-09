@@ -72,17 +72,16 @@ RUN npm install
 
 COPY index.js shell.html prelude.js style.css vite-init.mjs ./
 
-RUN mkdir -p /app/content
-
 # Remove npm (only needed for install, not runtime) to eliminate bundled dep vulns
 RUN rm -rf /usr/lib/node_modules/npm /usr/bin/npm /usr/bin/npx
 
 # Copy PulseAudio config
 COPY docker/pulse-default.pa /etc/pulse/default.pa
 
-# Copy entrypoint
+# Copy entrypoint and prestop hook
 COPY docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+COPY docker/prestop.sh /scripts/prestop.sh
+RUN chmod +x /entrypoint.sh /scripts/prestop.sh
 
 ENV DISPLAY=:99
 ENV PULSE_SERVER=unix:/tmp/pulse/native
