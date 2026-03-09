@@ -30,9 +30,8 @@ const (
 // This is the primary (and only) way to push content to a stage.
 type SyncCmd struct {
 	Dir     string `arg:"" help:"Local directory to sync (must contain an index.html entry point)." type:"existingdir"`
-	Watch   bool   `help:"Watch for file changes and automatically re-sync." short:"w"`
-	Entry   string `help:"HTML entry point file (default: index.html)." default:"index.html"`
-	Refresh bool   `help:"Reload the stage after each sync (combine with --watch for live dev: -wr)." short:"r"`
+	Watch bool   `help:"Watch for file changes and automatically re-sync." short:"w"`
+	Entry string `help:"HTML entry point file (default: index.html)." default:"index.html"`
 }
 
 func (c *SyncCmd) Run(ctx *Context) error {
@@ -144,18 +143,6 @@ func (c *SyncCmd) syncOnce(appCtx *Context, rpcCtx context.Context) error {
 		if resp.Msg.Deleted > 0 {
 			printText("%d stale files removed.", resp.Msg.Deleted)
 		}
-	}
-
-	// Refresh if requested
-	if c.Refresh {
-		refreshReq := connect.NewRequest(&apiv1.RefreshRequest{
-			StageId: appCtx.StageID,
-		})
-		refreshReq.Header().Set("Authorization", appCtx.authHeader())
-		if _, err := client.Refresh(rpcCtx, refreshReq); err != nil {
-			return fmt.Errorf("refresh: %w", err)
-		}
-		printText("Chrome refreshed.")
 	}
 
 	return nil

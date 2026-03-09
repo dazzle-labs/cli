@@ -8,7 +8,9 @@ import (
 	"github.com/dazzle-labs/cli/gen/api/v1/apiv1connect"
 )
 
-// RefreshCmd refreshes Chrome on the stage to the synced entry point.
+// RefreshCmd refreshes the stage browser to the synced entry point.
+// Note: sync already auto-refreshes the browser, so this is only needed for
+// manual reloads without re-syncing content.
 type RefreshCmd struct{}
 
 func (c *RefreshCmd) Run(ctx *Context) error {
@@ -31,7 +33,7 @@ func (c *RefreshCmd) Run(ctx *Context) error {
 	if ctx.JSON {
 		printJSON(map[string]bool{"ok": true})
 	} else {
-		printText("Chrome refreshed.")
+		printText("Browser refreshed.")
 	}
 	return nil
 }

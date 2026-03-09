@@ -79,9 +79,9 @@ dazzle stage broadcast on
 | `dazzle stage up` | `s up` | Activate a stage |
 | `dazzle stage down` | `s down` | Deactivate a stage |
 | `dazzle stage status` | `s st` | Show stage status |
-| `dazzle stage sync <dir>` | `s sy` | Sync a local directory to stage |
-| `dazzle stage sync <dir> --watch` | `s sy -w` | Watch and re-sync on changes |
-| `dazzle stage refresh` | `s r` | Reload the stage entry point |
+| `dazzle stage sync <dir>` | `s sy` | Sync a local directory to stage (auto-refreshes browser) |
+| `dazzle stage sync <dir> --watch` | `s sy -w` | Watch, re-sync, and auto-refresh on changes |
+| `dazzle stage refresh` | `s r` | Manual reload (rarely needed — sync auto-refreshes) |
 | `dazzle stage event emit <name> <json>` | `s ev e` | Push event to script |
 | `dazzle stage screenshot` | `s ss` | Capture a screenshot |
 | `dazzle stage logs` | `s l` | Retrieve console logs |
