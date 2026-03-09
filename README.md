@@ -67,7 +67,7 @@ dazzle stage broadcast on
 | `dazzle update` | | Update to the latest release |
 | `dazzle stage` | `s` | Manage stages |
 | `dazzle destination` | `dest` | Manage RTMP destinations |
-| `dazzle obs` | `o` | Advanced OBS control |
+| `dazzle obs` | `o` | Advanced streaming control (broadcast, RTMP config) |
 
 ### Stage subcommands
 
