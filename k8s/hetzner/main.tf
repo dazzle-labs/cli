@@ -108,6 +108,10 @@ module "kube-hetzner" {
     "2606:4700:4700::1111",
   ]
 
+  # --- Firewall ---
+  firewall_ssh_source      = var.firewall_ssh_source
+  firewall_kube_api_source = var.firewall_kube_api_source
+
   # --- Misc ---
   allow_scheduling_on_control_plane = false
   automatically_upgrade_k3s         = false

@@ -19,7 +19,7 @@ ARG GIT_COMMIT=main
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "-X main.gitCommit=${GIT_COMMIT}" -o control-plane .
 
 # Build gobs-cli
-RUN CGO_ENABLED=0 GOOS=linux go install github.com/onyx-and-iris/gobs-cli@latest
+RUN CGO_ENABLED=0 GOOS=linux go install github.com/onyx-and-iris/gobs-cli@v0.18.2
 
 FROM alpine:3.19
 RUN apk add --no-cache ca-certificates
