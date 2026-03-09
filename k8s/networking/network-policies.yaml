@@ -1,0 +1,120 @@
+# Default deny all ingress in the namespace.
+# Each workload must explicitly allow inbound traffic.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: browser-streamer
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+---
+# Control-plane: allow ingress from Traefik (any namespace) and from
+# Prometheus (kube-system) for scraping.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-control-plane
+  namespace: browser-streamer
+spec:
+  podSelector:
+    matchLabels:
+      app: control-plane
+  policyTypes:
+    - Ingress
+  ingress:
+    # Traefik ingress controller (runs in kube-system on k3s)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: TCP
+          port: 8080
+---
+# Postgres: only control-plane pods can connect.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-postgres
+  namespace: browser-streamer
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: control-plane
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+# Streamer pods: allow ingress only from control-plane (management API)
+# and from Prometheus (metrics scraping).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-streamer
+  namespace: browser-streamer
+spec:
+  podSelector:
+    matchLabels:
+      app: streamer-stage
+  policyTypes:
+    - Ingress
+  ingress:
+    # Control-plane manages streamer pods via PodIP:8080
+    - from:
+        - podSelector:
+            matchLabels:
+              app: control-plane
+      ports:
+        - protocol: TCP
+          port: 8080
+    # Prometheus scraping
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: TCP
+          port: 8080
+---
+# Streamer pods egress: allow DNS + internet only.
+# Block all cluster-internal traffic (no peers, no postgres, no control-plane).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: streamer-egress
+  namespace: browser-streamer
+spec:
+  podSelector:
+    matchLabels:
+      app: streamer-stage
+  policyTypes:
+    - Egress
+  egress:
+    # Allow DNS (kube-dns in kube-system)
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Allow egress to all external IPs (non-cluster).
+    # Block RFC1918 private ranges to prevent cluster-internal access.
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16

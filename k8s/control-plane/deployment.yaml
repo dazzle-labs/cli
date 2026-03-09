@@ -18,10 +18,21 @@ spec:
       serviceAccountName: control-plane
       imagePullSecrets:
         - name: dazzlefm-dockerhub-secret
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: control-plane
           image: dazzlefm/agent-streamer-control-plane:main
           imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
           ports:
             - containerPort: 8080
           env:
