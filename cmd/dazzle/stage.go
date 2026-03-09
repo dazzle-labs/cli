@@ -10,14 +10,6 @@ import (
 	"connectrpc.com/connect"
 )
 
-// stageDisplayName returns the stage name prefixed with the destination platform if set.
-func stageDisplayName(s *apiv1.Stage) string {
-	if s.Destination != nil && s.Destination.Platform != "" {
-		return s.Destination.Platform + ":" + s.Name
-	}
-	return s.Name
-}
-
 // StageCmd groups stage subcommands.
 type StageCmd struct {
 	List       StageListCmd   `cmd:"" aliases:"ls" help:"List stages."`
@@ -58,11 +50,37 @@ func resolveStageByNameOrID(ctx *Context, nameOrID string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	// Collect all stages matching by name
+	var matches []*apiv1.Stage
 	for _, s := range listResp.Msg.Stages {
-		if s.Name == nameOrID || stageDisplayName(s) == nameOrID {
-			return s.Id, nil
+		if s.Name == nameOrID {
+			matches = append(matches, s)
 		}
 	}
+	if len(matches) == 1 {
+		return matches[0].Id, nil
+	}
+	if len(matches) > 1 {
+		var platforms []string
+		for _, s := range matches {
+			if s.Destination != nil && s.Destination.Platform != "" {
+				platforms = append(platforms, fmt.Sprintf("%q", s.Destination.Platform+":"+s.Name))
+			}
+		}
+		return "", fmt.Errorf("multiple stages named %q — use platform:name to disambiguate (e.g., %s)", nameOrID, strings.Join(platforms, ", "))
+	}
+
+	// Try platform:name syntax (e.g., "twitch:my-stage")
+	if parts := strings.SplitN(nameOrID, ":", 2); len(parts) == 2 {
+		platform, name := parts[0], parts[1]
+		for _, s := range listResp.Msg.Stages {
+			if s.Destination != nil && s.Destination.Platform == platform && s.Name == name {
+				return s.Id, nil
+			}
+		}
+	}
+
 	return "", fmt.Errorf("stage %q not found", nameOrID)
 }
 
@@ -87,9 +105,29 @@ func (c *StageListCmd) Run(ctx *Context) error {
 		return nil
 	}
 
-	tableHeader("NAME", "STATUS")
+	// Show PLATFORM column only if any stage has a destination set.
+	hasPlatform := false
 	for _, s := range resp.Msg.Stages {
-		printText("%s", tableRow(stageDisplayName(s), s.Status))
+		if s.Destination != nil && s.Destination.Platform != "" {
+			hasPlatform = true
+			break
+		}
+	}
+
+	if hasPlatform {
+		tableHeader("NAME", "PLATFORM", "STATUS")
+		for _, s := range resp.Msg.Stages {
+			platform := ""
+			if s.Destination != nil {
+				platform = s.Destination.Platform
+			}
+			printText("%s", tableRow(s.Name, platform, s.Status))
+		}
+	} else {
+		tableHeader("NAME", "STATUS")
+		for _, s := range resp.Msg.Stages {
+			printText("%s", tableRow(s.Name, s.Status))
+		}
 	}
 	return nil
 }
@@ -117,7 +155,7 @@ func (c *StageCreateCmd) Run(ctx *Context) error {
 		return nil
 	}
 
-	printText("Stage %q created.", stageDisplayName(resp.Msg.Stage))
+	printText("Stage %q created.", resp.Msg.Stage.Name)
 
 	// Auto-set as default so subsequent commands target this stage.
 	cfg, err := loadConfig()
@@ -184,7 +222,7 @@ func (c *StageStartCmd) Run(ctx *Context) error {
 		return nil
 	}
 
-	printText("Stage %q activated (status: %s)", stageDisplayName(resp.Msg.Stage), resp.Msg.Stage.Status)
+	printText("Stage %q activated (status: %s)", resp.Msg.Stage.Name, resp.Msg.Stage.Status)
 	if resp.Msg.Stage.Preview != nil {
 		printText("Watch:  %s", resp.Msg.Stage.Preview.WatchUrl)
 	}
@@ -216,7 +254,7 @@ func (c *StageStopCmd) Run(ctx *Context) error {
 		return nil
 	}
 
-	printText("Stage %q deactivated.", stageDisplayName(resp.Msg.Stage))
+	printText("Stage %q deactivated.", resp.Msg.Stage.Name)
 	return nil
 }
 
@@ -246,7 +284,7 @@ func (c *StageStatusCmd) Run(ctx *Context) error {
 		return nil
 	}
 
-	printText("Name:   %s\nStatus: %s", stageDisplayName(stage), stage.Status)
+	printText("Name:   %s\nStatus: %s", stage.Name, stage.Status)
 	if stage.Preview != nil {
 		printText("Watch:  %s\nHLS:    %s", stage.Preview.WatchUrl, stage.Preview.HlsUrl)
 	}
@@ -308,6 +346,3 @@ func (c *StageUseCmd) Run(ctx *Context) error {
 	}
 	return nil
 }
-
-// Ensure strings is used (for resolveStage in client.go which uses strings.Join).
-var _ = strings.Join

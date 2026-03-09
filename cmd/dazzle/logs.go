@@ -33,12 +33,8 @@ func (c *LogsCmd) Run(ctx *Context) error {
 		return err
 	}
 
-	if ctx.JSON {
-		printJSON(resp.Msg.Entries)
-	} else {
-		for _, entry := range resp.Msg.Entries {
-			fmt.Printf("[%s] %s  %s\n", entry.Level, entry.Timestamp, entry.Message)
-		}
+	for _, entry := range resp.Msg.Entries {
+		fmt.Printf("[%s] %s  %s\n", entry.Level, entry.Timestamp, entry.Message)
 	}
 	return nil
 }
