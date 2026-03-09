@@ -12,7 +12,7 @@ import (
 
 // EventCmd groups event subcommands.
 type EventCmd struct {
-	Emit EmitCmd `cmd:"" aliases:"e" help:"Push an event to the running script."`
+	Emit EmitCmd `cmd:"" aliases:"e" help:"Push a named event with JSON data to the running page — dispatched as a DOM CustomEvent. Use this to send real-time data from external processes (other agents, APIs, etc.) without re-syncing or reloading."`
 }
 
 // EmitCmd pushes an event to the running script on the active stage.

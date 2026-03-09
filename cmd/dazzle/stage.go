@@ -19,11 +19,11 @@ type StageCmd struct {
 	Down StageStopCmd  `cmd:"" help:"Deactivate a stage."`
 	Status     StageStatusCmd `cmd:"" aliases:"st" help:"Show stage status."`
 	Preview    StagePreviewCmd `cmd:"" help:"Show the shareable preview URL for a running stage."`
-	// Stage operations
-	Script     ScriptCmd     `cmd:"" aliases:"sc" help:"Manage the JS/JSX rendered on stage."`
-	Sync       SyncCmd       `cmd:"" aliases:"sy" help:"Sync a local directory to the stage."`
-	Refresh_   RefreshCmd    `cmd:"" name:"refresh" aliases:"r" help:"Reload the synced entry point."`
-	Event      EventCmd      `cmd:"" aliases:"ev" help:"Push data to the running script."`
+	// Content — sync a local directory to the stage (the primary way to push content)
+	Sync       SyncCmd       `cmd:"" aliases:"sy" help:"Sync a local directory to the stage. This is the primary way to push content — use --watch for live development."`
+	Refresh_   RefreshCmd    `cmd:"" name:"refresh" aliases:"r" help:"Reload the stage entry point."`
+	// Interaction
+	Event      EventCmd      `cmd:"" aliases:"ev" help:"Send real-time data to the running page without reloading. Events are dispatched as DOM CustomEvents — use this for async updates from subagents, APIs, or other processes."`
 	Logs       LogsCmd       `cmd:"" name:"logs" aliases:"l" help:"Retrieve stage console logs."`
 	Screenshot ScreenshotCmd `cmd:"" name:"screenshot" aliases:"ss" help:"Capture a screenshot of the stage."`
 	Broadcast  StreamCmd     `cmd:"" aliases:"bc" help:"Broadcast to a streaming destination."`

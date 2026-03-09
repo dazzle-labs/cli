@@ -27,11 +27,12 @@ const (
 )
 
 // SyncCmd syncs a local directory to a stage.
+// This is the primary (and only) way to push content to a stage.
 type SyncCmd struct {
-	Dir     string `arg:"" help:"Directory to sync." type:"existingdir"`
-	Watch   bool   `help:"Watch for changes and re-sync." short:"w"`
-	Entry   string `help:"HTML entry point file." default:"index.html"`
-	Refresh bool   `help:"Refresh Chrome after sync." short:"r"`
+	Dir     string `arg:"" help:"Local directory to sync (must contain an index.html entry point)." type:"existingdir"`
+	Watch   bool   `help:"Watch for file changes and automatically re-sync." short:"w"`
+	Entry   string `help:"HTML entry point file (default: index.html)." default:"index.html"`
+	Refresh bool   `help:"Reload the stage after each sync (combine with --watch for live dev: -wr)." short:"r"`
 }
 
 func (c *SyncCmd) Run(ctx *Context) error {

@@ -44,8 +44,8 @@ dazzle login
 dazzle stage create my-stage
 dazzle stage up
 
-# Push content (JS or JSX, hot-swapped via HMR)
-dazzle stage script set my-overlay.jsx
+# Sync a local directory to the stage
+dazzle stage sync ./my-app --watch
 
 # Take a screenshot to verify
 dazzle stage screenshot -o preview.png
@@ -79,9 +79,9 @@ dazzle stage broadcast on
 | `dazzle stage up` | `s up` | Activate a stage |
 | `dazzle stage down` | `s down` | Deactivate a stage |
 | `dazzle stage status` | `s st` | Show stage status |
-| `dazzle stage script set <file>` | `s sc set` | Push JS/JSX to stage |
-| `dazzle stage script get` | `s sc get` | Get current script |
-| `dazzle stage script edit` | `s sc edit` | Find & replace in script |
+| `dazzle stage sync <dir>` | `s sy` | Sync a local directory to stage |
+| `dazzle stage sync <dir> --watch` | `s sy -w` | Watch and re-sync on changes |
+| `dazzle stage refresh` | `s r` | Reload the stage entry point |
 | `dazzle stage event emit <name> <json>` | `s ev e` | Push event to script |
 | `dazzle stage screenshot` | `s ss` | Capture a screenshot |
 | `dazzle stage logs` | `s l` | Retrieve console logs |

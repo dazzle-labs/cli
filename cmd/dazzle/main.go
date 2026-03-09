@@ -23,7 +23,7 @@ var cli struct {
 	Whoami WhoamiCmd `cmd:"" help:"Show current user."`
 
 	// Resource commands
-	Stage_      StageCmd       `cmd:"" name:"stage" aliases:"s" help:"Manage stages."`
+	Stage_      StageCmd       `cmd:"" name:"stage" aliases:"s" help:"Manage stages — create, sync content, screenshot, stream."`
 	Destination DestinationCmd `cmd:"" name:"destination" aliases:"dest" help:"Manage stream destinations (Twitch, YouTube, etc)."`
 	Obs         ObsCmd         `cmd:"" name:"obs" aliases:"o" help:"Advanced OBS control (scenes, recording, etc)."`
 }
@@ -31,7 +31,28 @@ var cli struct {
 func main() {
 	k := kong.Parse(&cli,
 		kong.Name("dazzle"),
-		kong.Description("Dazzle — cloud stages for live streaming and AI agents. https://stream.dazzle.fm"),
+		kong.Description(`Dazzle — cloud stages for broadcasting.
+
+A stage is a cloud browser environment that renders and broadcasts your content.
+Sync a local directory (must contain an index.html) and everything visible in
+the browser window is what gets broadcast to viewers.
+
+Your content runs in a real browser with full access to standard web APIs
+(DOM, Canvas, WebGL, Web Audio, fetch, etc.). localStorage is persisted across
+stage restarts — use it to store app state that should survive between sessions.
+
+Workflow:
+  1. dazzle login                       # authenticate (one-time)
+  2. dazzle s new my-stage              # create a stage
+  3. dazzle s up                        # bring it up
+  4. dazzle s sync ./my-app -wr         # sync + watch + reload on changes
+  5. dazzle s ss -o preview.png         # take a screenshot to verify
+  6. dazzle s bc on                     # go live on configured destination
+  7. dazzle s bc off && dazzle s down   # stop streaming and shut down
+
+Stage selection: use -s <name>, DAZZLE_STAGE env, or auto-selected if only one.
+
+https://stream.dazzle.fm`),
 		kong.UsageOnError(),
 		kong.ConfigureHelp(kong.HelpOptions{Compact: true}),
 	)
