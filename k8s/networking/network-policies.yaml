@@ -24,11 +24,19 @@ spec:
   policyTypes:
     - Ingress
   ingress:
-    # Traefik ingress controller (runs in kube-system on k3s)
+    # Traefik ingress controller
     - from:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: kube-system
+              kubernetes.io/metadata.name: traefik
+      ports:
+        - protocol: TCP
+          port: 8080
+    # Prometheus scraping
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
       ports:
         - protocol: TCP
           port: 8080
@@ -80,7 +88,7 @@ spec:
     - from:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: kube-system
+              kubernetes.io/metadata.name: monitoring
       ports:
         - protocol: TCP
           port: 8080
