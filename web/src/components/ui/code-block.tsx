@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import hljs from "highlight.js/lib/core";
 import bash from "highlight.js/lib/languages/bash";
+import { cn } from "@/lib/utils";
 
 hljs.registerLanguage("bash", bash);
 
@@ -10,7 +11,7 @@ interface CodeBlockProps {
   className?: string;
 }
 
-export function CodeBlock({ code, language = "bash", className = "" }: CodeBlockProps) {
+export function CodeBlock({ code, language = "bash", className }: CodeBlockProps) {
   const html = useMemo(
     () => hljs.highlight(code, { language }).value,
     [code, language]
@@ -18,7 +19,7 @@ export function CodeBlock({ code, language = "bash", className = "" }: CodeBlock
 
   return (
     <pre
-      className={`font-mono text-sm bg-zinc-950/50 rounded-lg px-4 py-3 border border-white/[0.06] whitespace-pre-wrap overflow-x-auto ${className}`}
+      className={cn("font-mono text-sm bg-card rounded-lg px-4 py-3 border border-border whitespace-pre-wrap overflow-x-auto", className)}
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );

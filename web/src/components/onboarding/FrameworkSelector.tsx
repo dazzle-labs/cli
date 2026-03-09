@@ -13,13 +13,10 @@ interface FrameworkSelectorProps {
 export function FrameworkSelector({ selected, onSelect, onNext, verbose }: FrameworkSelectorProps) {
   return (
     <div className="flex flex-col items-center">
-      <h2
-        className="text-2xl tracking-[-0.02em] text-white mb-2"
-        style={{ fontFamily: "'DM Serif Display', serif" }}
-      >
+      <h2 className="text-2xl tracking-[-0.02em] text-foreground mb-2 font-display">
         Choose your tool
       </h2>
-      <p className="text-sm text-zinc-500 mb-8">
+      <p className="text-sm text-muted-foreground mb-8">
         {verbose
           ? "Select the agent framework you'll use to connect. We'll generate the right config for you."
           : "Which framework is your agent built with?"}
@@ -33,14 +30,14 @@ export function FrameworkSelector({ selected, onSelect, onNext, verbose }: Frame
             className={cn(
               "rounded-xl border p-4 text-left transition-all duration-200 cursor-pointer",
               selected?.id === fw.id
-                ? "border-emerald-500/30 bg-emerald-500/[0.06]"
-                : "border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12] hover:bg-white/[0.04]"
+                ? "border-primary/30 bg-primary/[0.06]"
+                : "border-border bg-card hover:border-border/80 hover:bg-muted"
             )}
           >
-            <p className="text-sm font-medium text-white mb-0.5">{fw.name}</p>
-            <p className="text-xs text-zinc-500">{fw.language}</p>
+            <p className="text-sm font-medium text-foreground mb-0.5">{fw.name}</p>
+            <p className="text-xs text-muted-foreground">{fw.language}</p>
             {verbose && (
-              <p className="text-xs text-zinc-600 mt-1">{fw.description}</p>
+              <p className="text-xs text-muted-foreground mt-1">{fw.description}</p>
             )}
           </button>
         ))}
@@ -49,7 +46,7 @@ export function FrameworkSelector({ selected, onSelect, onNext, verbose }: Frame
       <Button
         disabled={!selected}
         onClick={onNext}
-        className="bg-emerald-500 text-zinc-950 hover:bg-emerald-400 font-semibold disabled:opacity-30"
+        className="font-semibold disabled:opacity-30"
       >
         Continue
         <ArrowRight className="h-4 w-4 ml-1" />

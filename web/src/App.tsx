@@ -13,6 +13,7 @@ import { ApiKeys } from "./pages/ApiKeys.js";
 import { Docs } from "./pages/Docs.js";
 import { LandingPage } from "./pages/LandingPage.js";
 import { PreviewPage } from "./pages/PreviewPage.js";
+import { TooltipProvider } from "./components/ui/tooltip.js";
 
 function AuthSetup() {
   const { getToken } = useAuth();
@@ -30,16 +31,18 @@ function AuthenticatedApp() {
       </Show>
       <Show when="signed-in">
         <AuthSetup />
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/stage/:stageId" element={<StageDetail />} />
-            <Route path="/destinations" element={<StreamConfig />} />
-            <Route path="/api-keys" element={<ApiKeys />} />
-            <Route path="/docs" element={<Docs />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Layout>
+        <TooltipProvider>
+          <Layout>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/stage/:stageId" element={<StageDetail />} />
+              <Route path="/destinations" element={<StreamConfig />} />
+              <Route path="/api-keys" element={<ApiKeys />} />
+              <Route path="/docs" element={<Docs />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Layout>
+        </TooltipProvider>
       </Show>
     </>
   );

@@ -1,13 +1,19 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/react";
+import { toast } from "sonner";
 import { streamClient } from "../client.js";
 import type { StreamDestination } from "../gen/api/v1/stream_pb.js";
 import { StreamDestinationForm } from "@/components/onboarding/StreamDestinationForm.js";
 import type { StreamDestinationData } from "@/components/onboarding/StreamDestinationForm.js";
 import { Button } from "@/components/ui/button";
-import { Trash2, Radio, Plus } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent } from "@/components/ui/card";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
+import { Trash2, Radio } from "lucide-react";
 import { PlatformIcon, PLATFORM_LIST } from "@/components/PlatformIcon";
-import { Overlay } from "@/components/ui/overlay";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 
 const OAUTH_PLATFORMS = ["twitch", "youtube", "kick"] as const;
@@ -18,9 +24,6 @@ export function StreamConfig() {
   const [availablePlatforms, setAvailablePlatforms] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCustomModal, setShowCustomModal] = useState(false);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [connectSuccess, setConnectSuccess] = useState<string | null>(null);
-  const [connectError, setConnectError] = useState<string | null>(null);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardSkipIntro, setWizardSkipIntro] = useState(false);
 
@@ -40,15 +43,13 @@ export function StreamConfig() {
     const error = searchParams.get("error") || hashParams.get("error");
     const onboarding = searchParams.get("onboarding") || hashParams.get("onboarding");
     if (connected) {
-      setConnectSuccess(connected);
+      toast.success(`Connected to ${connected.charAt(0).toUpperCase() + connected.slice(1)}!`);
       const cleanUrl = onboarding ? "/destinations?onboarding=true" : "/destinations";
       window.history.replaceState(null, "", cleanUrl);
-      setTimeout(() => setConnectSuccess(null), 5000);
     }
     if (error) {
-      setConnectError(error);
+      toast.error(error);
       window.history.replaceState(null, "", "/destinations");
-      setTimeout(() => setConnectError(null), 8000);
     }
     if (onboarding === "true") {
       setWizardSkipIntro(!!connected);
@@ -92,8 +93,7 @@ export function StreamConfig() {
       });
       if (!resp.ok) {
         const data = await resp.json();
-        setConnectError(data.error || "Failed to connect");
-        setTimeout(() => setConnectError(null), 8000);
+        toast.error(data.error || "Failed to connect");
         return;
       }
     } catch {
@@ -104,8 +104,8 @@ export function StreamConfig() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-zinc-500 text-sm pt-12">
-        <div className="h-4 w-4 border-2 border-zinc-600 border-t-emerald-400 rounded-full animate-spin" />
+      <div className="flex items-center gap-2 text-muted-foreground text-sm pt-12">
+        <Spinner className="text-primary" />
         Loading destinations...
       </div>
     );
@@ -115,79 +115,50 @@ export function StreamConfig() {
     <div>
       {/* Header */}
       <div className="mb-8">
-        <h1
-          className="text-3xl tracking-[-0.02em] text-white mb-1"
-          style={{ fontFamily: "'DM Serif Display', serif" }}
-        >
+        <h1 className="text-3xl tracking-[-0.02em] text-foreground mb-1 font-display">
           Stream Destinations
         </h1>
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-muted-foreground">
           The platforms your agents can stream to.
         </p>
       </div>
 
-      {/* Success toast */}
-      {connectSuccess && (
-        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.05] p-4 mb-6 flex items-center gap-3">
-          <div className="h-2 w-2 rounded-full bg-emerald-400" />
-          <span className="text-sm text-emerald-300">
-            Connected to {connectSuccess.charAt(0).toUpperCase() + connectSuccess.slice(1)}!
-          </span>
-        </div>
-      )}
-
-      {/* Error toast */}
-      {connectError && (
-        <div className="rounded-xl border border-red-500/20 bg-red-500/[0.05] p-4 mb-6 flex items-center gap-3">
-          <div className="h-2 w-2 rounded-full bg-red-400" />
-          <span className="text-sm text-red-300">{connectError}</span>
-        </div>
-      )}
-
       {/* Platforms */}
       <div className="mb-8">
-        <p className="text-xs font-medium text-zinc-400 mb-3">Platforms</p>
+        <p className="text-xs font-medium text-muted-foreground mb-3">Platforms</p>
         <div className="flex flex-wrap gap-3">
           {OAUTH_PLATFORMS.filter(p => availablePlatforms.includes(p)).map((platform) => {
             const label = PLATFORM_LIST.find((p) => p.value === platform)?.label ?? platform;
             return (
-              <button
+              <Button
                 key={platform}
-                type="button"
+                variant="outline"
                 onClick={() => handleOAuthConnect(platform)}
-                className="flex items-center gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 transition-all hover:border-emerald-500/20 hover:bg-emerald-500/[0.02] cursor-pointer"
+                className="rounded-xl h-auto px-4 py-3 hover:border-primary/20 hover:bg-primary/[0.02]"
               >
                 <PlatformIcon platform={platform} size="sm" />
-                <span className="text-xs text-zinc-300">{label}</span>
-              </button>
+                <span className="text-xs">{label}</span>
+              </Button>
             );
           })}
-          <button
-            type="button"
+          <Button
+            variant="outline"
             onClick={() => setShowCustomModal(true)}
-            className="flex items-center gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 transition-all hover:border-emerald-500/20 hover:bg-emerald-500/[0.02] cursor-pointer"
+            className="rounded-xl h-auto px-4 py-3 hover:border-primary/20 hover:bg-primary/[0.02]"
           >
             <PlatformIcon platform="custom" size="sm" />
-            <span className="text-xs text-zinc-300">Custom</span>
-          </button>
+            <span className="text-xs">Custom</span>
+          </Button>
         </div>
       </div>
 
       {/* Custom modal */}
-      <Overlay open={showCustomModal} onClose={() => setShowCustomModal(false)}>
-        <div className="relative w-full max-w-md mx-4 rounded-2xl border border-white/[0.06] bg-zinc-900 p-8">
-          <button
-            onClick={() => setShowCustomModal(false)}
-            className="absolute top-4 right-4 text-zinc-600 hover:text-zinc-300 transition-colors cursor-pointer"
-          >
-            <Plus className="h-5 w-5 rotate-45" />
-          </button>
-          <h2
-            className="text-xl tracking-[-0.02em] text-white mb-6"
-            style={{ fontFamily: "'DM Serif Display', serif" }}
-          >
-            Custom Destination
-          </h2>
+      <Dialog open={showCustomModal} onOpenChange={setShowCustomModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Custom Destination</DialogTitle>
+            <DialogDescription>Add a custom RTMP streaming destination.</DialogDescription>
+          </DialogHeader>
           <StreamDestinationForm
             compact
             hideSkip
@@ -196,8 +167,8 @@ export function StreamConfig() {
               if (data) handleCreate(data);
             }}
           />
-        </div>
-      </Overlay>
+        </DialogContent>
+      </Dialog>
 
       {/* Onboarding wizard */}
       <OnboardingWizard
@@ -212,112 +183,98 @@ export function StreamConfig() {
 
       {/* Destinations table */}
       {destinations.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="h-16 w-16 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mb-5">
-            <Radio className="h-7 w-7 text-zinc-600" />
-          </div>
-          <p className="text-zinc-400 text-sm mb-1">No stream destinations</p>
-          <p className="text-zinc-600 text-xs">Add one above to start streaming.</p>
-        </div>
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon"><Radio className="h-7 w-7" /></EmptyMedia>
+            <EmptyTitle>No stream destinations</EmptyTitle>
+            <EmptyDescription>Add one above to start streaming.</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : (
         <>
           {/* Desktop table */}
-          <div className="rounded-xl border border-white/[0.06] overflow-hidden hidden sm:block">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-white/[0.06]">
-                  <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">Account</th>
-                  <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">Platform</th>
-                  <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">RTMP URL</th>
-                  <th className="py-3 px-4"></th>
-                </tr>
-              </thead>
-              <tbody>
+          <div className="rounded-xl border overflow-x-auto hidden sm:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Account</TableHead>
+                  <TableHead>Platform</TableHead>
+                  <TableHead>RTMP URL</TableHead>
+                  <TableHead><span className="sr-only">Actions</span></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {destinations.map((d) => (
-                  <tr
-                    key={d.id}
-                    className="border-b border-white/[0.04] last:border-0"
-                  >
-                    <td className="py-3 px-4 text-zinc-300">{d.name || d.platformUsername || "\u2014"}</td>
-                    <td className="py-3 px-4">
+                  <TableRow key={d.id}>
+                    <TableCell className="text-foreground">{d.name || d.platformUsername || "\u2014"}</TableCell>
+                    <TableCell>
                       <div className="flex items-center gap-2">
                         <PlatformIcon platform={d.platform} size="sm" />
-                        <span className="text-xs text-zinc-400">{d.platform}</span>
+                        <span className="text-xs text-muted-foreground">{d.platform}</span>
                       </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <code className="text-xs text-zinc-500 font-mono">{d.rtmpUrl || "\u2014"}</code>
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      {confirmDeleteId === d.id ? (
-                        <div className="flex items-center gap-2 justify-end">
-                          <span className="text-xs text-zinc-400">Unlinks from stages. Delete?</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-400 hover:bg-red-500/10"
-                            onClick={() => { handleDelete(d.id); setConfirmDeleteId(null); }}
-                          >
-                            Delete
+                    </TableCell>
+                    <TableCell>
+                      <code className="text-xs text-muted-foreground font-mono">{d.rtmpUrl || "\u2014"}</code>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10" aria-label="Delete destination">
+                            <Trash2 className="h-3.5 w-3.5" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-zinc-500"
-                            onClick={() => setConfirmDeleteId(null)}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-zinc-500 hover:text-red-400 hover:bg-red-500/10"
-                          onClick={() => setConfirmDeleteId(d.id)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      )}
-                    </td>
-                  </tr>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete destination?</AlertDialogTitle>
+                            <AlertDialogDescription>This will unlink it from any stages using it.</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction variant="destructive" onClick={() => handleDelete(d.id)}>Delete</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
           {/* Mobile cards */}
           <div className="flex flex-col gap-3 sm:hidden">
             {destinations.map((d) => (
-              <div
-                key={d.id}
-                className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-zinc-300 font-medium">{d.name || d.platformUsername || "\u2014"}</span>
-                  <div className="flex items-center gap-2">
-                    <PlatformIcon platform={d.platform} size="sm" />
-                    <span className="text-xs text-zinc-500">{d.platform}</span>
-                  </div>
-                </div>
-                <code className="text-xs text-zinc-600 font-mono break-all">{d.rtmpUrl || "\u2014"}</code>
-                <div className="mt-3 flex justify-end">
-                  {confirmDeleteId === d.id ? (
+              <Card key={d.id}>
+                <CardContent className="pt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-foreground font-medium">{d.name || d.platformUsername || "\u2014"}</span>
                     <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm" className="text-red-400 hover:bg-red-500/10" onClick={() => { handleDelete(d.id); setConfirmDeleteId(null); }}>
-                        Delete
-                      </Button>
-                      <Button variant="ghost" size="sm" className="text-zinc-500" onClick={() => setConfirmDeleteId(null)}>
-                        Cancel
-                      </Button>
+                      <PlatformIcon platform={d.platform} size="sm" />
+                      <span className="text-xs text-muted-foreground">{d.platform}</span>
                     </div>
-                  ) : (
-                    <Button variant="ghost" size="sm" className="text-zinc-500 hover:text-red-400 hover:bg-red-500/10" onClick={() => setConfirmDeleteId(d.id)}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
-                </div>
-              </div>
+                  </div>
+                  <code className="text-xs text-muted-foreground font-mono break-all">{d.rtmpUrl || "\u2014"}</code>
+                  <div className="mt-3 flex justify-end">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10" aria-label="Delete destination">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete destination?</AlertDialogTitle>
+                          <AlertDialogDescription>This will unlink it from any stages using it.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction variant="destructive" onClick={() => handleDelete(d.id)}>Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </>

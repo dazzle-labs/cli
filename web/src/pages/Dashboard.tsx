@@ -6,8 +6,20 @@ import type { StreamDestination } from "../gen/api/v1/stream_pb.js";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Radio, X, Loader2, ArrowRight } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Radio, X, Loader2, ArrowRight, Monitor } from "lucide-react";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
+import { toast } from "sonner";
+import { Spinner } from "@/components/ui/spinner";
+import { Alert, AlertTitle, AlertAction } from "@/components/ui/alert";
+import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+  EmptyDescription,
+  EmptyContent,
+} from "@/components/ui/empty";
 
 export function Dashboard() {
   const [stages, setStages] = useState<Stage[]>([]);
@@ -48,8 +60,8 @@ export function Dashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-zinc-500 text-sm pt-12">
-        <div className="h-4 w-4 border-2 border-zinc-600 border-t-emerald-400 rounded-full animate-spin" />
+      <div className="flex items-center gap-2 text-muted-foreground text-sm pt-12">
+        <Spinner className="text-primary" />
         Loading stages...
       </div>
     );
@@ -60,6 +72,7 @@ export function Dashboard() {
     try {
       await stageClient.createStage({ name: "" });
       await refresh();
+      toast.success("Stage created");
     } catch {
       // ignore
     } finally {
@@ -75,42 +88,35 @@ export function Dashboard() {
     <div>
       {/* Streaming banner */}
       {showStreamBanner && (
-        <div className="mb-6 flex items-center justify-between rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] px-5 py-3">
-          <div className="flex items-center gap-3">
-            <Radio className="h-4 w-4 text-emerald-400" />
-            <span className="text-sm text-zinc-300">
-              Your agent has a stage. Ready to open the curtains?
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link to="/destinations">
+        <Alert className="mb-6 border-primary/20 bg-primary/[0.04]">
+          <Radio className="h-4 w-4 text-primary" />
+          <AlertTitle className="text-foreground">
+            Your agent has a stage. Ready to open the curtains?
+          </AlertTitle>
+          <AlertAction>
+            <div className="flex items-center gap-2">
               <Button
                 size="sm"
-                className="bg-emerald-500 text-zinc-950 hover:bg-emerald-400 font-semibold text-xs"
+                className="font-semibold text-xs"
+                asChild
               >
-                Set up streaming
+                <Link to="/destinations">Set up streaming</Link>
               </Button>
-            </Link>
-            <button
-              onClick={dismissBanner}
-              className="text-zinc-600 hover:text-zinc-400 transition-colors cursor-pointer p-1"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={dismissBanner} aria-label="Dismiss">
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </AlertAction>
+        </Alert>
       )}
 
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1
-            className="text-3xl tracking-[-0.02em] text-white mb-1"
-            style={{ fontFamily: "'DM Serif Display', serif" }}
-          >
+          <h1 className="text-3xl tracking-[-0.02em] text-foreground mb-1 font-display">
             Stages
           </h1>
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-muted-foreground">
             Cloud environments your agents can control and broadcast from.
           </p>
         </div>
@@ -120,7 +126,7 @@ export function Dashboard() {
             disabled={creatingStage}
             variant="ghost"
             size="sm"
-            className="text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10"
+            className="text-muted-foreground hover:text-primary hover:bg-primary/10"
           >
             {creatingStage ? (
               <Loader2 className="h-4 w-4 animate-spin mr-1" />
@@ -141,38 +147,60 @@ export function Dashboard() {
 
       {/* Stages grid */}
       {stages.length === 0 ? (
-        <div className="text-center py-16">
-          <p className="text-zinc-500 text-sm mb-4">No stages yet. Create one to get started.</p>
-          <Button
-            onClick={() => setWizardOpen(true)}
-            className="bg-emerald-500 text-zinc-950 hover:bg-emerald-400 font-semibold"
-          >
-            Get Started
-          </Button>
-        </div>
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <Monitor className="h-7 w-7" />
+            </EmptyMedia>
+            <EmptyTitle>No stages yet</EmptyTitle>
+            <EmptyDescription>Create one to get started.</EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <Button
+              onClick={() => setWizardOpen(true)}
+              className="font-semibold"
+            >
+              Get Started
+            </Button>
+          </EmptyContent>
+        </Empty>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {stages.map((stage) => (
-            <Link
-              key={stage.id}
-              to={`/stage/${stage.id}`}
-              className="group rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 transition-all duration-200 hover:border-emerald-500/15 hover:bg-emerald-500/[0.02]"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium text-zinc-300">{stage.name || "default"}</span>
-                <Badge variant={stage.status === "running" ? "success" : stage.status === "starting" ? "warning" : "default"}>
-                  {stage.status === "running" ? "active" : stage.status || "inactive"}
-                </Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-zinc-600">
-                  {stage.createdAt ? timestampDate(stage.createdAt).toLocaleDateString() : ""}
-                </span>
-                <span className="flex items-center gap-1 text-xs text-zinc-600 group-hover:text-emerald-400 transition-colors">
-                  View details
-                  <ArrowRight className="h-3 w-3" />
-                </span>
-              </div>
+            <Link key={stage.id} to={`/stage/${stage.id}`} className="group">
+              <Card className="transition-all duration-200 hover:border-primary/15 hover:bg-primary/[0.02]">
+                <CardContent className="p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-medium text-foreground">
+                      {stage.name || "default"}
+                    </span>
+                    <Badge
+                      variant={
+                        stage.status === "running"
+                          ? "success"
+                          : stage.status === "starting"
+                            ? "warning"
+                            : "secondary"
+                      }
+                    >
+                      {stage.status === "running"
+                        ? "active"
+                        : stage.status || "inactive"}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">
+                      {stage.createdAt
+                        ? timestampDate(stage.createdAt).toLocaleDateString()
+                        : ""}
+                    </span>
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground group-hover:text-primary transition-colors">
+                      View details
+                      <ArrowRight className="h-3 w-3" />
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
             </Link>
           ))}
         </div>

@@ -15,10 +15,10 @@ export function StepIndicator({ steps, current }: StepIndicatorProps) {
               className={cn(
                 "h-7 w-7 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-300",
                 i < current
-                  ? "bg-emerald-500 text-zinc-950"
+                  ? "bg-primary text-primary-foreground"
                   : i === current
-                    ? "bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/40"
-                    : "bg-white/[0.04] text-zinc-600"
+                    ? "bg-primary/20 text-primary ring-1 ring-primary/40"
+                    : "bg-muted text-muted-foreground"
               )}
             >
               {i < current ? (
@@ -32,7 +32,7 @@ export function StepIndicator({ steps, current }: StepIndicatorProps) {
             <span
               className={cn(
                 "text-xs font-medium transition-colors duration-300 hidden sm:inline",
-                i === current ? "text-zinc-300" : "text-zinc-600"
+                i === current ? "text-foreground" : "text-muted-foreground"
               )}
             >
               {label}
@@ -42,7 +42,7 @@ export function StepIndicator({ steps, current }: StepIndicatorProps) {
             <div
               className={cn(
                 "w-8 h-px transition-colors duration-300",
-                i < current ? "bg-emerald-500/40" : "bg-white/[0.06]"
+                i < current ? "bg-primary/40" : "bg-border"
               )}
             />
           )}

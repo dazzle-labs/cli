@@ -86,11 +86,8 @@ export function StreamPreview({ stageId, status }: StreamPreviewProps) {
 
   if (status !== "running") {
     return (
-      <div className="aspect-video rounded-xl bg-zinc-900 border border-white/[0.06] flex items-center justify-center">
-        <p
-          className="text-sm text-zinc-600 text-center px-8 leading-relaxed"
-          style={{ fontFamily: "'Outfit', sans-serif" }}
-        >
+      <div className="aspect-video rounded-xl bg-card border border-border flex items-center justify-center">
+        <p className="text-sm text-muted-foreground text-center px-8 leading-relaxed">
           Your stage is dark.
           <br />
           It'll light up when the stage is activated.
@@ -100,7 +97,7 @@ export function StreamPreview({ stageId, status }: StreamPreviewProps) {
   }
 
   return (
-    <div className="aspect-video rounded-xl bg-zinc-900 border border-white/[0.06] overflow-hidden">
+    <div className="aspect-video rounded-xl bg-card border border-border overflow-hidden">
       <video
         ref={videoRef}
         className="w-full h-full object-contain bg-black"

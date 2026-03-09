@@ -1,9 +1,17 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { apiKeyClient } from "../client.js";
 import type { ApiKey } from "../gen/api/v1/apikey_pb.js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
 import { Key, Trash2, Copy, Check, Shield, AlertTriangle } from "lucide-react";
 
 export function ApiKeys() {
@@ -12,10 +20,7 @@ export function ApiKeys() {
   const [name, setName] = useState("");
   const [newSecret, setNewSecret] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const nameInputRef = useRef<HTMLInputElement>(null);
-
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [copiedExport, setCopiedExport] = useState(false);
 
   async function refresh() {
     const resp = await apiKeyClient.listApiKeys({});
@@ -33,24 +38,11 @@ export function ApiKeys() {
     const resp = await apiKeyClient.createApiKey({ name: name.trim() });
     setNewSecret(resp.secret);
     setName("");
-    setShowCreateForm(false);
     await refresh();
-  }
-
-  function openCreateForm() {
-    setShowCreateForm(true);
-    // Focus the input after React renders it
-    setTimeout(() => nameInputRef.current?.focus(), 0);
-  }
-
-  function cancelCreate() {
-    setShowCreateForm(false);
-    setName("");
   }
 
   async function handleDelete(id: string) {
     await apiKeyClient.deleteApiKey({ id });
-    setConfirmDeleteId(null);
     await refresh();
   }
 
@@ -61,11 +53,17 @@ export function ApiKeys() {
     setTimeout(() => setCopied(false), 2000);
   }
 
+  async function handleCopyExport() {
+    if (!newSecret) return;
+    await navigator.clipboard.writeText(`export DAZZLE_API_KEY=${newSecret}`);
+    setCopiedExport(true);
+    setTimeout(() => setCopiedExport(false), 2000);
+  }
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-zinc-500 text-sm pt-12">
-        <div className="h-4 w-4 border-2 border-zinc-600 border-t-emerald-400 rounded-full animate-spin" />
+      <div className="flex items-center gap-2 text-muted-foreground text-sm pt-12">
+        <Spinner className="text-primary" />
         Loading API keys...
       </div>
     );
@@ -75,207 +73,197 @@ export function ApiKeys() {
     <div>
       {/* Header */}
       <div className="mb-8">
-        <h1
-          className="text-3xl tracking-[-0.02em] text-white mb-1"
-          style={{ fontFamily: "'DM Serif Display', serif" }}
-        >
+        <h1 className="text-3xl tracking-[-0.02em] text-foreground mb-1 font-display">
           API Keys
         </h1>
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-muted-foreground">
           Keys for CLI and agent authentication. The full key is shown only once.
         </p>
       </div>
 
       {/* Security best practices */}
-      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 mb-6">
-        <div className="flex items-start gap-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
-            <Shield className="h-4 w-4" />
-          </div>
-          <div className="text-xs text-zinc-500 leading-relaxed">
-            <p className="text-zinc-400 font-medium mb-1">Security best practices</p>
-            Store keys in environment variables, never in source code. Rotate keys periodically. Create separate keys per agent for easier revocation.
-          </div>
-        </div>
-      </div>
+      <Alert className="mb-6">
+        <Shield className="h-4 w-4" />
+        <AlertTitle>Security best practices</AlertTitle>
+        <AlertDescription>Store keys in environment variables, never in source code. Rotate keys periodically. Create separate keys per agent for easier revocation.</AlertDescription>
+      </Alert>
 
-      {/* Create key */}
-      <div className="mb-8">
-        {!showCreateForm ? (
-          <Button
-            onClick={openCreateForm}
-            variant="outline"
-            className="border-white/[0.08] text-zinc-300 hover:bg-white/[0.04] hover:text-white"
-          >
-            + New API Key
-          </Button>
-        ) : (
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
-            <p className="text-sm text-zinc-400 mb-3">Give your key a name so you can identify it later.</p>
-            <form onSubmit={handleCreate} className="flex flex-col sm:flex-row gap-3">
-              <Input
-                ref={nameInputRef}
-                type="text"
-                placeholder="e.g. my-agent"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="sm:max-w-xs"
-              />
-              <Button type="submit" disabled={!name.trim()} className="bg-emerald-500 text-zinc-950 hover:bg-emerald-400 font-semibold disabled:opacity-40 disabled:cursor-not-allowed">
-                Create
-              </Button>
-              <Button type="button" variant="ghost" onClick={cancelCreate} className="text-zinc-500 hover:text-zinc-300">
-                Cancel
-              </Button>
-            </form>
-          </div>
-        )}
-      </div>
+      {/* Create form */}
+      <Card className="mb-8">
+        <CardContent>
+          <form onSubmit={handleCreate} className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col gap-1.5 sm:max-w-xs flex-1">
+              <Label htmlFor="key-name">Key name</Label>
+              <Input id="key-name" type="text" placeholder="e.g. my-agent" value={name} onChange={(e) => setName(e.target.value)} />
+            </div>
+            <Button type="submit" className="font-semibold sm:self-end">
+              Create Key
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
       {/* New key reveal */}
       {newSecret && (
-        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.05] p-5 mb-8">
+        <div className="rounded-xl border border-primary/20 bg-primary/[0.05] p-5 mb-8">
           <div className="flex items-center gap-2 mb-3">
             <AlertTriangle className="h-4 w-4 text-amber-400" />
-            <p className="text-sm font-medium text-emerald-400">New API key created — copy it now, it won't be shown again</p>
+            <p className="text-sm font-medium text-primary">New API key created — copy it now, it won't be shown again</p>
           </div>
           <div className="flex items-center gap-2 mb-3">
-            <pre className="flex-1 font-mono text-sm text-zinc-200 bg-zinc-950/50 rounded-lg px-4 py-2.5 break-all border border-white/[0.06]">
+            <pre className="flex-1 font-mono text-sm text-foreground bg-card rounded-lg px-4 py-2.5 break-all border border-border">
               {newSecret}
             </pre>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCopy}
-              className="text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10 shrink-0"
-            >
-              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCopy}
+                  className="text-muted-foreground hover:text-primary hover:bg-primary/10 shrink-0"
+                >
+                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Copy API key</TooltipContent>
+            </Tooltip>
           </div>
-          <button
-            onClick={() => { setNewSecret(null); setCopied(false); }}
-            className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors cursor-pointer"
+          <div className="flex items-center gap-2 mb-3">
+            <code className="flex-1 font-mono text-xs text-muted-foreground bg-card rounded-lg px-4 py-2 border border-border">
+              export DAZZLE_API_KEY={newSecret}
+            </code>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCopyExport}
+                  className="text-muted-foreground hover:text-primary hover:bg-primary/10 shrink-0"
+                >
+                  {copiedExport ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Copy export command</TooltipContent>
+            </Tooltip>
+          </div>
+          <Button
+            variant="link"
+            size="sm"
+            className="text-xs text-muted-foreground hover:text-foreground h-auto p-0"
+            onClick={() => { setNewSecret(null); setCopied(false); setCopiedExport(false); }}
           >
             I've saved it, dismiss
-          </button>
+          </Button>
         </div>
       )}
 
       {/* Keys list */}
       {keys.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="h-16 w-16 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mb-5">
-            <Key className="h-7 w-7 text-zinc-600" />
-          </div>
-          <p className="text-zinc-400 text-sm mb-1">No API keys yet</p>
-          <p className="text-zinc-600 text-xs">Create one to authenticate your agents.</p>
-        </div>
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon"><Key className="h-7 w-7" /></EmptyMedia>
+            <EmptyTitle>No API keys yet</EmptyTitle>
+            <EmptyDescription>Create one to authenticate your agents.</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : (
         <>
           {/* Desktop table */}
-          <div className="rounded-xl border border-white/[0.06] overflow-hidden hidden sm:block">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-white/[0.06]">
-                  <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">Name</th>
-                  <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">Prefix</th>
-                  <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">Created</th>
-                  <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase tracking-wider">Last Used</th>
-                  <th className="py-3 px-4"></th>
-                </tr>
-              </thead>
-              <tbody>
+          <div className="rounded-xl border overflow-x-auto hidden sm:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Prefix</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead>Last Used</TableHead>
+                  <TableHead><span className="sr-only">Actions</span></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {keys.map((k) => (
-                  <tr key={k.id} className="border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02] transition-colors">
-                    <td className="py-3 px-4 text-zinc-300">{k.name}</td>
-                    <td className="py-3 px-4">
-                      <code className="font-mono text-xs text-zinc-400 bg-white/[0.04] px-2 py-0.5 rounded">
+                  <TableRow key={k.id}>
+                    <TableCell className="text-foreground">{k.name}</TableCell>
+                    <TableCell>
+                      <code className="font-mono text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
                         {k.prefix}
                       </code>
-                    </td>
-                    <td className="py-3 px-4 text-zinc-500">
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
                       {k.createdAt ? timestampDate(k.createdAt).toLocaleDateString() : ""}
-                    </td>
-                    <td className="py-3 px-4 text-zinc-500">
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
                       {k.lastUsedAt ? timestampDate(k.lastUsedAt).toLocaleDateString() : "Never"}
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      {confirmDeleteId === k.id ? (
-                        <div className="flex items-center gap-2 justify-end">
-                          <span className="text-xs text-zinc-400">Delete this key?</span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-red-400 hover:bg-red-500/10"
-                            onClick={() => handleDelete(k.id)}
+                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10" aria-label="Delete API key"
                           >
-                            Delete
+                            <Trash2 className="h-3.5 w-3.5" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-zinc-500"
-                            onClick={() => setConfirmDeleteId(null)}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-zinc-500 hover:text-red-400 hover:bg-red-500/10"
-                          onClick={() => setConfirmDeleteId(k.id)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      )}
-                    </td>
-                  </tr>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete this API key?</AlertDialogTitle>
+                            <AlertDialogDescription>This will revoke the key immediately. Any agents using it will lose access.</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction variant="destructive" onClick={() => handleDelete(k.id)}>Delete</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
           {/* Mobile cards */}
           <div className="flex flex-col gap-3 sm:hidden">
             {keys.map((k) => (
-              <div
-                key={k.id}
-                className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-zinc-300 font-medium">{k.name}</span>
-                  <code className="font-mono text-xs text-zinc-400 bg-white/[0.04] px-2 py-0.5 rounded">
-                    {k.prefix}
-                  </code>
-                </div>
-                <div className="flex items-center gap-4 text-xs text-zinc-500 mb-3">
-                  <span>{k.createdAt ? timestampDate(k.createdAt).toLocaleDateString() : ""}</span>
-                  <span>Used: {k.lastUsedAt ? timestampDate(k.lastUsedAt).toLocaleDateString() : "Never"}</span>
-                </div>
-                <div className="flex justify-end">
-                  {confirmDeleteId === k.id ? (
-                    <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm" className="text-red-400 hover:bg-red-500/10" onClick={() => handleDelete(k.id)}>
-                        Delete
-                      </Button>
-                      <Button variant="ghost" size="sm" className="text-zinc-500" onClick={() => setConfirmDeleteId(null)}>
-                        Cancel
-                      </Button>
-                    </div>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-zinc-500 hover:text-red-400 hover:bg-red-500/10"
-                      onClick={() => setConfirmDeleteId(k.id)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
-                </div>
-              </div>
+              <Card key={k.id}>
+                <CardContent className="pt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-foreground font-medium">{k.name}</span>
+                    <code className="font-mono text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                      {k.prefix}
+                    </code>
+                  </div>
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
+                    <span>{k.createdAt ? timestampDate(k.createdAt).toLocaleDateString() : ""}</span>
+                    <span>Used: {k.lastUsedAt ? timestampDate(k.lastUsedAt).toLocaleDateString() : "Never"}</span>
+                  </div>
+                  <div className="flex justify-end">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-muted-foreground hover:text-destructive hover:bg-destructive/10" aria-label="Delete API key"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete this API key?</AlertDialogTitle>
+                          <AlertDialogDescription>This will revoke the key immediately. Any agents using it will lose access.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction variant="destructive" onClick={() => handleDelete(k.id)}>Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </>

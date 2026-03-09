@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { Copy, Check } from "lucide-react";
 import { CopyAgentPromptButton } from "@/components/CopyAgentPromptButton";
+import { CodeBlock } from "@/components/ui/code-block";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 function useOS(): "windows" | "mac" | "linux" {
   const ua = navigator.userAgent.toLowerCase();
@@ -19,18 +22,21 @@ export function Docs() {
     setTimeout(() => setCopiedId(null), 2000);
   }
 
-  function CopyBtn({ id, text }: { id: string; text: string }) {
+  function CopyIconBtn({ id, text }: { id: string; text: string }) {
     return (
-      <button
-        onClick={() => copy(text, id)}
-        className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-emerald-400 transition-colors cursor-pointer"
-      >
-        {copiedId === id ? (
-          <><Check className="h-3.5 w-3.5" />Copied</>
-        ) : (
-          <><Copy className="h-3.5 w-3.5" />Copy</>
-        )}
-      </button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            onClick={() => copy(text, id)}
+            className="text-muted-foreground hover:text-primary shrink-0"
+          >
+            {copiedId === id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Copy to clipboard</TooltipContent>
+      </Tooltip>
     );
   }
 
@@ -60,87 +66,7 @@ dazzle stage screenshot -o preview.png
 # Go live
 dazzle stage broadcast on`;
 
-  return (
-    <div>
-      {/* Header */}
-      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1
-            className="text-3xl tracking-[-0.02em] text-white mb-1"
-            style={{ fontFamily: "'DM Serif Display', serif" }}
-          >
-            Docs
-          </h1>
-          <p className="text-sm text-zinc-500">
-            Control your stages with the Dazzle CLI.
-          </p>
-        </div>
-        <CopyAgentPromptButton variant="compact" />
-      </div>
-
-      {/* Install CLI */}
-      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 mb-4">
-        <p className="text-xs font-medium text-zinc-400 mb-3">Install the CLI</p>
-        <div className="flex items-center gap-2">
-          <code className="flex-1 text-sm font-mono text-zinc-300 bg-zinc-950/50 rounded-lg px-4 py-2.5 border border-white/[0.06]">
-            {installSnippet}
-          </code>
-          <button
-            onClick={() => copy(installSnippet, "install")}
-            className="text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10 p-2 rounded-md transition-colors cursor-pointer shrink-0"
-          >
-            {copiedId === "install" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-          </button>
-        </div>
-        <p className="text-xs text-zinc-600 mt-3">
-          {altLabel}: <code className="text-zinc-500">{altSnippet}</code>. Or <code className="text-zinc-500">go install github.com/dazzle-labs/cli/cmd/dazzle@latest</code>.
-        </p>
-      </div>
-
-      {/* Authenticate */}
-      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 mb-6">
-        <p className="text-xs font-medium text-zinc-400 mb-2">Authenticate</p>
-        <div className="flex items-center gap-2">
-          <code className="flex-1 text-sm font-mono text-zinc-300 bg-zinc-950/50 rounded-lg px-4 py-2.5 border border-white/[0.06]">
-            dazzle login
-          </code>
-          <button
-            onClick={() => copy("dazzle login", "login")}
-            className="text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10 p-2 rounded-md transition-colors cursor-pointer shrink-0"
-          >
-            {copiedId === "login" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-          </button>
-        </div>
-        <p className="text-xs text-zinc-600 mt-2">
-          Create an API key in Settings {">"} API Keys, then paste it when prompted. Or set <code className="text-zinc-500">export DAZZLE_API_KEY=dzl_...</code> in your shell profile.
-        </p>
-      </div>
-
-      {/* Quick start */}
-      <h2
-        className="text-xl tracking-[-0.02em] text-white mb-1"
-        style={{ fontFamily: "'DM Serif Display', serif" }}
-      >
-        Quick Start
-      </h2>
-      <p className="text-sm text-zinc-500 mb-4">
-        Create a stage, push content, and go live.
-      </p>
-
-      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden mb-6">
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.06]">
-          <span className="text-sm font-medium text-zinc-300">Shell</span>
-          <CopyBtn id="quickstart" text={quickStartSnippet} />
-        </div>
-        <pre className="p-4 text-sm font-mono text-zinc-300 overflow-x-auto leading-relaxed whitespace-pre-wrap">
-          {quickStartSnippet}
-        </pre>
-      </div>
-
-      {/* Multi-stage usage */}
-      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 mb-6">
-        <p className="text-xs font-medium text-zinc-400 mb-3">Working with multiple stages</p>
-        <pre className="text-sm font-mono text-zinc-300 bg-zinc-950/50 rounded-lg px-4 py-3 border border-white/[0.06] overflow-x-auto leading-relaxed whitespace-pre-wrap">{`# List all stages
+  const multiStageSnippet = `# List all stages
 dazzle stage list
 
 # Target a specific stage
@@ -148,27 +74,89 @@ dazzle stage activate -s my-stage
 dazzle stage script set app.jsx -s my-stage
 
 # Set a default stage for all commands
-dazzle stage default my-stage`}</pre>
+dazzle stage default my-stage`;
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl tracking-[-0.02em] text-foreground mb-1 font-display">
+            Docs
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Control your stages with the Dazzle CLI.
+          </p>
+        </div>
+        <CopyAgentPromptButton variant="compact" />
       </div>
 
-      {/* CLI reference link */}
-      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 mb-8">
-        <p className="text-xs font-medium text-zinc-400 mb-2">Full CLI reference</p>
-        <pre className="text-sm font-mono text-zinc-300 bg-zinc-950/50 rounded-lg px-4 py-2.5 border border-white/[0.06] overflow-x-auto">
-          dazzle --help
-        </pre>
-        <p className="text-xs text-zinc-600 mt-2">
-          Run <code className="text-zinc-500">dazzle stage --help</code> for stage commands, or <code className="text-zinc-500">dazzle stage script --help</code> for script commands.
+      {/* Install */}
+      <section className="mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs font-medium text-muted-foreground">Install the CLI</p>
+          <CopyIconBtn id="install" text={installSnippet} />
+        </div>
+        <CodeBlock code={installSnippet} />
+        <p className="text-xs text-muted-foreground mt-2">
+          {altLabel}: <code className="text-muted-foreground">{altSnippet}</code>. Or <code className="text-muted-foreground">go install github.com/dazzle-labs/cli/cmd/dazzle@latest</code>.
         </p>
-      </div>
+      </section>
+
+      {/* Authenticate */}
+      <section className="mb-8">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs font-medium text-muted-foreground">Authenticate</p>
+          <CopyIconBtn id="login" text="dazzle login" />
+        </div>
+        <CodeBlock code="dazzle login" />
+        <p className="text-xs text-muted-foreground mt-2">
+          Create an API key in Settings {">"} API Keys, then paste it when prompted. Or set <code className="text-muted-foreground">export DAZZLE_API_KEY=dzl_...</code> in your shell profile.
+        </p>
+      </section>
+
+      {/* Quick Start */}
+      <section className="mb-8">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-xl tracking-[-0.02em] text-foreground font-display">
+            Quick Start
+          </h2>
+          <CopyIconBtn id="quickstart" text={quickStartSnippet} />
+        </div>
+        <p className="text-sm text-muted-foreground mb-3">
+          Create a stage, push content, and go live.
+        </p>
+        <CodeBlock code={quickStartSnippet} />
+      </section>
+
+      {/* Multi-stage */}
+      <section className="mb-8">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs font-medium text-muted-foreground">Working with multiple stages</p>
+          <CopyIconBtn id="multistage" text={multiStageSnippet} />
+        </div>
+        <CodeBlock code={multiStageSnippet} />
+      </section>
+
+      {/* CLI reference */}
+      <section className="mb-8">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs font-medium text-muted-foreground">Full CLI reference</p>
+          <CopyIconBtn id="help" text="dazzle --help" />
+        </div>
+        <CodeBlock code="dazzle --help" />
+        <p className="text-xs text-muted-foreground mt-2">
+          Run <code className="text-muted-foreground">dazzle stage --help</code> for stage commands, or <code className="text-muted-foreground">dazzle stage script --help</code> for script commands.
+        </p>
+      </section>
 
       {/* llms.txt link */}
-      <div className="mt-8 text-center">
+      <div className="text-center">
         <a
           href="/llms.txt"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs text-zinc-600 hover:text-emerald-400 transition-colors"
+          className="text-xs text-muted-foreground hover:text-primary transition-colors"
         >
           View llms.txt for AI agent consumption
         </a>
