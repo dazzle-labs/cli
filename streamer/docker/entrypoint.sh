@@ -37,6 +37,7 @@ sleep 0.3
 
 # Hide cursor
 unclutter -idle 0 -root &
+disown
 
 # 3. Start Node.js server (must be up before Chrome navigates to panel URL)
 echo "Starting Node.js server..."
