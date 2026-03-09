@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { apiKeyClient } from "../client.js";
 import type { ApiKey } from "../gen/api/v1/apikey_pb.js";
@@ -12,6 +12,8 @@ export function ApiKeys() {
   const [name, setName] = useState("");
   const [newSecret, setNewSecret] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
@@ -31,7 +33,19 @@ export function ApiKeys() {
     const resp = await apiKeyClient.createApiKey({ name: name.trim() });
     setNewSecret(resp.secret);
     setName("");
+    setShowCreateForm(false);
     await refresh();
+  }
+
+  function openCreateForm() {
+    setShowCreateForm(true);
+    // Focus the input after React renders it
+    setTimeout(() => nameInputRef.current?.focus(), 0);
+  }
+
+  function cancelCreate() {
+    setShowCreateForm(false);
+    setName("");
   }
 
   async function handleDelete(id: string) {
@@ -85,20 +99,37 @@ export function ApiKeys() {
         </div>
       </div>
 
-      {/* Create form */}
-      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 mb-8">
-        <form onSubmit={handleCreate} className="flex flex-col sm:flex-row gap-3">
-          <Input
-            type="text"
-            placeholder="Key name (e.g. my-agent)"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="sm:max-w-xs"
-          />
-          <Button type="submit" className="bg-emerald-500 text-zinc-950 hover:bg-emerald-400 font-semibold">
-            Create Key
+      {/* Create key */}
+      <div className="mb-8">
+        {!showCreateForm ? (
+          <Button
+            onClick={openCreateForm}
+            variant="outline"
+            className="border-white/[0.08] text-zinc-300 hover:bg-white/[0.04] hover:text-white"
+          >
+            + New API Key
           </Button>
-        </form>
+        ) : (
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
+            <p className="text-sm text-zinc-400 mb-3">Give your key a name so you can identify it later.</p>
+            <form onSubmit={handleCreate} className="flex flex-col sm:flex-row gap-3">
+              <Input
+                ref={nameInputRef}
+                type="text"
+                placeholder="e.g. my-agent"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="sm:max-w-xs"
+              />
+              <Button type="submit" disabled={!name.trim()} className="bg-emerald-500 text-zinc-950 hover:bg-emerald-400 font-semibold disabled:opacity-40 disabled:cursor-not-allowed">
+                Create
+              </Button>
+              <Button type="button" variant="ghost" onClick={cancelCreate} className="text-zinc-500 hover:text-zinc-300">
+                Cancel
+              </Button>
+            </form>
+          </div>
+        )}
       </div>
 
       {/* New key reveal */}
