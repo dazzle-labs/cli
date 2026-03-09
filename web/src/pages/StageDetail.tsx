@@ -194,10 +194,10 @@ dazzle stage broadcast on`;
         </Badge>
       </div>
 
-      {/* Two-column layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Left: Stream Preview */}
-        <div>
+      {/* Main + Sidebar layout */}
+      <div className="xl:flex xl:gap-6">
+        {/* Main: Stream Preview */}
+        <div className="flex-1 min-w-0 mb-8 xl:mb-0">
           <StreamPreview
             stageId={stageId!}
             status={stage.status === "running" ? "running" : stage.status === "starting" ? "starting" : "stopped"}
@@ -260,16 +260,12 @@ dazzle stage broadcast on`;
           )}
         </div>
 
-        {/* Right: Metadata + Streaming */}
-        <div className="flex flex-col gap-6">
+        {/* Sidebar */}
+        <div className="xl:w-[340px] xl:shrink-0 flex flex-col gap-6">
           {/* Metadata */}
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
             <p className="text-xs font-medium text-zinc-400 mb-3">Details</p>
             <div className="flex flex-col gap-2.5">
-              <div className="flex items-center gap-2 text-xs text-zinc-500">
-                <span className="text-zinc-600 w-[52px]">ID</span>
-                <code className="font-mono text-zinc-400">{stage.id}</code>
-              </div>
               {stage.podName && (
                 <div className="flex items-center gap-2 text-xs text-zinc-500">
                   <Cpu className="h-3.5 w-3.5 shrink-0" />
@@ -349,62 +345,62 @@ dazzle stage broadcast on`;
               </Link>
             )}
           </div>
-        </div>
-      </div>
 
-      {/* CLI usage section */}
-      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 mb-8">
-        <p className="text-xs font-medium text-zinc-400 mb-4">CLI Usage</p>
-        <div className="relative">
-          <CodeBlock code={cliSnippet} />
-          <button
-            onClick={() => handleCopy(cliSnippet, "cli")}
-            className="absolute top-2 right-2 text-zinc-500 hover:text-emerald-400 p-1.5 rounded-md transition-colors cursor-pointer"
-          >
-            {copiedId === "cli" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-          </button>
-        </div>
-      </div>
-
-      {/* Danger zone */}
-      <div className="rounded-xl border border-red-500/10 bg-red-500/[0.02] p-5">
-        <p className="text-xs font-medium text-zinc-400 mb-3">Danger zone</p>
-        {!confirmingDelete ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-zinc-500 hover:text-red-400 hover:bg-red-500/10"
-            onClick={() => setConfirmingDelete(true)}
-          >
-            <Trash2 className="h-3.5 w-3.5 mr-1" />
-            Delete stage
-          </Button>
-        ) : (
-          <div>
-            <p className="text-sm text-zinc-400 mb-3">
-              Delete this stage? If active, it will be stopped.
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-zinc-500"
-                onClick={() => setConfirmingDelete(false)}
+          {/* CLI usage */}
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
+            <p className="text-xs font-medium text-zinc-400 mb-4">CLI Usage</p>
+            <div className="relative">
+              <CodeBlock code={cliSnippet} />
+              <button
+                onClick={() => handleCopy(cliSnippet, "cli")}
+                className="absolute top-2 right-2 text-zinc-500 hover:text-emerald-400 p-1.5 rounded-md transition-colors cursor-pointer"
               >
-                Cancel
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-red-400 hover:bg-red-500/10"
-                onClick={handleDelete}
-              >
-                <Trash2 className="h-3.5 w-3.5 mr-1" />
-                Delete
-              </Button>
+                {copiedId === "cli" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+              </button>
             </div>
           </div>
-        )}
+
+          {/* Danger zone */}
+          <div className="rounded-xl border border-red-500/10 bg-red-500/[0.02] p-5">
+            <p className="text-xs font-medium text-zinc-400 mb-3">Danger zone</p>
+            {!confirmingDelete ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-zinc-500 hover:text-red-400 hover:bg-red-500/10"
+                onClick={() => setConfirmingDelete(true)}
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-1" />
+                Delete stage
+              </Button>
+            ) : (
+              <div>
+                <p className="text-sm text-zinc-400 mb-3">
+                  Delete this stage? If active, it will be stopped.
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-zinc-500"
+                    onClick={() => setConfirmingDelete(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-400 hover:bg-red-500/10"
+                    onClick={handleDelete}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-1" />
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -159,14 +159,11 @@ export function Dashboard() {
               className="group rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 transition-all duration-200 hover:border-emerald-500/15 hover:bg-emerald-500/[0.02]"
             >
               <div className="flex items-center justify-between mb-3">
-                <code className="text-sm font-mono text-zinc-300">{stage.id.slice(0, 8)}</code>
+                <span className="text-sm font-medium text-zinc-300">{stage.name || "default"}</span>
                 <Badge variant={stage.status === "running" ? "success" : stage.status === "starting" ? "warning" : "default"}>
                   {stage.status === "running" ? "active" : stage.status || "inactive"}
                 </Badge>
               </div>
-              {stage.name && stage.name !== "default" && (
-                <p className="text-xs text-zinc-500 mb-2">{stage.name}</p>
-              )}
               <div className="flex items-center justify-between">
                 <span className="text-xs text-zinc-600">
                   {stage.createdAt ? timestampDate(stage.createdAt).toLocaleDateString() : ""}

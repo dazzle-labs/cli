@@ -43,10 +43,8 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
         responseExample: JSON.stringify(
           {
             stage: {
-              id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
               name: "my-stage",
               status: "inactive",
-              ownerUserId: "user_abc123",
             },
           },
           null,
@@ -63,7 +61,7 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
         auth: "Clerk JWT or API Key",
         params: [],
         responseExample: JSON.stringify(
-          { stages: [{ id: "a1b2c3d4-...", name: "my-stage", status: "inactive" }] },
+          { stages: [{ name: "my-stage", status: "inactive" }] },
           null,
           2,
         ),
@@ -72,22 +70,21 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
         id: "get-stage",
         method: "POST",
         path: "/dazzle.v1.StageService/GetStage",
-        description: "Get details of a specific stage by ID.",
+        description: "Get details of a specific stage by name or ID.",
         auth: "Clerk JWT or API Key",
         params: [
           {
             name: "id",
             type: "string",
             required: true,
-            description: "Stage UUID",
+            description: "Stage name or ID",
           },
         ],
         responseExample: JSON.stringify(
           {
             stage: {
-              id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+              name: "my-stage",
               status: "running",
-              podIp: "10.42.0.15",
             },
           },
           null,
@@ -98,14 +95,14 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
         id: "delete-stage",
         method: "POST",
         path: "/dazzle.v1.StageService/DeleteStage",
-        description: "Delete a stage by ID. If the stage is active, the pod is stopped first.",
+        description: "Delete a stage. If the stage is active, the pod is stopped first.",
         auth: "Clerk JWT or API Key",
         params: [
           {
             name: "id",
             type: "string",
             required: true,
-            description: "Stage UUID",
+            description: "Stage name or ID",
           },
         ],
         responseExample: "{}",
