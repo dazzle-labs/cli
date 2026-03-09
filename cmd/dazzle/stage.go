@@ -219,6 +219,7 @@ func (c *StageStartCmd) Run(ctx *Context) error {
 	printText("Stage %q activated (status: %s)", resp.Msg.Stage.Name, resp.Msg.Stage.Status)
 	if resp.Msg.Stage.Preview != nil {
 		printText("Watch:  %s", resp.Msg.Stage.Preview.WatchUrl)
+		openBrowser(resp.Msg.Stage.Preview.WatchUrl)
 	}
 	return nil
 }
@@ -316,6 +317,7 @@ func (c *StagePreviewCmd) Run(ctx *Context) error {
 	}
 
 	printText("%s", stage.Preview.WatchUrl)
+	openBrowser(stage.Preview.WatchUrl)
 	return nil
 }
 
