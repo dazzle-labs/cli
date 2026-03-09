@@ -54,6 +54,17 @@ Use **one worktree per session**. Create a worktree off `main` via `EnterWorktre
 
 Worktrees must always branch off `main` from the root repository — never create nested worktrees or worktrees from within another worktree. Once work is complete, push the branch and open a PR via `gh pr create`.
 
+### CLI changes workflow
+
+When making changes to the CLI (`cli/` submodule) as part of feature work:
+
+1. Make changes in `cli/` and commit + push to `cli` remote **first**
+2. Update the control-plane's Go dependency: `cd control-plane && go get github.com/dazzle-labs/cli@<commit-hash>`
+3. Verify it builds: `cd control-plane && go build ./...`
+4. Back in the root repo, stage: `git add cli control-plane/go.mod control-plane/go.sum`
+5. Commit the submodule bump + go.mod update along with any related root-repo changes (docs, k8s manifests, etc.)
+6. Push the root repo
+
 ## llms.txt
 
 `llms.txt` is a static heredoc in `scripts/generate-llms-txt.sh`. Run `make llms-txt` to regenerate. Edit the shell script directly to update content.
