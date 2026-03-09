@@ -17,10 +17,9 @@ dazzle stage delete <id|name>         # Delete stage record
 dazzle stage up                       # Bring up a stage
 dazzle stage down                     # Shut down a stage
 dazzle stage status                   # Get current status
-dazzle stage sync <dir>               # Sync a local directory to the stage
-dazzle stage sync <dir> --watch       # Watch for changes and re-sync
-dazzle stage sync <dir> -wr           # Watch + auto-reload Chrome
-dazzle stage refresh                  # Reload the stage entry point
+dazzle stage sync <dir>               # Sync a local directory to the stage (auto-refreshes browser)
+dazzle stage sync <dir> --watch       # Watch for changes, re-sync, and auto-refresh
+dazzle stage refresh                  # Manual reload (rarely needed — sync auto-refreshes)
 
 dazzle stage event emit <name> <json> # Push event to running script
 dazzle logs [--limit N] [--follow]    # Browser console logs

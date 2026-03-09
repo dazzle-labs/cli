@@ -139,7 +139,7 @@ The control plane proxies CLI/MCP operations to the sidecar's ConnectRPC service
 
 | Operation | ConnectRPC Service | Description |
 |-----------|-------------------|-------------|
-| Sync diff/push/refresh | `SyncService` | Diff, push content, and trigger Chrome refresh |
+| Sync diff/push/refresh | `SyncService` | Diff, push content (auto-refreshes browser on sync) |
 | Emit event | `RuntimeService.EmitEvent` | Push event to Chrome via CDP |
 | Screenshot | `RuntimeService.Screenshot` | Capture PNG via CDP |
 | Broadcast control | `ObsService.Command` | Streaming control (start/stop broadcast, configure RTMP destination) |

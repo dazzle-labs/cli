@@ -174,7 +174,14 @@ func (h *syncServer) Push(ctx context.Context, stream *connect.ClientStream[side
 		deleted = int32(cleanStaleFiles(syncDir, state.pendingSync))
 		state.manifestCache = walkDir(syncDir, "")
 	}
+	entry := state.entryPoint
 	state.mu.Unlock()
+
+	// Auto-refresh Chrome after every successful sync
+	if entry != "" && synced > 0 {
+		url := fmt.Sprintf("http://localhost:%s/%s", h.s.cfg.Port, entry)
+		h.s.cdpClient.Navigate(url) // best-effort; don't fail the sync if refresh fails
+	}
 
 	return connect.NewResponse(&sidecarv1.SyncPushResponse{
 		Synced:  int32(synced),

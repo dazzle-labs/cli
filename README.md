@@ -139,7 +139,7 @@ make prod/status    # Show prod cluster nodes and pods
 - **Web UI** — dashboard for stage monitoring, API key management, stream destination configuration, and account settings
 - **Stage lifecycle** — browser pods move through states: `inactive → starting → running → stopping`. Bring stages up/down via CLI or Web UI; pods are ephemeral, DB records persist.
 - **CDP access** — full Chrome DevTools Protocol proxied through control plane at `/stage/<stage-id>/cdp`
-- **Panel system** — sync directories of HTML/CSS/JS to the stage; use `--watch --refresh` for live development
+- **Panel system** — sync directories of HTML/CSS/JS to the stage; browser auto-refreshes on every sync
 - **Stream destinations** — RTMP keys for Twitch, YouTube, Kick, custom; AES-256-GCM encrypted at rest
 - **API keys** — `dzl_*` prefix, HMAC-SHA256 hashed, with last-used tracking; used by CLI and programmatic clients
 - **Stage persistence** — content, Chrome localStorage, and IndexedDB are synced to Cloudflare R2 via a sidecar container and restored on stage activation

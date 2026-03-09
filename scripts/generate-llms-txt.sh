@@ -67,12 +67,11 @@ If you only have one stage, it's auto-selected.
 Sync a local directory to your stage:
 
 ```bash
-dazzle s sync ./my-app                  # one-time sync
-dazzle s sync ./my-app --watch          # watch for changes and re-sync
-dazzle s sync ./my-app --watch --refresh # watch + auto-reload stage
+dazzle s sync ./my-app                  # one-time sync (auto-refreshes browser)
+dazzle s sync ./my-app --watch          # watch for changes, re-sync, and auto-refresh
 ```
 
-Every sync is a full snapshot — files deleted locally are automatically removed from the stage. The directory must contain an `index.html` entry point (customizable with `--entry`).
+Every sync is a full snapshot — files deleted locally are automatically removed from the stage. The browser automatically reloads after every successful sync. The directory must contain an `index.html` entry point (customizable with `--entry`).
 
 ```bash
 # Take a screenshot to verify
@@ -88,7 +87,7 @@ dazzle s bc on
 # Push live data without rewriting code
 dazzle s ev e score '{"points": 42}'
 
-# Reload the stage entry point
+# Manual browser reload (rarely needed — sync auto-refreshes)
 dazzle s refresh
 ```
 
@@ -121,9 +120,9 @@ export DAZZLE_API_KEY=dzl_your_key_here
 
 ## Content Authoring
 
-Sync a local directory to your stage with `dazzle s sync`. The directory must contain an `index.html` entry point. The stage renders full-viewport with a black background.
+Sync a local directory to your stage with `dazzle s sync`. The directory must contain an `index.html` entry point. The stage renders full-viewport with a black background. The browser automatically reloads after every successful sync.
 
-You author standard HTML/CSS/JS — the stage serves your directory as static files. Use whatever framework or libraries you want (e.g. CDN links in your HTML, or bundled JS). To update content, edit files locally and re-sync (use `--watch --refresh` / `-wr` for automatic re-sync and reload during development).
+You author standard HTML/CSS/JS — the stage serves your directory as static files. Use whatever framework or libraries you want (e.g. CDN links in your HTML, or bundled JS). To update content, edit files locally and re-sync (use `--watch` / `-w` for automatic re-sync on file changes).
 
 ### Persistence
 
@@ -151,7 +150,7 @@ Events are dispatched as DOM `CustomEvent`s. For persistent state, use `localSto
 
 ```
 1. dazzle s up                     → Bring up a stage
-2. dazzle s sync ./my-app -wr      → Sync a directory (watch + auto-reload)
+2. dazzle s sync ./my-app -w       → Sync a directory (watch + auto-refresh)
 3. dazzle s ss                     → Verify output looks correct
 4. dazzle s bc on                  → Go live on configured destination
 5. (edit files locally)            → Changes auto-sync via --watch

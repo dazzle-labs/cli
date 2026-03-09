@@ -98,7 +98,7 @@ Content is synced from the CLI via ConnectRPC SyncService on the sidecar:
 1. **Sync API**: The CLI pushes directory content via `dazzle s sync <dir>` to the sidecar's ConnectRPC endpoint
 2. **Static serving**: The sidecar serves synced content at `/` over HTTP on port 8080
 3. **Chrome loads via HTTP**: Chrome navigates to `http://localhost:8080/` — content is served by the sidecar, not from the filesystem
-4. **Refresh**: Explicit page reload triggered by `dazzle s refresh` or `dazzle s sync --refresh`
+4. **Refresh**: The browser automatically reloads after every successful sync; `dazzle s refresh` is available for manual reloads without re-syncing
 5. **State events**: Event dispatch via CDP — no page reload
 6. **Persistence**: Chrome's localStorage and IndexedDB are persisted to R2 via the sidecar, so app state survives stage restarts
 
@@ -114,10 +114,7 @@ CLI sync (ConnectRPC)
   Sidecar serves updated content at / on port 8080
          │
          ▼
-  CLI sends refresh command (if --refresh flag)
-         │
-         ▼
-  Sidecar triggers Chrome page reload via CDP
+  Sidecar auto-refreshes browser via CDP
 ```
 
 ---
