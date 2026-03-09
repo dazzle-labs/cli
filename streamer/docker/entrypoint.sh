@@ -4,7 +4,6 @@ set -euo pipefail
 cleanup() {
     echo "Shutting down..."
     kill "${FFMPEG_PID:-}" 2>/dev/null || true
-    kill "$NODE_PID" 2>/dev/null || true
     kill "$OBS_PID" 2>/dev/null || true
     kill "$CHROME_PID" 2>/dev/null || true
     kill "$PULSE_PID" 2>/dev/null || true
@@ -39,23 +38,17 @@ sleep 0.3
 unclutter -idle 0 -root &
 disown
 
-# 3. Start Node.js server (must be up before Chrome navigates to panel URL)
-echo "Starting Node.js server..."
-cd /app
-node index.js &
-NODE_PID=$!
-
-# Wait for Node.js to be serving
-echo "Waiting for Node.js server..."
-for i in $(seq 1 60); do
-    if curl -s http://localhost:8080/health > /dev/null 2>&1; then
-        echo "Node.js server ready."
+# 3. Wait for sidecar to be healthy (serves content on port 8080)
+echo "Waiting for sidecar..."
+for i in $(seq 1 120); do
+    if curl -s http://localhost:8080/_dz_9f7a3b1c/health > /dev/null 2>&1; then
+        echo "Sidecar ready."
         break
     fi
-    sleep 0.2
+    sleep 0.5
 done
 
-# 4. Start Chromium pointed directly at the Vite panel URL (no CDP navigate needed)
+# 4. Start Chromium pointed at sidecar (serves user content at /)
 echo "Starting Chromium..."
 google-chrome-stable \
     --no-sandbox \
@@ -75,7 +68,7 @@ google-chrome-stable \
     --disable-background-timer-throttling \
     --disable-backgrounding-occluded-windows \
     --disable-renderer-backgrounding \
-    "http://localhost:8080/@panel/main/" &
+    "http://localhost:8080/" &
 CHROME_PID=$!
 
 # Wait for Chrome CDP to be available
@@ -97,7 +90,7 @@ if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
     echo "WARNING: dbus-launch failed to set DBUS_SESSION_BUS_ADDRESS"
 fi
 
-# 4. Pre-bake OBS config and start OBS Studio
+# 5. Pre-bake OBS config and start OBS Studio
 echo "Setting up OBS configuration..."
 OBS_CONFIG_DIR="$HOME/.config/obs-studio"
 mkdir -p "$OBS_CONFIG_DIR/basic/scenes" "$OBS_CONFIG_DIR/basic/profiles/Default"
@@ -200,7 +193,6 @@ SCENEJSON
 
 echo "Starting OBS Studio..."
 # Force software rendering — OBS 32.x's CEF crashes in headless Xvfb without this.
-# LIBGL_ALWAYS_SOFTWARE + GALLIUM_DRIVER=llvmpipe gives CEF a usable software GPU.
 export LIBGL_ALWAYS_SOFTWARE=1
 export GALLIUM_DRIVER=llvmpipe
 export QT_XCB_GL_INTEGRATION=none
@@ -223,14 +215,13 @@ for i in $(seq 1 60); do
 done
 
 # Move OBS window off-screen so it doesn't appear in the screen capture
-# (no window manager in Xvfb, so windowminimize doesn't work)
 echo "Moving OBS off-screen..."
 sleep 1
 for wid in $(xdotool search --class obs 2>/dev/null); do
     xdotool windowmove "$wid" 9999 9999 2>/dev/null || true
 done
 
-# 6. Start HLS preview pipeline
+# 6. Start HLS preview pipeline (writes to shared volume)
 echo "Starting HLS preview..."
 mkdir -p /tmp/hls
 ffmpeg -loglevel warning -f x11grab -video_size ${SCREEN_WIDTH}x${SCREEN_HEIGHT} -framerate 30 -i :99 \

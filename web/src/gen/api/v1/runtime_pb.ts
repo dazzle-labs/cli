@@ -10,124 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file api/v1/runtime.proto.
  */
 export const file_api_v1_runtime: GenFile = /*@__PURE__*/
-  fileDesc("ChRhcGkvdjEvcnVudGltZS5wcm90bxIJZGF6emxlLnYxIjQKEFNldFNjcmlwdFJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSDgoGc2NyaXB0GAIgASgJIh8KEVNldFNjcmlwdFJlc3BvbnNlEgoKAm9rGAEgASgIIiQKEEdldFNjcmlwdFJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkiIwoRR2V0U2NyaXB0UmVzcG9uc2USDgoGc2NyaXB0GAEgASgJIk0KEUVkaXRTY3JpcHRSZXF1ZXN0EhAKCHN0YWdlX2lkGAEgASgJEhIKCm9sZF9zdHJpbmcYAiABKAkSEgoKbmV3X3N0cmluZxgDIAEoCSIgChJFZGl0U2NyaXB0UmVzcG9uc2USCgoCb2sYASABKAgiQQoQRW1pdEV2ZW50UmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRINCgVldmVudBgCIAEoCRIMCgRkYXRhGAMgASgJIh8KEUVtaXRFdmVudFJlc3BvbnNlEgoKAm9rGAEgASgIIjEKDkdldExvZ3NSZXF1ZXN0EhAKCHN0YWdlX2lkGAEgASgJEg0KBWxpbWl0GAIgASgFIj0KCExvZ0VudHJ5Eg0KBWxldmVsGAEgASgJEg8KB21lc3NhZ2UYAiABKAkSEQoJdGltZXN0YW1wGAMgASgJIjcKD0dldExvZ3NSZXNwb25zZRIkCgdlbnRyaWVzGAEgAygLMhMuZGF6emxlLnYxLkxvZ0VudHJ5IiUKEVNjcmVlbnNob3RSZXF1ZXN0EhAKCHN0YWdlX2lkGAEgASgJIiMKElNjcmVlbnNob3RSZXNwb25zZRINCgVpbWFnZRgBIAEoDCIzChFPYnNDb21tYW5kUmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRIMCgRhcmdzGAIgAygJIiQKEk9ic0NvbW1hbmRSZXNwb25zZRIOCgZvdXRwdXQYASABKAkilgEKD1N5bmNEaWZmUmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRI0CgVmaWxlcxgCIAMoCzIlLmRhenpsZS52MS5TeW5jRGlmZlJlcXVlc3QuRmlsZXNFbnRyeRINCgVlbnRyeRgDIAEoCRosCgpGaWxlc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiIAoQU3luY0RpZmZSZXNwb25zZRIMCgRuZWVkGAEgAygJIjIKD1N5bmNQdXNoUmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRINCgVjaHVuaxgCIAEoDCIzChBTeW5jUHVzaFJlc3BvbnNlEg4KBnN5bmNlZBgBIAEoBRIPCgdkZWxldGVkGAIgASgFIiIKDlJlZnJlc2hSZXF1ZXN0EhAKCHN0YWdlX2lkGAEgASgJIh0KD1JlZnJlc2hSZXNwb25zZRIKCgJvaxgBIAEoCDLZBQoOUnVudGltZVNlcnZpY2USRgoJU2V0U2NyaXB0EhsuZGF6emxlLnYxLlNldFNjcmlwdFJlcXVlc3QaHC5kYXp6bGUudjEuU2V0U2NyaXB0UmVzcG9uc2USRgoJR2V0U2NyaXB0EhsuZGF6emxlLnYxLkdldFNjcmlwdFJlcXVlc3QaHC5kYXp6bGUudjEuR2V0U2NyaXB0UmVzcG9uc2USSQoKRWRpdFNjcmlwdBIcLmRhenpsZS52MS5FZGl0U2NyaXB0UmVxdWVzdBodLmRhenpsZS52MS5FZGl0U2NyaXB0UmVzcG9uc2USRgoJRW1pdEV2ZW50EhsuZGF6emxlLnYxLkVtaXRFdmVudFJlcXVlc3QaHC5kYXp6bGUudjEuRW1pdEV2ZW50UmVzcG9uc2USQAoHR2V0TG9ncxIZLmRhenpsZS52MS5HZXRMb2dzUmVxdWVzdBoaLmRhenpsZS52MS5HZXRMb2dzUmVzcG9uc2USSQoKU2NyZWVuc2hvdBIcLmRhenpsZS52MS5TY3JlZW5zaG90UmVxdWVzdBodLmRhenpsZS52MS5TY3JlZW5zaG90UmVzcG9uc2USSQoKT2JzQ29tbWFuZBIcLmRhenpsZS52MS5PYnNDb21tYW5kUmVxdWVzdBodLmRhenpsZS52MS5PYnNDb21tYW5kUmVzcG9uc2USQwoIU3luY0RpZmYSGi5kYXp6bGUudjEuU3luY0RpZmZSZXF1ZXN0GhsuZGF6emxlLnYxLlN5bmNEaWZmUmVzcG9uc2USRQoIU3luY1B1c2gSGi5kYXp6bGUudjEuU3luY1B1c2hSZXF1ZXN0GhsuZGF6emxlLnYxLlN5bmNQdXNoUmVzcG9uc2UoARJACgdSZWZyZXNoEhkuZGF6emxlLnYxLlJlZnJlc2hSZXF1ZXN0GhouZGF6emxlLnYxLlJlZnJlc2hSZXNwb25zZUItWitnaXRodWIuY29tL2RhenpsZS1sYWJzL2NsaS9nZW4vYXBpL3YxO2FwaXYxYgZwcm90bzM");
-
-/**
- * @generated from message dazzle.v1.SetScriptRequest
- */
-export type SetScriptRequest = Message<"dazzle.v1.SetScriptRequest"> & {
-  /**
-   * @generated from field: string stage_id = 1;
-   */
-  stageId: string;
-
-  /**
-   * @generated from field: string script = 2;
-   */
-  script: string;
-};
-
-/**
- * Describes the message dazzle.v1.SetScriptRequest.
- * Use `create(SetScriptRequestSchema)` to create a new message.
- */
-export const SetScriptRequestSchema: GenMessage<SetScriptRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_runtime, 0);
-
-/**
- * @generated from message dazzle.v1.SetScriptResponse
- */
-export type SetScriptResponse = Message<"dazzle.v1.SetScriptResponse"> & {
-  /**
-   * @generated from field: bool ok = 1;
-   */
-  ok: boolean;
-};
-
-/**
- * Describes the message dazzle.v1.SetScriptResponse.
- * Use `create(SetScriptResponseSchema)` to create a new message.
- */
-export const SetScriptResponseSchema: GenMessage<SetScriptResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_runtime, 1);
-
-/**
- * @generated from message dazzle.v1.GetScriptRequest
- */
-export type GetScriptRequest = Message<"dazzle.v1.GetScriptRequest"> & {
-  /**
-   * @generated from field: string stage_id = 1;
-   */
-  stageId: string;
-};
-
-/**
- * Describes the message dazzle.v1.GetScriptRequest.
- * Use `create(GetScriptRequestSchema)` to create a new message.
- */
-export const GetScriptRequestSchema: GenMessage<GetScriptRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_runtime, 2);
-
-/**
- * @generated from message dazzle.v1.GetScriptResponse
- */
-export type GetScriptResponse = Message<"dazzle.v1.GetScriptResponse"> & {
-  /**
-   * @generated from field: string script = 1;
-   */
-  script: string;
-};
-
-/**
- * Describes the message dazzle.v1.GetScriptResponse.
- * Use `create(GetScriptResponseSchema)` to create a new message.
- */
-export const GetScriptResponseSchema: GenMessage<GetScriptResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_runtime, 3);
-
-/**
- * @generated from message dazzle.v1.EditScriptRequest
- */
-export type EditScriptRequest = Message<"dazzle.v1.EditScriptRequest"> & {
-  /**
-   * @generated from field: string stage_id = 1;
-   */
-  stageId: string;
-
-  /**
-   * @generated from field: string old_string = 2;
-   */
-  oldString: string;
-
-  /**
-   * @generated from field: string new_string = 3;
-   */
-  newString: string;
-};
-
-/**
- * Describes the message dazzle.v1.EditScriptRequest.
- * Use `create(EditScriptRequestSchema)` to create a new message.
- */
-export const EditScriptRequestSchema: GenMessage<EditScriptRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_runtime, 4);
-
-/**
- * @generated from message dazzle.v1.EditScriptResponse
- */
-export type EditScriptResponse = Message<"dazzle.v1.EditScriptResponse"> & {
-  /**
-   * @generated from field: bool ok = 1;
-   */
-  ok: boolean;
-};
-
-/**
- * Describes the message dazzle.v1.EditScriptResponse.
- * Use `create(EditScriptResponseSchema)` to create a new message.
- */
-export const EditScriptResponseSchema: GenMessage<EditScriptResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_runtime, 5);
+  fileDesc("ChRhcGkvdjEvcnVudGltZS5wcm90bxIJZGF6emxlLnYxIkEKEEVtaXRFdmVudFJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSDQoFZXZlbnQYAiABKAkSDAoEZGF0YRgDIAEoCSIfChFFbWl0RXZlbnRSZXNwb25zZRIKCgJvaxgBIAEoCCIxCg5HZXRMb2dzUmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRINCgVsaW1pdBgCIAEoBSI9CghMb2dFbnRyeRINCgVsZXZlbBgBIAEoCRIPCgdtZXNzYWdlGAIgASgJEhEKCXRpbWVzdGFtcBgDIAEoCSI3Cg9HZXRMb2dzUmVzcG9uc2USJAoHZW50cmllcxgBIAMoCzITLmRhenpsZS52MS5Mb2dFbnRyeSIlChFTY3JlZW5zaG90UmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCSIjChJTY3JlZW5zaG90UmVzcG9uc2USDQoFaW1hZ2UYASABKAwiMwoRT2JzQ29tbWFuZFJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSDAoEYXJncxgCIAMoCSIkChJPYnNDb21tYW5kUmVzcG9uc2USDgoGb3V0cHV0GAEgASgJIpYBCg9TeW5jRGlmZlJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSNAoFZmlsZXMYAiADKAsyJS5kYXp6bGUudjEuU3luY0RpZmZSZXF1ZXN0LkZpbGVzRW50cnkSDQoFZW50cnkYAyABKAkaLAoKRmlsZXNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIiAKEFN5bmNEaWZmUmVzcG9uc2USDAoEbmVlZBgBIAMoCSIyCg9TeW5jUHVzaFJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSDQoFY2h1bmsYAiABKAwiMwoQU3luY1B1c2hSZXNwb25zZRIOCgZzeW5jZWQYASABKAUSDwoHZGVsZXRlZBgCIAEoBSIiCg5SZWZyZXNoUmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCSIdCg9SZWZyZXNoUmVzcG9uc2USCgoCb2sYASABKAgy/gMKDlJ1bnRpbWVTZXJ2aWNlEkYKCUVtaXRFdmVudBIbLmRhenpsZS52MS5FbWl0RXZlbnRSZXF1ZXN0GhwuZGF6emxlLnYxLkVtaXRFdmVudFJlc3BvbnNlEkAKB0dldExvZ3MSGS5kYXp6bGUudjEuR2V0TG9nc1JlcXVlc3QaGi5kYXp6bGUudjEuR2V0TG9nc1Jlc3BvbnNlEkkKClNjcmVlbnNob3QSHC5kYXp6bGUudjEuU2NyZWVuc2hvdFJlcXVlc3QaHS5kYXp6bGUudjEuU2NyZWVuc2hvdFJlc3BvbnNlEkkKCk9ic0NvbW1hbmQSHC5kYXp6bGUudjEuT2JzQ29tbWFuZFJlcXVlc3QaHS5kYXp6bGUudjEuT2JzQ29tbWFuZFJlc3BvbnNlEkMKCFN5bmNEaWZmEhouZGF6emxlLnYxLlN5bmNEaWZmUmVxdWVzdBobLmRhenpsZS52MS5TeW5jRGlmZlJlc3BvbnNlEkUKCFN5bmNQdXNoEhouZGF6emxlLnYxLlN5bmNQdXNoUmVxdWVzdBobLmRhenpsZS52MS5TeW5jUHVzaFJlc3BvbnNlKAESQAoHUmVmcmVzaBIZLmRhenpsZS52MS5SZWZyZXNoUmVxdWVzdBoaLmRhenpsZS52MS5SZWZyZXNoUmVzcG9uc2VCLVorZ2l0aHViLmNvbS9kYXp6bGUtbGFicy9jbGkvZ2VuL2FwaS92MTthcGl2MWIGcHJvdG8z");
 
 /**
  * @generated from message dazzle.v1.EmitEventRequest
@@ -154,7 +37,7 @@ export type EmitEventRequest = Message<"dazzle.v1.EmitEventRequest"> & {
  * Use `create(EmitEventRequestSchema)` to create a new message.
  */
 export const EmitEventRequestSchema: GenMessage<EmitEventRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_runtime, 6);
+  messageDesc(file_api_v1_runtime, 0);
 
 /**
  * @generated from message dazzle.v1.EmitEventResponse
@@ -171,7 +54,7 @@ export type EmitEventResponse = Message<"dazzle.v1.EmitEventResponse"> & {
  * Use `create(EmitEventResponseSchema)` to create a new message.
  */
 export const EmitEventResponseSchema: GenMessage<EmitEventResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_runtime, 7);
+  messageDesc(file_api_v1_runtime, 1);
 
 /**
  * @generated from message dazzle.v1.GetLogsRequest
@@ -193,7 +76,7 @@ export type GetLogsRequest = Message<"dazzle.v1.GetLogsRequest"> & {
  * Use `create(GetLogsRequestSchema)` to create a new message.
  */
 export const GetLogsRequestSchema: GenMessage<GetLogsRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_runtime, 8);
+  messageDesc(file_api_v1_runtime, 2);
 
 /**
  * @generated from message dazzle.v1.LogEntry
@@ -220,7 +103,7 @@ export type LogEntry = Message<"dazzle.v1.LogEntry"> & {
  * Use `create(LogEntrySchema)` to create a new message.
  */
 export const LogEntrySchema: GenMessage<LogEntry> = /*@__PURE__*/
-  messageDesc(file_api_v1_runtime, 9);
+  messageDesc(file_api_v1_runtime, 3);
 
 /**
  * @generated from message dazzle.v1.GetLogsResponse
@@ -237,7 +120,7 @@ export type GetLogsResponse = Message<"dazzle.v1.GetLogsResponse"> & {
  * Use `create(GetLogsResponseSchema)` to create a new message.
  */
 export const GetLogsResponseSchema: GenMessage<GetLogsResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_runtime, 10);
+  messageDesc(file_api_v1_runtime, 4);
 
 /**
  * @generated from message dazzle.v1.ScreenshotRequest
@@ -254,7 +137,7 @@ export type ScreenshotRequest = Message<"dazzle.v1.ScreenshotRequest"> & {
  * Use `create(ScreenshotRequestSchema)` to create a new message.
  */
 export const ScreenshotRequestSchema: GenMessage<ScreenshotRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_runtime, 11);
+  messageDesc(file_api_v1_runtime, 5);
 
 /**
  * @generated from message dazzle.v1.ScreenshotResponse
@@ -271,7 +154,7 @@ export type ScreenshotResponse = Message<"dazzle.v1.ScreenshotResponse"> & {
  * Use `create(ScreenshotResponseSchema)` to create a new message.
  */
 export const ScreenshotResponseSchema: GenMessage<ScreenshotResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_runtime, 12);
+  messageDesc(file_api_v1_runtime, 6);
 
 /**
  * @generated from message dazzle.v1.ObsCommandRequest
@@ -293,7 +176,7 @@ export type ObsCommandRequest = Message<"dazzle.v1.ObsCommandRequest"> & {
  * Use `create(ObsCommandRequestSchema)` to create a new message.
  */
 export const ObsCommandRequestSchema: GenMessage<ObsCommandRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_runtime, 13);
+  messageDesc(file_api_v1_runtime, 7);
 
 /**
  * @generated from message dazzle.v1.ObsCommandResponse
@@ -310,7 +193,7 @@ export type ObsCommandResponse = Message<"dazzle.v1.ObsCommandResponse"> & {
  * Use `create(ObsCommandResponseSchema)` to create a new message.
  */
 export const ObsCommandResponseSchema: GenMessage<ObsCommandResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_runtime, 14);
+  messageDesc(file_api_v1_runtime, 8);
 
 /**
  * @generated from message dazzle.v1.SyncDiffRequest
@@ -341,7 +224,7 @@ export type SyncDiffRequest = Message<"dazzle.v1.SyncDiffRequest"> & {
  * Use `create(SyncDiffRequestSchema)` to create a new message.
  */
 export const SyncDiffRequestSchema: GenMessage<SyncDiffRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_runtime, 15);
+  messageDesc(file_api_v1_runtime, 9);
 
 /**
  * @generated from message dazzle.v1.SyncDiffResponse
@@ -360,7 +243,7 @@ export type SyncDiffResponse = Message<"dazzle.v1.SyncDiffResponse"> & {
  * Use `create(SyncDiffResponseSchema)` to create a new message.
  */
 export const SyncDiffResponseSchema: GenMessage<SyncDiffResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_runtime, 16);
+  messageDesc(file_api_v1_runtime, 10);
 
 /**
  * @generated from message dazzle.v1.SyncPushRequest
@@ -384,7 +267,7 @@ export type SyncPushRequest = Message<"dazzle.v1.SyncPushRequest"> & {
  * Use `create(SyncPushRequestSchema)` to create a new message.
  */
 export const SyncPushRequestSchema: GenMessage<SyncPushRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_runtime, 17);
+  messageDesc(file_api_v1_runtime, 11);
 
 /**
  * @generated from message dazzle.v1.SyncPushResponse
@@ -406,7 +289,7 @@ export type SyncPushResponse = Message<"dazzle.v1.SyncPushResponse"> & {
  * Use `create(SyncPushResponseSchema)` to create a new message.
  */
 export const SyncPushResponseSchema: GenMessage<SyncPushResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_runtime, 18);
+  messageDesc(file_api_v1_runtime, 12);
 
 /**
  * @generated from message dazzle.v1.RefreshRequest
@@ -423,7 +306,7 @@ export type RefreshRequest = Message<"dazzle.v1.RefreshRequest"> & {
  * Use `create(RefreshRequestSchema)` to create a new message.
  */
 export const RefreshRequestSchema: GenMessage<RefreshRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_runtime, 19);
+  messageDesc(file_api_v1_runtime, 13);
 
 /**
  * @generated from message dazzle.v1.RefreshResponse
@@ -440,36 +323,12 @@ export type RefreshResponse = Message<"dazzle.v1.RefreshResponse"> & {
  * Use `create(RefreshResponseSchema)` to create a new message.
  */
 export const RefreshResponseSchema: GenMessage<RefreshResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_runtime, 20);
+  messageDesc(file_api_v1_runtime, 14);
 
 /**
  * @generated from service dazzle.v1.RuntimeService
  */
 export const RuntimeService: GenService<{
-  /**
-   * @generated from rpc dazzle.v1.RuntimeService.SetScript
-   */
-  setScript: {
-    methodKind: "unary";
-    input: typeof SetScriptRequestSchema;
-    output: typeof SetScriptResponseSchema;
-  },
-  /**
-   * @generated from rpc dazzle.v1.RuntimeService.GetScript
-   */
-  getScript: {
-    methodKind: "unary";
-    input: typeof GetScriptRequestSchema;
-    output: typeof GetScriptResponseSchema;
-  },
-  /**
-   * @generated from rpc dazzle.v1.RuntimeService.EditScript
-   */
-  editScript: {
-    methodKind: "unary";
-    input: typeof EditScriptRequestSchema;
-    output: typeof EditScriptResponseSchema;
-  },
   /**
    * @generated from rpc dazzle.v1.RuntimeService.EmitEvent
    */

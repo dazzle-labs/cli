@@ -8,7 +8,7 @@ CLI_COMMIT := $(shell git -C cli rev-parse HEAD 2>/dev/null || echo main)
 CP_BUILD := docker build -f control-plane/docker/Dockerfile --build-arg VITE_CLERK_PUBLISHABLE_KEY=$(CLERK_PK) --build-arg GIT_COMMIT=$(CLI_COMMIT) -t $(CP_IMG) .
 SIDECAR_IMG := dazzlefm/agent-streamer-sidecar:main
 STR_BUILD := docker build --platform linux/amd64 -f streamer/docker/Dockerfile -t $(STR_IMG) streamer/
-SIDECAR_BUILD := docker build --platform linux/amd64 -f streamer/docker/sidecar/Dockerfile -t $(SIDECAR_IMG) streamer/docker/sidecar/
+SIDECAR_BUILD := docker build --platform linux/amd64 -f sidecar/Dockerfile -t $(SIDECAR_IMG) sidecar/
 
 # Colored log helpers
 _cyan    = \033[36m

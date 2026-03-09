@@ -1,16 +1,18 @@
 package main
 
 import (
-	"bytes"
+	"context"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
-	"os/exec"
 	"strings"
 	"time"
+
+	"connectrpc.com/connect"
+
+	sidecarv1 "github.com/browser-streamer/sidecar/gen/api/v1"
+	sidecarv1connect "github.com/browser-streamer/sidecar/gen/api/v1/sidecarv1connect"
 )
 
 type podClient struct {
@@ -25,121 +27,76 @@ func newPodClient(podToken string) *podClient {
 	}
 }
 
-// ScriptResponse is the JSON body returned by GET /api/panel/main.
-type ScriptResponse struct {
-	Script string `json:"script"`
+// sidecarBaseURL returns the ConnectRPC base URL for a pod's sidecar.
+func sidecarBaseURL(podIP string) string {
+	return fmt.Sprintf("http://%s:8080/_dz_9f7a3b1c", podIP)
 }
 
-// LogEntry is a single browser console log entry returned by GET /api/logs.
+// connectOpts returns client options with auth token.
+func (p *podClient) connectOpts() []connect.ClientOption {
+	return []connect.ClientOption{
+		connect.WithInterceptors(podTokenInterceptor(p.podToken)),
+	}
+}
+
+// podTokenInterceptor injects the pod token as a Bearer header.
+func podTokenInterceptor(token string) connect.UnaryInterceptorFunc {
+	return func(next connect.UnaryFunc) connect.UnaryFunc {
+		return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
+			if token != "" {
+				req.Header().Set("Authorization", "Bearer "+token)
+			}
+			return next(ctx, req)
+		}
+	}
+}
+
+// LogEntry is a single browser console log entry.
 type LogEntry struct {
-	Level     string `json:"level"`
-	Message   string `json:"text"`
-	Timestamp string `json:"ts"`
-}
-
-func (p *podClient) GetScript(podIP string) (*ScriptResponse, error) {
-	podURL := fmt.Sprintf("http://%s:8080/api/panel/main?token=%s", podIP, url.QueryEscape(p.podToken))
-	resp, err := p.httpClient.Get(podURL)
-	if err != nil {
-		return nil, fmt.Errorf("get script: %w", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("get script: pod returned %d: %s", resp.StatusCode, string(body))
-	}
-	var result ScriptResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("get script: decode response: %w", err)
-	}
-	return &result, nil
-}
-
-func (p *podClient) SetScript(podIP, script string) error {
-	body, _ := json.Marshal(map[string]string{"script": script})
-	podURL := fmt.Sprintf("http://%s:8080/api/panel/main?token=%s", podIP, url.QueryEscape(p.podToken))
-	resp, err := p.httpClient.Post(podURL, "application/json", bytes.NewReader(body))
-	if err != nil {
-		return fmt.Errorf("set script: %w", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("set script: pod returned %d: %s", resp.StatusCode, string(respBody))
-	}
-	return nil
-}
-
-func (p *podClient) EditScript(podIP, oldStr, newStr string) error {
-	body, _ := json.Marshal(map[string]string{"old_string": oldStr, "new_string": newStr})
-	podURL := fmt.Sprintf("http://%s:8080/api/panel/main/edit?token=%s", podIP, url.QueryEscape(p.podToken))
-	resp, err := p.httpClient.Post(podURL, "application/json", bytes.NewReader(body))
-	if err != nil {
-		return fmt.Errorf("edit script: %w", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("edit script: pod returned %d: %s", resp.StatusCode, string(respBody))
-	}
-	return nil
+	Level     string  `json:"level"`
+	Message   string  `json:"text"`
+	Timestamp string  `json:"ts"`
 }
 
 func (p *podClient) EmitEvent(podIP, event, data string) error {
-	// data is expected to be a valid JSON object string
-	var dataObj map[string]any
-	if err := json.Unmarshal([]byte(data), &dataObj); err != nil {
-		return fmt.Errorf("emit event: data must be valid JSON: %w", err)
-	}
-	body, _ := json.Marshal(map[string]any{"event": event, "data": dataObj})
-	podURL := fmt.Sprintf("http://%s:8080/api/panel/main/event?token=%s", podIP, url.QueryEscape(p.podToken))
-	resp, err := p.httpClient.Post(podURL, "application/json", bytes.NewReader(body))
+	client := sidecarv1connect.NewRuntimeServiceClient(p.httpClient, sidecarBaseURL(podIP), p.connectOpts()...)
+	_, err := client.EmitEvent(context.Background(), connect.NewRequest(&sidecarv1.EmitEventRequest{
+		Event: event,
+		Data:  data,
+	}))
 	if err != nil {
 		return fmt.Errorf("emit event: %w", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("emit event: pod returned %d: %s", resp.StatusCode, string(respBody))
 	}
 	return nil
 }
 
 func (p *podClient) GetLogs(podIP string, limit int) ([]LogEntry, error) {
-	podURL := fmt.Sprintf("http://%s:8080/api/logs?limit=%d&token=%s", podIP, limit, url.QueryEscape(p.podToken))
-	resp, err := p.httpClient.Get(podURL)
+	client := sidecarv1connect.NewRuntimeServiceClient(p.httpClient, sidecarBaseURL(podIP), p.connectOpts()...)
+	resp, err := client.GetLogs(context.Background(), connect.NewRequest(&sidecarv1.GetLogsRequest{
+		Limit: int32(limit),
+	}))
 	if err != nil {
 		return nil, fmt.Errorf("get logs: %w", err)
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("get logs: pod returned %d: %s", resp.StatusCode, string(body))
+	entries := make([]LogEntry, len(resp.Msg.Entries))
+	for i, e := range resp.Msg.Entries {
+		entries[i] = LogEntry{
+			Level:     e.Level,
+			Message:   e.Text,
+			Timestamp: fmt.Sprintf("%f", e.Ts),
+		}
 	}
-	var wrapper struct {
-		Entries []LogEntry `json:"entries"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&wrapper); err != nil {
-		return nil, fmt.Errorf("get logs: decode response: %w", err)
-	}
-	return wrapper.Entries, nil
+	return entries, nil
 }
 
-// Screenshot captures a screenshot via OBS WebSocket and returns the raw PNG bytes.
+// Screenshot captures a screenshot via the sidecar's RPC and returns raw PNG bytes.
 func (p *podClient) Screenshot(podIP string) ([]byte, error) {
-	b64, err := obsScreenshot(podIP)
+	client := sidecarv1connect.NewRuntimeServiceClient(p.httpClient, sidecarBaseURL(podIP), p.connectOpts()...)
+	resp, err := client.Screenshot(context.Background(), connect.NewRequest(&sidecarv1.ScreenshotRequest{}))
 	if err != nil {
 		return nil, fmt.Errorf("screenshot: %w", err)
 	}
-	// Strip data URI prefix if present
-	if idx := strings.Index(b64, ","); idx != -1 {
-		b64 = b64[idx+1:]
-	}
-	data, err := base64.StdEncoding.DecodeString(b64)
-	if err != nil {
-		return nil, fmt.Errorf("screenshot: decode base64: %w", err)
-	}
-	return data, nil
+	return resp.Msg.Image, nil
 }
 
 // --- Sync methods ---
@@ -154,76 +111,119 @@ type SyncPushResult struct {
 }
 
 func (p *podClient) SyncDiff(podIP string, files map[string]string, entry string) (*SyncDiffResult, error) {
-	body, _ := json.Marshal(map[string]any{"files": files, "entry": entry})
-	podURL := fmt.Sprintf("http://%s:8080/api/sync/diff?token=%s", podIP, url.QueryEscape(p.podToken))
-	resp, err := p.httpClient.Post(podURL, "application/json", bytes.NewReader(body))
+	client := sidecarv1connect.NewSyncServiceClient(p.httpClient, sidecarBaseURL(podIP), p.connectOpts()...)
+	resp, err := client.Diff(context.Background(), connect.NewRequest(&sidecarv1.SyncDiffRequest{
+		Files: files,
+		Entry: entry,
+	}))
 	if err != nil {
 		return nil, fmt.Errorf("sync diff: %w", err)
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("sync diff: pod returned %d: %s", resp.StatusCode, string(respBody))
-	}
-	var result SyncDiffResult
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("sync diff: decode response: %w", err)
-	}
-	return &result, nil
+	return &SyncDiffResult{Need: resp.Msg.Need}, nil
 }
 
 // syncHTTPClient has a longer timeout for large tar uploads.
 var syncHTTPClient = &http.Client{Timeout: 6 * time.Minute}
 
 func (p *podClient) SyncPush(podIP string, body io.Reader) (*SyncPushResult, error) {
-	podURL := fmt.Sprintf("http://%s:8080/api/sync/push?token=%s", podIP, url.QueryEscape(p.podToken))
-	resp, err := syncHTTPClient.Post(podURL, "application/x-tar", body)
+	client := sidecarv1connect.NewSyncServiceClient(syncHTTPClient, sidecarBaseURL(podIP), p.connectOpts()...)
+	stream := client.Push(context.Background())
+
+	// Read body in chunks and send as streaming RPC
+	buf := make([]byte, 64*1024) // 64KB chunks
+	for {
+		n, err := body.Read(buf)
+		if n > 0 {
+			chunk := make([]byte, n)
+			copy(chunk, buf[:n])
+			if sendErr := stream.Send(&sidecarv1.SyncPushRequest{Chunk: chunk}); sendErr != nil {
+				return nil, fmt.Errorf("sync push send: %w", sendErr)
+			}
+		}
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("sync push read: %w", err)
+		}
+	}
+
+	resp, err := stream.CloseAndReceive()
 	if err != nil {
 		return nil, fmt.Errorf("sync push: %w", err)
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("sync push: pod returned %d: %s", resp.StatusCode, string(respBody))
-	}
-	var result SyncPushResult
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("sync push: decode response: %w", err)
-	}
-	return &result, nil
+
+	return &SyncPushResult{
+		Synced:  resp.Msg.Synced,
+		Deleted: resp.Msg.Deleted,
+	}, nil
 }
 
 func (p *podClient) SyncRefresh(podIP string) error {
-	podURL := fmt.Sprintf("http://%s:8080/api/sync/refresh?token=%s", podIP, url.QueryEscape(p.podToken))
-	resp, err := p.httpClient.Post(podURL, "application/json", bytes.NewReader([]byte("{}")))
+	client := sidecarv1connect.NewSyncServiceClient(p.httpClient, sidecarBaseURL(podIP), p.connectOpts()...)
+	_, err := client.Refresh(context.Background(), connect.NewRequest(&sidecarv1.SyncRefreshRequest{}))
 	if err != nil {
 		return fmt.Errorf("sync refresh: %w", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("sync refresh: pod returned %d: %s", resp.StatusCode, string(respBody))
 	}
 	return nil
 }
 
-// ObsCommand executes a gobs-cli command against the pod's OBS instance.
+// ObsCommand executes a gobs-cli command via the sidecar's OBS RPC.
 func (p *podClient) ObsCommand(podIP string, args []string) (string, error) {
-	cmdArgs := append([]string{"--host", podIP, "--port", "4455"}, args...)
-	cmd := exec.Command("gobs-cli", cmdArgs...)
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		errMsg := stderr.String()
-		if errMsg == "" {
-			errMsg = err.Error()
+	client := sidecarv1connect.NewObsServiceClient(p.httpClient, sidecarBaseURL(podIP), p.connectOpts()...)
+	resp, err := client.Command(context.Background(), connect.NewRequest(&sidecarv1.ObsCommandRequest{
+		Args: args,
+	}))
+	if err != nil {
+		return "", fmt.Errorf("obs command: %w", err)
+	}
+	return resp.Msg.Output, nil
+}
+
+// base64EncodeBytes is a helper used in MCP screenshot handler.
+func base64EncodeBytes(b []byte) string {
+	return base64.StdEncoding.EncodeToString(b)
+}
+
+// redactStreamSecrets removes RTMP URLs, stream-key-like values, and preview tokens from output.
+func redactStreamSecrets(output string) string {
+	// Redact preview tokens (dpt_ followed by hex chars)
+	for {
+		idx := strings.Index(output, "dpt_")
+		if idx == -1 {
+			break
 		}
-		return "", fmt.Errorf("obs command: %s", errMsg)
+		end := idx + 4
+		for end < len(output) && ((output[end] >= '0' && output[end] <= '9') || (output[end] >= 'a' && output[end] <= 'f')) {
+			end++
+		}
+		if end == idx+4 {
+			output = output[:idx] + "dpt\u00a7" + output[idx+4:]
+			continue
+		}
+		output = output[:idx] + "[REDACTED]" + output[end:]
 	}
-	out := stdout.String()
-	if out == "" {
-		out = "OK"
+	output = strings.ReplaceAll(output, "dpt\u00a7", "dpt_")
+
+	// Redact rtmp:// and rtmps:// URLs
+	for {
+		idx := strings.Index(strings.ToLower(output), "rtmp")
+		if idx == -1 {
+			break
+		}
+		rest := output[idx:]
+		if !strings.HasPrefix(strings.ToLower(rest), "rtmp://") && !strings.HasPrefix(strings.ToLower(rest), "rtmps://") {
+			output = output[:idx] + "[redacted]" + output[idx+4:]
+			continue
+		}
+		end := idx + len(rest)
+		for j, c := range rest {
+			if c == ' ' || c == '\n' || c == '\r' || c == '"' || c == '\'' || c == '\t' {
+				end = idx + j
+				break
+			}
+		}
+		output = output[:idx] + "[redacted]" + output[end:]
 	}
-	return out, nil
+	return output
 }

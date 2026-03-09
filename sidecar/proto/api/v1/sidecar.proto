@@ -1,0 +1,105 @@
+syntax = "proto3";
+
+package dazzle.sidecar.v1;
+
+option go_package = "github.com/browser-streamer/sidecar/internal/gen/api/v1;sidecarv1";
+
+// SyncService handles content synchronization between the CLI and the stage.
+service SyncService {
+  rpc Diff(SyncDiffRequest) returns (SyncDiffResponse);
+  rpc Push(stream SyncPushRequest) returns (SyncPushResponse);
+  rpc Refresh(SyncRefreshRequest) returns (SyncRefreshResponse);
+}
+
+// RuntimeService handles browser interaction (CDP-backed).
+service RuntimeService {
+  rpc EmitEvent(EmitEventRequest) returns (EmitEventResponse);
+  rpc GetLogs(GetLogsRequest) returns (GetLogsResponse);
+  rpc Navigate(NavigateRequest) returns (NavigateResponse);
+  rpc Screenshot(ScreenshotRequest) returns (ScreenshotResponse);
+}
+
+// ObsService proxies commands to OBS via gobs-cli.
+service ObsService {
+  rpc Command(ObsCommandRequest) returns (ObsCommandResponse);
+}
+
+// --- Sync messages ---
+
+message SyncDiffRequest {
+  map<string, string> files = 1;  // relative path -> sha256
+  string entry = 2;               // HTML entry point filename
+}
+
+message SyncDiffResponse {
+  repeated string need = 1;       // files that need uploading
+}
+
+message SyncPushRequest {
+  bytes chunk = 1;                // tar chunk (streaming)
+}
+
+message SyncPushResponse {
+  int32 synced = 1;
+  int32 deleted = 2;
+}
+
+message SyncRefreshRequest {}
+
+message SyncRefreshResponse {
+  bool ok = 1;
+}
+
+// --- Runtime messages ---
+
+message EmitEventRequest {
+  string event = 1;
+  string data = 2;                // JSON object string
+}
+
+message EmitEventResponse {
+  bool ok = 1;
+}
+
+message GetLogsRequest {
+  int32 limit = 1;
+}
+
+message LogEntry {
+  string level = 1;
+  string text = 2;
+  double ts = 3;
+  string source = 4;
+  string url = 5;
+  int32 line = 6;
+}
+
+message GetLogsResponse {
+  int32 count = 1;
+  int32 total = 2;
+  repeated LogEntry entries = 3;
+}
+
+message NavigateRequest {
+  string url = 1;
+}
+
+message NavigateResponse {
+  bool ok = 1;
+}
+
+message ScreenshotRequest {}
+
+message ScreenshotResponse {
+  bytes image = 1;                // raw PNG bytes
+}
+
+// --- OBS messages ---
+
+message ObsCommandRequest {
+  repeated string args = 1;
+}
+
+message ObsCommandResponse {
+  string output = 1;
+}

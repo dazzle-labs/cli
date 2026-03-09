@@ -323,8 +323,8 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 				{
 					Name:    "restore",
 					Image:   m.sidecarImage,
-					Command: []string{"/bin/sh", "/scripts/restore.sh"},
-					Env:     r2EnvVars(userID, id, m.r2Bucket),
+					Command: []string{"/sidecar", "restore"},
+					Env:     sidecarEnvVars(userID, id, m.r2Bucket),
 					VolumeMounts: []corev1.VolumeMount{
 						{Name: "stage-data", MountPath: "/data"},
 					},
@@ -345,22 +345,7 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 				{
 					Name:  "streamer",
 					Image: m.streamerImage,
-					Ports: []corev1.ContainerPort{
-						{
-							ContainerPort: 8080,
-							Protocol:      corev1.ProtocolTCP,
-						},
-					},
 					Env: []corev1.EnvVar{
-						{
-							Name: "TOKEN",
-							ValueFrom: &corev1.EnvVarSource{
-								SecretKeyRef: &corev1.SecretKeySelector{
-									LocalObjectReference: corev1.LocalObjectReference{Name: "browserless-auth"},
-									Key:                  "token",
-								},
-							},
-						},
 						{Name: "STAGE_ID", Value: id},
 						{Name: "USER_ID", Value: userID},
 					},
@@ -377,6 +362,7 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 					VolumeMounts: []corev1.VolumeMount{
 						{Name: "dshm", MountPath: "/dev/shm"},
 						{Name: "stage-data", MountPath: "/data"},
+						{Name: "hls-data", MountPath: "/tmp/hls"},
 					},
 					Lifecycle: &corev1.Lifecycle{
 						PreStop: &corev1.LifecycleHandler{
@@ -385,36 +371,51 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 							},
 						},
 					},
+					ImagePullPolicy: corev1.PullIfNotPresent,
+				},
+				{
+					Name:    "sidecar",
+					Image:   m.sidecarImage,
+					Command: []string{"/sidecar", "serve"},
+					Ports: []corev1.ContainerPort{
+						{
+							ContainerPort: 8080,
+							Protocol:      corev1.ProtocolTCP,
+						},
+					},
+					Env: append(sidecarEnvVars(userID, id, m.r2Bucket), corev1.EnvVar{
+						Name: "TOKEN",
+						ValueFrom: &corev1.EnvVarSource{
+							SecretKeyRef: &corev1.SecretKeySelector{
+								LocalObjectReference: corev1.LocalObjectReference{Name: "browserless-auth"},
+								Key:                  "token",
+							},
+						},
+					}),
+					VolumeMounts: []corev1.VolumeMount{
+						{Name: "stage-data", MountPath: "/data"},
+						{Name: "hls-data", MountPath: "/tmp/hls", ReadOnly: true},
+					},
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceCPU:    resource.MustParse("100m"),
+							corev1.ResourceMemory: resource.MustParse("128Mi"),
+						},
+						Limits: corev1.ResourceList{
+							corev1.ResourceCPU:    resource.MustParse("500m"),
+							corev1.ResourceMemory: resource.MustParse("512Mi"),
+						},
+					},
 					ReadinessProbe: &corev1.Probe{
 						ProbeHandler: corev1.ProbeHandler{
 							HTTPGet: &corev1.HTTPGetAction{
-								Path: "/health",
+								Path: "/_dz_9f7a3b1c/health",
 								Port: intstr.FromInt(8080),
 							},
 						},
 						InitialDelaySeconds: 2,
 						PeriodSeconds:       2,
 						FailureThreshold:    30,
-					},
-					ImagePullPolicy: corev1.PullIfNotPresent,
-				},
-				{
-					Name:    "sidecar",
-					Image:   m.sidecarImage,
-					Command: []string{"/bin/sh", "/scripts/entrypoint.sh"},
-					Env:     r2EnvVars(userID, id, m.r2Bucket),
-					VolumeMounts: []corev1.VolumeMount{
-						{Name: "stage-data", MountPath: "/data"},
-					},
-					Resources: corev1.ResourceRequirements{
-						Requests: corev1.ResourceList{
-							corev1.ResourceCPU:    resource.MustParse("50m"),
-							corev1.ResourceMemory: resource.MustParse("64Mi"),
-						},
-						Limits: corev1.ResourceList{
-							corev1.ResourceCPU:    resource.MustParse("250m"),
-							corev1.ResourceMemory: resource.MustParse("256Mi"),
-						},
 					},
 					ImagePullPolicy: corev1.PullIfNotPresent,
 				},
@@ -434,6 +435,14 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 					VolumeSource: corev1.VolumeSource{
 						EmptyDir: &corev1.EmptyDirVolumeSource{
 							SizeLimit: resourcePtr(resource.MustParse("2Gi")),
+						},
+					},
+				},
+				{
+					Name: "hls-data",
+					VolumeSource: corev1.VolumeSource{
+						EmptyDir: &corev1.EmptyDirVolumeSource{
+							SizeLimit: resourcePtr(resource.MustParse("512Mi")),
 						},
 					},
 				},
@@ -475,14 +484,12 @@ func boolPtr(b bool) *bool {
 	return &b
 }
 
-// r2EnvVars returns the rclone env vars needed by the sidecar/init containers.
-func r2EnvVars(userID, stageID, bucket string) []corev1.EnvVar {
+// sidecarEnvVars returns the env vars needed by the sidecar/init containers.
+func sidecarEnvVars(userID, stageID, bucket string) []corev1.EnvVar {
 	optional := boolPtr(true)
 	return []corev1.EnvVar{
-		{Name: "RCLONE_CONFIG_R2_TYPE", Value: "s3"},
-		{Name: "RCLONE_CONFIG_R2_PROVIDER", Value: "Cloudflare"},
 		{
-			Name: "RCLONE_CONFIG_R2_ENDPOINT",
+			Name: "R2_ENDPOINT",
 			ValueFrom: &corev1.EnvVarSource{
 				SecretKeyRef: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{Name: "r2-credentials"},
@@ -492,7 +499,7 @@ func r2EnvVars(userID, stageID, bucket string) []corev1.EnvVar {
 			},
 		},
 		{
-			Name: "RCLONE_CONFIG_R2_ACCESS_KEY_ID",
+			Name: "R2_ACCESS_KEY_ID",
 			ValueFrom: &corev1.EnvVarSource{
 				SecretKeyRef: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{Name: "r2-credentials"},
@@ -502,7 +509,7 @@ func r2EnvVars(userID, stageID, bucket string) []corev1.EnvVar {
 			},
 		},
 		{
-			Name: "RCLONE_CONFIG_R2_SECRET_ACCESS_KEY",
+			Name: "R2_SECRET_ACCESS_KEY",
 			ValueFrom: &corev1.EnvVarSource{
 				SecretKeyRef: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{Name: "r2-credentials"},

@@ -58,23 +58,6 @@ RUN wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-
     && rm /tmp/chrome.deb \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Node.js 24 LTS
-RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
-    && apt-get install -y nodejs \
-    && rm -rf /var/lib/apt/lists/*
-
-# Create app directory
-WORKDIR /app
-
-# Copy streamer code and install dependencies
-COPY package.json package-lock.json* ./
-RUN npm install
-
-COPY index.js sync.js shell.html prelude.js style.css vite-init.mjs ./
-
-# Remove npm (only needed for install, not runtime) to eliminate bundled dep vulns
-RUN rm -rf /usr/lib/node_modules/npm /usr/bin/npm /usr/bin/npx
-
 # Copy PulseAudio config
 COPY docker/pulse-default.pa /etc/pulse/default.pa
 
@@ -85,7 +68,5 @@ RUN chmod +x /entrypoint.sh /scripts/prestop.sh
 
 ENV DISPLAY=:99
 ENV PULSE_SERVER=unix:/tmp/pulse/native
-
-EXPOSE 8080
 
 ENTRYPOINT ["/entrypoint.sh"]

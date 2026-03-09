@@ -9,8 +9,17 @@ COPY web/index.html web/tsconfig.json web/vite.config.ts ./
 RUN yarn build
 
 FROM golang:1.25-alpine AS builder
-WORKDIR /app
-COPY control-plane/go.mod control-plane/go.sum ./
+WORKDIR /src
+
+# Copy sidecar module (needed as local replace dependency)
+COPY sidecar/go.mod sidecar/go.sum ./sidecar/
+COPY sidecar/cmd/ ./sidecar/cmd/
+COPY sidecar/gen/ ./sidecar/gen/
+COPY sidecar/internal/ ./sidecar/internal/
+
+# Copy control-plane module
+COPY control-plane/go.mod control-plane/go.sum ./control-plane/
+WORKDIR /src/control-plane
 RUN go mod download
 COPY control-plane/*.go ./
 COPY control-plane/internal/ ./internal/
@@ -18,15 +27,11 @@ COPY control-plane/migrations/ ./migrations/
 ARG GIT_COMMIT=main
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "-X main.gitCommit=${GIT_COMMIT}" -o control-plane .
 
-# Build gobs-cli
-RUN CGO_ENABLED=0 GOOS=linux go install github.com/onyx-and-iris/gobs-cli@v0.18.2
-
 FROM alpine:3.19
 RUN apk add --no-cache ca-certificates
 WORKDIR /app
-COPY --from=builder /app/control-plane .
-COPY --from=builder /go/bin/gobs-cli /usr/local/bin/gobs-cli
-COPY --from=builder /app/migrations/ ./migrations/
+COPY --from=builder /src/control-plane/control-plane .
+COPY --from=builder /src/control-plane/migrations/ ./migrations/
 COPY --from=web /app/dist/ ./web/
 COPY llms.txt ./web/llms.txt
 RUN mkdir -p ./web/.well-known && cp ./web/llms.txt ./web/.well-known/llms.txt

@@ -1,18 +1,14 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"os/exec"
 	"strings"
-	"sync/atomic"
 	"time"
 
-	"github.com/gorilla/websocket"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -58,55 +54,6 @@ func (m *Manager) setupMCP() http.Handler {
 			mcp.WithDescription("Get the current status of your stage (active/inactive/starting)."),
 		),
 		m.handleMCPStageStatus,
-	)
-
-	s.AddTool(
-		mcp.NewTool("set_script",
-			mcp.WithDescription(`Set JavaScript content to render in your stage. Write vanilla JS or JSX. The page is full-viewport with a black background. Changes are hot-swapped with zero page reloads. Requires an active stage (call start first).
-
-Two modes:
-1. Vanilla JS — create DOM elements / canvas and append to document.body
-2. React JSX — define an App component and it will be auto-mounted into #root:
-     const App = () => <div>Hello</div>;
-   Do NOT call createRoot or ReactDOM.render — the runtime auto-mounts your App. On subsequent set_script/edit_script calls, the root is reused for clean HMR transitions.
-
-Available globals (no imports needed):
-  React, useState, useEffect, useRef, useMemo, useCallback, useReducer, Fragment,
-  useContext, useLayoutEffect, useImperativeHandle, useDebugValue,
-  useDeferredValue, useTransition, useId, useSyncExternalStore,
-  createContext, forwardRef, memo, lazy, Suspense
-  createPortal (from react-dom)
-  create, persist (from zustand — use for persistent state via localStorage)
-
-Tailwind CSS v4 utility classes work in className (e.g. "text-4xl font-bold text-white").
-
-Your code can listen for events pushed by emit_event — set up the view once, then drive it with state updates:
-
-  window.addEventListener('event', (e) => {
-    const { event, data } = e.detail;
-    if (event === 'update') el.textContent = data.msg;
-  });
-
-Read window.__state at any time for accumulated state from all prior emit_event calls. An '__init' event fires on module load if state already exists.`),
-			mcp.WithString("script", mcp.Required(), mcp.Description("JavaScript or JSX code to render")),
-		),
-		m.handleMCPSetScript,
-	)
-
-	s.AddTool(
-		mcp.NewTool("get_script",
-			mcp.WithDescription("Get the current JavaScript content being rendered in your stage. Requires an active stage (call start first)."),
-		),
-		m.handleMCPGetScript,
-	)
-
-	s.AddTool(
-		mcp.NewTool("edit_script",
-			mcp.WithDescription("Edit the current JavaScript content by finding and replacing a string. The old_string must exist exactly once in the current code. Changes are hot-swapped with no page reload. Requires an active stage (call start first)."),
-			mcp.WithString("old_string", mcp.Required(), mcp.Description("The exact string to find in the current code")),
-			mcp.WithString("new_string", mcp.Required(), mcp.Description("The replacement string")),
-		),
-		m.handleMCPEditScript,
 	)
 
 	s.AddTool(
@@ -286,32 +233,6 @@ func (m *Manager) mcpMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// fetchScriptFromPod retrieves the current user script from a running pod.
-func (m *Manager) fetchScriptFromPod(stage *Stage) (string, error) {
-	result, err := m.pc.GetScript(stage.PodIP)
-	if err != nil {
-		return "", err
-	}
-	return result.Script, nil
-}
-
-// persistScriptFromPod fetches the current script from the pod and saves it to DB.
-func (m *Manager) persistScriptFromPod(stageID string, stage *Stage) {
-	script, err := m.fetchScriptFromPod(stage)
-	if err != nil {
-		log.Printf("WARN: failed to fetch script from pod for stage %s: %v", stageID, err)
-		return
-	}
-	if err := dbSetStageScript(m.db, stageID, script); err != nil {
-		log.Printf("WARN: failed to persist script for stage %s: %v", stageID, err)
-	}
-}
-
-// restoreScriptToPod pushes a saved script to a newly started pod.
-func (m *Manager) restoreScriptToPod(stage *Stage, script string) error {
-	return m.pc.SetScript(stage.PodIP, script)
-}
-
 // requireRunningStage resolves the agent's stage and verifies it is running.
 func (m *Manager) requireRunningStage(ctx context.Context, agentID string) (*Stage, error) {
 	stage, ok := m.getStage(agentID)
@@ -339,17 +260,6 @@ func (m *Manager) handleMCPCreateStage(ctx context.Context, req mcp.CallToolRequ
 	readyStage, err := m.activateStage(waitCtx, agentID, userID)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("failed to activate stage: %v", err)), nil
-	}
-
-	// Restore persisted script if one exists
-	if m.db != nil {
-		if script, err := dbGetStageScript(m.db, agentID); err == nil && script != "" {
-			if err := m.restoreScriptToPod(readyStage, script); err != nil {
-				log.Printf("WARN: failed to restore script for stage %s: %v", agentID, err)
-			} else {
-				log.Printf("Restored script for stage %s (%d bytes)", agentID, len(script))
-			}
-		}
 	}
 
 	// Configure OBS stream destination if one is set (not required to start)
@@ -408,12 +318,11 @@ func (m *Manager) validateStreamDestination(stageID, userID string) (*streamDest
 // configureOBSStream sets OBS stream settings using the already-validated destination.
 // dest.StreamKey must already be decrypted (done by validateStreamDestination).
 // Retries with backoff since OBS WebSocket (port 4455) may not be ready immediately
-// after the pod readiness probe passes (which only checks Node.js on port 8080).
+// after the pod readiness probe passes (which only checks the sidecar on port 8080).
 func (m *Manager) configureOBSStream(stage *Stage, dest *streamDestRow) error {
 	log.Printf("Configuring OBS stream for stage %s (dest=%s, platform=%s)", stage.ID, dest.PlatformUsername, dest.Platform)
 
 	args := []string{
-		"--host", stage.PodIP, "--port", "4455",
 		"settings", "stream-service", "rtmp_custom",
 		"--server", dest.RtmpURL,
 		"--key", dest.StreamKey,
@@ -424,11 +333,9 @@ func (m *Manager) configureOBSStream(stage *Stage, dest *streamDestRow) error {
 
 	var lastErr error
 	for attempt := 1; attempt <= maxRetries; attempt++ {
-		cmd := exec.CommandContext(context.Background(), "gobs-cli", args...)
-		var stderr bytes.Buffer
-		cmd.Stderr = &stderr
-		if err := cmd.Run(); err != nil {
-			lastErr = fmt.Errorf("failed to configure OBS stream settings: %w (%s)", err, stderr.String())
+		_, err := m.pc.ObsCommand(stage.PodIP, args)
+		if err != nil {
+			lastErr = fmt.Errorf("failed to configure OBS stream settings: %w", err)
 			if attempt < maxRetries {
 				log.Printf("OBS not ready on attempt %d/%d, retrying in %v...", attempt, maxRetries, backoff)
 				time.Sleep(backoff)
@@ -483,77 +390,6 @@ func (m *Manager) handleMCPStageStatus(ctx context.Context, req mcp.CallToolRequ
 		"status": string(stage.Status),
 	})
 	return mcp.NewToolResultText(string(result)), nil
-}
-
-func (m *Manager) handleMCPSetScript(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	agentID := agentIDFromCtx(ctx)
-	script, err := req.RequireString("script")
-	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
-	}
-
-	stage, err := m.requireRunningStage(ctx, agentID)
-	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
-	}
-
-	if err := m.pc.SetScript(stage.PodIP, script); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to set template: %v", err)), nil
-	}
-
-	// Persist script to DB for restore on next activation
-	if m.db != nil {
-		if err := dbSetStageScript(m.db, agentID, script); err != nil {
-			log.Printf("WARN: failed to persist script for stage %s: %v", agentID, err)
-		}
-	}
-
-	return mcp.NewToolResultText(`{"ok":true}`), nil
-}
-
-func (m *Manager) handleMCPGetScript(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	agentID := agentIDFromCtx(ctx)
-
-	stage, err := m.requireRunningStage(ctx, agentID)
-	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
-	}
-
-	result, err := m.pc.GetScript(stage.PodIP)
-	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to get template: %v", err)), nil
-	}
-
-	respBody, _ := json.Marshal(result)
-	return mcp.NewToolResultText(string(respBody)), nil
-}
-
-func (m *Manager) handleMCPEditScript(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	agentID := agentIDFromCtx(ctx)
-	oldString, err := req.RequireString("old_string")
-	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
-	}
-	newString, err := req.RequireString("new_string")
-	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
-	}
-
-	stage, err := m.requireRunningStage(ctx, agentID)
-	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
-	}
-
-	if err := m.pc.EditScript(stage.PodIP, oldString, newString); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to edit template: %v", err)), nil
-	}
-
-	// Persist updated script to DB
-	if m.db != nil {
-		go m.persistScriptFromPod(agentID, stage)
-	}
-
-	return mcp.NewToolResultText(`{"ok":true}`), nil
 }
 
 func (m *Manager) handleMCPEmitEvent(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -633,139 +469,6 @@ func (m *Manager) handleMCPScreenshot(ctx context.Context, req mcp.CallToolReque
 	}, nil
 }
 
-// obsScreenshot captures a screenshot from OBS via its WebSocket v5 protocol.
-// Connects to ws://<podIP>:4455, performs the handshake, gets the current scene,
-// then requests a screenshot of that scene.
-func obsScreenshot(podIP string) (string, error) {
-	wsURL := fmt.Sprintf("ws://%s:4455", podIP)
-	conn, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
-	if err != nil {
-		return "", fmt.Errorf("connect to OBS WebSocket: %w", err)
-	}
-	defer conn.Close()
-
-	// OBS WS v5 handshake: receive Hello (op 0)
-	var hello struct {
-		Op int `json:"op"`
-	}
-	if err := conn.ReadJSON(&hello); err != nil {
-		return "", fmt.Errorf("read Hello: %w", err)
-	}
-	if hello.Op != 0 {
-		return "", fmt.Errorf("expected Hello (op 0), got op %d", hello.Op)
-	}
-
-	// Send Identify (op 1)
-	identify := map[string]any{
-		"op": 1,
-		"d":  map[string]any{"rpcVersion": 1},
-	}
-	if err := conn.WriteJSON(identify); err != nil {
-		return "", fmt.Errorf("send Identify: %w", err)
-	}
-
-	// Receive Identified (op 2)
-	var identified struct {
-		Op int `json:"op"`
-	}
-	if err := conn.ReadJSON(&identified); err != nil {
-		return "", fmt.Errorf("read Identified: %w", err)
-	}
-	if identified.Op != 2 {
-		return "", fmt.Errorf("expected Identified (op 2), got op %d", identified.Op)
-	}
-
-	// Request ID counter
-	var reqID atomic.Int64
-
-	// Get current program scene
-	sceneReqID := fmt.Sprintf("%d", reqID.Add(1))
-	getScene := map[string]any{
-		"op": 6,
-		"d": map[string]any{
-			"requestType": "GetCurrentProgramScene",
-			"requestId":   sceneReqID,
-		},
-	}
-	if err := conn.WriteJSON(getScene); err != nil {
-		return "", fmt.Errorf("send GetCurrentProgramScene: %w", err)
-	}
-
-	var sceneResp struct {
-		Op int `json:"op"`
-		D  struct {
-			RequestID    string `json:"requestId"`
-			ResponseData struct {
-				SceneName string `json:"sceneName"`
-			} `json:"responseData"`
-			RequestStatus struct {
-				Result bool   `json:"result"`
-				Code   int    `json:"code"`
-				Msg    string `json:"comment"`
-			} `json:"requestStatus"`
-		} `json:"d"`
-	}
-	if err := conn.ReadJSON(&sceneResp); err != nil {
-		return "", fmt.Errorf("read GetCurrentProgramScene response: %w", err)
-	}
-	if sceneResp.Op != 7 {
-		return "", fmt.Errorf("expected RequestResponse (op 7), got op %d", sceneResp.Op)
-	}
-	if !sceneResp.D.RequestStatus.Result {
-		return "", fmt.Errorf("GetCurrentProgramScene failed: %s", sceneResp.D.RequestStatus.Msg)
-	}
-	sceneName := sceneResp.D.ResponseData.SceneName
-
-	// Get screenshot of the scene
-	ssReqID := fmt.Sprintf("%d", reqID.Add(1))
-	getScreenshot := map[string]any{
-		"op": 6,
-		"d": map[string]any{
-			"requestType": "GetSourceScreenshot",
-			"requestId":   ssReqID,
-			"requestData": map[string]any{
-				"sourceName":  sceneName,
-				"imageFormat": "png",
-			},
-		},
-	}
-	if err := conn.WriteJSON(getScreenshot); err != nil {
-		return "", fmt.Errorf("send GetSourceScreenshot: %w", err)
-	}
-
-	var ssResp struct {
-		Op int `json:"op"`
-		D  struct {
-			RequestID    string `json:"requestId"`
-			ResponseData struct {
-				ImageData string `json:"imageData"`
-			} `json:"responseData"`
-			RequestStatus struct {
-				Result bool   `json:"result"`
-				Code   int    `json:"code"`
-				Msg    string `json:"comment"`
-			} `json:"requestStatus"`
-		} `json:"d"`
-	}
-	if err := conn.ReadJSON(&ssResp); err != nil {
-		return "", fmt.Errorf("read GetSourceScreenshot response: %w", err)
-	}
-	if ssResp.Op != 7 {
-		return "", fmt.Errorf("expected RequestResponse (op 7), got op %d", ssResp.Op)
-	}
-	if !ssResp.D.RequestStatus.Result {
-		return "", fmt.Errorf("GetSourceScreenshot failed: %s", ssResp.D.RequestStatus.Msg)
-	}
-
-	// Strip data:image/png;base64, prefix if present
-	imageData := ssResp.D.ResponseData.ImageData
-	if idx := strings.Index(imageData, ","); idx != -1 {
-		imageData = imageData[idx+1:]
-	}
-
-	return imageData, nil
-}
-
 // obsBlockedCommands are subcommand sequences that could expose stream credentials.
 // The agent should never be able to read the RTMP URL or stream key.
 // Includes both full names and shorthands.
@@ -774,53 +477,6 @@ var obsBlockedCommands = [][]string{
 	{"settings", "ss"},
 	{"set", "stream-service"},
 	{"set", "ss"},
-}
-
-// redactStreamSecrets removes RTMP URLs, stream-key-like values, and preview tokens from OBS command output.
-func redactStreamSecrets(output string) string {
-	// Redact preview tokens (dpt_ followed by hex chars)
-	for {
-		idx := strings.Index(output, "dpt_")
-		if idx == -1 {
-			break
-		}
-		end := idx + 4 // past "dpt_"
-		for end < len(output) && ((output[end] >= '0' && output[end] <= '9') || (output[end] >= 'a' && output[end] <= 'f')) {
-			end++
-		}
-		if end == idx+4 {
-			// "dpt_" not followed by hex — skip past it
-			output = output[:idx] + "dpt§" + output[idx+4:]
-			continue
-		}
-		output = output[:idx] + "[REDACTED]" + output[end:]
-	}
-	output = strings.ReplaceAll(output, "dpt§", "dpt_")
-
-	// Redact rtmp:// and rtmps:// URLs
-	for {
-		idx := strings.Index(strings.ToLower(output), "rtmp")
-		if idx == -1 {
-			break
-		}
-		// Check it's actually rtmp:// or rtmps://
-		rest := output[idx:]
-		if !strings.HasPrefix(strings.ToLower(rest), "rtmp://") && !strings.HasPrefix(strings.ToLower(rest), "rtmps://") {
-			// Not an RTMP URL, skip past this occurrence
-			output = output[:idx] + "[redacted]" + output[idx+4:]
-			continue
-		}
-		// Find end of URL (space, newline, quote, or end of string)
-		end := idx + len(rest)
-		for j, c := range rest {
-			if c == ' ' || c == '\n' || c == '\r' || c == '"' || c == '\'' || c == '\t' {
-				end = idx + j
-				break
-			}
-		}
-		output = output[:idx] + "[redacted]" + output[end:]
-	}
-	return output
 }
 
 // isBlockedObsCommand checks if the args match any blocked command prefix.

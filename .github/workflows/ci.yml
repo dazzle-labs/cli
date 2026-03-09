@@ -210,8 +210,8 @@ jobs:
       - name: Build Docker Image
         uses: docker/build-push-action@v5
         with:
-          context: streamer/docker/sidecar/
-          file: streamer/docker/sidecar/Dockerfile
+          context: sidecar/
+          file: sidecar/Dockerfile
           platforms: linux/amd64
           push: ${{ github.ref == 'refs/heads/main' }}
           tags: |

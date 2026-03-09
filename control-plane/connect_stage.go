@@ -183,15 +183,6 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 		readyStage.PreviewToken = freshRow.PreviewToken.String
 	}
 
-	// Restore script
-	if s.mgr.db != nil {
-		if script, err := dbGetStageScript(s.mgr.db, req.Msg.Id); err == nil && script != "" {
-			if err := s.mgr.restoreScriptToPod(readyStage, script); err != nil {
-				log.Printf("WARN: failed to restore script for stage %s: %v", req.Msg.Id, err)
-			}
-		}
-	}
-
 	// Configure OBS stream destination if set
 	dest, destErr := s.mgr.validateStreamDestination(req.Msg.Id, info.UserID)
 	if destErr == nil {

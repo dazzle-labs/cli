@@ -2,11 +2,9 @@ package main
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"time"
 
 	"connectrpc.com/connect"
@@ -35,64 +33,6 @@ func (s *runtimeServer) requireRunningStageForUser(stageID, userID string) (*Sta
 		return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("stage is not active"))
 	}
 	return stage, nil
-}
-
-func (s *runtimeServer) SetScript(ctx context.Context, req *connect.Request[apiv1.SetScriptRequest]) (*connect.Response[apiv1.SetScriptResponse], error) {
-	info := mustAuth(ctx)
-
-	stage, err := s.requireRunningStageForUser(req.Msg.StageId, info.UserID)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := s.mgr.pc.SetScript(stage.PodIP, req.Msg.Script); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
-	// Persist script to DB for restore on next activation
-	if s.mgr.db != nil {
-		if err := dbSetStageScript(s.mgr.db, req.Msg.StageId, req.Msg.Script); err != nil {
-			log.Printf("WARN: failed to persist script for stage %s: %v", req.Msg.StageId, err)
-		}
-	}
-
-	return connect.NewResponse(&apiv1.SetScriptResponse{Ok: true}), nil
-}
-
-func (s *runtimeServer) GetScript(ctx context.Context, req *connect.Request[apiv1.GetScriptRequest]) (*connect.Response[apiv1.GetScriptResponse], error) {
-	info := mustAuth(ctx)
-
-	stage, err := s.requireRunningStageForUser(req.Msg.StageId, info.UserID)
-	if err != nil {
-		return nil, err
-	}
-
-	result, err := s.mgr.pc.GetScript(stage.PodIP)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
-	return connect.NewResponse(&apiv1.GetScriptResponse{Script: result.Script}), nil
-}
-
-func (s *runtimeServer) EditScript(ctx context.Context, req *connect.Request[apiv1.EditScriptRequest]) (*connect.Response[apiv1.EditScriptResponse], error) {
-	info := mustAuth(ctx)
-
-	stage, err := s.requireRunningStageForUser(req.Msg.StageId, info.UserID)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := s.mgr.pc.EditScript(stage.PodIP, req.Msg.OldString, req.Msg.NewString); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
-	// Async persist updated script to DB
-	if s.mgr.db != nil {
-		go s.mgr.persistScriptFromPod(req.Msg.StageId, stage)
-	}
-
-	return connect.NewResponse(&apiv1.EditScriptResponse{Ok: true}), nil
 }
 
 func (s *runtimeServer) EmitEvent(ctx context.Context, req *connect.Request[apiv1.EmitEventRequest]) (*connect.Response[apiv1.EmitEventResponse], error) {
@@ -310,9 +250,4 @@ func (s *runtimeServer) Refresh(ctx context.Context, req *connect.Request[apiv1.
 	}
 
 	return connect.NewResponse(&apiv1.RefreshResponse{Ok: true}), nil
-}
-
-// base64EncodeBytes is a helper used in MCP screenshot handler after refactor.
-func base64EncodeBytes(b []byte) string {
-	return base64.StdEncoding.EncodeToString(b)
 }
