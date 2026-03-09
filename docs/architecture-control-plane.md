@@ -52,7 +52,7 @@ control-plane/
 ├── auth.go              # Authenticator: Clerk JWT + API key verification
 ├── db.go                # DB connection, migrations, CRUD helpers
 ├── connect_stage.go     # StageService RPC handlers
-├── connect_runtime.go   # RuntimeService RPC handlers (screenshots, OBS, logs, sync, events)
+├── connect_runtime.go   # RuntimeService RPC handlers (screenshots, streaming, logs, sync, events)
 ├── pod_client.go        # ConnectRPC client for sidecar communication
 ├── connect_apikey.go    # ApiKeyService RPC handlers
 ├── connect_stream.go    # RtmpDestinationService RPC handlers
@@ -186,7 +186,7 @@ Each stage pod has three containers:
 
 ## MCP Server
 
-The control plane hosts an MCP server at `/stage/<id>/mcp/*` using `mcp-go`. Each stage gets its own MCP endpoint. Tools are defined in `mcp.go` and allow AI agents to interact with the stage (emit events, take screenshots, control OBS via `obs`, get logs).
+The control plane hosts an MCP server at `/stage/<id>/mcp/*` using `mcp-go`. Each stage gets its own MCP endpoint. Tools are defined in `mcp.go` and allow AI agents to interact with the stage (emit events, take screenshots, control streaming via `obs` command, get logs).
 
 ---
 

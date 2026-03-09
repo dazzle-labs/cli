@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 
+	"github.com/browser-streamer/sidecar/internal/pipeline"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -10,45 +11,35 @@ import (
 var (
 	registry = prometheus.NewRegistry()
 
-	obsCPUUsage = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "obs_cpu_usage",
-		Help: "OBS CPU usage percentage",
+	pipelineFPS = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "pipeline_fps",
+		Help: "Encoding FPS",
 	})
-	obsMemoryUsage = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "obs_memory_usage_bytes",
-		Help: "OBS memory usage in bytes",
+	pipelineDroppedFrames = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "pipeline_dropped_frames_total",
+		Help: "Total dropped frames",
 	})
-	obsActiveFPS = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "obs_active_fps",
-		Help: "OBS active FPS",
+	pipelineBroadcasting = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "pipeline_broadcasting",
+		Help: "Whether RTMP broadcast is active (0 or 1)",
 	})
-	obsRenderSkippedFrames = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "obs_render_skipped_frames_total",
-		Help: "OBS render skipped frames",
+	pipelineOutputBytes = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "pipeline_output_bytes_total",
+		Help: "Total output bytes",
 	})
-	obsOutputSkippedFrames = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "obs_output_skipped_frames_total",
-		Help: "OBS output skipped frames",
-	})
-	obsOutputActive = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "obs_output_active",
-		Help: "Whether OBS output is active",
-	})
-	obsOutputBytes = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "obs_output_bytes_total",
-		Help: "Total OBS output bytes sent",
+	pipelineSpeed = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "pipeline_speed",
+		Help: "Encoding speed (1.0 = realtime)",
 	})
 )
 
 func init() {
 	registry.MustRegister(
-		obsCPUUsage,
-		obsMemoryUsage,
-		obsActiveFPS,
-		obsRenderSkippedFrames,
-		obsOutputSkippedFrames,
-		obsOutputActive,
-		obsOutputBytes,
+		pipelineFPS,
+		pipelineDroppedFrames,
+		pipelineBroadcasting,
+		pipelineOutputBytes,
+		pipelineSpeed,
 	)
 	prometheus.DefaultRegisterer = registry
 	prometheus.DefaultGatherer = registry
@@ -58,31 +49,15 @@ func (s *Server) handleMetrics(w http.ResponseWriter, r *http.Request) {
 	promhttp.HandlerFor(registry, promhttp.HandlerOpts{}).ServeHTTP(w, r)
 }
 
-// UpdateOBSStats updates Prometheus gauges with OBS stats data.
-func UpdateOBSStats(stats map[string]any) {
-	if v, ok := stats["cpuUsage"].(float64); ok {
-		obsCPUUsage.Set(v)
-	}
-	if v, ok := stats["memoryUsage"].(float64); ok {
-		obsMemoryUsage.Set(v)
-	}
-	if v, ok := stats["activeFps"].(float64); ok {
-		obsActiveFPS.Set(v)
-	}
-	if v, ok := stats["renderSkippedFrames"].(float64); ok {
-		obsRenderSkippedFrames.Set(v)
-	}
-	if v, ok := stats["outputSkippedFrames"].(float64); ok {
-		obsOutputSkippedFrames.Set(v)
-	}
-}
-
-// UpdateOBSOutputStats updates output-specific gauges.
-func UpdateOBSOutputStats(active bool, bytes float64) {
-	if active {
-		obsOutputActive.Set(1)
+// UpdatePipelineStats updates Prometheus gauges from pipeline stats.
+func UpdatePipelineStats(stats pipeline.Stats) {
+	pipelineFPS.Set(stats.FPS)
+	pipelineDroppedFrames.Set(float64(stats.DroppedFrames))
+	pipelineOutputBytes.Set(float64(stats.TotalBytes))
+	pipelineSpeed.Set(stats.Speed)
+	if stats.Broadcasting {
+		pipelineBroadcasting.Set(1)
 	} else {
-		obsOutputActive.Set(0)
+		pipelineBroadcasting.Set(0)
 	}
-	obsOutputBytes.Set(bytes)
 }

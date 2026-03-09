@@ -7,9 +7,9 @@
 
 ## Executive Summary
 
-Agent Streamer (branded as **Dazzle**) is a cloud-native platform that provides on-demand, isolated browser environments for AI-driven live streaming and browser automation. Each "stage" is a Kubernetes pod running Chrome on a headless display with OBS for streaming.
+Agent Streamer (branded as **Dazzle**) is a cloud-native platform that provides on-demand, isolated browser environments for AI-driven live streaming and browser automation. Each "stage" is a Kubernetes pod running Chrome on a headless display with ffmpeg for streaming.
 
-**Primary consumers are the Dazzle CLI (`dazzle`) and the Web UI.** The CLI is the main interface for AI agents and developers — it provides full stage lifecycle management, script control, screenshots, OBS operations, and streaming via ConnectRPC. The Web UI is the dashboard for account management, stage monitoring, API keys, and stream destination configuration.
+**Primary consumers are the Dazzle CLI (`dazzle`) and the Web UI.** The CLI is the main interface for AI agents and developers — it provides full stage lifecycle management, content sync, screenshots, broadcast control, and streaming via ConnectRPC. The Web UI is the dashboard for account management, stage monitoring, API keys, and stream destination configuration.
 
 Primary use cases: AI agents that need a persistent browser (Claude Code, OpenAI Agents, etc.), live streaming to Twitch/YouTube/Kick via RTMP, and programmatic browser automation.
 
@@ -19,11 +19,11 @@ Primary use cases: AI agents that need a persistent browser (Claude Code, OpenAI
 
 | Part | Path | Language | Purpose |
 |------|------|----------|---------|
-| **cli** | `cli/` (git submodule → `dazzle-labs/cli`) | Go 1.25 | Primary interface for developers and AI agents — stage lifecycle, scripting, OBS, streaming |
+| **cli** | `cli/` (git submodule → `dazzle-labs/cli`) | Go 1.25 | Primary interface for developers and AI agents — stage lifecycle, content sync, screenshots, streaming |
 | **control-plane** | `control-plane/` | Go 1.25 | Backend API, Kubernetes orchestration, auth, DB, CDP/WS proxy, serves web SPA |
 | **web** | `web/` | TypeScript / React 19 | Web dashboard SPA (stage monitoring, API keys, stream destinations, account settings) |
-| **streamer** | `streamer/` | — | Per-stage infrastructure container: Xvfb, Chrome, OBS, PulseAudio, ffmpeg. No custom application code. |
-| **sidecar** | `sidecar/` | Go 1.25 | Per-stage application logic: content sync API, CDP log/event/navigate, OBS integration, R2 persistence, Prometheus metrics, static content serving |
+| **streamer** | `streamer/` | — | Per-stage infrastructure container: Xvfb, Chrome, PulseAudio. No custom application code. |
+| **sidecar** | `sidecar/` | Go 1.25 | Per-stage application logic: content sync API, CDP client (logs/events/screenshots), ffmpeg pipeline (HLS + RTMP), R2 persistence, Prometheus metrics, static content serving |
 | **k8s** | `k8s/` | YAML | Kubernetes manifests, Traefik ingress, TLS, SOPS-encrypted secrets |
 
 ---
@@ -61,7 +61,7 @@ Web UI ────────►         │
                 Control Plane (Go :8080)
            ├── ConnectRPC API (/api.v1.*)
            │   ├── StageService (create/list/get/delete/activate/deactivate)
-           │   ├── RuntimeService (script, screenshots, OBS, logs)
+           │   ├── RuntimeService (sync, screenshots, streaming, logs)
            │   ├── RtmpDestinationService (RTMP destinations)
            │   ├── UserService (profile)
            │   └── ApiKeyService (CRUD, Clerk JWT only)
@@ -75,19 +75,21 @@ Web UI ────────►         │
                     ▼
            Streamer Pod (per stage, on-demand)
            ├── Init: restore.sh (restore /data/ from R2)
-           ├── Main container (streamer)
+           ├── Main container (streamer — infrastructure only)
            │   ├── Chrome on Xvfb (CDP :9222)
-           │   ├── OBS Studio (WS :4455)
-           │   ├── PulseAudio
-           │   └── ffmpeg (HLS preview → /tmp/hls/)
-           └── Sidecar: Go binary :8080 (content, sync, CDP, OBS, R2)
+           │   └── PulseAudio
+           └── Sidecar: Go binary :8080
+               ├── Content sync API + static serving
+               ├── CDP client (logs, events, screenshots)
+               ├── ffmpeg pipeline (HLS preview + RTMP broadcast)
+               └── R2 persistence (minio-go)
 ```
 
 ---
 
 ## Key Capabilities
 
-1. **CLI (`dazzle`)** — Primary developer/agent interface: stage lifecycle, directory sync, screenshots, logs, OBS control, destination management — all via ConnectRPC
+1. **CLI (`dazzle`)** — Primary developer/agent interface: stage lifecycle, directory sync, screenshots, logs, broadcast control, destination management — all via ConnectRPC
 2. **Web UI** — Dashboard for stage monitoring, API key management, stream destination configuration, and account settings
 3. **Stage lifecycle** — Create/activate/deactivate/delete browser pods with status tracking (inactive → starting → running → stopping)
 4. **CDP access** — Full Chrome DevTools Protocol access proxied through control plane; WebSocket URL rewriting for external access

@@ -76,11 +76,11 @@ agent-streamer/                    # Monorepo root
 │       │       └── table.tsx
 │       └── lib/                     # Shared utilities
 │
-├── streamer/                        # [PART 3] Infrastructure container (Chrome, OBS, Xvfb)
+├── streamer/                        # [PART 3] Infrastructure container (Chrome, Xvfb, PulseAudio)
 │   ├── Makefile                     # build target
 │   └── docker/                      # Container image
-│       ├── Dockerfile               # Ubuntu + Chrome + OBS + Xvfb + entrypoint
-│       ├── entrypoint.sh            # Process supervisor (Xvfb, PulseAudio, Chrome, OBS)
+│       ├── Dockerfile               # Ubuntu + Chrome + Xvfb + ffmpeg + entrypoint
+│       ├── entrypoint.sh            # Process supervisor (Xvfb, PulseAudio, Chrome)
 │       └── prestop.sh               # Graceful shutdown hook
 │
 ├── sidecar/                          # [PART] Go sidecar binary
@@ -89,7 +89,7 @@ agent-streamer/                    # Monorepo root
 │   ├── internal/
 │   │   ├── server/                   # HTTP server, ConnectRPC handlers
 │   │   ├── cdp/                      # Chrome DevTools Protocol client
-│   │   ├── obs/                      # OBS WebSocket v5 client
+│   │   ├── pipeline/                 # ffmpeg pipeline manager (HLS + RTMP)
 │   │   └── r2/                       # R2 persistence (minio-go)
 │   ├── proto/api/v1/sidecar.proto    # Service definitions
 │   ├── Dockerfile
@@ -155,15 +155,15 @@ agent-streamer/                    # Monorepo root
 ### streamer
 | Folder | Importance | Description |
 |--------|------------|-------------|
-| `docker/` | ★★★ | Container image with Chrome + OBS + Xvfb (no application code) |
+| `docker/` | ★★★ | Container image with Chrome + Xvfb + PulseAudio (no application code) |
 
 ### sidecar
 | Folder | Importance | Description |
 |--------|------------|-------------|
 | `cmd/sidecar/main.go` | ★★★ | Entry point — serve and restore subcommands |
-| `internal/server/` | ★★★ | HTTP server, ConnectRPC handlers (sync, runtime, OBS) |
-| `internal/cdp/` | ★★★ | Chrome DevTools Protocol client |
-| `internal/obs/` | ★★ | OBS WebSocket v5 client |
+| `internal/server/` | ★★★ | HTTP server, ConnectRPC handlers (sync, runtime, broadcast) |
+| `internal/cdp/` | ★★★ | Chrome DevTools Protocol client (logs, events, screenshots) |
+| `internal/pipeline/` | ★★★ | ffmpeg pipeline manager (HLS preview + RTMP broadcast) |
 | `internal/r2/` | ★★ | R2 persistence (localStorage backup/restore) |
 | `proto/api/v1/` | ★★★ | Sidecar service definitions (source of truth) |
 | `gen/api/v1/` | ★★ | Generated ConnectRPC code — regenerate with buf |
@@ -189,4 +189,4 @@ agent-streamer/                    # Monorepo root
 | `control-plane/mcp.go: setupMCP()` | All MCP tool definitions |
 | `web/src/client.ts` | All ConnectRPC client instances + Clerk auth interceptor |
 | `control-plane/pod_client.go` | ConnectRPC client for sidecar communication |
-| `sidecar/internal/server/server.go` | Sidecar HTTP/RPC routing (sync, runtime, OBS services) |
+| `sidecar/internal/server/server.go` | Sidecar HTTP/RPC routing (sync, runtime, broadcast services) |

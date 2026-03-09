@@ -1,6 +1,7 @@
 package cdp
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -338,6 +339,77 @@ func (c *Client) Navigate(url string) error {
 			return nil
 		}
 	}
+}
+
+// Screenshot captures a PNG screenshot via CDP Page.captureScreenshot.
+// Returns raw PNG bytes. Uses a dedicated connection to avoid interfering
+// with the event-listening connection in readLoop.
+func (c *Client) Screenshot() ([]byte, error) {
+	httpURL := fmt.Sprintf("http://%s:%s/json", c.host, c.port)
+	resp, err := http.Get(httpURL)
+	if err != nil {
+		return nil, fmt.Errorf("get tabs: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var tabs []struct {
+		Type                 string `json:"type"`
+		WebSocketDebuggerURL string `json:"webSocketDebuggerUrl"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&tabs); err != nil || len(tabs) == 0 {
+		return nil, fmt.Errorf("no browser tabs")
+	}
+
+	wsURL := tabs[0].WebSocketDebuggerURL
+	for _, t := range tabs {
+		if t.Type == "page" {
+			wsURL = t.WebSocketDebuggerURL
+			break
+		}
+	}
+
+	conn, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("dial: %w", err)
+	}
+	defer conn.Close()
+
+	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
+	conn.WriteJSON(map[string]any{
+		"id":     1,
+		"method": "Page.captureScreenshot",
+		"params": map[string]any{"format": "png"},
+	})
+
+	for {
+		_, raw, err := conn.ReadMessage()
+		if err != nil {
+			return nil, fmt.Errorf("read: %w", err)
+		}
+		var msg struct {
+			ID     int `json:"id"`
+			Result struct {
+				Data string `json:"data"`
+			} `json:"result"`
+			Error *struct {
+				Message string `json:"message"`
+			} `json:"error"`
+		}
+		if json.Unmarshal(raw, &msg) == nil && msg.ID == 1 {
+			if msg.Error != nil {
+				return nil, fmt.Errorf("screenshot: %s", msg.Error.Message)
+			}
+			return base64Decode(msg.Result.Data)
+		}
+	}
+}
+
+func base64Decode(s string) ([]byte, error) {
+	// Try standard encoding first, fall back to URL encoding
+	if b, err := base64.StdEncoding.DecodeString(s); err == nil {
+		return b, nil
+	}
+	return base64.RawStdEncoding.DecodeString(s)
 }
 
 // IsConnected returns whether the CDP WebSocket is currently connected.

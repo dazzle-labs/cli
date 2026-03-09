@@ -26,8 +26,8 @@ agent-streamer/
 │   └── internal/gen/   # Generated Go code (commit this)
 ├── cli/                # Git submodule — public proto definitions + generated Go
 │   └── proto/api/v1/   # Public protobuf (Stage, Runtime, Stream, User)
-├── streamer/           # Infrastructure container (Chrome, OBS, Xvfb)
-├── sidecar/            # Go sidecar binary (sync, CDP, OBS, R2)
+├── streamer/           # Infrastructure container (Chrome, Xvfb, PulseAudio)
+├── sidecar/            # Go sidecar binary (sync, CDP, ffmpeg, R2)
 ├── web/                # React/TypeScript SPA
 │   └── src/gen/api/v1/ # Generated TypeScript protobuf (commit this)
 ├── k8s/                # Kubernetes YAML manifests
@@ -85,7 +85,7 @@ The Vite dev proxy in `web/vite.config.ts` routes API paths to `http://localhost
 
 ### Streamer
 
-The streamer runs inside Docker/Kubernetes with Chrome, OBS, Xvfb, PulseAudio, and ffmpeg. It contains no custom application code — all logic is in the sidecar. Use Kind to test changes.
+The streamer runs inside Docker/Kubernetes with Chrome, Xvfb, and PulseAudio. It contains no custom application code — all logic (including ffmpeg pipeline management) is in the sidecar. Use Kind to test changes.
 
 ### Sidecar
 

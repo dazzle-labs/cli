@@ -55,7 +55,7 @@ POST /api.v1.StageService/ActivateStage
 Request:  { "id": string }
 Response: { "stage": Stage }
 ```
-Creates pod, waits for readiness, restores content from R2 and configures OBS destination. Returns stage with status `running`.
+Creates pod, waits for readiness, restores content from R2 and configures stream destination. Returns stage with status `running`.
 
 ### DeactivateStage
 ```

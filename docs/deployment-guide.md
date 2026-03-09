@@ -41,8 +41,8 @@ Traefik Ingress (HTTPS :443)
                                 ├── Stage HTTP/WS Proxy (/stage/*/...)
                                 └── Creates → Streamer Pods (on-demand)
                                       ├── Init: restore from R2
-                                      ├── Main: Chrome + OBS + ffmpeg + Xvfb
-                                      └── Sidecar: Go binary (content, sync, CDP, OBS, R2)
+                                      ├── Main: Chrome + Xvfb + PulseAudio
+                                      └── Sidecar: Go binary (content, sync, CDP, ffmpeg, R2)
 
 PostgreSQL (StatefulSet, 5Gi PVC via Hetzner CSI)
 ```

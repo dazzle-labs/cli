@@ -77,7 +77,7 @@ This deep-dive covers the Hetzner Cloud k3s cluster provisioning (via the kube-h
 **Lines of Code:** 24
 **File Type:** Terraform (HCL)
 
-**What Future Contributors Must Know:** Server type defaults are tuned for this workload. Control plane nodes are lightweight (cpx21 — shared vCPU), while workers are beefy dedicated-CPU instances (ccx43) because streamer pods need significant CPU/RAM for Chrome + OBS.
+**What Future Contributors Must Know:** Server type defaults are tuned for this workload. Control plane nodes are lightweight (cpx21 — shared vCPU), while workers are beefy dedicated-CPU instances (ccx43) because streamer pods need significant CPU/RAM for Chrome + ffmpeg encoding.
 
 **Variables:**
 - `hcloud_token` (string, sensitive) — Hetzner Cloud API token (read/write)
@@ -491,7 +491,7 @@ control-plane Pod
 - **Terraform State** — Cluster topology is tracked in `terraform.tfstate` (gitignored, stored locally)
 
 ### Data Exit Points
-- **Streamer pod output** — OBS streams to external platforms (Twitch, YouTube, Kick) from within streamer pods
+- **Streamer pod output** — ffmpeg streams RTMP to external platforms (Twitch, YouTube, Kick) from within streamer pods
 - **Discord notifications** — CI/CD posts deploy notifications via Discord webhook
 - **Git tags** — CI force-pushes `deployed` tag to track last successful deploy
 

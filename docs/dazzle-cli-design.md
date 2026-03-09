@@ -2,7 +2,7 @@
 
 ## Overview
 
-Public CLI for Dazzle — the **primary interface** for developers and AI agents. All stage lifecycle, scripting, screenshots, OBS, and streaming operations are available via ConnectRPC calls to the control-plane. Ships as a separate repo, git submodule'd into agent-streamer. Supersedes the legacy MCP integration.
+Public CLI for Dazzle — the **primary interface** for developers and AI agents. All stage lifecycle, content sync, screenshots, and streaming operations are available via ConnectRPC calls to the control-plane. Ships as a separate repo, git submodule'd into agent-streamer. Supersedes the legacy MCP integration.
 
 ## CLI Commands
 
@@ -26,7 +26,7 @@ dazzle stage event emit <name> <json> # Push event to running script
 dazzle logs [--limit N] [--follow]    # Browser console logs
 dazzle screenshot [--out file.png]    # Capture screenshot (default: open in viewer)
 
-dazzle obs <args...>                  # OBS control passthrough (same arg format as MCP)
+dazzle obs <args...>                  # Streaming control (broadcast, RTMP config — backward-compat command format)
 
 dazzle destination list               # List RTMP destinations
 dazzle destination create             # Interactive create

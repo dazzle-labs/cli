@@ -2,9 +2,7 @@ package server
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
-	"strings"
 
 	"connectrpc.com/connect"
 
@@ -71,19 +69,9 @@ func (h *runtimeServer) Navigate(ctx context.Context, req *connect.Request[sidec
 }
 
 func (h *runtimeServer) Screenshot(ctx context.Context, req *connect.Request[sidecarv1.ScreenshotRequest]) (*connect.Response[sidecarv1.ScreenshotResponse], error) {
-	b64, err := h.s.obsClient.Screenshot()
+	data, err := h.s.cdpClient.Screenshot()
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
-	// Strip data URI prefix if present
-	if idx := strings.Index(b64, ","); idx != -1 {
-		b64 = b64[idx+1:]
-	}
-
-	data, err := base64.StdEncoding.DecodeString(b64)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("decode base64: %w", err))
 	}
 
 	return connect.NewResponse(&sidecarv1.ScreenshotResponse{Image: data}), nil

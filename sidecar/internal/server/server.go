@@ -14,7 +14,7 @@ import (
 
 	"github.com/browser-streamer/sidecar/internal/cdp"
 	sidecarv1connect "github.com/browser-streamer/sidecar/gen/api/v1/sidecarv1connect"
-	"github.com/browser-streamer/sidecar/internal/obs"
+	"github.com/browser-streamer/sidecar/internal/pipeline"
 	"github.com/browser-streamer/sidecar/internal/r2"
 )
 
@@ -32,19 +32,24 @@ type Config struct {
 	HLSDir       string
 	CDPHost      string
 	CDPPort      string
-	OBSHost      string
-	OBSPort      string
+	OBSHost      string // kept for config compat, unused by pipeline
+	OBSPort      string // kept for config compat, unused by pipeline
 	R2Bucket     string
 	R2Endpoint   string
 	R2AccessKey  string
 	R2SecretKey  string
 }
 
+// ScreenSize returns "WxH" for ffmpeg.
+func (c Config) ScreenSize() string {
+	return c.ScreenWidth + "x" + c.ScreenHeight
+}
+
 type Server struct {
 	cfg          Config
 	mux          *http.ServeMux
 	cdpClient    *cdp.Client
-	obsClient    *obs.Client
+	pipeline     *pipeline.Pipeline
 	syncState    *SyncState
 	logBuffer    *LogBuffer
 	r2Syncer     *r2.Syncer
@@ -53,10 +58,12 @@ type Server struct {
 
 func New(cfg Config) (*Server, error) {
 	s := &Server{
-		cfg:          cfg,
-		mux:          http.NewServeMux(),
-		cdpClient:    cdp.NewClient(cfg.CDPHost, cfg.CDPPort),
-		obsClient:    obs.NewClient(cfg.OBSHost, cfg.OBSPort),
+		cfg:       cfg,
+		mux:       http.NewServeMux(),
+		cdpClient: cdp.NewClient(cfg.CDPHost, cfg.CDPPort),
+		pipeline: pipeline.New(
+			":99", cfg.ScreenSize(), cfg.HLSDir,
+		),
 		syncState:    NewSyncState(cfg.SyncDir),
 		logBuffer:    NewLogBuffer(1000),
 		lastActivity: time.Now(),
@@ -170,7 +177,7 @@ func (s *Server) Run() error {
 
 	// Start background services
 	go s.cdpClient.ConnectLoop(s.logBuffer)
-	go s.connectOBS()
+	go s.startPipeline()
 	if s.r2Syncer != nil {
 		go s.r2Syncer.Watch()
 	}
@@ -189,6 +196,9 @@ func (s *Server) Run() error {
 	<-ctx.Done()
 	log.Println("Shutting down...")
 
+	// Stop pipeline
+	s.pipeline.Stop()
+
 	// Final R2 sync
 	if s.r2Syncer != nil {
 		s.r2Syncer.FinalSync()
@@ -199,16 +209,22 @@ func (s *Server) Run() error {
 	return srv.Shutdown(shutdownCtx)
 }
 
-func (s *Server) connectOBS() {
-	s.obsClient.SetStatsCallback(UpdateOBSStats)
-	s.obsClient.SetOutputCallback(UpdateOBSOutputStats)
+func (s *Server) startPipeline() {
+	// Wait for Chrome to be rendering before capturing the screen
+	log.Println("Waiting for Chrome before starting pipeline...")
+	for i := 0; i < 60; i++ {
+		if s.cdpClient.IsConnected() {
+			break
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
 
-	if err := s.obsClient.Connect(30 * time.Second); err != nil {
-		log.Printf("OBS connection failed: %v", err)
+	s.pipeline.SetStatsCallback(UpdatePipelineStats)
+	if err := s.pipeline.Start(); err != nil {
+		log.Printf("FATAL: ffmpeg pipeline failed to start: %v", err)
 		return
 	}
-	log.Println("OBS WebSocket connected")
-	s.obsClient.StartStatsPolling(15 * time.Second)
+	log.Println("ffmpeg pipeline started (HLS preview)")
 }
 
 func (s *Server) seedPlaceholder() {

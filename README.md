@@ -1,8 +1,8 @@
 # Agent Streamer (Dazzle)
 
-On-demand cloud browser environments for AI-driven live streaming and automation. Each **stage** is a Kubernetes pod running Chrome + OBS on a headless display.
+On-demand cloud browser environments for AI-driven live streaming and automation. Each **stage** is a Kubernetes pod running Chrome on a headless display with ffmpeg for streaming.
 
-**Primary consumers: the [Dazzle CLI](https://github.com/dazzle-labs/cli) (`dazzle`) and the Web UI.** The CLI is the main interface for developers and AI agents — full stage lifecycle, scripting, screenshots, OBS, and streaming via ConnectRPC. The Web UI is the dashboard for account management, stage monitoring, and configuration.
+**Primary consumers: the [Dazzle CLI](https://github.com/dazzle-labs/cli) (`dazzle`) and the Web UI.** The CLI is the main interface for developers and AI agents — full stage lifecycle, content sync, screenshots, streaming, and broadcast control via ConnectRPC. The Web UI is the dashboard for account management, stage monitoring, and configuration.
 
 **Production:** https://stream.dazzle.fm
 
@@ -28,7 +28,7 @@ On-demand cloud browser environments for AI-driven live streaming and automation
 │                                                                     │
 │  ConnectRPC (POST, Clerk JWT or API key)                            │
 │    /api.v1.StageService/*      stage CRUD + lifecycle               │
-│    /api.v1.RuntimeService/*    sync, screenshots, OBS, logs         │
+│    /api.v1.RuntimeService/*    sync, screenshots, streaming, logs         │
 │    /api.v1.RtmpDestinationService/*  RTMP destinations              │
 │    /api.v1.UserService/*       user profile                         │
 │    /api.v1.ApiKeyService/*     API key management  [Clerk only]     │
@@ -51,19 +51,21 @@ On-demand cloud browser environments for AI-driven live streaming and automation
                                │ talks to pod via pod IP :8080
                                ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│  Streamer Pod  (Node.js + Chrome, ephemeral, one per stage)         │
+│  Streamer Pod  (per stage, ephemeral)                               │
 │                                                                     │
-│  Main container                                                     │
-│    Express HTTP  :8080             panel API, CDP discovery, health │
-│    Chrome  (headless, Xvfb :99)    CDP WebSocket :9222             │
-│    Content served from filesystem  file:// URLs                   │
-│    OBS Studio  (WebSocket :4455)   RTMP streaming                  │
-│    ffmpeg                          HLS preview pipeline             │
+│  Main container (streamer — infrastructure only)                    │
+│    Xvfb :99                        Headless X11 display             │
+│    Chrome (kiosk mode)             CDP WebSocket :9222             │
+│    PulseAudio                      Audio system                    │
 │                                                                     │
-│  Sidecar container (rclone)                                         │
-│    Syncs /data/ to R2 on changes + graceful shutdown               │
+│  Sidecar container (Go binary :8080)                                │
+│    Content sync API (ConnectRPC)   Directory sync from CLI          │
+│    Static content serving          Chrome loads from /              │
+│    ffmpeg pipeline                 HLS preview + RTMP broadcast    │
+│    CDP client                      Screenshots, logs, events       │
+│    R2 persistence (minio-go)       Syncs /data/ to Cloudflare R2  │
 │                                                                     │
-│  Init container (restore.sh)                                        │
+│  Init container (sidecar restore)                                   │
 │    Restores /data/ from R2 on stage start                          │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -74,11 +76,11 @@ On-demand cloud browser environments for AI-driven live streaming and automation
 
 | Part | Path | Language | Purpose |
 |------|------|----------|---------|
-| **cli** | `cli/` (git submodule) | Go 1.24 | Primary interface for developers and AI agents — stage lifecycle, directory sync, OBS, streaming |
+| **cli** | `cli/` (git submodule) | Go 1.24 | Primary interface for developers and AI agents — stage lifecycle, directory sync, screenshots, streaming |
 | **control-plane** | `control-plane/` | Go 1.24 | API server, K8s orchestration, auth, DB, CDP proxy, serves web SPA |
 | **web** | `web/` | TypeScript / React 19 | Dashboard — stage monitoring, API keys, stream destinations, account settings |
-| **streamer** | `streamer/` | Node.js 24 | Per-stage browser pod: Chrome, OBS, Vite panel rendering, HLS preview |
-| **sidecar** | `streamer/docker/sidecar/` | rclone + inotify | Per-stage R2 sync: persists content, Chrome state, and localStorage to Cloudflare R2 |
+| **streamer** | `streamer/` | — | Per-stage infrastructure container: Xvfb, Chrome, PulseAudio. No application code. |
+| **sidecar** | `sidecar/` | Go 1.25 | Per-stage application logic: content sync, CDP client, ffmpeg pipeline, R2 persistence, metrics, static content serving |
 | **k8s** | `k8s/` | YAML + HCL | Kubernetes manifests, Traefik ingress, TLS, SOPS secrets, cluster provisioning |
 
 ---
@@ -133,7 +135,7 @@ make prod/status    # Show prod cluster nodes and pods
 
 ## Key Capabilities
 
-- **CLI (`dazzle`)** — primary developer/agent interface: `dazzle stage up`, `dazzle stage sync`, `dazzle stage screenshot`, `dazzle obs`, etc.
+- **CLI (`dazzle`)** — primary developer/agent interface: `dazzle stage up`, `dazzle stage sync`, `dazzle stage screenshot`, `dazzle stage broadcast`, etc.
 - **Web UI** — dashboard for stage monitoring, API key management, stream destination configuration, and account settings
 - **Stage lifecycle** — browser pods move through states: `inactive → starting → running → stopping`. Bring stages up/down via CLI or Web UI; pods are ephemeral, DB records persist.
 - **CDP access** — full Chrome DevTools Protocol proxied through control plane at `/stage/<stage-id>/cdp`

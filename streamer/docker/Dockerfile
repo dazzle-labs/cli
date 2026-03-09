@@ -8,9 +8,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     xvfb \
     pulseaudio \
-    dbus-x11 \
+    ffmpeg \
     curl \
-    gnupg \
     fonts-liberation \
     fonts-noto-color-emoji \
     libasound2t64 \
@@ -29,26 +28,6 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
     wget \
     unclutter \
-    xdotool \
-    software-properties-common \
-    netcat-openbsd \
-    tmux \
-    mesa-utils \
-    libgl1-mesa-dri \
-    libegl-mesa0 \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install OBS Studio 32.x (includes obs-websocket built-in)
-RUN add-apt-repository ppa:obsproject/obs-studio \
-    && apt-get update \
-    && apt-get install -y obs-studio ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
-
-# Remove outdated python3-cryptography installed as OBS dependency
-RUN apt-get update && apt-get install -y python3-pip \
-    && apt-get remove -y python3-cryptography \
-    && pip3 install cryptography --break-system-packages \
-    && apt-get purge -y python3-pip && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Chromium from the official Google Chrome stable channel (real .deb, not snap)

@@ -49,7 +49,7 @@ make build-streamer
 make build-sidecar
 ```
 
-> **Note:** The streamer image is cross-compiled for amd64 (Chrome + OBS are x86-only). Building is slow on Apple Silicon due to QEMU emulation.
+> **Note:** The streamer image is cross-compiled for amd64 (Chrome is x86-only). Building is slow on Apple Silicon due to QEMU emulation.
 
 ## Useful Commands
 

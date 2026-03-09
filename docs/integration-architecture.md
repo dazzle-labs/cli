@@ -50,16 +50,13 @@ Agent Streamer (Dazzle) is a monorepo with 5 parts. The **control plane** is the
 │  Init: sidecar restore (R2 → /data/)        │
 │                                              │
 │  Main container:                             │
-│  ┌────────────┐  ┌──────────┐  ┌──────────┐ │
-│  │  Chrome    │  │  OBS     │  │  Xvfb    │ │
-│  │  CDP :9222 │  │  WS:4455 │  │  :99     │ │
-│  └────────────┘  └──────────┘  └──────────┘ │
-│  ┌──────────────────────────────────────────┐│
-│  │  ffmpeg HLS preview                      ││
-│  └──────────────────────────────────────────┘│
+│  ┌────────────┐  ┌──────────┐               │
+│  │  Chrome    │  │  Xvfb    │               │
+│  │  CDP :9222 │  │  :99     │               │
+│  └────────────┘  └──────────┘               │
 │                                              │
 │  Sidecar: Go binary :8080                   │
-│    (content, sync, CDP, OBS, R2)            │
+│    Content sync, CDP, ffmpeg pipeline, R2   │
 └──────────────────────────────────────────────┘
 ```
 
@@ -96,7 +93,7 @@ In development, Vite proxies these paths from `:5173` to `:8080`.
 
 | Protocol | Path Pattern | Destination | Description |
 |----------|-------------|-------------|-------------|
-| ConnectRPC | `/stage/<id>/_dz_9f7a3b1c/*` | `http://<podIP>:8080/_dz_9f7a3b1c/*` | Sidecar RPC proxy (sync, runtime, OBS) |
+| ConnectRPC | `/stage/<id>/_dz_9f7a3b1c/*` | `http://<podIP>:8080/_dz_9f7a3b1c/*` | Sidecar RPC proxy (sync, runtime, broadcast) |
 | WebSocket | `/stage/<id>/cdp` | `ws://<podIP>:8080/devtools/...` | CDP WebSocket (URL resolved via `/json/version`) |
 | HTTP | `/stage/<id>/cdp/json/*` | `http://<podIP>:8080/json/*` | CDP discovery (WS URL rewritten) |
 | HTTP | `/stage/<id>/mcp/*` | MCP server in control plane | MCP tool execution targeting this stage |
@@ -145,7 +142,7 @@ The control plane proxies CLI/MCP operations to the sidecar's ConnectRPC service
 | Sync diff/push/refresh | `SyncService` | Diff, push content, and trigger Chrome refresh |
 | Emit event | `RuntimeService.EmitEvent` | Push event to Chrome via CDP |
 | Screenshot | `RuntimeService.Screenshot` | Capture PNG via CDP |
-| OBS commands | `ObsService.Command` | OBS control (scenes, streaming, recording, etc.) |
+| Broadcast control | `ObsService.Command` | Streaming control (start/stop broadcast, configure RTMP destination) |
 
 ---
 
@@ -159,7 +156,7 @@ The control plane proxies CLI/MCP operations to the sidecar's ConnectRPC service
    b. Polls pod status every 500ms until Running + PodIP set
    c. Returns stage with status=running and pod_ip
 4. Client interacts via:
-   - CLI (dazzle)    → ConnectRPC: stage lifecycle, script, screenshots, OBS, destinations
+   - CLI (dazzle)    → ConnectRPC: stage lifecycle, sync, screenshots, broadcast, destinations
    - Web UI          → ConnectRPC: stage monitoring, API keys, destinations
    - /stage/<id>/cdp → Chrome DevTools Protocol (programmatic access)
    - /stage/<id>/*   → HTTP/WS proxy to streamer panel API

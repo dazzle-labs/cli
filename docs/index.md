@@ -22,7 +22,7 @@
 
 ### cli (Go CLI — git submodule)
 - **Path:** `cli/` (submodule → `github.com/dazzle-labs/cli`)
-- **Role:** Primary interface for developers and AI agents — stage lifecycle, content sync, screenshots, OBS, streaming
+- **Role:** Primary interface for developers and AI agents — stage lifecycle, content sync, screenshots, streaming
 - **Install:** `go install github.com/dazzle-labs/cli@latest`
 
 ### control-plane (Go backend)
@@ -33,7 +33,7 @@
 
 ### sidecar (Go binary — per-pod)
 - **Path:** `sidecar/`
-- **Role:** Application logic for stage pods — content sync API, CDP log/event/navigate, OBS integration, R2 persistence, metrics, static content serving
+- **Role:** Application logic for stage pods — content sync API, CDP client (logs/events/screenshots), ffmpeg pipeline (HLS preview + RTMP broadcast), R2 persistence, metrics, static content serving
 - **Entry:** `sidecar/cmd/sidecar/main.go`
 - **Port:** 8080 (inside pod)
 - **Proto:** `sidecar/proto/api/v1/sidecar.proto` (ConnectRPC services: SyncService, RuntimeService, ObsService)
@@ -46,7 +46,7 @@
 
 ### streamer (Infrastructure container — per-pod)
 - **Path:** `streamer/`
-- **Role:** Pure infrastructure — Xvfb, Chrome, OBS, PulseAudio, ffmpeg. No custom application code.
+- **Role:** Pure infrastructure — Xvfb, Chrome, PulseAudio. No custom application code.
 - **Entry:** `streamer/docker/entrypoint.sh`
 
 ### k8s (Infrastructure)
@@ -62,7 +62,7 @@
 - [Dazzle CLI Design](./dazzle-cli-design.md) — CLI commands, auth flow, proto service changes, implementation plan
 - [Architecture: Control Plane](./architecture-control-plane.md) — Go backend: routes, stage lifecycle, CDP proxy, MCP, env vars
 - [Architecture: Web Frontend](./architecture-web.md) — React SPA: pages, routing, ConnectRPC client setup
-- [Architecture: Streamer Pod](./architecture-streamer.md) — Node.js: panel system, Chrome, OBS
+- [Architecture: Streamer Pod](./architecture-streamer.md) — Stage pod: Chrome, ffmpeg pipeline, sidecar
 - [Integration Architecture](./integration-architecture.md) — How all parts communicate; data flows
 - [Source Tree Analysis](./source-tree-analysis.md) — Annotated directory structure with critical file callouts
 
@@ -103,13 +103,13 @@ make proto
 
 ## Key Architectural Decisions
 
-1. **CLI and Web UI as primary consumers** — The Dazzle CLI (`dazzle`) is the main interface for developers and AI agents, providing full stage lifecycle, content sync, and OBS control via ConnectRPC. The Web UI serves as the dashboard for account management, monitoring, and configuration.
+1. **CLI and Web UI as primary consumers** — The Dazzle CLI (`dazzle`) is the main interface for developers and AI agents, providing full stage lifecycle, content sync, and broadcast control via ConnectRPC. The Web UI serves as the dashboard for account management, monitoring, and configuration.
 
 2. **Control plane as unified gateway** — All external traffic (CLI, Web UI, CDP, WebSocket) routes through one Go binary. Simplifies TLS termination and auth.
 
 3. **Stages are persistent, pods are ephemeral** — A `Stage` DB record survives pod restarts. `ActivateStage` creates a pod on demand; `DeleteStage` removes everything (including R2 storage); `DeactivateStage` deletes pod but keeps record. Content and Chrome state are synced to R2 and restored on next activation.
 
-4. **Streamer + sidecar architecture** — Each stage pod has two main containers: the **streamer** (pure infrastructure: Xvfb, Chrome, OBS, ffmpeg) and the **sidecar** (Go binary with all application logic: content sync, CDP client, OBS integration, R2 persistence). Chrome loads content from the sidecar via HTTP (`http://localhost:8080/`). All internal APIs live behind `/_dz_9f7a3b1c/` to avoid collisions with user content.
+4. **Streamer + sidecar architecture** — Each stage pod has two main containers: the **streamer** (pure infrastructure: Xvfb, Chrome, PulseAudio) and the **sidecar** (Go binary with all application logic: content sync, CDP client, ffmpeg pipeline, R2 persistence). The sidecar manages ffmpeg directly for HLS preview and RTMP broadcast — no OBS. Chrome loads content from the sidecar via HTTP (`http://localhost:8080/`). All internal APIs live behind `/_dz_9f7a3b1c/` to avoid collisions with user content.
 
 5. **Protobuf as service contract** — All control-plane ↔ CLI/web communication uses generated ConnectRPC code from `proto/api/v1/`. The sidecar also uses ConnectRPC internally (`sidecar/proto/`). No hand-written API clients.
 

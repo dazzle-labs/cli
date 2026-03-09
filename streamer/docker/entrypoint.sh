@@ -3,11 +3,8 @@ set -euo pipefail
 
 cleanup() {
     echo "Shutting down..."
-    kill "${FFMPEG_PID:-}" 2>/dev/null || true
-    kill "$OBS_PID" 2>/dev/null || true
     kill "$CHROME_PID" 2>/dev/null || true
     kill "$PULSE_PID" 2>/dev/null || true
-    kill "${DBUS_SESSION_BUS_PID:-}" 2>/dev/null || true
     kill "$XVFB_PID" 2>/dev/null || true
     wait
     echo "All processes stopped."
@@ -81,164 +78,10 @@ for i in $(seq 1 60); do
     sleep 0.2
 done
 
-# Set up XDG_RUNTIME_DIR and dbus session bus for OBS
-export XDG_RUNTIME_DIR=/tmp/runtime-root
-mkdir -p "$XDG_RUNTIME_DIR"
-chmod 0700 "$XDG_RUNTIME_DIR"
-eval $(dbus-launch --sh-syntax)
-if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
-    echo "WARNING: dbus-launch failed to set DBUS_SESSION_BUS_ADDRESS"
-fi
-
-# 5. Pre-bake OBS config and start OBS Studio
-echo "Setting up OBS configuration..."
-OBS_CONFIG_DIR="$HOME/.config/obs-studio"
-mkdir -p "$OBS_CONFIG_DIR/basic/scenes" "$OBS_CONFIG_DIR/basic/profiles/Default"
-
-# Global config: enable WebSocket on port 4455, no auth
-cat > "$OBS_CONFIG_DIR/global.ini" <<'OBSINI'
-[General]
-FirstRun=false
-LastVersion=603979776
-InfoIncrement=9999
-
-[OBSWebSocket]
-ServerEnabled=true
-ServerPort=4455
-AuthRequired=false
-OBSINI
-
-# Default profile
-cat > "$OBS_CONFIG_DIR/basic/profiles/Default/basic.ini" <<PROFILEINI
-[General]
-Name=Default
-
-[Video]
-BaseCX=${SCREEN_WIDTH}
-BaseCY=${SCREEN_HEIGHT}
-OutputCX=${SCREEN_WIDTH}
-OutputCY=${SCREEN_HEIGHT}
-FPSType=0
-FPSCommon=30
-
-[Output]
-Mode=Simple
-
-[SimpleOutput]
-StreamEncoder=x264
-RecQuality=Stream
-RecEncoder=x264
-VBitrate=2500
-ABitrate=128
-PROFILEINI
-
-# Scene collection with xshm_input screen capture (Chrome renders on Xvfb, OBS captures via xshm)
-cat > "$OBS_CONFIG_DIR/basic/scenes/Untitled.json" <<SCENEJSON
-{
-    "name": "Untitled",
-    "current_scene": "Scene",
-    "current_program_scene": "Scene",
-    "scene_order": [
-        {"name": "Scene"}
-    ],
-    "sources": [
-        {
-            "id": "xshm_input",
-            "versioned_id": "xshm_input",
-            "name": "Screen",
-            "uuid": "00000000-0000-0000-0000-000000000001",
-            "enabled": true,
-            "flags": 0,
-            "volume": 1.0,
-            "mixers": 0,
-            "muted": false,
-            "settings": {
-                "screen": 0,
-                "show_cursor": false,
-                "advanced": false
-            }
-        },
-        {
-            "id": "scene",
-            "versioned_id": "scene",
-            "name": "Scene",
-            "uuid": "00000000-0000-0000-0000-000000000002",
-            "enabled": true,
-            "flags": 0,
-            "volume": 1.0,
-            "mixers": 0,
-            "muted": false,
-            "settings": {
-                "custom_size": false,
-                "id_counter": 1,
-                "items": [
-                    {
-                        "name": "Screen",
-                        "source_uuid": "00000000-0000-0000-0000-000000000001",
-                        "id": 1,
-                        "visible": true,
-                        "pos": { "x": 0.0, "y": 0.0 },
-                        "bounds": { "x": ${SCREEN_WIDTH}.0, "y": ${SCREEN_HEIGHT}.0 },
-                        "bounds_type": 2,
-                        "bounds_align": 0
-                    }
-                ]
-            }
-        }
-    ],
-    "groups": [],
-    "transitions": [],
-    "transition_duration": 300
-}
-SCENEJSON
-
-echo "Starting OBS Studio..."
-# Force software rendering — OBS 32.x's CEF crashes in headless Xvfb without this.
-export LIBGL_ALWAYS_SOFTWARE=1
-export GALLIUM_DRIVER=llvmpipe
-export QT_XCB_GL_INTEGRATION=none
-export MESA_GL_VERSION_OVERRIDE=4.5
-obs --minimize-to-tray --disable-shutdown-check --display=:99 --disable-gpu &
-OBS_PID=$!
-
-# Wait for OBS WebSocket to be ready
-echo "Waiting for OBS WebSocket (port 4455)..."
-for i in $(seq 1 60); do
-    if curl -s http://localhost:4455 > /dev/null 2>&1 || nc -z localhost 4455 2>/dev/null; then
-        echo "OBS WebSocket ready."
-        break
-    fi
-    if ! kill -0 "$OBS_PID" 2>/dev/null; then
-        echo "ERROR: OBS process died during startup."
-        exit 1
-    fi
-    sleep 0.5
-done
-
-# Move OBS window off-screen so it doesn't appear in the screen capture
-echo "Moving OBS off-screen..."
-sleep 1
-for wid in $(xdotool search --class obs 2>/dev/null); do
-    xdotool windowmove "$wid" 9999 9999 2>/dev/null || true
-done
-
-# 6. Start HLS preview pipeline (writes to shared volume)
-echo "Starting HLS preview..."
+# 5. HLS + RTMP encoding is handled by the sidecar (manages ffmpeg directly).
+# No OBS needed — the sidecar's pipeline package captures Xvfb via x11grab
+# and encodes to HLS (always-on preview) + RTMP (when broadcasting).
 mkdir -p /tmp/hls
-ffmpeg -loglevel warning -f x11grab -video_size ${SCREEN_WIDTH}x${SCREEN_HEIGHT} -framerate 30 -i :99 \
-    -c:v libx264 -preset ultrafast -tune zerolatency -g 30 \
-    -f hls -hls_time 1 -hls_list_size 5 -hls_flags delete_segments+append_list \
-    -hls_segment_filename '/tmp/hls/seg%03d.ts' /tmp/hls/stream.m3u8 &
-FFMPEG_PID=$!
-
-# Wait briefly for ffmpeg to start producing segments
-for i in $(seq 1 10); do
-    if [ -f /tmp/hls/stream.m3u8 ]; then
-        echo "HLS preview ready."
-        break
-    fi
-    sleep 0.5
-done
 
 echo "All processes started. Waiting..."
 wait -n
