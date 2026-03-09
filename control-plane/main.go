@@ -643,14 +643,27 @@ func (m *Manager) activateStage(ctx context.Context, id, userID string) (*Stage,
 	stage, err := m.createStage(id, userID)
 	if err != nil {
 		if strings.Contains(err.Error(), "already exists") {
-			s, err := m.waitForStage(ctx, id)
+			// Old pod may still be terminating — wait for it to go away, then retry
+			podName := "streamer-" + id[:8]
+			log.Printf("Pod %s already exists, waiting for termination before retry...", podName)
+			for i := 0; i < 30; i++ {
+				select {
+				case <-ctx.Done():
+					return nil, fmt.Errorf("timeout waiting for old pod %s to terminate", podName)
+				case <-time.After(1 * time.Second):
+				}
+				_, getErr := m.clientset.CoreV1().Pods(m.namespace).Get(context.Background(), podName, metav1.GetOptions{})
+				if getErr != nil {
+					break // pod is gone
+				}
+			}
+			stage, err = m.createStage(id, userID)
 			if err != nil {
-				m.doDeactivateStage(id)
 				return nil, err
 			}
-			return s, nil
+		} else {
+			return nil, err
 		}
-		return nil, err
 	}
 	stage.OwnerUserID = userID
 	s, err := m.waitForStage(ctx, id)
