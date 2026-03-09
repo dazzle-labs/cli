@@ -133,9 +133,9 @@ make prod/status    # Show prod cluster nodes and pods
 
 ## Key Capabilities
 
-- **CLI (`dazzle`)** — primary developer/agent interface: `dazzle stage start`, `dazzle script set`, `dazzle screenshot`, `dazzle obs`, etc.
+- **CLI (`dazzle`)** — primary developer/agent interface: `dazzle stage up`, `dazzle script set`, `dazzle screenshot`, `dazzle obs`, etc.
 - **Web UI** — dashboard for stage monitoring, API key management, stream destination configuration, and account settings
-- **Stage lifecycle** — browser pods move through states: `inactive → starting → running → stopping`. Activate/deactivate via CLI or Web UI; pods are ephemeral, DB records persist.
+- **Stage lifecycle** — browser pods move through states: `inactive → starting → running → stopping`. Bring stages up/down via CLI or Web UI; pods are ephemeral, DB records persist.
 - **CDP access** — full Chrome DevTools Protocol proxied through control plane at `/stage/<stage-id>/cdp`
 - **Panel system** — hot-swap JavaScript/JSX via Vite HMR without page reload; state persists via `emit_event` + `window.__state`
 - **Stream destinations** — RTMP keys for Twitch, YouTube, Kick, custom; AES-256-GCM encrypted at rest

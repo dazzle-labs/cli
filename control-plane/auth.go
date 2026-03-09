@@ -163,40 +163,89 @@ func extractBearerToken(r *http.Request) string {
 	return ""
 }
 
-// newAuthInterceptor returns a Connect interceptor that validates auth.
-func newAuthInterceptor(auth *authenticator) connect.UnaryInterceptorFunc {
-	return func(next connect.UnaryFunc) connect.UnaryFunc {
-		return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-			token := strings.TrimPrefix(req.Header().Get("Authorization"), "Bearer ")
-			if token == "" {
-				return nil, connect.NewError(connect.CodeUnauthenticated, nil)
-			}
+// authInterceptor implements connect.Interceptor for both unary and streaming RPCs.
+type authInterceptor struct {
+	auth *authenticator
+}
 
-			info, err := auth.authenticate(ctx, token)
-			if err != nil || info == nil {
-				log.Printf("Auth failed: %v", err)
-				return nil, connect.NewError(connect.CodeUnauthenticated, nil)
-			}
+func newAuthInterceptor(auth *authenticator) *authInterceptor {
+	return &authInterceptor{auth: auth}
+}
 
-			ctx = context.WithValue(ctx, authInfoKey, *info)
-			return next(ctx, req)
+func (i *authInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
+	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
+		token := strings.TrimPrefix(req.Header().Get("Authorization"), "Bearer ")
+		if token == "" {
+			return nil, connect.NewError(connect.CodeUnauthenticated, nil)
 		}
+
+		info, err := i.auth.authenticate(ctx, token)
+		if err != nil || info == nil {
+			log.Printf("Auth failed: %v", err)
+			return nil, connect.NewError(connect.CodeUnauthenticated, nil)
+		}
+
+		ctx = context.WithValue(ctx, authInfoKey, *info)
+		return next(ctx, req)
 	}
 }
 
-// newClerkOnlyInterceptor rejects API key auth — Clerk JWT only.
-func newClerkOnlyInterceptor() connect.UnaryInterceptorFunc {
-	return func(next connect.UnaryFunc) connect.UnaryFunc {
-		return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-			info, ok := authInfoFromCtx(ctx)
-			if !ok {
-				return nil, connect.NewError(connect.CodeUnauthenticated, nil)
-			}
-			if info.Method != authMethodClerk {
-				return nil, connect.NewError(connect.CodePermissionDenied, nil)
-			}
-			return next(ctx, req)
+func (i *authInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
+	return next // passthrough — control-plane doesn't make outbound streaming calls
+}
+
+func (i *authInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
+	return func(ctx context.Context, conn connect.StreamingHandlerConn) error {
+		token := strings.TrimPrefix(conn.RequestHeader().Get("Authorization"), "Bearer ")
+		if token == "" {
+			return connect.NewError(connect.CodeUnauthenticated, nil)
 		}
+
+		info, err := i.auth.authenticate(ctx, token)
+		if err != nil || info == nil {
+			log.Printf("Auth failed: %v", err)
+			return connect.NewError(connect.CodeUnauthenticated, nil)
+		}
+
+		ctx = context.WithValue(ctx, authInfoKey, *info)
+		return next(ctx, conn)
+	}
+}
+
+// clerkOnlyInterceptor rejects API key auth — Clerk JWT only.
+type clerkOnlyInterceptor struct{}
+
+func newClerkOnlyInterceptor() *clerkOnlyInterceptor {
+	return &clerkOnlyInterceptor{}
+}
+
+func (i *clerkOnlyInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
+	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
+		info, ok := authInfoFromCtx(ctx)
+		if !ok {
+			return nil, connect.NewError(connect.CodeUnauthenticated, nil)
+		}
+		if info.Method != authMethodClerk {
+			return nil, connect.NewError(connect.CodePermissionDenied, nil)
+		}
+		return next(ctx, req)
+	}
+}
+
+func (i *clerkOnlyInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
+	return next
+}
+
+func (i *clerkOnlyInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
+	return func(ctx context.Context, conn connect.StreamingHandlerConn) error {
+		info, ok := authInfoFromCtx(ctx)
+		if !ok {
+			return connect.NewError(connect.CodeUnauthenticated, nil)
+		}
+		if info.Method != authMethodClerk {
+			return connect.NewError(connect.CodePermissionDenied, nil)
+		}
+		return next(ctx, conn)
 	}
 }
 

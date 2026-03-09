@@ -45,6 +45,14 @@ make prod/infra/apply            # ⚠️  Apply changes (DESTRUCTIVE — modifi
 
 Remote builds and deploys are managed by CI/CD. See [docs/index.md](docs/index.md) for everything else.
 
+## Feature Development Workflow
+
+Use **one worktree per session**. Create a worktree off `main` via `EnterWorktree` at the start of a session and do all work there. CLI submodule changes can be committed/pushed from within `cli/` in the same worktree — no need for a separate worktree.
+
+**Do NOT spawn parallel sub-agents in separate worktrees** — work sequentially to keep costs down.
+
+Worktrees must always branch off `main` from the root repository — never create nested worktrees or worktrees from within another worktree. Once work is complete, push the branch and open a PR via `gh pr create`.
+
 ## llms.txt
 
 `llms.txt` is a static heredoc in `scripts/generate-llms-txt.sh`. Run `make llms-txt` to regenerate. Edit the shell script directly to update content.

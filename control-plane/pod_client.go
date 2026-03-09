@@ -142,6 +142,71 @@ func (p *podClient) Screenshot(podIP string) ([]byte, error) {
 	return data, nil
 }
 
+// --- Sync methods ---
+
+type SyncDiffResult struct {
+	Need []string `json:"need"`
+}
+
+type SyncPushResult struct {
+	Synced  int32 `json:"synced"`
+	Deleted int32 `json:"deleted"`
+}
+
+func (p *podClient) SyncDiff(podIP string, files map[string]string, entry string) (*SyncDiffResult, error) {
+	body, _ := json.Marshal(map[string]any{"files": files, "entry": entry})
+	podURL := fmt.Sprintf("http://%s:8080/api/sync/diff?token=%s", podIP, url.QueryEscape(p.podToken))
+	resp, err := p.httpClient.Post(podURL, "application/json", bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("sync diff: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		respBody, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("sync diff: pod returned %d: %s", resp.StatusCode, string(respBody))
+	}
+	var result SyncDiffResult
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("sync diff: decode response: %w", err)
+	}
+	return &result, nil
+}
+
+// syncHTTPClient has a longer timeout for large tar uploads.
+var syncHTTPClient = &http.Client{Timeout: 6 * time.Minute}
+
+func (p *podClient) SyncPush(podIP string, body io.Reader) (*SyncPushResult, error) {
+	podURL := fmt.Sprintf("http://%s:8080/api/sync/push?token=%s", podIP, url.QueryEscape(p.podToken))
+	resp, err := syncHTTPClient.Post(podURL, "application/x-tar", body)
+	if err != nil {
+		return nil, fmt.Errorf("sync push: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		respBody, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("sync push: pod returned %d: %s", resp.StatusCode, string(respBody))
+	}
+	var result SyncPushResult
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("sync push: decode response: %w", err)
+	}
+	return &result, nil
+}
+
+func (p *podClient) SyncRefresh(podIP string) error {
+	podURL := fmt.Sprintf("http://%s:8080/api/sync/refresh?token=%s", podIP, url.QueryEscape(p.podToken))
+	resp, err := p.httpClient.Post(podURL, "application/json", bytes.NewReader([]byte("{}")))
+	if err != nil {
+		return fmt.Errorf("sync refresh: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		respBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("sync refresh: pod returned %d: %s", resp.StatusCode, string(respBody))
+	}
+	return nil
+}
+
 // ObsCommand executes a gobs-cli command against the pod's OBS instance.
 func (p *podClient) ObsCommand(podIP string, args []string) (string, error) {
 	cmdArgs := append([]string{"--host", podIP, "--port", "4455"}, args...)

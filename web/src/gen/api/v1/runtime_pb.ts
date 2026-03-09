@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file api/v1/runtime.proto.
  */
 export const file_api_v1_runtime: GenFile = /*@__PURE__*/
-  fileDesc("ChRhcGkvdjEvcnVudGltZS5wcm90bxIJZGF6emxlLnYxIjQKEFNldFNjcmlwdFJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSDgoGc2NyaXB0GAIgASgJIh8KEVNldFNjcmlwdFJlc3BvbnNlEgoKAm9rGAEgASgIIiQKEEdldFNjcmlwdFJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkiIwoRR2V0U2NyaXB0UmVzcG9uc2USDgoGc2NyaXB0GAEgASgJIk0KEUVkaXRTY3JpcHRSZXF1ZXN0EhAKCHN0YWdlX2lkGAEgASgJEhIKCm9sZF9zdHJpbmcYAiABKAkSEgoKbmV3X3N0cmluZxgDIAEoCSIgChJFZGl0U2NyaXB0UmVzcG9uc2USCgoCb2sYASABKAgiQQoQRW1pdEV2ZW50UmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRINCgVldmVudBgCIAEoCRIMCgRkYXRhGAMgASgJIh8KEUVtaXRFdmVudFJlc3BvbnNlEgoKAm9rGAEgASgIIjEKDkdldExvZ3NSZXF1ZXN0EhAKCHN0YWdlX2lkGAEgASgJEg0KBWxpbWl0GAIgASgFIj0KCExvZ0VudHJ5Eg0KBWxldmVsGAEgASgJEg8KB21lc3NhZ2UYAiABKAkSEQoJdGltZXN0YW1wGAMgASgJIjcKD0dldExvZ3NSZXNwb25zZRIkCgdlbnRyaWVzGAEgAygLMhMuZGF6emxlLnYxLkxvZ0VudHJ5IiUKEVNjcmVlbnNob3RSZXF1ZXN0EhAKCHN0YWdlX2lkGAEgASgJIiMKElNjcmVlbnNob3RSZXNwb25zZRINCgVpbWFnZRgBIAEoDCIzChFPYnNDb21tYW5kUmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRIMCgRhcmdzGAIgAygJIiQKEk9ic0NvbW1hbmRSZXNwb25zZRIOCgZvdXRwdXQYASABKAkyiwQKDlJ1bnRpbWVTZXJ2aWNlEkYKCVNldFNjcmlwdBIbLmRhenpsZS52MS5TZXRTY3JpcHRSZXF1ZXN0GhwuZGF6emxlLnYxLlNldFNjcmlwdFJlc3BvbnNlEkYKCUdldFNjcmlwdBIbLmRhenpsZS52MS5HZXRTY3JpcHRSZXF1ZXN0GhwuZGF6emxlLnYxLkdldFNjcmlwdFJlc3BvbnNlEkkKCkVkaXRTY3JpcHQSHC5kYXp6bGUudjEuRWRpdFNjcmlwdFJlcXVlc3QaHS5kYXp6bGUudjEuRWRpdFNjcmlwdFJlc3BvbnNlEkYKCUVtaXRFdmVudBIbLmRhenpsZS52MS5FbWl0RXZlbnRSZXF1ZXN0GhwuZGF6emxlLnYxLkVtaXRFdmVudFJlc3BvbnNlEkAKB0dldExvZ3MSGS5kYXp6bGUudjEuR2V0TG9nc1JlcXVlc3QaGi5kYXp6bGUudjEuR2V0TG9nc1Jlc3BvbnNlEkkKClNjcmVlbnNob3QSHC5kYXp6bGUudjEuU2NyZWVuc2hvdFJlcXVlc3QaHS5kYXp6bGUudjEuU2NyZWVuc2hvdFJlc3BvbnNlEkkKCk9ic0NvbW1hbmQSHC5kYXp6bGUudjEuT2JzQ29tbWFuZFJlcXVlc3QaHS5kYXp6bGUudjEuT2JzQ29tbWFuZFJlc3BvbnNlQi1aK2dpdGh1Yi5jb20vZGF6emxlLWxhYnMvY2xpL2dlbi9hcGkvdjE7YXBpdjFiBnByb3RvMw");
+  fileDesc("ChRhcGkvdjEvcnVudGltZS5wcm90bxIJZGF6emxlLnYxIjQKEFNldFNjcmlwdFJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSDgoGc2NyaXB0GAIgASgJIh8KEVNldFNjcmlwdFJlc3BvbnNlEgoKAm9rGAEgASgIIiQKEEdldFNjcmlwdFJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkiIwoRR2V0U2NyaXB0UmVzcG9uc2USDgoGc2NyaXB0GAEgASgJIk0KEUVkaXRTY3JpcHRSZXF1ZXN0EhAKCHN0YWdlX2lkGAEgASgJEhIKCm9sZF9zdHJpbmcYAiABKAkSEgoKbmV3X3N0cmluZxgDIAEoCSIgChJFZGl0U2NyaXB0UmVzcG9uc2USCgoCb2sYASABKAgiQQoQRW1pdEV2ZW50UmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRINCgVldmVudBgCIAEoCRIMCgRkYXRhGAMgASgJIh8KEUVtaXRFdmVudFJlc3BvbnNlEgoKAm9rGAEgASgIIjEKDkdldExvZ3NSZXF1ZXN0EhAKCHN0YWdlX2lkGAEgASgJEg0KBWxpbWl0GAIgASgFIj0KCExvZ0VudHJ5Eg0KBWxldmVsGAEgASgJEg8KB21lc3NhZ2UYAiABKAkSEQoJdGltZXN0YW1wGAMgASgJIjcKD0dldExvZ3NSZXNwb25zZRIkCgdlbnRyaWVzGAEgAygLMhMuZGF6emxlLnYxLkxvZ0VudHJ5IiUKEVNjcmVlbnNob3RSZXF1ZXN0EhAKCHN0YWdlX2lkGAEgASgJIiMKElNjcmVlbnNob3RSZXNwb25zZRINCgVpbWFnZRgBIAEoDCIzChFPYnNDb21tYW5kUmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRIMCgRhcmdzGAIgAygJIiQKEk9ic0NvbW1hbmRSZXNwb25zZRIOCgZvdXRwdXQYASABKAkilgEKD1N5bmNEaWZmUmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRI0CgVmaWxlcxgCIAMoCzIlLmRhenpsZS52MS5TeW5jRGlmZlJlcXVlc3QuRmlsZXNFbnRyeRINCgVlbnRyeRgDIAEoCRosCgpGaWxlc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiIAoQU3luY0RpZmZSZXNwb25zZRIMCgRuZWVkGAEgAygJIjIKD1N5bmNQdXNoUmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRINCgVjaHVuaxgCIAEoDCIzChBTeW5jUHVzaFJlc3BvbnNlEg4KBnN5bmNlZBgBIAEoBRIPCgdkZWxldGVkGAIgASgFIiIKDlJlZnJlc2hSZXF1ZXN0EhAKCHN0YWdlX2lkGAEgASgJIh0KD1JlZnJlc2hSZXNwb25zZRIKCgJvaxgBIAEoCDLZBQoOUnVudGltZVNlcnZpY2USRgoJU2V0U2NyaXB0EhsuZGF6emxlLnYxLlNldFNjcmlwdFJlcXVlc3QaHC5kYXp6bGUudjEuU2V0U2NyaXB0UmVzcG9uc2USRgoJR2V0U2NyaXB0EhsuZGF6emxlLnYxLkdldFNjcmlwdFJlcXVlc3QaHC5kYXp6bGUudjEuR2V0U2NyaXB0UmVzcG9uc2USSQoKRWRpdFNjcmlwdBIcLmRhenpsZS52MS5FZGl0U2NyaXB0UmVxdWVzdBodLmRhenpsZS52MS5FZGl0U2NyaXB0UmVzcG9uc2USRgoJRW1pdEV2ZW50EhsuZGF6emxlLnYxLkVtaXRFdmVudFJlcXVlc3QaHC5kYXp6bGUudjEuRW1pdEV2ZW50UmVzcG9uc2USQAoHR2V0TG9ncxIZLmRhenpsZS52MS5HZXRMb2dzUmVxdWVzdBoaLmRhenpsZS52MS5HZXRMb2dzUmVzcG9uc2USSQoKU2NyZWVuc2hvdBIcLmRhenpsZS52MS5TY3JlZW5zaG90UmVxdWVzdBodLmRhenpsZS52MS5TY3JlZW5zaG90UmVzcG9uc2USSQoKT2JzQ29tbWFuZBIcLmRhenpsZS52MS5PYnNDb21tYW5kUmVxdWVzdBodLmRhenpsZS52MS5PYnNDb21tYW5kUmVzcG9uc2USQwoIU3luY0RpZmYSGi5kYXp6bGUudjEuU3luY0RpZmZSZXF1ZXN0GhsuZGF6emxlLnYxLlN5bmNEaWZmUmVzcG9uc2USRQoIU3luY1B1c2gSGi5kYXp6bGUudjEuU3luY1B1c2hSZXF1ZXN0GhsuZGF6emxlLnYxLlN5bmNQdXNoUmVzcG9uc2UoARJACgdSZWZyZXNoEhkuZGF6emxlLnYxLlJlZnJlc2hSZXF1ZXN0GhouZGF6emxlLnYxLlJlZnJlc2hSZXNwb25zZUItWitnaXRodWIuY29tL2RhenpsZS1sYWJzL2NsaS9nZW4vYXBpL3YxO2FwaXYxYgZwcm90bzM");
 
 /**
  * @generated from message dazzle.v1.SetScriptRequest
@@ -313,6 +313,136 @@ export const ObsCommandResponseSchema: GenMessage<ObsCommandResponse> = /*@__PUR
   messageDesc(file_api_v1_runtime, 14);
 
 /**
+ * @generated from message dazzle.v1.SyncDiffRequest
+ */
+export type SyncDiffRequest = Message<"dazzle.v1.SyncDiffRequest"> & {
+  /**
+   * @generated from field: string stage_id = 1;
+   */
+  stageId: string;
+
+  /**
+   * relative path → sha256
+   *
+   * @generated from field: map<string, string> files = 2;
+   */
+  files: { [key: string]: string };
+
+  /**
+   * HTML entry point filename
+   *
+   * @generated from field: string entry = 3;
+   */
+  entry: string;
+};
+
+/**
+ * Describes the message dazzle.v1.SyncDiffRequest.
+ * Use `create(SyncDiffRequestSchema)` to create a new message.
+ */
+export const SyncDiffRequestSchema: GenMessage<SyncDiffRequest> = /*@__PURE__*/
+  messageDesc(file_api_v1_runtime, 15);
+
+/**
+ * @generated from message dazzle.v1.SyncDiffResponse
+ */
+export type SyncDiffResponse = Message<"dazzle.v1.SyncDiffResponse"> & {
+  /**
+   * files to upload
+   *
+   * @generated from field: repeated string need = 1;
+   */
+  need: string[];
+};
+
+/**
+ * Describes the message dazzle.v1.SyncDiffResponse.
+ * Use `create(SyncDiffResponseSchema)` to create a new message.
+ */
+export const SyncDiffResponseSchema: GenMessage<SyncDiffResponse> = /*@__PURE__*/
+  messageDesc(file_api_v1_runtime, 16);
+
+/**
+ * @generated from message dazzle.v1.SyncPushRequest
+ */
+export type SyncPushRequest = Message<"dazzle.v1.SyncPushRequest"> & {
+  /**
+   * @generated from field: string stage_id = 1;
+   */
+  stageId: string;
+
+  /**
+   * tar chunk
+   *
+   * @generated from field: bytes chunk = 2;
+   */
+  chunk: Uint8Array;
+};
+
+/**
+ * Describes the message dazzle.v1.SyncPushRequest.
+ * Use `create(SyncPushRequestSchema)` to create a new message.
+ */
+export const SyncPushRequestSchema: GenMessage<SyncPushRequest> = /*@__PURE__*/
+  messageDesc(file_api_v1_runtime, 17);
+
+/**
+ * @generated from message dazzle.v1.SyncPushResponse
+ */
+export type SyncPushResponse = Message<"dazzle.v1.SyncPushResponse"> & {
+  /**
+   * @generated from field: int32 synced = 1;
+   */
+  synced: number;
+
+  /**
+   * @generated from field: int32 deleted = 2;
+   */
+  deleted: number;
+};
+
+/**
+ * Describes the message dazzle.v1.SyncPushResponse.
+ * Use `create(SyncPushResponseSchema)` to create a new message.
+ */
+export const SyncPushResponseSchema: GenMessage<SyncPushResponse> = /*@__PURE__*/
+  messageDesc(file_api_v1_runtime, 18);
+
+/**
+ * @generated from message dazzle.v1.RefreshRequest
+ */
+export type RefreshRequest = Message<"dazzle.v1.RefreshRequest"> & {
+  /**
+   * @generated from field: string stage_id = 1;
+   */
+  stageId: string;
+};
+
+/**
+ * Describes the message dazzle.v1.RefreshRequest.
+ * Use `create(RefreshRequestSchema)` to create a new message.
+ */
+export const RefreshRequestSchema: GenMessage<RefreshRequest> = /*@__PURE__*/
+  messageDesc(file_api_v1_runtime, 19);
+
+/**
+ * @generated from message dazzle.v1.RefreshResponse
+ */
+export type RefreshResponse = Message<"dazzle.v1.RefreshResponse"> & {
+  /**
+   * @generated from field: bool ok = 1;
+   */
+  ok: boolean;
+};
+
+/**
+ * Describes the message dazzle.v1.RefreshResponse.
+ * Use `create(RefreshResponseSchema)` to create a new message.
+ */
+export const RefreshResponseSchema: GenMessage<RefreshResponse> = /*@__PURE__*/
+  messageDesc(file_api_v1_runtime, 20);
+
+/**
  * @generated from service dazzle.v1.RuntimeService
  */
 export const RuntimeService: GenService<{
@@ -371,6 +501,30 @@ export const RuntimeService: GenService<{
     methodKind: "unary";
     input: typeof ObsCommandRequestSchema;
     output: typeof ObsCommandResponseSchema;
+  },
+  /**
+   * @generated from rpc dazzle.v1.RuntimeService.SyncDiff
+   */
+  syncDiff: {
+    methodKind: "unary";
+    input: typeof SyncDiffRequestSchema;
+    output: typeof SyncDiffResponseSchema;
+  },
+  /**
+   * @generated from rpc dazzle.v1.RuntimeService.SyncPush
+   */
+  syncPush: {
+    methodKind: "client_streaming";
+    input: typeof SyncPushRequestSchema;
+    output: typeof SyncPushResponseSchema;
+  },
+  /**
+   * @generated from rpc dazzle.v1.RuntimeService.Refresh
+   */
+  refresh: {
+    methodKind: "unary";
+    input: typeof RefreshRequestSchema;
+    output: typeof RefreshResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_api_v1_runtime, 0);

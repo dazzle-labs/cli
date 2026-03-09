@@ -7,7 +7,11 @@ const path = require('path');
 const promClient = require('prom-client');
 
 const app = express();
-app.use(express.json({ limit: '5mb' }));
+// Global JSON parser (5MB) — skip /api/sync/ routes which have their own larger limits
+app.use((req, res, next) => {
+    if (req.path.startsWith('/api/sync/')) return next();
+    express.json({ limit: '5mb' })(req, res, next);
+});
 
 const PORT = process.env.PORT || 8080;
 const TOKEN = process.env.TOKEN;
@@ -687,6 +691,28 @@ server.on('upgrade', (req, socket, head) => {
     cdpProxy.ws(req, socket, head, {
         target: `ws://${CDP_HOST}:${CDP_PORT}`,
     });
+});
+
+// --- Sync API ---
+const SYNC_DIR = path.join(CONTENT_ROOT, 'sync');
+const { mountSyncRoutes, getSyncState } = require('./sync');
+
+// Mount sync routes (diff, push, static, refresh stub)
+mountSyncRoutes(app, SYNC_DIR, auth);
+
+// Override /api/sync/refresh to use CDP navigation
+app.post('/api/sync/refresh', auth, async (req, res) => {
+    const state = getSyncState(SYNC_DIR);
+    if (!state.entryPoint) {
+        return res.status(400).json({ error: 'no entry point configured — run sync first' });
+    }
+    try {
+        await cdpNavigate(`http://localhost:${PORT}/@sync/${state.entryPoint}`);
+        currentChromeUrl = `http://localhost:${PORT}/@sync/${state.entryPoint}`;
+        res.json({ ok: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // --- Startup ---

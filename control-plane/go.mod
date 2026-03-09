@@ -5,7 +5,7 @@ go 1.24.5
 require (
 	connectrpc.com/connect v1.19.1
 	github.com/clerk/clerk-sdk-go/v2 v2.5.1
-	github.com/dazzle-labs/cli v0.1.0-beta.21
+	github.com/dazzle-labs/cli v0.1.0-beta.21.0.20260309162139-7fcb30617378
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/hashicorp/golang-lru/v2 v2.0.7

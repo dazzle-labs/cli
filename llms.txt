@@ -28,28 +28,46 @@ dazzle login
 # Paste your API key (dzl_...) when prompted
 ```
 
-### 3. Create and activate a stage
+### 3. Create a stage and bring it up
 
 ```bash
 dazzle s new my-stage
 dazzle s up
 ```
 
-If you have multiple stages, specify which one with `-s` or set a default:
+If you have multiple stages, specify which one with `--stage` or `DAZZLE_STAGE`:
 
 ```bash
-dazzle s ls                          # list all stages
-dazzle s up -s my-stage              # activate a specific stage
-dazzle s sc set app.jsx -s my-stage  # target a specific stage
-dazzle s default my-stage             # set default for all commands
+dazzle s ls                                # list all stages
+dazzle s up --stage my-stage               # bring up a specific stage
+dazzle s sc set app.jsx --stage my-stage   # target a specific stage
+
+# Or set for your session
+export DAZZLE_STAGE=my-stage
+dazzle s up
 ```
 
-### 4. Push content and go live
+If you only have one stage, it's auto-selected.
+
+### 4. Push content
+
+There are two ways to push content to your stage:
+
+**Option A: Single script (hot-swapped via HMR)**
+```bash
+dazzle s sc set ./my-overlay.jsx
+```
+
+**Option B: Sync a full directory (snapshot-based)**
+```bash
+dazzle s sync ./my-app                  # one-time sync
+dazzle s sync ./my-app --watch          # watch for changes
+dazzle s sync ./my-app --watch --refresh # watch + auto-reload
+```
+
+Every sync is a full snapshot — files deleted locally are automatically removed from the stage.
 
 ```bash
-# Set a script (JS or JSX, hot-swapped via HMR)
-dazzle s sc set ./my-overlay.jsx
-
 # Take a screenshot to verify
 dazzle s ss -o preview.png
 
@@ -60,11 +78,14 @@ dazzle s bc on
 ### 5. Update content live
 
 ```bash
-# Edit in-place (find & replace)
+# Edit script in-place (find & replace, for single-script mode)
 dazzle s sc edit --old "Hello" --new "World"
 
 # Push live data without rewriting the script
 dazzle s ev e score '{"points": 42}'
+
+# Reload the stage entry point (for synced directories)
+dazzle s refresh
 ```
 
 ### 6. (Optional) Add a stream destination
@@ -97,14 +118,16 @@ Commands:
   stage (s) list (ls)              List stages.
   stage (s) create (new)           Create a stage.
   stage (s) delete (rm)            Delete a stage.
-  stage (s) activate (start,up)    Activate a stage.
-  stage (s) deactivate (stop,down)
-                                   Deactivate a stage.
+  stage (s) up                     Bring up a stage.
+  stage (s) down                   Shut down a stage.
   stage (s) status (st)            Show stage status.
-  stage (s) default (use)          Set the default stage for all commands.
+  stage (s) preview                Show the shareable preview URL for a running
+                                   stage.
   stage (s) script (sc) set        Push JS/JSX to the stage from file or stdin.
   stage (s) script (sc) get        Print the current script to stdout.
   stage (s) script (sc) edit       Find and replace in the running script.
+  stage (s) sync (sy)              Sync a local directory to the stage.
+  stage (s) refresh (r)            Reload the synced entry point.
   stage (s) event (ev) emit (e)    Push an event to the running script.
   stage (s) logs (l)               Retrieve stage console logs.
   stage (s) screenshot (ss)        Capture a screenshot of the stage.
@@ -181,11 +204,13 @@ Read `window.__state` at any time for accumulated state from all prior events. A
 ## Typical Workflow
 
 ```
-1. dazzle s up                → Activate a stage
-2. dazzle s sc set app.jsx    → Render content (hot-swapped via HMR)
-3. dazzle s ss                → Verify output looks correct
-4. dazzle s bc on          → Go live on configured destination
-5. dazzle s sc edit / s ev e  → Update content live
-6. dazzle s bc off           → Stop streaming
-7. dazzle s down              → Deactivate stage
+1. dazzle s up                     → Bring up a stage
+2. dazzle s sc set app.jsx         → Push a script (hot-swapped via HMR)
+   — or —
+   dazzle s sync ./my-app -wr      → Sync a directory (watch + reload)
+3. dazzle s ss                     → Verify output looks correct
+4. dazzle s bc on                  → Go live on configured destination
+5. dazzle s sc edit / s ev e       → Update content live
+6. dazzle s bc off                 → Stop streaming
+7. dazzle s down                   → Shut down stage
 ```

@@ -14,10 +14,11 @@ dazzle whoami                         # Show current user
 dazzle stage list                     # List stages
 dazzle stage create [name]            # Create stage record
 dazzle stage delete <id|name>         # Delete stage record
-dazzle stage start [id|name]          # Activate stage (spin up pod)
-dazzle stage stop [id|name]           # Deactivate stage (tear down pod)
-dazzle stage status [id|name]         # Get current status
-dazzle stage use <id|name>            # Set default stage in ~/.config/dazzle/
+dazzle stage up                       # Bring up a stage
+dazzle stage down                     # Shut down a stage
+dazzle stage status                   # Get current status
+dazzle stage sync <dir>               # Sync a local directory to the stage
+dazzle stage refresh                  # Reload the synced entry point
 
 dazzle script set <file>              # Set script from file (- for stdin)
 dazzle script get                     # Print current script to stdout
