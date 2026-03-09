@@ -76,7 +76,7 @@ Proto interfaces are split into public and internal:
 - **Public** (`dazzle.v1`) — Stage, Runtime, Stream, User. Proto source + generated Go live in `cli/` (git submodule → `github.com/dazzle-labs/cli`). These are the client-facing APIs.
 - **Internal** (`dazzle.internal.v1`) — ApiKey. Proto source in `control-plane/proto/api/v1/`, generated Go in `control-plane/internal/gen/`. Go's `internal/` directory enforces access restriction.
 
-A `go.work` file at the repo root wires up `./control-plane` and `./cli` so local builds always use the local submodule — no tagging needed during development.
+A `go.work` file at the repo root wires up `./control-plane`, `./cli`, and `./sidecar` so local builds always use the local submodule — no tagging needed during development.
 
 ### Changing public proto definitions
 
@@ -90,3 +90,9 @@ A `go.work` file at the repo root wires up `./control-plane` and `./cli` so loca
 1. Edit `control-plane/proto/api/v1/apikey.proto`
 2. Regenerate: `cd control-plane/proto && buf generate`
 3. Commit the updated files in `control-plane/internal/gen/`
+
+### Changing sidecar proto definitions
+
+1. Edit `sidecar/proto/api/v1/sidecar.proto`
+2. Regenerate: `cd sidecar/proto && buf generate`
+3. Commit the updated files in `sidecar/gen/api/v1/`

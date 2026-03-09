@@ -1,6 +1,6 @@
 # Source Tree Analysis
 
-**Last updated:** 2026-03-03
+**Last updated:** 2026-03-09
 
 ---
 
@@ -20,6 +20,7 @@ agent-streamer/                    # Monorepo root
 │   ├── connect_apikey.go            # ApiKeyService RPC handler
 │   ├── connect_stream.go            # RtmpDestinationService RPC handler
 │   ├── connect_user.go              # UserService RPC handler
+│   ├── pod_client.go                # ConnectRPC client for sidecar communication
 │   ├── mcp.go                       # MCP server + tool definitions
 │   ├── go.mod / go.sum              # Go module definition
 │   ├── Makefile                     # Component build targets
@@ -75,14 +76,24 @@ agent-streamer/                    # Monorepo root
 │       │       └── table.tsx
 │       └── lib/                     # Shared utilities
 │
-├── streamer/                        # [PART 3] Node.js browser pod service
-│   ├── index.js                     # ★ Entry: Express server, panel system, OBS client
-│   ├── shell.html                   # Base HTML shell served to Chrome per panel
-│   ├── vite-init.mjs                # Vite dev server initialization for panel HMR
-│   ├── package.json                 # Express, ws, Vite
+├── streamer/                        # [PART 3] Infrastructure container (Chrome, OBS, Xvfb)
 │   ├── Makefile                     # build target
 │   └── docker/                      # Container image
-│       └── Dockerfile               # Ubuntu + Chrome + OBS + Node.js + entrypoint
+│       ├── Dockerfile               # Ubuntu + Chrome + OBS + Xvfb + entrypoint
+│       ├── entrypoint.sh            # Process supervisor (Xvfb, PulseAudio, Chrome, OBS)
+│       └── prestop.sh               # Graceful shutdown hook
+│
+├── sidecar/                          # [PART] Go sidecar binary
+│   ├── cmd/sidecar/main.go           # Entry point (serve | restore)
+│   ├── gen/api/v1/                   # Generated ConnectRPC code (committed)
+│   ├── internal/
+│   │   ├── server/                   # HTTP server, ConnectRPC handlers
+│   │   ├── cdp/                      # Chrome DevTools Protocol client
+│   │   ├── obs/                      # OBS WebSocket v5 client
+│   │   └── r2/                       # R2 persistence (minio-go)
+│   ├── proto/api/v1/sidecar.proto    # Service definitions
+│   ├── Dockerfile
+│   └── go.mod / go.sum
 │
 ├── k8s/                             # [PART 4] Kubernetes manifests
 │   ├── control-plane/
@@ -144,9 +155,18 @@ agent-streamer/                    # Monorepo root
 ### streamer
 | Folder | Importance | Description |
 |--------|------------|-------------|
-| `index.js` | ★★★ | Entire streamer service (Express + panel system + OBS) |
-| `shell.html` | ★★★ | Panel HTML template served to Chrome |
-| `docker/` | ★★ | Container image with Chrome + OBS + Node.js |
+| `docker/` | ★★★ | Container image with Chrome + OBS + Xvfb (no application code) |
+
+### sidecar
+| Folder | Importance | Description |
+|--------|------------|-------------|
+| `cmd/sidecar/main.go` | ★★★ | Entry point — serve and restore subcommands |
+| `internal/server/` | ★★★ | HTTP server, ConnectRPC handlers (sync, runtime, OBS) |
+| `internal/cdp/` | ★★★ | Chrome DevTools Protocol client |
+| `internal/obs/` | ★★ | OBS WebSocket v5 client |
+| `internal/r2/` | ★★ | R2 persistence (localStorage backup/restore) |
+| `proto/api/v1/` | ★★★ | Sidecar service definitions (source of truth) |
+| `gen/api/v1/` | ★★ | Generated ConnectRPC code — regenerate with buf |
 
 ### k8s
 | File | Importance | Description |
@@ -168,5 +188,5 @@ agent-streamer/                    # Monorepo root
 | `control-plane/auth.go: authenticate()` | Unified Clerk JWT + API key validation |
 | `control-plane/mcp.go: setupMCP()` | All MCP tool definitions |
 | `web/src/client.ts` | All ConnectRPC client instances + Clerk auth interceptor |
-| `streamer/index.js: /api/panels/*` | Panel system API routes |
-| `streamer/index.js: OBSConnection` | OBS WebSocket v5 client |
+| `control-plane/pod_client.go` | ConnectRPC client for sidecar communication |
+| `sidecar/internal/server/server.go` | Sidecar HTTP/RPC routing (sync, runtime, OBS services) |

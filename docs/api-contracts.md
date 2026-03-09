@@ -1,6 +1,6 @@
 # API Contracts
 
-**Last updated:** 2026-03-03
+**Last updated:** 2026-03-09
 
 All control plane RPC services use **ConnectRPC** (protobuf over HTTP/2, also compatible with HTTP/1.1 JSON). Base URL: `https://stream.dazzle.fm`
 
@@ -55,7 +55,7 @@ POST /api.v1.StageService/ActivateStage
 Request:  { "id": string }
 Response: { "stage": Stage }
 ```
-Creates pod, waits for readiness, restores script and OBS destination. Returns stage with status `running`.
+Creates pod, waits for readiness, restores content from R2 and configures OBS destination. Returns stage with status `running`.
 
 ### DeactivateStage
 ```
@@ -282,32 +282,12 @@ POST /stage/<id>/mcp/*      MCP server for this stage
 
 ---
 
-## Streamer Pod API (via stage proxy at `/stage/<id>/...`)
+## Sidecar Pod API
 
-### Panel Management
-```
-POST   /api/panels                     Create panel ({ name, width?, height? })
-GET    /api/panels/:name/script        Get user code
-POST   /api/panels/:name/script        Set script ({ script: string })
-PATCH  /api/panels/:name/script        Edit script ({ old_string, new_string })
-POST   /api/panels/:name/event         Emit state event ({ event, data })
-GET    /api/panels/:name/screenshot    Capture PNG screenshot
-```
-
-### CDP Discovery
-```
-GET /json           Chrome tab list
-GET /json/version   Chrome version
-GET /json/list      Available tabs
-```
-
-### Health
-```
-GET /health     { status: 'ok', lastActivity, uptime }
-```
+The Go sidecar in each streamer pod serves ConnectRPC APIs behind the `/_dz_9f7a3b1c/` path prefix on port 8080. Services: **SyncService**, **RuntimeService**, **ObsService**. These are consumed by the control-plane's `pod_client` and are not intended for direct external access.
 
 **Service-Level Restrictions:**
-- StageService, RuntimeService: Accepts both Clerk JWT and API key
+- StageService: Accepts both Clerk JWT and API key
 - ApiKeyService, RtmpDestinationService, UserService: Clerk JWT only
 - MCP endpoints: Accepts both Clerk JWT and API key
 - HTTP proxy/CDP endpoints: Accepts both

@@ -1,8 +1,8 @@
 # Architecture: Streamer (Stage Pod)
 
-**Part:** `streamer/`
-**Language:** Node.js / JavaScript
-**Last updated:** 2026-03-03
+**Part:** `streamer/` (infrastructure), `sidecar/` (application logic)
+**Language:** Bash (streamer), Go (sidecar)
+**Last updated:** 2026-03-09
 
 ---
 
@@ -10,13 +10,12 @@
 
 The streamer runs as an ephemeral Kubernetes pod (one per stage). It provides an isolated browser environment with:
 - Google Chrome running on a headless display (Xvfb)
-- A **panel system** for managing synced content directories rendered by Chrome
-- A Node.js/Express HTTP API for content management, CDP discovery, and health
 - OBS Studio for screen capture and optional RTMP streaming
 - ffmpeg HLS preview pipeline for low-latency live preview
-- WebSocket proxy from the control plane to Chrome's CDP port
-- A **sidecar container** (rclone) that syncs content and Chrome state to Cloudflare R2
-- An **init container** that restores content and Chrome state from R2 on stage start
+- A **Go sidecar** that handles all application logic: content sync API, CDP client for log capture/event dispatch/navigation, OBS integration, R2 persistence, Prometheus metrics, and static content serving
+- An **init container** (`sidecar restore`) that restores content and Chrome state from R2 on stage start
+
+The streamer container is pure infrastructure — no Node.js, no npm, no custom application code. All application logic lives in the sidecar.
 
 ---
 
@@ -24,10 +23,11 @@ The streamer runs as an ephemeral Kubernetes pod (one per stage). It provides an
 
 | Category | Technology | Version |
 |----------|------------|---------|
-| Runtime | Node.js | 24 |
-| HTTP Server | Express | 4.18.2 |
-| HTTP Proxy | http-proxy | 1.18.1 |
-| WebSocket | ws | 8.x |
+| Sidecar | Go binary | — |
+| Content Sync API | ConnectRPC (SyncService) | — |
+| CDP Client | Go CDP library | — |
+| OBS Control | gobs-cli | — |
+| R2 Client | minio-go | — |
 | Browser | Google Chrome Stable | Latest |
 | Virtual Display | Xvfb | System |
 | Audio | PulseAudio | System |
@@ -40,18 +40,18 @@ The streamer runs as an ephemeral Kubernetes pod (one per stage). It provides an
 
 The streamer pod has three containers:
 
-1. **Init container** (`restore.sh`): Restores `/data/` from R2 (content, Chrome localStorage, IndexedDB)
-2. **Main container** (`entrypoint.sh`): Runs all processes sequentially
-3. **Sidecar container** (`entrypoint.sh`): Watches `/data/` for changes and syncs to R2
+1. **Init container** (`sidecar restore`): Restores content and Chrome state from R2 before the main containers start
+2. **Streamer container** (`entrypoint.sh`): Pure infrastructure — runs Xvfb, PulseAudio, Chrome, OBS, ffmpeg
+3. **Sidecar container** (Go binary): All application logic — content sync API, CDP client, OBS integration, R2 persistence, static content serving
 
-### Main Container Process Startup
+### Streamer Container Process Startup
 
 ```
 1. Xvfb :99 (1280x720x24)         → Virtual X11 display
 2. PulseAudio (daemon)              → Audio system on /tmp/pulse/native
 3. unclutter                        → Hides mouse cursor on display
-4. Node.js server (index.js)        → HTTP API on port 8080
-5. Google Chrome (kiosk mode)       → CDP on localhost:9222
+4. Wait for sidecar health          → GET /_dz_9f7a3b1c/health on port 8080
+5. Google Chrome (kiosk mode)       → Navigates to http://localhost:8080/, CDP on localhost:9222
 6. OBS Studio                       → WebSocket on localhost:4455
 7. ffmpeg (x11grab → HLS)           → /tmp/hls/stream.m3u8
 ```
@@ -60,10 +60,7 @@ Signal trap `EXIT INT TERM` kills all child processes on exit.
 
 ### Graceful Shutdown (preStop hook)
 
-The pod has a `preStop` hook (`prestop.sh`) that:
-1. Kills Chrome (so it flushes localStorage/IndexedDB to `/data/chrome/`)
-2. Creates `/data/.sync-request` sentinel file
-3. Waits up to 25s for the sidecar to create `/data/.sync-done` (final sync complete)
+The streamer pod has a `preStop` hook that kills Chrome so it flushes localStorage/IndexedDB to disk. The sidecar handles final R2 sync on its own shutdown.
 
 ---
 
@@ -71,84 +68,74 @@ The pod has a `preStop` hook (`prestop.sh`) that:
 
 | Port | Service | Access |
 |------|---------|--------|
-| `8080` | Node.js HTTP API | External (via control plane proxy) |
-| `9222` | Chrome CDP | Internal only (proxied through Node.js) |
-| `4455` | OBS WebSocket v5 | Internal only (used by OBS commands) |
+| `8080` | Sidecar HTTP (ConnectRPC + static content) | External (via control plane proxy) |
+| `9222` | Chrome CDP | Internal only |
+| `4455` | OBS WebSocket v5 | Internal only |
 
 ---
 
-## HTTP API Endpoints
+## Sidecar HTTP API
 
-### Health
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| GET | `/health` | None | Returns `{ status: 'ok', lastActivity, uptime }` |
+The sidecar serves on port 8080 with two URL spaces:
 
-### CDP Discovery (rewrites WS URLs)
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| GET | `/json` | Token | Chrome tab list (WS URLs rewritten to external host) |
-| GET | `/json/version` | Token | Chrome version info |
-| GET | `/json/list` | Token | Available tabs |
+### Public (content serving)
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/` | Static content serving (synced user content with `index.html` entry point) |
 
-### Panel System
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| POST | `/api/panels` | Token | Create or resize a panel (`{ name, width, height }`) |
-| POST | `/api/panels/:name/sync` | Token | Push synced directory content to panel |
-| POST | `/api/panels/:name/event` | Token | Emit state event to panel (`{ event, data }`) |
-| GET | `/api/panels/:name/screenshot` | Token | Capture screenshot of panel as PNG |
-
-### WebSocket
-| Protocol | Path | Auth | Description |
-|----------|------|------|-------------|
-| WS | `/*` | Token (query param) | CDP WebSocket proxy to Chrome port 9222 |
+### Internal APIs (`/_dz_9f7a3b1c/` prefix)
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/_dz_9f7a3b1c/health` | Health/readiness check |
+| — | `/_dz_9f7a3b1c/` | ConnectRPC SyncService (content sync from CLI) |
+| — | `/_dz_9f7a3b1c/` | CDP log capture, event dispatch, navigation |
+| — | `/_dz_9f7a3b1c/` | OBS integration via gobs-cli |
+| — | `/_dz_9f7a3b1c/` | Prometheus metrics |
 
 ---
 
-## Panel System
+## Content Sync
 
-The panel system is the core feature of the streamer. It manages named, isolated browser views:
+Content is synced from the CLI via ConnectRPC SyncService on the sidecar:
 
-1. **Panel directory**: Each panel `<name>` gets a directory at `/data/content/<name>/`
-2. **User content**: A full directory synced from the CLI, containing an `index.html` entry point and any supporting files (JS, CSS, images, etc.)
-3. **Serving**: Chrome loads content directly from the filesystem (`file:///` URLs)
+1. **Sync API**: The CLI pushes directory content via `dazzle s sync <dir>` to the sidecar's ConnectRPC endpoint
+2. **Static serving**: The sidecar serves synced content at `/` over HTTP on port 8080
+3. **Chrome loads via HTTP**: Chrome navigates to `http://localhost:8080/` — content is served by the sidecar, not from the filesystem
 4. **Refresh**: Explicit page reload triggered by `dazzle s refresh` or `dazzle s sync --refresh`
-5. **State events**: `emit_event` dispatches a `CustomEvent` on `window` — no page reload
+5. **State events**: Event dispatch via CDP — no page reload
 6. **Persistence**: Chrome's localStorage and IndexedDB are persisted to R2 via the sidecar, so app state survives stage restarts
 
 ### Content Update Flow
 
 ```
-CLI sync
+CLI sync (ConnectRPC)
          │
          ▼
-  Write files to /data/content/<panel>/
+  Sidecar writes files to stage-data volume
+         │
+         ▼
+  Sidecar serves updated content at / on port 8080
          │
          ▼
   CLI sends refresh command (if --refresh flag)
          │
          ▼
-  Chrome reloads the entry point from disk
+  Sidecar triggers Chrome page reload via CDP
 ```
 
 ---
 
 ## OBS Integration
 
-The streamer includes an internal OBS WebSocket v5 client (`OBSConnection` class in `index.js`):
-- Connects to `ws://localhost:4455` (no auth) with 30s retry
-- Request/response correlation via `requestId`
-- Used by MCP `obs` tool for OBS scene/source/streaming control
+The sidecar integrates with OBS via gobs-cli, connecting to `ws://localhost:4455` (no auth). Used for OBS scene/source/streaming control.
 
 ---
 
 ## Authentication
 
-Token-based with constant-time comparison:
-- Token loaded from `TOKEN` env var (injected from `browserless-auth` Kubernetes secret)
-- Accepted via `Authorization: Bearer <token>` header or `?token=<token>` query param
-- If `TOKEN` env is unset, all requests pass through (development mode)
+Token-based authentication is handled by the sidecar:
+- Token loaded from `TOKEN` env var (injected from Kubernetes secret)
+- The streamer container has no token — it is pure infrastructure
 
 ---
 
@@ -161,6 +148,7 @@ Key startup flags:
 - `--disable-background-timer-throttling`
 - `--autoplay-policy=no-user-gesture-required`
 - `--user-data-dir=/data/chrome` (persisted to R2 via sidecar)
+- Initial URL: `http://localhost:8080/`
 - Display: `:99` (Xvfb)
 
 ---
@@ -169,30 +157,61 @@ Key startup flags:
 
 Defined in the control plane pod spec:
 
+### Streamer Container
 | Resource | Request | Limit |
 |----------|---------|-------|
-| CPU | 2 cores | 4 cores |
-| Memory | 4 Gi | 8 Gi |
-| `/dev/shm` | — | 2 Gi (memory medium for Chrome) |
+| CPU | 500m | 3500m |
+| Memory | 2 Gi | 14 Gi |
+
+### Sidecar Container
+| Resource | Request | Limit |
+|----------|---------|-------|
+| CPU | 100m | 500m |
+| Memory | 128 Mi | 512 Mi |
+
+### Init Container
+| Resource | Request | Limit |
+|----------|---------|-------|
+| CPU | 100m | 500m |
+| Memory | 64 Mi | 256 Mi |
+
+### Shared Volumes
+| Volume | Size | Type | Purpose |
+|--------|------|------|---------|
+| `stage-data` | 2 Gi | emptyDir | Shared content between streamer and sidecar |
+| `dshm` | 2 Gi | memory | `/dev/shm` for Chrome |
+| `hls-data` | 512 Mi | emptyDir | Streamer writes HLS, sidecar serves read-only |
 
 ---
 
 ## Environment Variables
 
+### Streamer Container
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `PORT` | `8080` | HTTP server listen port |
-| `TOKEN` | (none) | Auth token from `browserless-auth` secret |
-| `DISPLAY` | `:99` | X11 display (set in Dockerfile) |
-| `PULSE_SERVER` | `unix:/tmp/pulse/native` | PulseAudio socket |
+| `STAGE_ID` | (required) | Stage identifier |
+| `USER_ID` | (required) | User identifier |
 | `SCREEN_WIDTH` | `1280` | Xvfb width |
 | `SCREEN_HEIGHT` | `720` | Xvfb height |
+| `DISPLAY` | `:99` | X11 display |
+| `PULSE_SERVER` | `unix:/tmp/pulse/native` | PulseAudio socket |
+
+### Sidecar Container
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `TOKEN` | (required) | Auth token from Kubernetes secret |
+| `STAGE_ID` | (required) | Stage identifier |
+| `USER_ID` | (required) | User identifier |
+| `R2_ENDPOINT` | (required) | Cloudflare R2 endpoint URL |
+| `R2_ACCESS_KEY_ID` | (required) | R2 access key |
+| `R2_SECRET_ACCESS_KEY` | (required) | R2 secret key |
+| `R2_BUCKET` | (required) | R2 bucket name |
 
 ---
 
 ## Docker Image
 
-### Main Image
+### Streamer Image
 
 **Base:** `ubuntu:24.04`
 
@@ -200,40 +219,36 @@ Defined in the control plane pod spec:
 1. System deps (X11, audio, fonts, network tools)
 2. OBS Studio + ffmpeg (from PPA, WebSocket v5)
 3. Google Chrome Stable (from Google .deb)
-4. Node.js 24 (from NodeSource)
-5. Application code (`index.js`, `package.json`)
-6. Startup entrypoint + prestop hook
+4. Startup entrypoint + prestop hook
 
-**Image size:** ~2 GB+ (Chrome + OBS + X11 stack).
+No Node.js, no npm, no application code. **Image size:** ~2 GB+ (Chrome + OBS + X11 stack).
 
 ### Sidecar Image
 
-**Base:** `rclone/rclone:1.69`
-
-Adds `inotify-tools` and `util-linux` (for `flock`). Contains `entrypoint.sh` (watch + sync loop) and `restore.sh` (init container restore).
+Go binary built from `sidecar/`. Contains all application logic: ConnectRPC server, CDP client, OBS integration (gobs-cli), R2 persistence (minio-go), Prometheus metrics, static content serving.
 
 ---
 
-## Persistence (R2 Sidecar)
+## Persistence (R2 via Sidecar)
 
-The sidecar container syncs the following paths from the shared `/data/` volume to Cloudflare R2:
-- `content/**` — panel scripts and synced directories
+The sidecar syncs the following paths from the shared `stage-data` volume to Cloudflare R2 via minio-go:
+- `content/**` — synced user content directories
 - `chrome/Default/Local Storage/**` — Chrome localStorage
 - `chrome/Default/IndexedDB/**` — Chrome IndexedDB
 
 **R2 path:** `users/<user_id>/stages/<stage_id>/`
 
 **Sync flow:**
-1. Init container (`restore.sh`) restores from R2 → `/data/` before the main container starts
-2. Sidecar watches `/data/` with `inotifywait` and syncs changes to R2 (debounced, with `flock` to prevent concurrent syncs)
-3. On pod shutdown, the prestop hook triggers a final sync via the `.sync-request` → `.sync-done` sentinel protocol
+1. Init container (`sidecar restore`) restores from R2 before main containers start
+2. Sidecar syncs content changes to R2 as they occur
+3. On pod shutdown, the sidecar performs a final R2 sync
 4. On `DeleteStage`, the control plane waits for pod termination, then does best-effort R2 prefix cleanup
 
-**Degradation:** If R2 credentials are not configured, the sidecar idles (no-op) and stages work normally without persistence.
+**Degradation:** If R2 credentials are not configured, the sidecar skips persistence and stages work normally without it.
 
 ---
 
 ## Health & Readiness
 
-- **K8s Readiness Probe:** `GET /health` on port 8080, initial delay 2s, period 2s, failure threshold 30 (60s total window)
-- Probe checks Node.js server availability; Chrome CDP readiness is implicit (Chrome starts before Node.js server)
+- **K8s Readiness Probe:** `GET /_dz_9f7a3b1c/health` on port 8080 (sidecar), initial delay 2s, period 2s, failure threshold 30 (60s total window)
+- Streamer waits for sidecar health (`/_dz_9f7a3b1c/health`) before launching Chrome

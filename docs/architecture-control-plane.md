@@ -1,8 +1,8 @@
 # Architecture: Control Plane
 
 **Part:** `control-plane/`
-**Language:** Go 1.24
-**Last updated:** 2026-03-03
+**Language:** Go 1.25
+**Last updated:** 2026-03-09
 
 > **Note:** This file replaces the old `architecture-session-manager.md`.
 
@@ -24,7 +24,7 @@ The control plane is the central Go backend. It:
 
 | Category | Technology | Version |
 |----------|------------|---------|
-| Language | Go | 1.24 |
+| Language | Go | 1.25 |
 | RPC Framework | ConnectRPC | v1.19.1 |
 | Schema | Protocol Buffers (buf toolchain) | v2 |
 | Auth — External | Clerk SDK Go | v2.5.1 |
@@ -33,7 +33,7 @@ The control plane is the central Go backend. It:
 | K8s Client | k8s.io/client-go | v0.29.3 |
 | Encryption | AES-256-GCM (via `crypto/cipher`) | stdlib |
 | MCP Server | mcp-go | v0.44.1 |
-| WebSocket | gorilla/websocket | v1.5.3 |
+| Sidecar Client | ConnectRPC (sidecar proto) | — |
 | UUID | google/uuid | v1.6.0 |
 
 ---
@@ -52,7 +52,8 @@ control-plane/
 ├── auth.go              # Authenticator: Clerk JWT + API key verification
 ├── db.go                # DB connection, migrations, CRUD helpers
 ├── connect_stage.go     # StageService RPC handlers
-├── connect_runtime.go   # RuntimeService RPC handlers (script, screenshots, OBS, logs)
+├── connect_runtime.go   # RuntimeService RPC handlers (screenshots, OBS, logs, sync, events)
+├── pod_client.go        # ConnectRPC client for sidecar communication
 ├── connect_apikey.go    # ApiKeyService RPC handlers
 ├── connect_stream.go    # RtmpDestinationService RPC handlers
 ├── connect_user.go      # UserService RPC handlers
@@ -118,7 +119,7 @@ type Manager struct {
 | `/api.v1.UserService/*` | POST | Clerk JWT only | User profile |
 | `/stage/<stage-id>/cdp` | WS | Clerk or API key | CDP WebSocket proxy to Chrome |
 | `/stage/<stage-id>/cdp/json/*` | GET | Clerk or API key | CDP discovery (URL-rewritten) |
-| `/stage/<id>/*` | HTTP/WS | Clerk or API key | HTTP/WS proxy to streamer pod |
+| `/stage/<id>/*` | HTTP/WS | Clerk or API key | HTTP/WS proxy to sidecar on pod (port 8080) |
 | `/stage/<id>/mcp/*` | HTTP | Clerk or API key | MCP server (per-stage) |
 | `/*` | GET | none | Serve web SPA (fallback) |
 
@@ -165,23 +166,27 @@ The control plane provides a stable, authenticated CDP endpoint at `/stage/<stag
 
 Each stage pod has three containers:
 
-**Init container** (`restore`): Runs `restore.sh` from the sidecar image to restore `/data/` from R2 before the main container starts.
+**Init container** (`restore`): Runs `/sidecar restore` from the sidecar image to restore `/data/` from R2 before the main container starts.
 
 **Main container** (`streamer`):
 - Image: `STREAMER_IMAGE` env
 - CPU: `2` req / `4` limit; Memory: `4Gi` req / `8Gi` limit
-- Volumes: `/dev/shm` (2Gi memory), `/data` (shared emptyDir for content + Chrome state)
-- Auth token injected from `browserless-auth` secret
-- Readiness probe: `GET /health` on port 8080, delay 2s, period 2s, threshold 30
+- Volumes: `/dev/shm` (2Gi memory), `/data` (shared emptyDir for content + Chrome state), `hls-data` (512Mi emptyDir)
 - PreStop hook: `prestop.sh` (kills Chrome, triggers sidecar final sync)
 
-**Sidecar container** (`sync`): Runs the rclone sync loop from `SIDECAR_IMAGE`, watching `/data/` and syncing to R2. R2 credentials injected as `RCLONE_CONFIG_R2_*` env vars.
+**Sidecar container** (`sidecar`): Go binary from `SIDECAR_IMAGE`.
+- Command: `/sidecar serve`
+- Port: 8080
+- Readiness probe: `GET /_dz_9f7a3b1c/health` on port 8080
+- Auth: `TOKEN` env var injected from `browserless-auth` secret
+- Resources: CPU `100m` req / `500m` limit; Memory `128Mi` req / `512Mi` limit
+- R2 credentials injected as `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` env vars
 
 ---
 
 ## MCP Server
 
-The control plane hosts an MCP server at `/stage/<id>/mcp/*` using `mcp-go`. Each stage gets its own MCP endpoint. Tools are defined in `mcp.go` and allow AI agents to interact with the browser panel system (set/edit/get script, emit events, take screenshots, control OBS via `obs`).
+The control plane hosts an MCP server at `/stage/<id>/mcp/*` using `mcp-go`. Each stage gets its own MCP endpoint. Tools are defined in `mcp.go` and allow AI agents to interact with the stage (emit events, take screenshots, control OBS via `obs`, get logs).
 
 ---
 

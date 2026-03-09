@@ -1,6 +1,6 @@
 # Integration Architecture
 
-**Last updated:** 2026-03-03
+**Last updated:** 2026-03-09
 
 ## Overview
 
@@ -47,18 +47,19 @@ Agent Streamer (Dazzle) is a monorepo with 5 parts. The **control plane** is the
 ┌──────────────────────────────────────────────┐
 │           Streamer Pod (per stage)           │
 │                                              │
-│  Init: restore.sh (R2 → /data/)             │
+│  Init: sidecar restore (R2 → /data/)        │
 │                                              │
 │  Main container:                             │
 │  ┌────────────┐  ┌──────────┐  ┌──────────┐ │
-│  │  Chrome    │  │  OBS     │  │ Node.js  │ │
-│  │  CDP :9222 │  │  WS:4455 │  │ :8080    │ │
+│  │  Chrome    │  │  OBS     │  │  Xvfb    │ │
+│  │  CDP :9222 │  │  WS:4455 │  │  :99     │ │
 │  └────────────┘  └──────────┘  └──────────┘ │
-│  ┌────────────┐  ┌──────────┐  ┌──────────┐ │
-│  │  Xvfb :99  │  │          │  │  ffmpeg  │ │
-│  └────────────┘  └──────────┘  │ HLS prev │ │
-│                                 └──────────┘ │
-│  Sidecar: rclone (/data/ ↔ R2)              │
+│  ┌──────────────────────────────────────────┐│
+│  │  ffmpeg HLS preview                      ││
+│  └──────────────────────────────────────────┘│
+│                                              │
+│  Sidecar: Go binary :8080                   │
+│    (content, sync, CDP, OBS, R2)            │
 └──────────────────────────────────────────────┘
 ```
 
@@ -95,8 +96,7 @@ In development, Vite proxies these paths from `:5173` to `:8080`.
 
 | Protocol | Path Pattern | Destination | Description |
 |----------|-------------|-------------|-------------|
-| HTTP | `/stage/<id>/<path>` | `http://<podIP>:8080/<path>` | General API proxy (panel system) |
-| WebSocket | `/stage/<id>/*` | `ws://<podIP>:8080/*` | WebSocket proxy |
+| ConnectRPC | `/stage/<id>/_dz_9f7a3b1c/*` | `http://<podIP>:8080/_dz_9f7a3b1c/*` | Sidecar RPC proxy (sync, runtime, OBS) |
 | WebSocket | `/stage/<id>/cdp` | `ws://<podIP>:8080/devtools/...` | CDP WebSocket (URL resolved via `/json/version`) |
 | HTTP | `/stage/<id>/cdp/json/*` | `http://<podIP>:8080/json/*` | CDP discovery (WS URL rewritten) |
 | HTTP | `/stage/<id>/mcp/*` | MCP server in control plane | MCP tool execution targeting this stage |
@@ -119,14 +119,14 @@ In development, Vite proxies these paths from `:5173` to `:8080`.
 
 | Action | Direction | Description |
 |--------|-----------|-------------|
-| Init restore | R2 → `/data/` | `restore.sh` runs `rclone sync` from R2 before main container starts |
-| Live sync | `/data/` → R2 | Sidecar watches with `inotifywait`, syncs on changes (debounced, flock-guarded) |
-| Final sync | `/data/` → R2 | Triggered by prestop hook via `.sync-request` sentinel; sidecar acks with `.sync-done` |
+| Init restore | R2 → `/data/` | `/sidecar restore` runs at init to pull content from R2 before main container starts |
+| Live sync | `/data/` → R2 | Sidecar uses fsnotify file watcher with debounced upload via minio-go SDK |
+| Final sync | `/data/` → R2 | On SIGTERM, sidecar performs FinalSync before exiting (no sentinel file protocol) |
 | Cleanup | control-plane → R2 | On `DeleteStage`, control plane calls `R2Client.DeletePrefix()` after pod termination |
 
 **Paths synced:** `content/**`, `chrome/Default/Local Storage/**`, `chrome/Default/IndexedDB/**`
 **R2 layout:** `users/<user_id>/stages/<stage_id>/`
-**Auth:** rclone uses S3-compatible credentials via `RCLONE_CONFIG_R2_*` env vars injected from `r2-credentials` secret.
+**Auth:** S3-compatible credentials via `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` env vars injected from `r2-credentials` secret.
 
 ### 6. MCP Client → Control Plane *(legacy, being superseded by CLI)*
 
@@ -136,16 +136,16 @@ In development, Vite proxies these paths from `:5173` to `:8080`.
 
 > **Note:** MCP is being superseded by the Dazzle CLI. All operations available via MCP are now accessible through `dazzle` CLI commands using ConnectRPC. The MCP endpoint remains functional but is no longer the recommended integration path.
 
-### 7. Control Plane → Streamer Pod (Panel API)
+### 7. Control Plane → Streamer Pod (Sidecar RPC)
 
-The control plane proxies CLI/MCP operations to the streamer pod's panel API:
+The control plane proxies CLI/MCP operations to the sidecar's ConnectRPC services on port 8080, all behind the `/_dz_9f7a3b1c/` path prefix:
 
-| Operation | Streamer Endpoint | Description |
+| Operation | ConnectRPC Service | Description |
 |-----------|-------------------|-------------|
-| Sync | `POST /api/panels/:name/sync` | Push synced files to panel |
-| Emit event | `POST /api/panels/:name/event` | Push state event to panel |
-| Screenshot | `GET /api/panels/:name/screenshot` | Capture PNG via CDP |
-| OBS | `gobs-cli --host <podIP>` | OBS commands (scenes, streaming, recording, etc.) |
+| Sync diff/push/refresh | `SyncService` | Diff, push content, and trigger Chrome refresh |
+| Emit event | `RuntimeService.EmitEvent` | Push event to Chrome via CDP |
+| Screenshot | `RuntimeService.Screenshot` | Capture PNG via CDP |
+| OBS commands | `ObsService.Command` | OBS control (scenes, streaming, recording, etc.) |
 
 ---
 
@@ -184,4 +184,5 @@ The control plane proxies CLI/MCP operations to the streamer pod's panel API:
 | Clerk | control-plane + web | User authentication |
 | k8s namespace `browser-streamer` | All | Resource isolation |
 | Traefik ingress | All external traffic | TLS + routing |
-| `/data` emptyDir volume | streamer + sidecar + init | Shared content and Chrome state |
+| `/data` emptyDir volume | streamer + sidecar | Shared content and Chrome state |
+| `hls-data` emptyDir volume | streamer + sidecar | HLS preview segments |

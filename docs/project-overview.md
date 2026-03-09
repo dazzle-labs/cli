@@ -19,11 +19,11 @@ Primary use cases: AI agents that need a persistent browser (Claude Code, OpenAI
 
 | Part | Path | Language | Purpose |
 |------|------|----------|---------|
-| **cli** | `cli/` (git submodule → `dazzle-labs/cli`) | Go 1.24 | Primary interface for developers and AI agents — stage lifecycle, scripting, OBS, streaming |
-| **control-plane** | `control-plane/` | Go 1.24 | Backend API, Kubernetes orchestration, auth, DB, CDP/WS proxy, serves web SPA |
+| **cli** | `cli/` (git submodule → `dazzle-labs/cli`) | Go 1.25 | Primary interface for developers and AI agents — stage lifecycle, scripting, OBS, streaming |
+| **control-plane** | `control-plane/` | Go 1.25 | Backend API, Kubernetes orchestration, auth, DB, CDP/WS proxy, serves web SPA |
 | **web** | `web/` | TypeScript / React 19 | Web dashboard SPA (stage monitoring, API keys, stream destinations, account settings) |
-| **streamer** | `streamer/` | Node.js 24 | Per-stage browser container: Express HTTP, Chrome CDP, Vite panel rendering, HLS preview |
-| **sidecar** | `streamer/docker/sidecar/` | rclone + inotify | Per-stage R2 sync container: persists content and Chrome state to Cloudflare R2 |
+| **streamer** | `streamer/` | — | Per-stage infrastructure container: Xvfb, Chrome, OBS, PulseAudio, ffmpeg. No custom application code. |
+| **sidecar** | `sidecar/` | Go 1.25 | Per-stage application logic: content sync API, CDP log/event/navigate, OBS integration, R2 persistence, Prometheus metrics, static content serving |
 | **k8s** | `k8s/` | YAML | Kubernetes manifests, Traefik ingress, TLS, SOPS-encrypted secrets |
 
 ---
@@ -32,7 +32,7 @@ Primary use cases: AI agents that need a persistent browser (Claude Code, OpenAI
 
 | Category | Technology | Version |
 |----------|------------|---------|
-| **Control Plane Language** | Go | 1.24 |
+| **Control Plane Language** | Go | 1.25 |
 | **RPC Framework** | ConnectRPC (Protobuf/HTTP2) | v1.19 |
 | **Auth** | Clerk (JWT) + internal API keys | SDK Go v2 / React v5 |
 | **Database** | PostgreSQL | 16 (Alpine) |
@@ -44,9 +44,7 @@ Primary use cases: AI agents that need a persistent browser (Claude Code, OpenAI
 | **CSS** | Tailwind CSS | v4 |
 | **Routing** | React Router | v7 |
 | **Video Playback** | HLS.js | v1.6 |
-| **Streamer Server** | Express | 4 |
-| **WebSocket** | ws | v8 |
-| **Panel State** | Zustand | v5 |
+| **Sidecar RPC** | ConnectRPC (Protobuf) | — |
 | **Ingress** | Traefik | — |
 | **TLS** | cert-manager + Let's Encrypt | — |
 | **Secrets** | SOPS-encrypted YAML | — |
@@ -77,13 +75,12 @@ Web UI ────────►         │
                     ▼
            Streamer Pod (per stage, on-demand)
            ├── Init: restore.sh (restore /data/ from R2)
-           ├── Main container
-           │   ├── Express HTTP :8080 (panels, CDP discovery, health)
+           ├── Main container (streamer)
            │   ├── Chrome on Xvfb (CDP :9222)
            │   ├── OBS Studio (WS :4455)
-           │   ├── Content (served from filesystem)
+           │   ├── PulseAudio
            │   └── ffmpeg (HLS preview → /tmp/hls/)
-           └── Sidecar: rclone (sync /data/ ↔ R2 on changes)
+           └── Sidecar: Go binary :8080 (content, sync, CDP, OBS, R2)
 ```
 
 ---
@@ -95,10 +92,10 @@ Web UI ────────►         │
 3. **Stage lifecycle** — Create/activate/deactivate/delete browser pods with status tracking (inactive → starting → running → stopping)
 4. **CDP access** — Full Chrome DevTools Protocol access proxied through control plane; WebSocket URL rewriting for external access
 5. **MCP server** *(legacy)* — Per-stage Model Context Protocol endpoint; being superseded by the CLI
-6. **Panel system** — Streamer manages named panels; content synced from CLI, explicit refresh on update
+6. **Content sync** — Content synced from CLI as directory snapshots; sidecar serves content via HTTP, Chrome loads from sidecar
 7. **Stream destinations** — RTMP stream keys for Twitch, YouTube, Kick, custom; AES-256-GCM encrypted at rest
 8. **API keys** — `dzl_*` prefix format, HMAC-SHA256 hashed, with last-used tracking; used by CLI and programmatic clients
-9. **Stage persistence** — Content, Chrome localStorage, and IndexedDB are synced to Cloudflare R2 via a sidecar container and restored on next activation
+9. **Stage persistence** — Content, Chrome localStorage, and IndexedDB are synced to Cloudflare R2 via the Go sidecar (minio-go SDK) and restored on next activation
 10. **HLS preview** — ffmpeg generates a low-latency HLS stream from the display, proxied through the control plane with shareable `dpt_*` preview tokens
 11. **Stage recovery** — On restart, reconciles in-memory state with live Kubernetes pods and resets orphaned DB records
 

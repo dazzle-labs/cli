@@ -1,6 +1,6 @@
 # Data Models
 
-**Last updated:** 2026-03-03
+**Last updated:** 2026-03-09
 
 ## Database: PostgreSQL 16
 
@@ -80,7 +80,7 @@ Created from `endpoints` table (migration `003`), renamed and extended in migrat
 | `pod_ip` | TEXT | — | Pod IP (set when running) |
 | `destination_id` | TEXT | — → stream_destinations(id) | Linked stream destination |
 | `preview_token` | TEXT | — | `dpt_*` token for shareable preview URLs |
-| `script` | TEXT | — | Last-set script content (restored on activation) |
+| `script` | TEXT | — | **Deprecated/unused.** Column exists in DB but is no longer written to (`dbSetStageScript`/`dbGetStageScript` have been removed). Content is now synced via R2. |
 | `updated_at` | TIMESTAMPTZ | NOT NULL DEFAULT NOW() | Last status update |
 | `created_at` | TIMESTAMPTZ | NOT NULL DEFAULT NOW() | Creation time |
 

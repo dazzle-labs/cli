@@ -1,6 +1,6 @@
 # Deployment Guide
 
-**Last updated:** 2026-03-07
+**Last updated:** 2026-03-09
 
 ---
 
@@ -41,8 +41,8 @@ Traefik Ingress (HTTPS :443)
                                 ├── Stage HTTP/WS Proxy (/stage/*/...)
                                 └── Creates → Streamer Pods (on-demand)
                                       ├── Init: restore from R2
-                                      ├── Main: Chrome + OBS + ffmpeg + Node.js
-                                      └── Sidecar: rclone sync to R2
+                                      ├── Main: Chrome + OBS + ffmpeg + Xvfb
+                                      └── Sidecar: Go binary (content, sync, CDP, OBS, R2)
 
 PostgreSQL (StatefulSet, 5Gi PVC via Hetzner CSI)
 ```
@@ -67,7 +67,8 @@ Images are pulled from Docker Hub using `imagePullSecrets` (`dazzlefm-dockerhub-
 |-----------|------------|-----------|-------------|-----------|
 | control-plane | 100m | 500m | 128Mi | 256Mi |
 | PostgreSQL | 100m | 500m | 256Mi | 512Mi |
-| Streamer Pod | 2 | 4 | 4Gi | 8Gi |
+| Streamer Pod | 500m | 3500m | 2Gi | 14Gi |
+| Sidecar | 100m | 500m | 128Mi | 512Mi |
 
 Streamer pods also get a 2Gi `/dev/shm` volume (Chrome shared memory).
 

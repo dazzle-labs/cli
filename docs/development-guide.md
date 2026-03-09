@@ -1,13 +1,13 @@
 # Development Guide
 
-**Last updated:** 2026-03-07
+**Last updated:** 2026-03-09
 
 ---
 
 ## Prerequisites
 
-- **Go** 1.24+ (control-plane)
-- **Node.js** 20+ (streamer), 20+ (web)
+- **Go** 1.25+ (control-plane, sidecar)
+- **Node.js** 20+ (web)
 - **Docker** (for Kind local cluster)
 - **SOPS + Age** (secret management)
 - **kubectl** (optional, direct k8s access)
@@ -26,8 +26,8 @@ agent-streamer/
 │   └── internal/gen/   # Generated Go code (commit this)
 ├── cli/                # Git submodule — public proto definitions + generated Go
 │   └── proto/api/v1/   # Public protobuf (Stage, Runtime, Stream, User)
-├── streamer/           # Node.js browser pod service
-│   └── docker/         # Dockerfile + entrypoint for streamer
+├── streamer/           # Infrastructure container (Chrome, OBS, Xvfb)
+├── sidecar/            # Go sidecar binary (sync, CDP, OBS, R2)
 ├── web/                # React/TypeScript SPA
 │   └── src/gen/api/v1/ # Generated TypeScript protobuf (commit this)
 ├── k8s/                # Kubernetes YAML manifests
@@ -83,9 +83,13 @@ npm run build        # Production build → web/dist/
 
 The Vite dev proxy in `web/vite.config.ts` routes API paths to `http://localhost:8080` (either Kind or remote).
 
-### Streamer (Node.js)
+### Streamer
 
-The streamer runs inside Docker/Kubernetes with Chrome, OBS, Xvfb, and PulseAudio. It cannot run standalone on macOS — use Kind to test streamer changes locally.
+The streamer runs inside Docker/Kubernetes with Chrome, OBS, Xvfb, PulseAudio, and ffmpeg. It contains no custom application code — all logic is in the sidecar. Use Kind to test changes.
+
+### Sidecar
+
+The sidecar runs alongside the streamer in each pod. Use Kind to test sidecar changes: `make build-sidecar`
 
 ---
 
@@ -136,6 +140,7 @@ Proto interfaces are split into **public** and **internal**:
 
 - **Public** (`dazzle.v1`) — Stage, Runtime, Stream, User. Proto source + generated Go live in `cli/` (git submodule). These are the client-facing APIs.
 - **Internal** (`dazzle.internal.v1`) — ApiKey. Proto source in `control-plane/proto/api/v1/`, generated Go in `control-plane/internal/gen/`.
+- **Sidecar** — SyncService, RuntimeService, ObsService. Proto source in `sidecar/proto/api/v1/sidecar.proto`, generated Go in `sidecar/gen/api/v1/`. These are internal ConnectRPC services called by the control-plane. `go.work` includes `./sidecar` for local development.
 
 ```bash
 make proto                   # Generate both Go + TypeScript (uses buf)
