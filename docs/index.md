@@ -39,7 +39,7 @@
 
 ### streamer (Node.js browser pod)
 - **Path:** `streamer/`
-- **Role:** Chrome + OBS + panel rendering (Vite HMR) + HLS preview — ephemeral K8s pod
+- **Role:** Chrome + OBS + panel rendering + HLS preview — ephemeral K8s pod
 - **Entry:** `streamer/index.js`
 - **Sidecar:** `streamer/docker/sidecar/` — rclone-based R2 sync for content and Chrome state persistence
 
@@ -56,7 +56,7 @@
 - [Dazzle CLI Design](./dazzle-cli-design.md) — CLI commands, auth flow, proto service changes, implementation plan
 - [Architecture: Control Plane](./architecture-control-plane.md) — Go backend: routes, stage lifecycle, CDP proxy, MCP, env vars
 - [Architecture: Web Frontend](./architecture-web.md) — React SPA: pages, routing, ConnectRPC client setup
-- [Architecture: Streamer Pod](./architecture-streamer.md) — Node.js: panel system, Chrome, OBS, Vite HMR
+- [Architecture: Streamer Pod](./architecture-streamer.md) — Node.js: panel system, Chrome, OBS
 - [Integration Architecture](./integration-architecture.md) — How all parts communicate; data flows
 - [Source Tree Analysis](./source-tree-analysis.md) — Annotated directory structure with critical file callouts
 
@@ -103,7 +103,7 @@ make proto
 
 3. **Stages are persistent, pods are ephemeral** — A `Stage` DB record survives pod restarts. `ActivateStage` creates a pod on demand; `DeleteStage` removes everything (including R2 storage); `DeactivateStage` deletes pod but keeps record. Content and Chrome state are synced to R2 and restored on next activation.
 
-4. **Panel system replaces template engine** — The streamer's Vite HMR panel system hot-swaps JavaScript/JSX without page reloads. Panels persist state via `emit_event` + `window.__state`.
+4. **Panel system** — The streamer manages named content panels. Content is synced from the CLI as directory snapshots; Chrome renders directly from the filesystem. localStorage is persisted across stage restarts via R2.
 
 5. **Protobuf as service contract** — All control-plane ↔ CLI/web communication uses generated ConnectRPC code from `proto/api/v1/`. No hand-written API clients.
 

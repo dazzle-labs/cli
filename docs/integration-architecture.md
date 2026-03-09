@@ -55,7 +55,7 @@ Agent Streamer (Dazzle) is a monorepo with 5 parts. The **control plane** is the
 │  │  CDP :9222 │  │  WS:4455 │  │ :8080    │ │
 │  └────────────┘  └──────────┘  └──────────┘ │
 │  ┌────────────┐  ┌──────────┐  ┌──────────┐ │
-│  │  Xvfb :99  │  │ Vite HMR │  │  ffmpeg  │ │
+│  │  Xvfb :99  │  │          │  │  ffmpeg  │ │
 │  └────────────┘  └──────────┘  │ HLS prev │ │
 │                                 └──────────┘ │
 │  Sidecar: rclone (/data/ ↔ R2)              │
@@ -136,18 +136,16 @@ In development, Vite proxies these paths from `:5173` to `:8080`.
 
 > **Note:** MCP is being superseded by the Dazzle CLI. All operations available via MCP are now accessible through `dazzle` CLI commands using ConnectRPC. The MCP endpoint remains functional but is no longer the recommended integration path.
 
-### 7. Control Plane MCP → Streamer Pod *(legacy)*
+### 7. Control Plane → Streamer Pod (Panel API)
 
-MCP tool implementations in `mcp.go` call the streamer pod's panel API:
+The control plane proxies CLI/MCP operations to the streamer pod's panel API:
 
-| MCP Tool | Streamer Endpoint | Description |
-|----------|-------------------|-------------|
-| `set_script` | `POST /api/panels/:name/script` | Set panel JavaScript content |
-| `edit_script` | `PATCH /api/panels/:name/script` | Find-replace in panel script |
-| `get_script` | `GET /api/panels/:name/script` | Retrieve current panel code |
-| `emit_event` | `POST /api/panels/:name/event` | Push state event to panel |
-| `screenshot` | `GET /api/panels/:name/screenshot` | Capture PNG via CDP |
-| `obs` | `gobs-cli --host <podIP>` | OBS commands (scenes, streaming, recording, etc.) |
+| Operation | Streamer Endpoint | Description |
+|-----------|-------------------|-------------|
+| Sync | `POST /api/panels/:name/sync` | Push synced files to panel |
+| Emit event | `POST /api/panels/:name/event` | Push state event to panel |
+| Screenshot | `GET /api/panels/:name/screenshot` | Capture PNG via CDP |
+| OBS | `gobs-cli --host <podIP>` | OBS commands (scenes, streaming, recording, etc.) |
 
 ---
 

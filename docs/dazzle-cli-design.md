@@ -18,13 +18,11 @@ dazzle stage up                       # Bring up a stage
 dazzle stage down                     # Shut down a stage
 dazzle stage status                   # Get current status
 dazzle stage sync <dir>               # Sync a local directory to the stage
-dazzle stage refresh                  # Reload the synced entry point
+dazzle stage sync <dir> --watch       # Watch for changes and re-sync
+dazzle stage sync <dir> -wr           # Watch + auto-reload Chrome
+dazzle stage refresh                  # Reload the stage entry point
 
-dazzle script set <file>              # Set script from file (- for stdin)
-dazzle script get                     # Print current script to stdout
-dazzle script edit --old "x" --new "y"  # Find/replace in live script
-
-dazzle emit <event-name> <json>       # Push event to running script
+dazzle stage event emit <name> <json> # Push event to running script
 dazzle logs [--limit N] [--follow]    # Browser console logs
 dazzle screenshot [--out file.png]    # Capture screenshot (default: open in viewer)
 
@@ -126,40 +124,13 @@ All stage-scoped interactive operations. Every request takes a `stage_id`.
 
 ```protobuf
 service RuntimeService {
-  rpc SetScript(SetScriptRequest) returns (SetScriptResponse);
-  rpc GetScript(GetScriptRequest) returns (GetScriptResponse);
-  rpc EditScript(EditScriptRequest) returns (EditScriptResponse);
+  rpc SyncDiff(SyncDiffRequest) returns (SyncDiffResponse);
+  rpc SyncPush(stream SyncPushRequest) returns (SyncPushResponse);
+  rpc Refresh(RefreshRequest) returns (RefreshResponse);
   rpc EmitEvent(EmitEventRequest) returns (EmitEventResponse);
   rpc GetLogs(GetLogsRequest) returns (GetLogsResponse);
   rpc Screenshot(ScreenshotRequest) returns (ScreenshotResponse);
   rpc ObsCommand(ObsCommandRequest) returns (ObsCommandResponse);
-}
-
-message SetScriptRequest {
-  string stage_id = 1;
-  string script = 2;
-}
-
-message SetScriptResponse {
-  bool ok = 1;
-}
-
-message GetScriptRequest {
-  string stage_id = 1;
-}
-
-message GetScriptResponse {
-  string script = 1;
-}
-
-message EditScriptRequest {
-  string stage_id = 1;
-  string old_string = 2;
-  string new_string = 3;
-}
-
-message EditScriptResponse {
-  bool ok = 1;
 }
 
 message EmitEventRequest {
@@ -222,9 +193,9 @@ After the RuntimeService exists, MCP handlers become thin wrappers that call the
 ```go
 // runtimeOps is the internal interface both MCP and Connect call into.
 type runtimeOps interface {
-    SetScript(ctx context.Context, stageID, script string) error
-    GetScript(ctx context.Context, stageID string) (string, error)
-    EditScript(ctx context.Context, stageID, old, new string) error
+    SyncDiff(ctx context.Context, stageID string, files map[string]string, entry string) ([]string, error)
+    SyncPush(ctx context.Context, stageID string, tarData []byte) (synced, deleted int32, err error)
+    Refresh(ctx context.Context, stageID string) error
     EmitEvent(ctx context.Context, stageID, event, data string) error
     GetLogs(ctx context.Context, stageID string, limit int) ([]LogEntry, error)
     Screenshot(ctx context.Context, stageID string) ([]byte, error)
@@ -239,7 +210,7 @@ Both `runtimeServer` (Connect) and MCP handlers call this interface on the Manag
 ## CLI Tech Stack
 
 - Go, single binary
-- [cobra](https://github.com/spf13/cobra) for CLI framework
+- [kong](https://github.com/alecthomas/kong) for CLI framework
 - [connectrpc.com/connect](https://connectrpc.com) client for RPC calls
 - Generated proto client code (buf generate with connect-go plugin)
 - `os/exec` + `open` for browser launch during login

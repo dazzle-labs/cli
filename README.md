@@ -28,7 +28,7 @@ On-demand cloud browser environments for AI-driven live streaming and automation
 │                                                                     │
 │  ConnectRPC (POST, Clerk JWT or API key)                            │
 │    /api.v1.StageService/*      stage CRUD + lifecycle               │
-│    /api.v1.RuntimeService/*    script, screenshots, OBS, logs       │
+│    /api.v1.RuntimeService/*    sync, screenshots, OBS, logs         │
 │    /api.v1.RtmpDestinationService/*  RTMP destinations              │
 │    /api.v1.UserService/*       user profile                         │
 │    /api.v1.ApiKeyService/*     API key management  [Clerk only]     │
@@ -56,7 +56,7 @@ On-demand cloud browser environments for AI-driven live streaming and automation
 │  Main container                                                     │
 │    Express HTTP  :8080             panel API, CDP discovery, health │
 │    Chrome  (headless, Xvfb :99)    CDP WebSocket :9222             │
-│    Vite HMR dev server  :5173      panel JSX hot-swap              │
+│    Content served from filesystem  file:// URLs                   │
 │    OBS Studio  (WebSocket :4455)   RTMP streaming                  │
 │    ffmpeg                          HLS preview pipeline             │
 │                                                                     │
@@ -74,7 +74,7 @@ On-demand cloud browser environments for AI-driven live streaming and automation
 
 | Part | Path | Language | Purpose |
 |------|------|----------|---------|
-| **cli** | `cli/` (git submodule) | Go 1.24 | Primary interface for developers and AI agents — stage lifecycle, scripting, OBS, streaming |
+| **cli** | `cli/` (git submodule) | Go 1.24 | Primary interface for developers and AI agents — stage lifecycle, directory sync, OBS, streaming |
 | **control-plane** | `control-plane/` | Go 1.24 | API server, K8s orchestration, auth, DB, CDP proxy, serves web SPA |
 | **web** | `web/` | TypeScript / React 19 | Dashboard — stage monitoring, API keys, stream destinations, account settings |
 | **streamer** | `streamer/` | Node.js 24 | Per-stage browser pod: Chrome, OBS, Vite panel rendering, HLS preview |
@@ -133,11 +133,11 @@ make prod/status    # Show prod cluster nodes and pods
 
 ## Key Capabilities
 
-- **CLI (`dazzle`)** — primary developer/agent interface: `dazzle stage up`, `dazzle script set`, `dazzle screenshot`, `dazzle obs`, etc.
+- **CLI (`dazzle`)** — primary developer/agent interface: `dazzle stage up`, `dazzle stage sync`, `dazzle stage screenshot`, `dazzle obs`, etc.
 - **Web UI** — dashboard for stage monitoring, API key management, stream destination configuration, and account settings
 - **Stage lifecycle** — browser pods move through states: `inactive → starting → running → stopping`. Bring stages up/down via CLI or Web UI; pods are ephemeral, DB records persist.
 - **CDP access** — full Chrome DevTools Protocol proxied through control plane at `/stage/<stage-id>/cdp`
-- **Panel system** — hot-swap JavaScript/JSX via Vite HMR without page reload; state persists via `emit_event` + `window.__state`
+- **Panel system** — sync directories of HTML/CSS/JS to the stage; use `--watch --refresh` for live development
 - **Stream destinations** — RTMP keys for Twitch, YouTube, Kick, custom; AES-256-GCM encrypted at rest
 - **API keys** — `dzl_*` prefix, HMAC-SHA256 hashed, with last-used tracking; used by CLI and programmatic clients
 - **Stage persistence** — content, Chrome localStorage, and IndexedDB are synced to Cloudflare R2 via a sidecar container and restored on stage activation

@@ -41,7 +41,7 @@ Traefik Ingress (HTTPS :443)
                                 ├── Stage HTTP/WS Proxy (/stage/*/...)
                                 └── Creates → Streamer Pods (on-demand)
                                       ├── Init: restore from R2
-                                      ├── Main: Chrome + OBS + ffmpeg + Vite HMR + Node.js
+                                      ├── Main: Chrome + OBS + ffmpeg + Node.js
                                       └── Sidecar: rclone sync to R2
 
 PostgreSQL (StatefulSet, 5Gi PVC via Hetzner CSI)

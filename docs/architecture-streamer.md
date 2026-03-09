@@ -10,7 +10,7 @@
 
 The streamer runs as an ephemeral Kubernetes pod (one per stage). It provides an isolated browser environment with:
 - Google Chrome running on a headless display (Xvfb)
-- A **panel system** for serving and hot-swapping JavaScript/JSX content into Chrome via Vite HMR
+- A **panel system** for managing synced content directories rendered by Chrome
 - A Node.js/Express HTTP API for content management, CDP discovery, and health
 - OBS Studio for screen capture and optional RTMP streaming
 - ffmpeg HLS preview pipeline for low-latency live preview
@@ -28,9 +28,6 @@ The streamer runs as an ephemeral Kubernetes pod (one per stage). It provides an
 | HTTP Server | Express | 4.18.2 |
 | HTTP Proxy | http-proxy | 1.18.1 |
 | WebSocket | ws | 8.x |
-| Panel State | Zustand | v5 |
-| Panel Build | Vite | 6 |
-| Panel UI | React | 19 |
 | Browser | Google Chrome Stable | Latest |
 | Virtual Display | Xvfb | System |
 | Audio | PulseAudio | System |
@@ -54,7 +51,6 @@ The streamer pod has three containers:
 2. PulseAudio (daemon)              → Audio system on /tmp/pulse/native
 3. unclutter                        → Hides mouse cursor on display
 4. Node.js server (index.js)        → HTTP API on port 8080
-   └── Vite dev server              → Panel HMR serving (started in code)
 5. Google Chrome (kiosk mode)       → CDP on localhost:9222
 6. OBS Studio                       → WebSocket on localhost:4455
 7. ffmpeg (x11grab → HLS)           → /tmp/hls/stream.m3u8
@@ -78,7 +74,6 @@ The pod has a `preStop` hook (`prestop.sh`) that:
 | `8080` | Node.js HTTP API | External (via control plane proxy) |
 | `9222` | Chrome CDP | Internal only (proxied through Node.js) |
 | `4455` | OBS WebSocket v5 | Internal only (used by OBS commands) |
-| `5173` | Vite HMR dev server | Internal only (panel serving) |
 
 ---
 
@@ -96,13 +91,11 @@ The pod has a `preStop` hook (`prestop.sh`) that:
 | GET | `/json/version` | Token | Chrome version info |
 | GET | `/json/list` | Token | Available tabs |
 
-### Panel System (new — replaces old template engine)
+### Panel System
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | POST | `/api/panels` | Token | Create or resize a panel (`{ name, width, height }`) |
-| GET | `/api/panels/:name/script` | Token | Get current user code for panel |
-| POST | `/api/panels/:name/script` | Token | Set full script content (hot-swapped via Vite HMR) |
-| PATCH | `/api/panels/:name/script` | Token | Edit script (find-and-replace `{ old_string, new_string }`) |
+| POST | `/api/panels/:name/sync` | Token | Push synced directory content to panel |
 | POST | `/api/panels/:name/event` | Token | Emit state event to panel (`{ event, data }`) |
 | GET | `/api/panels/:name/screenshot` | Token | Capture screenshot of panel as PNG |
 
@@ -117,30 +110,26 @@ The pod has a `preStop` hook (`prestop.sh`) that:
 
 The panel system is the core feature of the streamer. It manages named, isolated browser views:
 
-1. **Panel directory**: Each panel `<name>` gets a directory at `/tmp/content/<name>/`
-2. **Shell HTML** (`shell.html`): The base HTML page served to Chrome per panel — mounts `#root` div; includes React Fast Refresh stubs (`$RefreshSig$`/`$RefreshReg$`) for Vite middleware mode compatibility; HMR cleanup unmounts React root and clears all timers/intervals/rafs
-3. **Prelude** (`prelude.js`): Bundled module containing React 19, ReactDOM, and Zustand. Exposes `React`, `useState`, `useEffect`, `create`/`persist`, `createRoot`, etc. as window globals — available without imports in user code
-4. **User code** (`main.jsx`): Wrapped with Vite HMR hooks, `import.meta.hot.accept()`, and `state-event` listener; sandwiched between `USER_CODE_START` / `USER_CODE_END` markers for extraction
-5. **Auto-mount**: If user code defines `const App`, it is automatically rendered into `#root` via `createRoot` — no boilerplate needed (no need to call `createRoot` manually)
-6. **State events**: `emit_event` pushes events via Vite HMR's `hot.send('state-event', ...)` — no page reload; accumulated state available in `window.__state`
+1. **Panel directory**: Each panel `<name>` gets a directory at `/data/content/<name>/`
+2. **User content**: A full directory synced from the CLI, containing an `index.html` entry point and any supporting files (JS, CSS, images, etc.)
+3. **Serving**: Chrome loads content directly from the filesystem (`file:///` URLs)
+4. **Refresh**: Explicit page reload triggered by `dazzle s refresh` or `dazzle s sync --refresh`
+5. **State events**: `emit_event` dispatches a `CustomEvent` on `window` — no page reload
+6. **Persistence**: Chrome's localStorage and IndexedDB are persisted to R2 via the sidecar, so app state survives stage restarts
 
-### Route Guard
-
-Express `/@panel/:name` routes skip names starting with `@` (e.g. `@react-refresh`, `@vite/client`, `@fs/`) so Vite middleware handles its own internal paths.
-
-### Vite HMR Hot-Swap Flow
+### Content Update Flow
 
 ```
-CLI set_script / edit_script  (or MCP)
+CLI sync
          │
          ▼
-  Write to /data/content/<panel>/main.jsx
+  Write files to /data/content/<panel>/
          │
          ▼
-  Vite watches file → HMR update
+  CLI sends refresh command (if --refresh flag)
          │
          ▼
-  Chrome receives HMR patch → module replaced → no reload
+  Chrome reloads the entry point from disk
 ```
 
 ---
@@ -212,7 +201,7 @@ Defined in the control plane pod spec:
 2. OBS Studio + ffmpeg (from PPA, WebSocket v5)
 3. Google Chrome Stable (from Google .deb)
 4. Node.js 24 (from NodeSource)
-5. Application code (`index.js`, `shell.html`, `prelude.js`, `package.json`)
+5. Application code (`index.js`, `package.json`)
 6. Startup entrypoint + prestop hook
 
 **Image size:** ~2 GB+ (Chrome + OBS + X11 stack).

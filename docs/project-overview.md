@@ -81,7 +81,7 @@ Web UI ────────►         │
            │   ├── Express HTTP :8080 (panels, CDP discovery, health)
            │   ├── Chrome on Xvfb (CDP :9222)
            │   ├── OBS Studio (WS :4455)
-           │   ├── Vite HMR (panel JSX rendering)
+           │   ├── Content (served from filesystem)
            │   └── ffmpeg (HLS preview → /tmp/hls/)
            └── Sidecar: rclone (sync /data/ ↔ R2 on changes)
 ```
@@ -90,12 +90,12 @@ Web UI ────────►         │
 
 ## Key Capabilities
 
-1. **CLI (`dazzle`)** — Primary developer/agent interface: stage lifecycle, script set/get/edit, screenshots, logs, OBS control, destination management — all via ConnectRPC
+1. **CLI (`dazzle`)** — Primary developer/agent interface: stage lifecycle, directory sync, screenshots, logs, OBS control, destination management — all via ConnectRPC
 2. **Web UI** — Dashboard for stage monitoring, API key management, stream destination configuration, and account settings
 3. **Stage lifecycle** — Create/activate/deactivate/delete browser pods with status tracking (inactive → starting → running → stopping)
 4. **CDP access** — Full Chrome DevTools Protocol access proxied through control plane; WebSocket URL rewriting for external access
 5. **MCP server** *(legacy)* — Per-stage Model Context Protocol endpoint; being superseded by the CLI
-6. **Panel system** — Streamer manages named panels; supports hot-swap via Vite HMR without page reload
+6. **Panel system** — Streamer manages named panels; content synced from CLI, explicit refresh on update
 7. **Stream destinations** — RTMP stream keys for Twitch, YouTube, Kick, custom; AES-256-GCM encrypted at rest
 8. **API keys** — `dzl_*` prefix format, HMAC-SHA256 hashed, with last-used tracking; used by CLI and programmatic clients
 9. **Stage persistence** — Content, Chrome localStorage, and IndexedDB are synced to Cloudflare R2 via a sidecar container and restored on next activation

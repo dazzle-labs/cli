@@ -19,7 +19,7 @@ cat <<'EOF'
 
 ## Overview
 
-Dazzle gives you cloud stages — isolated environments with a full rendering engine, OBS for streaming, and hot-reloading script support. Control everything from the `dazzle` CLI.
+Dazzle gives you cloud stages — isolated environments that render and broadcast your content. Control everything from the `dazzle` CLI.
 
 Primary use cases: AI agents that need a persistent visual environment, live streaming to Twitch/YouTube/Kick via RTMP, and programmatic automation.
 
@@ -54,7 +54,6 @@ If you have multiple stages, specify which one with `--stage` or `DAZZLE_STAGE`:
 ```bash
 dazzle s ls                                # list all stages
 dazzle s up --stage my-stage               # bring up a specific stage
-dazzle s sc set app.jsx --stage my-stage   # target a specific stage
 
 # Or set for your session
 export DAZZLE_STAGE=my-stage
@@ -65,21 +64,15 @@ If you only have one stage, it's auto-selected.
 
 ### 4. Push content
 
-There are two ways to push content to your stage:
+Sync a local directory to your stage:
 
-**Option A: Single script (hot-swapped via HMR)**
-```bash
-dazzle s sc set ./my-overlay.jsx
-```
-
-**Option B: Sync a full directory (snapshot-based)**
 ```bash
 dazzle s sync ./my-app                  # one-time sync
-dazzle s sync ./my-app --watch          # watch for changes
-dazzle s sync ./my-app --watch --refresh # watch + auto-reload
+dazzle s sync ./my-app --watch          # watch for changes and re-sync
+dazzle s sync ./my-app --watch --refresh # watch + auto-reload stage
 ```
 
-Every sync is a full snapshot — files deleted locally are automatically removed from the stage.
+Every sync is a full snapshot — files deleted locally are automatically removed from the stage. The directory must contain an `index.html` entry point (customizable with `--entry`).
 
 ```bash
 # Take a screenshot to verify
@@ -92,13 +85,10 @@ dazzle s bc on
 ### 5. Update content live
 
 ```bash
-# Edit script in-place (find & replace, for single-script mode)
-dazzle s sc edit --old "Hello" --new "World"
-
-# Push live data without rewriting the script
+# Push live data without rewriting code
 dazzle s ev e score '{"points": 42}'
 
-# Reload the stage entry point (for synced directories)
+# Reload the stage entry point
 dazzle s refresh
 ```
 
@@ -129,39 +119,25 @@ The CLI stores your key locally after `dazzle login`. For programmatic use, set:
 export DAZZLE_API_KEY=dzl_your_key_here
 ```
 
-## Scripting
+## Content Authoring
 
-`dazzle s sc set` pushes JavaScript or JSX to your stage. The page is full-viewport with a black background. Changes are hot-swapped with zero page reloads.
+Sync a local directory to your stage with `dazzle s sync`. The directory must contain an `index.html` entry point. The stage renders full-viewport with a black background.
 
-Two modes:
-1. **Vanilla JS** — create DOM elements / canvas and append to `document.body`
-2. **React JSX** — define an `App` component and it will be auto-mounted:
-   ```jsx
-   const App = () => <div>Hello</div>;
-   ```
-   Do NOT call `createRoot` or `ReactDOM.render` — the runtime auto-mounts your App.
+You author standard HTML/CSS/JS — the stage serves your directory as static files. Use whatever framework or libraries you want (e.g. CDN links in your HTML, or bundled JS). To update content, edit files locally and re-sync (use `--watch --refresh` / `-wr` for automatic re-sync and reload during development).
 
-Available globals (no imports needed):
-```
-React, useState, useEffect, useRef, useMemo, useCallback, useReducer, Fragment,
-useContext, useLayoutEffect, useImperativeHandle, useDebugValue,
-useDeferredValue, useTransition, useId, useSyncExternalStore,
-createContext, forwardRef, memo, lazy, Suspense
-createPortal (from react-dom)
-create, persist (from zustand — use for persistent state via localStorage)
-```
+### Persistence
 
-Tailwind CSS v4 utility classes work in `className` (e.g. `"text-4xl font-bold text-white"`).
+`localStorage` is persisted across stage sessions. Your app can use it to store state that survives stage restarts (deactivate → activate). This makes it easy to build stateful applications — save your app state to `localStorage` and it will be there when the stage comes back up.
 
 ### Live events
 
-Use `dazzle s ev e` to push data to a running script without rewriting it:
+Events are an async data channel — use them to send real-time data from external processes (subagents, APIs, webhooks, etc.) to your running page without re-syncing or reloading.
 
 ```bash
 dazzle s ev e score '{"points": 42}'
 ```
 
-Your script listens via:
+Your page listens via:
 ```js
 window.addEventListener('event', (e) => {
   const { event, data } = e.detail;
@@ -169,18 +145,16 @@ window.addEventListener('event', (e) => {
 });
 ```
 
-Read `window.__state` at any time for accumulated state from all prior events. An `__init` event fires on script load if prior state exists.
+Events are dispatched as DOM `CustomEvent`s. For persistent state, use `localStorage` — it survives stage restarts.
 
 ## Typical Workflow
 
 ```
 1. dazzle s up                     → Bring up a stage
-2. dazzle s sc set app.jsx         → Push a script (hot-swapped via HMR)
-   — or —
-   dazzle s sync ./my-app -wr      → Sync a directory (watch + reload)
+2. dazzle s sync ./my-app -wr      → Sync a directory (watch + auto-reload)
 3. dazzle s ss                     → Verify output looks correct
 4. dazzle s bc on                  → Go live on configured destination
-5. dazzle s sc edit / s ev e       → Update content live
+5. (edit files locally)            → Changes auto-sync via --watch
 6. dazzle s bc off                 → Stop streaming
 7. dazzle s down                   → Shut down stage
 ```
