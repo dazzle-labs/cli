@@ -118,6 +118,13 @@ func (c *StageCreateCmd) Run(ctx *Context) error {
 	}
 
 	printText("Stage %q created.", stageDisplayName(resp.Msg.Stage))
+
+	// Auto-set as default so subsequent commands target this stage.
+	cfg, err := loadConfig()
+	if err == nil {
+		cfg.DefaultStage = c.Name
+		_ = saveConfig(cfg)
+	}
 	return nil
 }
 

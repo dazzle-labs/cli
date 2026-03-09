@@ -50,7 +50,9 @@ dazzle stage script set my-overlay.jsx
 # Take a screenshot to verify
 dazzle stage screenshot -o preview.png
 
-# Go live on a configured destination
+# Add a stream destination and go live
+dazzle destination create
+dazzle destination set my-destination
 dazzle stage broadcast on
 ```
 
@@ -92,7 +94,7 @@ dazzle stage broadcast on
 | Flag | Env var | Description |
 |------|---------|-------------|
 | `--json` | | Output as JSON (machine-readable) |
-| `-s`, `--stage` | `DAZZLE_STAGE` | Stage name or ID to use |
+| `-s`, `--stage` | `DAZZLE_STAGE` | Stage name to use |
 | `--api-url` | `DAZZLE_API_URL` | API URL (default: `https://stream.dazzle.fm`) |
 
 ## Stage Resolution

@@ -72,13 +72,13 @@ func (c *DestinationListCmd) Run(ctx *Context) error {
 		return nil
 	}
 
-	tableHeader("NAME", "PLATFORM", "ID")
+	tableHeader("NAME", "PLATFORM")
 	for _, d := range destinations {
 		displayName := d.Name
 		if displayName == "" {
 			displayName = d.PlatformUsername
 		}
-		printText("%s", tableRow(displayName, d.Platform, d.Id))
+		printText("%s", tableRow(displayName, d.Platform))
 	}
 	return nil
 }
@@ -132,7 +132,7 @@ func (c *DestinationCreateCmd) Run(ctx *Context) error {
 		return nil
 	}
 
-	printText("Destination %q created (ID: %s)", dest.Name, dest.Id)
+	printText("Destination %q created.", dest.Name)
 	return nil
 }
 
