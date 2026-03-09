@@ -23,6 +23,8 @@ type StageCmd struct {
 
 	// Stage operations
 	Script     ScriptCmd     `cmd:"" aliases:"sc" help:"Manage the JS/JSX rendered on stage."`
+	Sync       SyncCmd       `cmd:"" aliases:"sy" help:"Sync a local directory to the stage."`
+	Refresh_   RefreshCmd    `cmd:"" name:"refresh" help:"Refresh Chrome to the synced entry point."`
 	Event      EventCmd      `cmd:"" aliases:"ev" help:"Push data to the running script."`
 	Logs       LogsCmd       `cmd:"" name:"logs" aliases:"l" help:"Retrieve stage console logs."`
 	Screenshot ScreenshotCmd `cmd:"" name:"screenshot" aliases:"ss" help:"Capture a screenshot of the stage."`
