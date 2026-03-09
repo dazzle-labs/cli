@@ -26,7 +26,7 @@ make proto
 - **CLI framework**: Kong (`github.com/alecthomas/kong`) — struct tags, not Cobra
 - **RPC**: ConnectRPC clients — `apiv1connect.NewXxxServiceClient(ctx.HTTPClient, ctx.APIURL)`
 - **Auth**: Bearer token set per-request via `req.Header().Set("Authorization", ctx.authHeader())`
-- **Stage resolution**: `ctx.resolveStage()` — global `--stage` flag → config default → auto-select single stage
+- **Stage resolution**: `ctx.resolveStage()` — global `--stage` flag / `DAZZLE_STAGE` env → auto-select single stage
 - **Output**: `printText(...)` for human, `printJSON(v)` for `--json` mode
 - **Config/creds**: stored in `~/.config/dazzle/` at 0600 perms
 

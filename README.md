@@ -79,7 +79,6 @@ dazzle stage broadcast on
 | `dazzle stage activate` | `s up` | Activate a stage |
 | `dazzle stage deactivate` | `s down` | Deactivate a stage |
 | `dazzle stage status` | `s st` | Show stage status |
-| `dazzle stage default <name>` | `s default` | Set default stage |
 | `dazzle stage script set <file>` | `s sc set` | Push JS/JSX to stage |
 | `dazzle stage script get` | `s sc get` | Get current script |
 | `dazzle stage script edit` | `s sc edit` | Find & replace in script |
@@ -101,10 +100,8 @@ dazzle stage broadcast on
 
 For stage-scoped commands, the stage is resolved in this order:
 
-1. `-s` / `--stage` flag
-2. `DAZZLE_STAGE` environment variable
-3. Default from `~/.config/dazzle/config.json` (set via `dazzle stage default`)
-4. Auto-select if you have exactly one stage
+1. `-s` / `--stage` flag or `DAZZLE_STAGE` environment variable
+2. Auto-select if you have exactly one stage
 
 ## Configuration
 
@@ -112,7 +109,7 @@ Config files are stored in `~/.config/dazzle/`:
 
 ```
 ~/.config/dazzle/
-  config.json        # { "default_stage": "my-stage" }
+  config.json        # { "api_url": "..." }
   credentials.json   # { "api_key": "dzl_..." }
 ```
 
