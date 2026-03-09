@@ -19,8 +19,6 @@ type StageCmd struct {
 	Deactivate StageStopCmd   `cmd:"" aliases:"stop,down" help:"Deactivate a stage."`
 	Status     StageStatusCmd `cmd:"" aliases:"st" help:"Show stage status."`
 	Preview    StagePreviewCmd `cmd:"" help:"Show the shareable preview URL for a running stage."`
-	Default    StageUseCmd    `cmd:"" aliases:"use" help:"Set the default stage for all commands."`
-
 	// Stage operations
 	Script     ScriptCmd     `cmd:"" aliases:"sc" help:"Manage the JS/JSX rendered on stage."`
 	Event      EventCmd      `cmd:"" aliases:"ev" help:"Push data to the running script."`
@@ -157,12 +155,6 @@ func (c *StageCreateCmd) Run(ctx *Context) error {
 
 	printText("Stage %q created.", resp.Msg.Stage.Name)
 
-	// Auto-set as default so subsequent commands target this stage.
-	cfg, err := loadConfig()
-	if err == nil {
-		cfg.DefaultStage = c.Name
-		_ = saveConfig(cfg)
-	}
 	return nil
 }
 
@@ -325,24 +317,3 @@ func (c *StagePreviewCmd) Run(ctx *Context) error {
 	return nil
 }
 
-// StageUseCmd sets the default stage in config.
-type StageUseCmd struct {
-	Stage string `arg:"" help:"Stage name or ID to set as default."`
-}
-
-func (c *StageUseCmd) Run(ctx *Context) error {
-	cfg, err := loadConfig()
-	if err != nil {
-		return err
-	}
-	cfg.DefaultStage = c.Stage
-	if err := saveConfig(cfg); err != nil {
-		return err
-	}
-	if ctx.JSON {
-		printJSON(map[string]string{"default_stage": c.Stage})
-	} else {
-		printText("Default stage set to %q. Run 'dazzle stage list' to confirm.", c.Stage)
-	}
-	return nil
-}

@@ -16,8 +16,7 @@ const (
 
 // Config holds user preferences stored in ~/.config/dazzle/config.json.
 type Config struct {
-	DefaultStage string `json:"default_stage,omitempty"`
-	APIURL       string `json:"api_url,omitempty"`
+	APIURL string `json:"api_url,omitempty"`
 }
 
 // Credentials holds sensitive auth data stored in ~/.config/dazzle/credentials.json.
@@ -50,21 +49,6 @@ func loadConfig() (*Config, error) {
 		return nil, fmt.Errorf("parse config: %w", err)
 	}
 	return &cfg, nil
-}
-
-func saveConfig(cfg *Config) error {
-	dir, err := dazzleConfigDir()
-	if err != nil {
-		return err
-	}
-	if err := os.MkdirAll(dir, 0700); err != nil {
-		return fmt.Errorf("create config dir: %w", err)
-	}
-	data, err := json.MarshalIndent(cfg, "", "  ")
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(filepath.Join(dir, configFileName), data, 0600)
 }
 
 func loadCredentials() (*Credentials, error) {
