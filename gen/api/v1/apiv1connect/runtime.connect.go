@@ -53,6 +53,12 @@ const (
 	// RuntimeServiceObsCommandProcedure is the fully-qualified name of the RuntimeService's ObsCommand
 	// RPC.
 	RuntimeServiceObsCommandProcedure = "/dazzle.v1.RuntimeService/ObsCommand"
+	// RuntimeServiceSyncDiffProcedure is the fully-qualified name of the RuntimeService's SyncDiff RPC.
+	RuntimeServiceSyncDiffProcedure = "/dazzle.v1.RuntimeService/SyncDiff"
+	// RuntimeServiceSyncPushProcedure is the fully-qualified name of the RuntimeService's SyncPush RPC.
+	RuntimeServiceSyncPushProcedure = "/dazzle.v1.RuntimeService/SyncPush"
+	// RuntimeServiceRefreshProcedure is the fully-qualified name of the RuntimeService's Refresh RPC.
+	RuntimeServiceRefreshProcedure = "/dazzle.v1.RuntimeService/Refresh"
 )
 
 // RuntimeServiceClient is a client for the dazzle.v1.RuntimeService service.
@@ -64,6 +70,9 @@ type RuntimeServiceClient interface {
 	GetLogs(context.Context, *connect.Request[v1.GetLogsRequest]) (*connect.Response[v1.GetLogsResponse], error)
 	Screenshot(context.Context, *connect.Request[v1.ScreenshotRequest]) (*connect.Response[v1.ScreenshotResponse], error)
 	ObsCommand(context.Context, *connect.Request[v1.ObsCommandRequest]) (*connect.Response[v1.ObsCommandResponse], error)
+	SyncDiff(context.Context, *connect.Request[v1.SyncDiffRequest]) (*connect.Response[v1.SyncDiffResponse], error)
+	SyncPush(context.Context) *connect.ClientStreamForClient[v1.SyncPushRequest, v1.SyncPushResponse]
+	Refresh(context.Context, *connect.Request[v1.RefreshRequest]) (*connect.Response[v1.RefreshResponse], error)
 }
 
 // NewRuntimeServiceClient constructs a client for the dazzle.v1.RuntimeService service. By default,
@@ -119,6 +128,24 @@ func NewRuntimeServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(runtimeServiceMethods.ByName("ObsCommand")),
 			connect.WithClientOptions(opts...),
 		),
+		syncDiff: connect.NewClient[v1.SyncDiffRequest, v1.SyncDiffResponse](
+			httpClient,
+			baseURL+RuntimeServiceSyncDiffProcedure,
+			connect.WithSchema(runtimeServiceMethods.ByName("SyncDiff")),
+			connect.WithClientOptions(opts...),
+		),
+		syncPush: connect.NewClient[v1.SyncPushRequest, v1.SyncPushResponse](
+			httpClient,
+			baseURL+RuntimeServiceSyncPushProcedure,
+			connect.WithSchema(runtimeServiceMethods.ByName("SyncPush")),
+			connect.WithClientOptions(opts...),
+		),
+		refresh: connect.NewClient[v1.RefreshRequest, v1.RefreshResponse](
+			httpClient,
+			baseURL+RuntimeServiceRefreshProcedure,
+			connect.WithSchema(runtimeServiceMethods.ByName("Refresh")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -131,6 +158,9 @@ type runtimeServiceClient struct {
 	getLogs    *connect.Client[v1.GetLogsRequest, v1.GetLogsResponse]
 	screenshot *connect.Client[v1.ScreenshotRequest, v1.ScreenshotResponse]
 	obsCommand *connect.Client[v1.ObsCommandRequest, v1.ObsCommandResponse]
+	syncDiff   *connect.Client[v1.SyncDiffRequest, v1.SyncDiffResponse]
+	syncPush   *connect.Client[v1.SyncPushRequest, v1.SyncPushResponse]
+	refresh    *connect.Client[v1.RefreshRequest, v1.RefreshResponse]
 }
 
 // SetScript calls dazzle.v1.RuntimeService.SetScript.
@@ -168,6 +198,21 @@ func (c *runtimeServiceClient) ObsCommand(ctx context.Context, req *connect.Requ
 	return c.obsCommand.CallUnary(ctx, req)
 }
 
+// SyncDiff calls dazzle.v1.RuntimeService.SyncDiff.
+func (c *runtimeServiceClient) SyncDiff(ctx context.Context, req *connect.Request[v1.SyncDiffRequest]) (*connect.Response[v1.SyncDiffResponse], error) {
+	return c.syncDiff.CallUnary(ctx, req)
+}
+
+// SyncPush calls dazzle.v1.RuntimeService.SyncPush.
+func (c *runtimeServiceClient) SyncPush(ctx context.Context) *connect.ClientStreamForClient[v1.SyncPushRequest, v1.SyncPushResponse] {
+	return c.syncPush.CallClientStream(ctx)
+}
+
+// Refresh calls dazzle.v1.RuntimeService.Refresh.
+func (c *runtimeServiceClient) Refresh(ctx context.Context, req *connect.Request[v1.RefreshRequest]) (*connect.Response[v1.RefreshResponse], error) {
+	return c.refresh.CallUnary(ctx, req)
+}
+
 // RuntimeServiceHandler is an implementation of the dazzle.v1.RuntimeService service.
 type RuntimeServiceHandler interface {
 	SetScript(context.Context, *connect.Request[v1.SetScriptRequest]) (*connect.Response[v1.SetScriptResponse], error)
@@ -177,6 +222,9 @@ type RuntimeServiceHandler interface {
 	GetLogs(context.Context, *connect.Request[v1.GetLogsRequest]) (*connect.Response[v1.GetLogsResponse], error)
 	Screenshot(context.Context, *connect.Request[v1.ScreenshotRequest]) (*connect.Response[v1.ScreenshotResponse], error)
 	ObsCommand(context.Context, *connect.Request[v1.ObsCommandRequest]) (*connect.Response[v1.ObsCommandResponse], error)
+	SyncDiff(context.Context, *connect.Request[v1.SyncDiffRequest]) (*connect.Response[v1.SyncDiffResponse], error)
+	SyncPush(context.Context, *connect.ClientStream[v1.SyncPushRequest]) (*connect.Response[v1.SyncPushResponse], error)
+	Refresh(context.Context, *connect.Request[v1.RefreshRequest]) (*connect.Response[v1.RefreshResponse], error)
 }
 
 // NewRuntimeServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -228,6 +276,24 @@ func NewRuntimeServiceHandler(svc RuntimeServiceHandler, opts ...connect.Handler
 		connect.WithSchema(runtimeServiceMethods.ByName("ObsCommand")),
 		connect.WithHandlerOptions(opts...),
 	)
+	runtimeServiceSyncDiffHandler := connect.NewUnaryHandler(
+		RuntimeServiceSyncDiffProcedure,
+		svc.SyncDiff,
+		connect.WithSchema(runtimeServiceMethods.ByName("SyncDiff")),
+		connect.WithHandlerOptions(opts...),
+	)
+	runtimeServiceSyncPushHandler := connect.NewClientStreamHandler(
+		RuntimeServiceSyncPushProcedure,
+		svc.SyncPush,
+		connect.WithSchema(runtimeServiceMethods.ByName("SyncPush")),
+		connect.WithHandlerOptions(opts...),
+	)
+	runtimeServiceRefreshHandler := connect.NewUnaryHandler(
+		RuntimeServiceRefreshProcedure,
+		svc.Refresh,
+		connect.WithSchema(runtimeServiceMethods.ByName("Refresh")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/dazzle.v1.RuntimeService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case RuntimeServiceSetScriptProcedure:
@@ -244,6 +310,12 @@ func NewRuntimeServiceHandler(svc RuntimeServiceHandler, opts ...connect.Handler
 			runtimeServiceScreenshotHandler.ServeHTTP(w, r)
 		case RuntimeServiceObsCommandProcedure:
 			runtimeServiceObsCommandHandler.ServeHTTP(w, r)
+		case RuntimeServiceSyncDiffProcedure:
+			runtimeServiceSyncDiffHandler.ServeHTTP(w, r)
+		case RuntimeServiceSyncPushProcedure:
+			runtimeServiceSyncPushHandler.ServeHTTP(w, r)
+		case RuntimeServiceRefreshProcedure:
+			runtimeServiceRefreshHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -279,4 +351,16 @@ func (UnimplementedRuntimeServiceHandler) Screenshot(context.Context, *connect.R
 
 func (UnimplementedRuntimeServiceHandler) ObsCommand(context.Context, *connect.Request[v1.ObsCommandRequest]) (*connect.Response[v1.ObsCommandResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.RuntimeService.ObsCommand is not implemented"))
+}
+
+func (UnimplementedRuntimeServiceHandler) SyncDiff(context.Context, *connect.Request[v1.SyncDiffRequest]) (*connect.Response[v1.SyncDiffResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.RuntimeService.SyncDiff is not implemented"))
+}
+
+func (UnimplementedRuntimeServiceHandler) SyncPush(context.Context, *connect.ClientStream[v1.SyncPushRequest]) (*connect.Response[v1.SyncPushResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.RuntimeService.SyncPush is not implemented"))
+}
+
+func (UnimplementedRuntimeServiceHandler) Refresh(context.Context, *connect.Request[v1.RefreshRequest]) (*connect.Response[v1.RefreshResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.RuntimeService.Refresh is not implemented"))
 }

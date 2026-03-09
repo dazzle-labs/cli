@@ -9,4 +9,7 @@ require (
 	google.golang.org/protobuf v1.36.9
 )
 
-require golang.org/x/sys v0.41.0 // indirect
+require (
+	github.com/fsnotify/fsnotify v1.9.0 // indirect
+	golang.org/x/sys v0.41.0 // indirect
+)
