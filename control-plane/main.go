@@ -776,7 +776,7 @@ func (m *Manager) handleHLSProxy(w http.ResponseWriter, r *http.Request) {
 
 		target, _ := url.Parse(fmt.Sprintf("http://%s:8080", stage.PodIP))
 		proxy := httputil.NewSingleHostReverseProxy(target)
-		r.URL.Path = "/hls/" + filename
+		r.URL.Path = "/_dz_9f7a3b1c/hls/" + filename
 		r.URL.RawQuery = "" // strip token from proxied request
 		r.Host = target.Host
 		r.Header.Del("Authorization")
