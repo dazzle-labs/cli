@@ -40,9 +40,9 @@ Traefik Ingress (HTTPS :443)
                                 ├── CDP Proxy (/stage/*/cdp)
                                 ├── Stage HTTP/WS Proxy (/stage/*/...)
                                 └── Creates → Streamer Pods (on-demand)
-                                      ├── Chrome + OBS on Xvfb
-                                      ├── Vite HMR panel server
-                                      └── Node.js Express API
+                                      ├── Init: restore from R2
+                                      ├── Main: Chrome + OBS + ffmpeg + Vite HMR + Node.js
+                                      └── Sidecar: rclone sync to R2
 
 PostgreSQL (StatefulSet, 5Gi PVC via Hetzner CSI)
 ```
@@ -53,11 +53,11 @@ PostgreSQL (StatefulSet, 5Gi PVC via Hetzner CSI)
 
 | Resource | Type | Namespace | Image |
 |----------|------|-----------|-------|
-| `control-plane` | Deployment (1 replica) | `browser-streamer` | `dazzlefm/agent-streamer-control-plane:main` |
+| `control-plane` | Deployment (1 replica) | `browser-streamer` | `dazzlefm/agent-streamer-control-plane:<sha>` |
 | `postgres` | StatefulSet (1 replica) | `browser-streamer` | `postgres:16-alpine` |
-| `streamer-<id>` | Pod (ephemeral, per stage) | `browser-streamer` | `dazzlefm/agent-streamer-stage:main` |
+| `streamer-<id>` | Pod (ephemeral, per stage) | `browser-streamer` | `dazzlefm/agent-streamer-stage:<sha>` (main) + `dazzlefm/agent-streamer-sidecar:<sha>` (sidecar + init) |
 
-Images are pulled from Docker Hub using `imagePullSecrets` (`dazzlefm-dockerhub-secret`).
+Images are pulled from Docker Hub using `imagePullSecrets` (`dazzlefm-dockerhub-secret`). `imagePullPolicy: IfNotPresent`.
 
 ---
 
@@ -84,6 +84,7 @@ All production secrets are SOPS Age-encrypted (4 Age recipients):
 | `postgres-auth` | `password` | `k8s/infrastructure/postgres-auth.secrets.yaml` |
 | `browserless-auth` | `token` | `k8s/networking/browserless-secret.yaml` (plaintext) |
 | `oauth-platform` | `twitch-*`, `google-*`, `kick-*` | `k8s/control-plane/oauth.secrets.yaml` |
+| `r2-credentials` | `endpoint`, `access_key_id`, `secret_access_key`, `bucket` | `k8s/secrets/r2-credentials.secrets.yaml` |
 | `dazzlefm-dockerhub-secret` | `.dockerconfigjson` | `k8s/secrets/dockerhub-secret.yaml` |
 
 Secrets are applied automatically — by CI/CD for production, and by `make up`/`make deploy` for local Kind. You generally do not need to decrypt secrets manually.
@@ -104,12 +105,13 @@ Images are built and deployed automatically by **GitHub Actions** on push to `ma
 ### Pipeline Steps
 1. Build `control-plane` image (includes `web/` SPA build)
 2. Build `streamer` image
-3. Push both to Docker Hub (`dazzlefm/agent-streamer-control-plane`, `dazzlefm/agent-streamer-stage`)
-4. Compare image config digests — skip deploy if unchanged
-5. Apply Kustomize manifests + SOPS-decrypted secrets
-6. Update `STREAMER_IMAGE` env var via `kubectl set env`
-7. Wait for rollout (300s timeout)
-8. Post Discord notification
+3. Build `sidecar` image
+4. Push all three to Docker Hub (`dazzlefm/agent-streamer-control-plane`, `dazzlefm/agent-streamer-stage`, `dazzlefm/agent-streamer-sidecar`)
+5. Compare image config digests — skip deploy if unchanged
+6. Apply Kustomize manifests + SOPS-decrypted secrets
+7. Update `STREAMER_IMAGE` and `SIDECAR_IMAGE` env vars via `kubectl set env`
+8. Wait for rollout (300s timeout)
+9. Post Discord notification
 
 ### Kustomize Resources Applied
 1. `k8s/namespace.yaml`

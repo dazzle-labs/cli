@@ -47,13 +47,18 @@ Agent Streamer (Dazzle) is a monorepo with 5 parts. The **control plane** is the
 ┌──────────────────────────────────────────────┐
 │           Streamer Pod (per stage)           │
 │                                              │
+│  Init: restore.sh (R2 → /data/)             │
+│                                              │
+│  Main container:                             │
 │  ┌────────────┐  ┌──────────┐  ┌──────────┐ │
 │  │  Chrome    │  │  OBS     │  │ Node.js  │ │
 │  │  CDP :9222 │  │  WS:4455 │  │ :8080    │ │
 │  └────────────┘  └──────────┘  └──────────┘ │
-│  ┌────────────┐  ┌──────────┐               │
-│  │  Xvfb :99  │  │ Vite HMR │               │
-│  └────────────┘  └──────────┘               │
+│  ┌────────────┐  ┌──────────┐  ┌──────────┐ │
+│  │  Xvfb :99  │  │ Vite HMR │  │  ffmpeg  │ │
+│  └────────────┘  └──────────┘  │ HLS prev │ │
+│                                 └──────────┘ │
+│  Sidecar: rclone (/data/ ↔ R2)              │
 └──────────────────────────────────────────────┘
 ```
 
@@ -110,7 +115,20 @@ In development, Vite proxies these paths from `:5173` to `:8080`.
 
 **Connection:** `postgres://browser_streamer:<password>@postgres:5432/browser_streamer` (configurable via env)
 
-### 5. MCP Client → Control Plane *(legacy, being superseded by CLI)*
+### 5. Sidecar ↔ Cloudflare R2
+
+| Action | Direction | Description |
+|--------|-----------|-------------|
+| Init restore | R2 → `/data/` | `restore.sh` runs `rclone sync` from R2 before main container starts |
+| Live sync | `/data/` → R2 | Sidecar watches with `inotifywait`, syncs on changes (debounced, flock-guarded) |
+| Final sync | `/data/` → R2 | Triggered by prestop hook via `.sync-request` sentinel; sidecar acks with `.sync-done` |
+| Cleanup | control-plane → R2 | On `DeleteStage`, control plane calls `R2Client.DeletePrefix()` after pod termination |
+
+**Paths synced:** `content/**`, `chrome/Default/Local Storage/**`, `chrome/Default/IndexedDB/**`
+**R2 layout:** `users/<user_id>/stages/<stage_id>/`
+**Auth:** rclone uses S3-compatible credentials via `RCLONE_CONFIG_R2_*` env vars injected from `r2-credentials` secret.
+
+### 6. MCP Client → Control Plane *(legacy, being superseded by CLI)*
 
 | Protocol | Path | Description |
 |----------|------|-------------|
@@ -118,7 +136,7 @@ In development, Vite proxies these paths from `:5173` to `:8080`.
 
 > **Note:** MCP is being superseded by the Dazzle CLI. All operations available via MCP are now accessible through `dazzle` CLI commands using ConnectRPC. The MCP endpoint remains functional but is no longer the recommended integration path.
 
-### 6. Control Plane MCP → Streamer Pod *(legacy)*
+### 7. Control Plane MCP → Streamer Pod *(legacy)*
 
 MCP tool implementations in `mcp.go` call the streamer pod's panel API:
 
@@ -163,7 +181,9 @@ MCP tool implementations in `mcp.go` call the streamer pod's panel API:
 | Protobuf schemas (`proto/api/v1/`) | control-plane + web | Service contracts (generated code) |
 | `browserless-auth` k8s secret | control-plane + streamer pods | Internal pod auth token |
 | `ENCRYPTION_KEY` env | control-plane | AES-256-GCM for stream key encryption |
-| PostgreSQL | control-plane | Persistent storage |
+| PostgreSQL | control-plane | Persistent storage (users, stages, keys, destinations) |
+| Cloudflare R2 | control-plane + sidecar | Stage content and Chrome state persistence |
 | Clerk | control-plane + web | User authentication |
 | k8s namespace `browser-streamer` | All | Resource isolation |
 | Traefik ingress | All external traffic | TLS + routing |
+| `/data` emptyDir volume | streamer + sidecar + init | Shared content and Chrome state |

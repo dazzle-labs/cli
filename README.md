@@ -53,19 +53,18 @@ On-demand cloud browser environments for AI-driven live streaming and automation
 ┌─────────────────────────────────────────────────────────────────────┐
 │  Streamer Pod  (Node.js + Chrome, ephemeral, one per stage)         │
 │                                                                     │
-│  Express HTTP  :8080                                                │
-│    GET  /health                    readiness probe                  │
-│    *    /api/panels/*              panel management API             │
-│    GET  /json/*                    CDP discovery (proxied from CP)  │
+│  Main container                                                     │
+│    Express HTTP  :8080             panel API, CDP discovery, health │
+│    Chrome  (headless, Xvfb :99)    CDP WebSocket :9222             │
+│    Vite HMR dev server  :5173      panel JSX hot-swap              │
+│    OBS Studio  (WebSocket :4455)   RTMP streaming                  │
+│    ffmpeg                          HLS preview pipeline             │
 │                                                                     │
-│  Chrome  (headless, Xvfb :99)                                       │
-│    CDP WebSocket  :9222            Chrome DevTools Protocol         │
+│  Sidecar container (rclone)                                         │
+│    Syncs /data/ to R2 on changes + graceful shutdown               │
 │                                                                     │
-│  Vite HMR dev server  :5173                                         │
-│    panel JSX hot-swap (set_script / edit_script)                    │
-│                                                                     │
-│  OBS Studio  (WebSocket :4455)                                      │
-│    streaming to RTMP destinations (Twitch / YouTube / Kick)        │
+│  Init container (restore.sh)                                        │
+│    Restores /data/ from R2 on stage start                          │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -78,7 +77,8 @@ On-demand cloud browser environments for AI-driven live streaming and automation
 | **cli** | `cli/` (git submodule) | Go 1.24 | Primary interface for developers and AI agents — stage lifecycle, scripting, OBS, streaming |
 | **control-plane** | `control-plane/` | Go 1.24 | API server, K8s orchestration, auth, DB, CDP proxy, serves web SPA |
 | **web** | `web/` | TypeScript / React 19 | Dashboard — stage monitoring, API keys, stream destinations, account settings |
-| **streamer** | `streamer/` | Node.js 20 | Per-stage browser pod: Chrome, OBS, Vite panel rendering |
+| **streamer** | `streamer/` | Node.js 24 | Per-stage browser pod: Chrome, OBS, Vite panel rendering, HLS preview |
+| **sidecar** | `streamer/docker/sidecar/` | rclone + inotify | Per-stage R2 sync: persists content, Chrome state, and localStorage to Cloudflare R2 |
 | **k8s** | `k8s/` | YAML + HCL | Kubernetes manifests, Traefik ingress, TLS, SOPS secrets, cluster provisioning |
 
 ---
@@ -140,6 +140,9 @@ make prod/status    # Show prod cluster nodes and pods
 - **Panel system** — hot-swap JavaScript/JSX via Vite HMR without page reload; state persists via `emit_event` + `window.__state`
 - **Stream destinations** — RTMP keys for Twitch, YouTube, Kick, custom; AES-256-GCM encrypted at rest
 - **API keys** — `dzl_*` prefix, HMAC-SHA256 hashed, with last-used tracking; used by CLI and programmatic clients
+- **Stage persistence** — content, Chrome localStorage, and IndexedDB are synced to Cloudflare R2 via a sidecar container and restored on stage activation
+- **HLS preview** — ffmpeg generates a low-latency HLS stream from the Xvfb display, proxied through the control plane for shareable preview URLs
+- **Preview URLs** — each stage gets a shareable `dpt_*` preview token for unauthenticated HLS viewing
 - **Stage recovery** — on restart, reconciles in-memory state with live K8s pods and resets orphaned DB records
 
 ---
@@ -150,6 +153,7 @@ make prod/status    # Show prod cluster nodes and pods
 - **TLS:** cert-manager + Let's Encrypt (automatic)
 - **Auth:** Clerk JWT (Web UI) + `dzl_*` API keys (CLI, programmatic)
 - **Secrets:** SOPS Age-encrypted YAML — decrypted automatically by Make targets and CI/CD
+- **Storage:** Cloudflare R2 — persistent stage content and Chrome state
 - **Builds:** GitHub Actions CI/CD — pushes images to Docker Hub, deploys to cluster
 - **Networking:** WireGuard node-to-node encryption, Hetzner Load Balancer
 

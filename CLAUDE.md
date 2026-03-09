@@ -20,6 +20,7 @@ make down                        # Delete the Kind cluster
 make build                       # Build all images and load into Kind
 make build-cp                    # Build control-plane image and load into Kind
 make build-streamer              # Build streamer image and load into Kind
+make build-sidecar               # Build sidecar image and load into Kind
 make deploy                      # Apply manifests and restart control-plane in Kind
 make logs                        # Tail control-plane logs in Kind
 make status                      # Show pods and services in Kind

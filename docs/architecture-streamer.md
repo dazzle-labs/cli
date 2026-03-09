@@ -13,7 +13,10 @@ The streamer runs as an ephemeral Kubernetes pod (one per stage). It provides an
 - A **panel system** for serving and hot-swapping JavaScript/JSX content into Chrome via Vite HMR
 - A Node.js/Express HTTP API for content management, CDP discovery, and health
 - OBS Studio for screen capture and optional RTMP streaming
+- ffmpeg HLS preview pipeline for low-latency live preview
 - WebSocket proxy from the control plane to Chrome's CDP port
+- A **sidecar container** (rclone) that syncs content and Chrome state to Cloudflare R2
+- An **init container** that restores content and Chrome state from R2 on stage start
 
 ---
 
@@ -21,7 +24,7 @@ The streamer runs as an ephemeral Kubernetes pod (one per stage). It provides an
 
 | Category | Technology | Version |
 |----------|------------|---------|
-| Runtime | Node.js | 20 |
+| Runtime | Node.js | 24 |
 | HTTP Server | Express | 4.18.2 |
 | HTTP Proxy | http-proxy | 1.18.1 |
 | WebSocket | ws | 8.x |
@@ -38,19 +41,33 @@ The streamer runs as an ephemeral Kubernetes pod (one per stage). It provides an
 
 ## Process Architecture
 
-The entrypoint starts processes sequentially:
+The streamer pod has three containers:
+
+1. **Init container** (`restore.sh`): Restores `/data/` from R2 (content, Chrome localStorage, IndexedDB)
+2. **Main container** (`entrypoint.sh`): Runs all processes sequentially
+3. **Sidecar container** (`entrypoint.sh`): Watches `/data/` for changes and syncs to R2
+
+### Main Container Process Startup
 
 ```
 1. Xvfb :99 (1280x720x24)         → Virtual X11 display
 2. PulseAudio (daemon)              → Audio system on /tmp/pulse/native
 3. unclutter                        → Hides mouse cursor on display
-4. Google Chrome (kiosk mode)       → CDP on localhost:9222
-5. OBS Studio                       → WebSocket on localhost:4455
-6. Node.js server (index.js)        → HTTP API on port 8080
+4. Node.js server (index.js)        → HTTP API on port 8080
    └── Vite dev server              → Panel HMR serving (started in code)
+5. Google Chrome (kiosk mode)       → CDP on localhost:9222
+6. OBS Studio                       → WebSocket on localhost:4455
+7. ffmpeg (x11grab → HLS)           → /tmp/hls/stream.m3u8
 ```
 
 Signal trap `EXIT INT TERM` kills all child processes on exit.
+
+### Graceful Shutdown (preStop hook)
+
+The pod has a `preStop` hook (`prestop.sh`) that:
+1. Kills Chrome (so it flushes localStorage/IndexedDB to `/data/chrome/`)
+2. Creates `/data/.sync-request` sentinel file
+3. Waits up to 25s for the sidecar to create `/data/.sync-done` (final sync complete)
 
 ---
 
@@ -61,6 +78,7 @@ Signal trap `EXIT INT TERM` kills all child processes on exit.
 | `8080` | Node.js HTTP API | External (via control plane proxy) |
 | `9222` | Chrome CDP | Internal only (proxied through Node.js) |
 | `4455` | OBS WebSocket v5 | Internal only (used by OBS commands) |
+| `5173` | Vite HMR dev server | Internal only (panel serving) |
 
 ---
 
@@ -113,10 +131,10 @@ Express `/@panel/:name` routes skip names starting with `@` (e.g. `@react-refres
 ### Vite HMR Hot-Swap Flow
 
 ```
-MCP set_script / edit_script
+CLI set_script / edit_script  (or MCP)
          │
          ▼
-  Write to /tmp/content/<panel>/main.jsx
+  Write to /data/content/<panel>/main.jsx
          │
          ▼
   Vite watches file → HMR update
@@ -153,7 +171,7 @@ Key startup flags:
 - `--remote-debugging-port=9222` + `--remote-debugging-address=0.0.0.0`
 - `--disable-background-timer-throttling`
 - `--autoplay-policy=no-user-gesture-required`
-- `--user-data-dir=/tmp/chrome-data`
+- `--user-data-dir=/data/chrome` (persisted to R2 via sidecar)
 - Display: `:99` (Xvfb)
 
 ---
@@ -185,17 +203,44 @@ Defined in the control plane pod spec:
 
 ## Docker Image
 
+### Main Image
+
 **Base:** `ubuntu:24.04`
 
 **Layers (approximate):**
 1. System deps (X11, audio, fonts, network tools)
-2. OBS Studio (from PPA, WebSocket v5)
+2. OBS Studio + ffmpeg (from PPA, WebSocket v5)
 3. Google Chrome Stable (from Google .deb)
-4. Node.js 20 (from NodeSource)
+4. Node.js 24 (from NodeSource)
 5. Application code (`index.js`, `shell.html`, `prelude.js`, `package.json`)
-6. Startup entrypoint
+6. Startup entrypoint + prestop hook
 
-**Image size:** ~2 GB+ (Chrome + OBS + X11 stack). Loaded on k3s node with `imagePullPolicy: Never`.
+**Image size:** ~2 GB+ (Chrome + OBS + X11 stack).
+
+### Sidecar Image
+
+**Base:** `rclone/rclone:1.69`
+
+Adds `inotify-tools` and `util-linux` (for `flock`). Contains `entrypoint.sh` (watch + sync loop) and `restore.sh` (init container restore).
+
+---
+
+## Persistence (R2 Sidecar)
+
+The sidecar container syncs the following paths from the shared `/data/` volume to Cloudflare R2:
+- `content/**` — panel scripts and synced directories
+- `chrome/Default/Local Storage/**` — Chrome localStorage
+- `chrome/Default/IndexedDB/**` — Chrome IndexedDB
+
+**R2 path:** `users/<user_id>/stages/<stage_id>/`
+
+**Sync flow:**
+1. Init container (`restore.sh`) restores from R2 → `/data/` before the main container starts
+2. Sidecar watches `/data/` with `inotifywait` and syncs changes to R2 (debounced, with `flock` to prevent concurrent syncs)
+3. On pod shutdown, the prestop hook triggers a final sync via the `.sync-request` → `.sync-done` sentinel protocol
+4. On `DeleteStage`, the control plane waits for pod termination, then does best-effort R2 prefix cleanup
+
+**Degradation:** If R2 credentials are not configured, the sidecar idles (no-op) and stages work normally without persistence.
 
 ---
 

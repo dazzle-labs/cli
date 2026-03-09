@@ -18,7 +18,8 @@ web/dist/
 .env*.local
 .age.key
 stream/
-
-# Go workspace (local dev only)
+_bmad-output/
+_bmad/
+.claude/commands/bmad-*.md
 
 # Go workspace (local dev only)

@@ -44,6 +44,11 @@ make build-streamer
 # Next stage created will use the new image
 ```
 
+**Sidecar changes:**
+```bash
+make build-sidecar
+```
+
 > **Note:** The streamer image is cross-compiled for amd64 (Chrome + OBS are x86-only). Building is slow on Apple Silicon due to QEMU emulation.
 
 ## Useful Commands

@@ -52,9 +52,11 @@ control-plane/
 ├── auth.go              # Authenticator: Clerk JWT + API key verification
 ├── db.go                # DB connection, migrations, CRUD helpers
 ├── connect_stage.go     # StageService RPC handlers
+├── connect_runtime.go   # RuntimeService RPC handlers (script, screenshots, OBS, logs)
 ├── connect_apikey.go    # ApiKeyService RPC handlers
 ├── connect_stream.go    # RtmpDestinationService RPC handlers
 ├── connect_user.go      # UserService RPC handlers
+├── r2.go                # R2Client (Cloudflare R2 via minio-go) + pod termination wait
 ├── mcp.go               # MCP server setup and tool definitions
 ├── proto/
 │   └── api/v1/
@@ -81,16 +83,25 @@ control-plane/
 
 ```go
 type Manager struct {
-    mu            sync.RWMutex
-    stages        map[string]*Stage   // in-memory stage map
-    clientset     *kubernetes.Clientset
-    namespace     string
-    streamerImage string
-    podToken      string              // internal auth for streamer pods
-    maxStages     int                 // default 3, configurable via MAX_STAGES
-    db            *sql.DB
-    auth          *authenticator
-    encryptionKey []byte             // AES-256 key from ENCRYPTION_KEY env
+    mu               sync.RWMutex
+    stages           map[string]*Stage
+    previewTokenCache *expirable.LRU[string, string] // token -> stageID
+    activateMu       sync.Map                        // per-stage activation locks
+    clientset        *kubernetes.Clientset
+    namespace        string
+    streamerImage    string
+    sidecarImage     string
+    r2Client         *R2Client
+    r2Bucket         string
+    podToken         string
+    maxStages        int
+    imagePullSecrets []corev1.LocalObjectReference
+    db               *sql.DB
+    auth             *authenticator
+    encryptionKey    []byte
+    pc               *podClient
+    oauth            *oauthHandler
+    publicBaseURL    string
 }
 ```
 
@@ -152,12 +163,19 @@ The control plane provides a stable, authenticated CDP endpoint at `/stage/<stag
 
 ## Streamer Pod Spec
 
-Each stage pod is created with:
-- Image: `STREAMER_IMAGE` env (default `browser-streamer:latest`)
+Each stage pod has three containers:
+
+**Init container** (`restore`): Runs `restore.sh` from the sidecar image to restore `/data/` from R2 before the main container starts.
+
+**Main container** (`streamer`):
+- Image: `STREAMER_IMAGE` env
 - CPU: `2` req / `4` limit; Memory: `4Gi` req / `8Gi` limit
-- Volume: `/dev/shm` (2Gi memory) for Chrome shared memory
+- Volumes: `/dev/shm` (2Gi memory), `/data` (shared emptyDir for content + Chrome state)
 - Auth token injected from `browserless-auth` secret
 - Readiness probe: `GET /health` on port 8080, delay 2s, period 2s, threshold 30
+- PreStop hook: `prestop.sh` (kills Chrome, triggers sidecar final sync)
+
+**Sidecar container** (`sync`): Runs the rclone sync loop from `SIDECAR_IMAGE`, watching `/data/` and syncing to R2. R2 credentials injected as `RCLONE_CONFIG_R2_*` env vars.
 
 ---
 
@@ -191,6 +209,16 @@ See `data-models.md` for full schema. Key tables:
 | `DB_NAME` | No | `browser_streamer` | DB name |
 | `NAMESPACE` | No | `browser-streamer` | Kubernetes namespace |
 | `STREAMER_IMAGE` | No | `browser-streamer:latest` | Container image for stage pods |
+| `SIDECAR_IMAGE` | No | — | Container image for R2 sync sidecar |
 | `POD_TOKEN` | No | — | Internal auth token passed to streamer pods |
 | `MAX_STAGES` | No | `3` | Maximum concurrent stages |
 | `PORT` | No | `8080` | HTTP listen port |
+| `IMAGE_PULL_SECRET` | No | — | K8s imagePullSecret name for stage pods |
+| `SCHEDULER_NAME` | No | — | K8s scheduler name for stage pods |
+| `PRIORITY_CLASS_NAME` | No | — | K8s PriorityClass for stage pods |
+| `R2_ENDPOINT` | No | — | Cloudflare R2 S3-compatible endpoint |
+| `R2_ACCESS_KEY_ID` | No | — | R2 access key ID |
+| `R2_SECRET_ACCESS_KEY` | No | — | R2 secret access key |
+| `R2_BUCKET` | No | — | R2 bucket name for stage storage |
+| `OAUTH_REDIRECT_BASE_URL` | No | — | Base URL for OAuth redirect callbacks |
+| `PUBLIC_BASE_URL` | No | — | Base URL for preview URLs (e.g., `https://stream.dazzle.fm`) |

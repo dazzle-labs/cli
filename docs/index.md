@@ -1,6 +1,6 @@
 # Agent Streamer — Documentation Index
 
-> Generated: 2026-03-03 | Last Updated: 2026-03-07 (infrastructure docs updated for Hetzner HA cluster)
+> Generated: 2026-03-03 | Last Updated: 2026-03-09 (R2 persistence, sidecar, HLS preview, preview URLs)
 
 ---
 
@@ -39,8 +39,9 @@
 
 ### streamer (Node.js browser pod)
 - **Path:** `streamer/`
-- **Role:** Chrome + OBS + panel rendering (Vite HMR) — ephemeral K8s pod
+- **Role:** Chrome + OBS + panel rendering (Vite HMR) + HLS preview — ephemeral K8s pod
 - **Entry:** `streamer/index.js`
+- **Sidecar:** `streamer/docker/sidecar/` — rclone-based R2 sync for content and Chrome state persistence
 
 ### k8s (Infrastructure)
 - **Path:** `k8s/`
@@ -100,7 +101,7 @@ make proto
 
 2. **Control plane as unified gateway** — All external traffic (CLI, Web UI, CDP, WebSocket) routes through one Go binary. Simplifies TLS termination and auth.
 
-3. **Stages are persistent, pods are ephemeral** — A `Stage` DB record survives pod restarts. `GetStage` activates (creates pod) on demand; `DeleteStage` removes everything; `DeactivateStage` deletes pod but keeps record.
+3. **Stages are persistent, pods are ephemeral** — A `Stage` DB record survives pod restarts. `ActivateStage` creates a pod on demand; `DeleteStage` removes everything (including R2 storage); `DeactivateStage` deletes pod but keeps record. Content and Chrome state are synced to R2 and restored on next activation.
 
 4. **Panel system replaces template engine** — The streamer's Vite HMR panel system hot-swaps JavaScript/JSX without page reloads. Panels persist state via `emit_event` + `window.__state`.
 

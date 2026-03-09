@@ -22,7 +22,8 @@ Primary use cases: AI agents that need a persistent browser (Claude Code, OpenAI
 | **cli** | `cli/` (git submodule → `dazzle-labs/cli`) | Go 1.24 | Primary interface for developers and AI agents — stage lifecycle, scripting, OBS, streaming |
 | **control-plane** | `control-plane/` | Go 1.24 | Backend API, Kubernetes orchestration, auth, DB, CDP/WS proxy, serves web SPA |
 | **web** | `web/` | TypeScript / React 19 | Web dashboard SPA (stage monitoring, API keys, stream destinations, account settings) |
-| **streamer** | `streamer/` | Node.js | Per-stage browser container: Express HTTP, Chrome CDP, Vite panel rendering |
+| **streamer** | `streamer/` | Node.js 24 | Per-stage browser container: Express HTTP, Chrome CDP, Vite panel rendering, HLS preview |
+| **sidecar** | `streamer/docker/sidecar/` | rclone + inotify | Per-stage R2 sync container: persists content and Chrome state to Cloudflare R2 |
 | **k8s** | `k8s/` | YAML | Kubernetes manifests, Traefik ingress, TLS, SOPS-encrypted secrets |
 
 ---
@@ -75,13 +76,14 @@ Web UI ────────►         │
                     │
                     ▼
            Streamer Pod (per stage, on-demand)
-           ├── Express HTTP :8080
-           │   ├── Panel API (/api/panels/*)
-           │   ├── CDP discovery proxy (/json/*)
-           │   └── Health (/health)
-           ├── Chrome/Chromium on Xvfb
-           │   └── CDP on localhost:9222
-           └── Vite HMR dev server (panel JSX rendering)
+           ├── Init: restore.sh (restore /data/ from R2)
+           ├── Main container
+           │   ├── Express HTTP :8080 (panels, CDP discovery, health)
+           │   ├── Chrome on Xvfb (CDP :9222)
+           │   ├── OBS Studio (WS :4455)
+           │   ├── Vite HMR (panel JSX rendering)
+           │   └── ffmpeg (HLS preview → /tmp/hls/)
+           └── Sidecar: rclone (sync /data/ ↔ R2 on changes)
 ```
 
 ---
@@ -96,7 +98,9 @@ Web UI ────────►         │
 6. **Panel system** — Streamer manages named panels; supports hot-swap via Vite HMR without page reload
 7. **Stream destinations** — RTMP stream keys for Twitch, YouTube, Kick, custom; AES-256-GCM encrypted at rest
 8. **API keys** — `dzl_*` prefix format, HMAC-SHA256 hashed, with last-used tracking; used by CLI and programmatic clients
-9. **Stage recovery** — On restart, reconciles in-memory state with live Kubernetes pods and resets orphaned DB records
+9. **Stage persistence** — Content, Chrome localStorage, and IndexedDB are synced to Cloudflare R2 via a sidecar container and restored on next activation
+10. **HLS preview** — ffmpeg generates a low-latency HLS stream from the display, proxied through the control plane with shareable `dpt_*` preview tokens
+11. **Stage recovery** — On restart, reconciles in-memory state with live Kubernetes pods and resets orphaned DB records
 
 ---
 
