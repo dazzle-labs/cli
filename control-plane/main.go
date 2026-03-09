@@ -363,6 +363,8 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 						{Name: "dshm", MountPath: "/dev/shm"},
 						{Name: "stage-data", MountPath: "/data"},
 						{Name: "hls-data", MountPath: "/tmp/hls"},
+						{Name: "x11-socket", MountPath: "/tmp/.X11-unix"},
+						{Name: "pulse-socket", MountPath: "/tmp/pulse"},
 					},
 					Lifecycle: &corev1.Lifecycle{
 						PreStop: &corev1.LifecycleHandler{
@@ -383,18 +385,24 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 							Protocol:      corev1.ProtocolTCP,
 						},
 					},
-					Env: append(sidecarEnvVars(userID, id, m.r2Bucket), corev1.EnvVar{
-						Name: "TOKEN",
-						ValueFrom: &corev1.EnvVarSource{
-							SecretKeyRef: &corev1.SecretKeySelector{
-								LocalObjectReference: corev1.LocalObjectReference{Name: "browserless-auth"},
-								Key:                  "token",
+					Env: append(sidecarEnvVars(userID, id, m.r2Bucket),
+						corev1.EnvVar{
+							Name: "TOKEN",
+							ValueFrom: &corev1.EnvVarSource{
+								SecretKeyRef: &corev1.SecretKeySelector{
+									LocalObjectReference: corev1.LocalObjectReference{Name: "browserless-auth"},
+									Key:                  "token",
+								},
 							},
 						},
-					}),
+						corev1.EnvVar{Name: "DISPLAY", Value: ":99"},
+						corev1.EnvVar{Name: "PULSE_SERVER", Value: "unix:/tmp/pulse/native"},
+					),
 					VolumeMounts: []corev1.VolumeMount{
 						{Name: "stage-data", MountPath: "/data"},
-						{Name: "hls-data", MountPath: "/tmp/hls", ReadOnly: true},
+						{Name: "hls-data", MountPath: "/tmp/hls"},
+						{Name: "x11-socket", MountPath: "/tmp/.X11-unix"},
+						{Name: "pulse-socket", MountPath: "/tmp/pulse"},
 					},
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
@@ -444,6 +452,18 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 						EmptyDir: &corev1.EmptyDirVolumeSource{
 							SizeLimit: resourcePtr(resource.MustParse("512Mi")),
 						},
+					},
+				},
+				{
+					Name: "x11-socket",
+					VolumeSource: corev1.VolumeSource{
+						EmptyDir: &corev1.EmptyDirVolumeSource{},
+					},
+				},
+				{
+					Name: "pulse-socket",
+					VolumeSource: corev1.VolumeSource{
+						EmptyDir: &corev1.EmptyDirVolumeSource{},
 					},
 				},
 			},
