@@ -14,7 +14,6 @@ service RuntimeService {
   rpc ObsCommand(ObsCommandRequest) returns (ObsCommandResponse);
   rpc SyncDiff(SyncDiffRequest) returns (SyncDiffResponse);
   rpc SyncPush(stream SyncPushRequest) returns (SyncPushResponse);
-  rpc SyncClean(SyncCleanRequest) returns (SyncCleanResponse);
   rpc Refresh(RefreshRequest) returns (RefreshResponse);
 }
 
@@ -44,6 +43,7 @@ message SyncDiffRequest {
   string stage_id = 1;
   map<string, string> files = 2;  // relative path → sha256
   string entry = 3;               // HTML entry point filename
+  string sync_id = 4;             // client-provided timestamp for snapshot semantics
 }
 
 message SyncDiffResponse {
@@ -53,19 +53,12 @@ message SyncDiffResponse {
 message SyncPushRequest {
   string stage_id = 1;
   bytes chunk = 2;        // tar chunk
+  string sync_id = 3;     // client-provided timestamp for snapshot semantics
 }
 
 message SyncPushResponse {
   int32 synced = 1;
-}
-
-message SyncCleanRequest {
-  string stage_id = 1;
-  map<string, string> files = 2;  // authoritative manifest — delete everything not in here
-}
-
-message SyncCleanResponse {
-  int32 deleted = 1;
+  int32 deleted = 2;
 }
 
 message RefreshRequest {

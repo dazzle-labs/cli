@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -32,7 +33,6 @@ type SyncCmd struct {
 	Watch   bool   `help:"Watch for changes and re-sync." short:"w"`
 	Entry   string `help:"HTML entry point file." default:"index.html"`
 	Refresh bool   `help:"Refresh Chrome after sync." short:"r"`
-	Clean   bool   `help:"Delete files on stage not present locally." short:"c"`
 }
 
 func (c *SyncCmd) Run(ctx *Context) error {
@@ -75,6 +75,7 @@ func (c *SyncCmd) syncOnce(appCtx *Context, rpcCtx context.Context) error {
 		return fmt.Errorf("entry point %q not found in directory", c.Entry)
 	}
 
+	syncID := strconv.FormatInt(time.Now().UnixMilli(), 10)
 	client := apiv1connect.NewRuntimeServiceClient(appCtx.HTTPClient, appCtx.APIURL)
 
 	// SyncDiff
@@ -82,6 +83,7 @@ func (c *SyncCmd) syncOnce(appCtx *Context, rpcCtx context.Context) error {
 		StageId: appCtx.StageID,
 		Files:   manifest,
 		Entry:   c.Entry,
+		SyncId:  syncID,
 	})
 	diffReq.Header().Set("Authorization", appCtx.authHeader())
 	diffResp, err := client.SyncDiff(rpcCtx, diffReq)
@@ -90,24 +92,32 @@ func (c *SyncCmd) syncOnce(appCtx *Context, rpcCtx context.Context) error {
 	}
 
 	need := diffResp.Msg.Need
-	if len(need) == 0 {
-		printText("Already up to date.")
+
+	// Build tar from cached file data (avoids TOCTOU)
+	needSet := make(map[string]bool, len(need))
+	for _, n := range need {
+		needSet[n] = true
+	}
+	tarBuf, err := buildTar(entries, needSet)
+	if err != nil {
+		return fmt.Errorf("building tar: %w", err)
+	}
+
+	// SyncPush via client streaming — always send even if need is empty
+	// so the server can run auto-cleanup with the sync_id
+	stream := client.SyncPush(rpcCtx)
+	stream.RequestHeader().Set("Authorization", appCtx.authHeader())
+
+	tarData := tarBuf.Bytes()
+	if len(tarData) == 0 {
+		// Send a metadata-only message with stage_id and sync_id
+		if err := stream.Send(&apiv1.SyncPushRequest{
+			StageId: appCtx.StageID,
+			SyncId:  syncID,
+		}); err != nil {
+			return fmt.Errorf("sync push send: %w", err)
+		}
 	} else {
-		// Build tar from cached file data (avoids TOCTOU)
-		needSet := make(map[string]bool, len(need))
-		for _, n := range need {
-			needSet[n] = true
-		}
-		tarBuf, err := buildTar(entries, needSet)
-		if err != nil {
-			return fmt.Errorf("building tar: %w", err)
-		}
-
-		// SyncPush via client streaming
-		stream := client.SyncPush(rpcCtx)
-		stream.RequestHeader().Set("Authorization", appCtx.authHeader())
-
-		tarData := tarBuf.Bytes()
 		for i := 0; i < len(tarData); i += chunkSize {
 			end := i + chunkSize
 			if end > len(tarData) {
@@ -116,33 +126,27 @@ func (c *SyncCmd) syncOnce(appCtx *Context, rpcCtx context.Context) error {
 			msg := &apiv1.SyncPushRequest{Chunk: tarData[i:end]}
 			if i == 0 {
 				msg.StageId = appCtx.StageID
+				msg.SyncId = syncID
 			}
 			if err := stream.Send(msg); err != nil {
 				return fmt.Errorf("sync push send: %w", err)
 			}
 		}
-
-		resp, err := stream.CloseAndReceive()
-		if err != nil {
-			return fmt.Errorf("sync push: %w", err)
-		}
-
-		printText("%d files synced.", resp.Msg.Synced)
 	}
 
-	// Clean if requested
-	if c.Clean {
-		cleanReq := connect.NewRequest(&apiv1.SyncCleanRequest{
-			StageId: appCtx.StageID,
-			Files:   manifest,
-		})
-		cleanReq.Header().Set("Authorization", appCtx.authHeader())
-		cleanResp, err := client.SyncClean(rpcCtx, cleanReq)
-		if err != nil {
-			return fmt.Errorf("sync clean: %w", err)
+	resp, err := stream.CloseAndReceive()
+	if err != nil {
+		return fmt.Errorf("sync push: %w", err)
+	}
+
+	if resp.Msg.Synced == 0 && resp.Msg.Deleted == 0 {
+		printText("Already up to date.")
+	} else {
+		if resp.Msg.Synced > 0 {
+			printText("%d files synced.", resp.Msg.Synced)
 		}
-		if cleanResp.Msg.Deleted > 0 {
-			printText("%d files cleaned.", cleanResp.Msg.Deleted)
+		if resp.Msg.Deleted > 0 {
+			printText("%d stale files removed.", resp.Msg.Deleted)
 		}
 	}
 
