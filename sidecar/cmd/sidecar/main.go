@@ -42,9 +42,9 @@ func runServe() {
 		OBSHost:      "localhost",
 		OBSPort:      "4455",
 		R2Bucket:     os.Getenv("R2_BUCKET"),
-		R2Endpoint:   os.Getenv("RCLONE_CONFIG_R2_ENDPOINT"),
-		R2AccessKey:  os.Getenv("RCLONE_CONFIG_R2_ACCESS_KEY_ID"),
-		R2SecretKey:  os.Getenv("RCLONE_CONFIG_R2_SECRET_ACCESS_KEY"),
+		R2Endpoint:   os.Getenv("R2_ENDPOINT"),
+		R2AccessKey:  os.Getenv("R2_ACCESS_KEY_ID"),
+		R2SecretKey:  os.Getenv("R2_SECRET_ACCESS_KEY"),
 	}
 
 	srv, err := server.New(cfg)
@@ -57,9 +57,9 @@ func runServe() {
 }
 
 func runRestore() {
-	endpoint := os.Getenv("RCLONE_CONFIG_R2_ENDPOINT")
-	accessKey := os.Getenv("RCLONE_CONFIG_R2_ACCESS_KEY_ID")
-	secretKey := os.Getenv("RCLONE_CONFIG_R2_SECRET_ACCESS_KEY")
+	endpoint := os.Getenv("R2_ENDPOINT")
+	accessKey := os.Getenv("R2_ACCESS_KEY_ID")
+	secretKey := os.Getenv("R2_SECRET_ACCESS_KEY")
 	bucket := os.Getenv("R2_BUCKET")
 	userID := os.Getenv("USER_ID")
 	stageID := os.Getenv("STAGE_ID")

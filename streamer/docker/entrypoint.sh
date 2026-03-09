@@ -176,6 +176,7 @@ cat > "$OBS_CONFIG_DIR/basic/scenes/Untitled.json" <<SCENEJSON
                         "name": "Screen",
                         "source_uuid": "00000000-0000-0000-0000-000000000001",
                         "id": 1,
+                        "visible": true,
                         "pos": { "x": 0.0, "y": 0.0 },
                         "bounds": { "x": ${SCREEN_WIDTH}.0, "y": ${SCREEN_HEIGHT}.0 },
                         "bounds_type": 2,
