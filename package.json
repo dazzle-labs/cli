@@ -13,7 +13,5 @@
   "dependencies": {
     "playwright": "^1.58.2"
   },
-  "devDependencies": {
-    "shadcn": "^4.0.0"
-  }
+  "devDependencies": {}
 }
