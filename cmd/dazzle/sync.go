@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -75,7 +74,6 @@ func (c *SyncCmd) syncOnce(appCtx *Context, rpcCtx context.Context) error {
 		return fmt.Errorf("entry point %q not found in directory", c.Entry)
 	}
 
-	syncID := strconv.FormatInt(time.Now().UnixMilli(), 10)
 	client := apiv1connect.NewRuntimeServiceClient(appCtx.HTTPClient, appCtx.APIURL)
 
 	// SyncDiff
@@ -83,7 +81,6 @@ func (c *SyncCmd) syncOnce(appCtx *Context, rpcCtx context.Context) error {
 		StageId: appCtx.StageID,
 		Files:   manifest,
 		Entry:   c.Entry,
-		SyncId:  syncID,
 	})
 	diffReq.Header().Set("Authorization", appCtx.authHeader())
 	diffResp, err := client.SyncDiff(rpcCtx, diffReq)
@@ -110,10 +107,9 @@ func (c *SyncCmd) syncOnce(appCtx *Context, rpcCtx context.Context) error {
 
 	tarData := tarBuf.Bytes()
 	if len(tarData) == 0 {
-		// Send a metadata-only message with stage_id and sync_id
+		// Send a metadata-only message with stage_id
 		if err := stream.Send(&apiv1.SyncPushRequest{
 			StageId: appCtx.StageID,
-			SyncId:  syncID,
 		}); err != nil {
 			return fmt.Errorf("sync push send: %w", err)
 		}
@@ -126,8 +122,7 @@ func (c *SyncCmd) syncOnce(appCtx *Context, rpcCtx context.Context) error {
 			msg := &apiv1.SyncPushRequest{Chunk: tarData[i:end]}
 			if i == 0 {
 				msg.StageId = appCtx.StageID
-				msg.SyncId = syncID
-			}
+				}
 			if err := stream.Send(msg); err != nil {
 				return fmt.Errorf("sync push send: %w", err)
 			}

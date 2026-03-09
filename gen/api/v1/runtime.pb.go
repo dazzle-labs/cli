@@ -758,7 +758,6 @@ type SyncDiffRequest struct {
 	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"`
 	Files         map[string]string      `protobuf:"bytes,2,rep,name=files,proto3" json:"files,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // relative path → sha256
 	Entry         string                 `protobuf:"bytes,3,opt,name=entry,proto3" json:"entry,omitempty"`                                                                           // HTML entry point filename
-	SyncId        string                 `protobuf:"bytes,4,opt,name=sync_id,json=syncId,proto3" json:"sync_id,omitempty"`                                                           // client-provided timestamp for snapshot semantics
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -814,13 +813,6 @@ func (x *SyncDiffRequest) GetEntry() string {
 	return ""
 }
 
-func (x *SyncDiffRequest) GetSyncId() string {
-	if x != nil {
-		return x.SyncId
-	}
-	return ""
-}
-
 type SyncDiffResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Need          []string               `protobuf:"bytes,1,rep,name=need,proto3" json:"need,omitempty"` // files to upload
@@ -868,8 +860,7 @@ func (x *SyncDiffResponse) GetNeed() []string {
 type SyncPushRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"`
-	Chunk         []byte                 `protobuf:"bytes,2,opt,name=chunk,proto3" json:"chunk,omitempty"`                 // tar chunk
-	SyncId        string                 `protobuf:"bytes,3,opt,name=sync_id,json=syncId,proto3" json:"sync_id,omitempty"` // client-provided timestamp for snapshot semantics
+	Chunk         []byte                 `protobuf:"bytes,2,opt,name=chunk,proto3" json:"chunk,omitempty"` // tar chunk
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -916,13 +907,6 @@ func (x *SyncPushRequest) GetChunk() []byte {
 		return x.Chunk
 	}
 	return nil
-}
-
-func (x *SyncPushRequest) GetSyncId() string {
-	if x != nil {
-		return x.SyncId
-	}
-	return ""
 }
 
 type SyncPushResponse struct {
@@ -1110,22 +1094,20 @@ const file_api_v1_runtime_proto_rawDesc = "" +
 	"\bstage_id\x18\x01 \x01(\tR\astageId\x12\x12\n" +
 	"\x04args\x18\x02 \x03(\tR\x04args\",\n" +
 	"\x12ObsCommandResponse\x12\x16\n" +
-	"\x06output\x18\x01 \x01(\tR\x06output\"\xd2\x01\n" +
+	"\x06output\x18\x01 \x01(\tR\x06output\"\xb9\x01\n" +
 	"\x0fSyncDiffRequest\x12\x19\n" +
 	"\bstage_id\x18\x01 \x01(\tR\astageId\x12;\n" +
 	"\x05files\x18\x02 \x03(\v2%.dazzle.v1.SyncDiffRequest.FilesEntryR\x05files\x12\x14\n" +
-	"\x05entry\x18\x03 \x01(\tR\x05entry\x12\x17\n" +
-	"\async_id\x18\x04 \x01(\tR\x06syncId\x1a8\n" +
+	"\x05entry\x18\x03 \x01(\tR\x05entry\x1a8\n" +
 	"\n" +
 	"FilesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"&\n" +
 	"\x10SyncDiffResponse\x12\x12\n" +
-	"\x04need\x18\x01 \x03(\tR\x04need\"[\n" +
+	"\x04need\x18\x01 \x03(\tR\x04need\"B\n" +
 	"\x0fSyncPushRequest\x12\x19\n" +
 	"\bstage_id\x18\x01 \x01(\tR\astageId\x12\x14\n" +
-	"\x05chunk\x18\x02 \x01(\fR\x05chunk\x12\x17\n" +
-	"\async_id\x18\x03 \x01(\tR\x06syncId\"D\n" +
+	"\x05chunk\x18\x02 \x01(\fR\x05chunk\"D\n" +
 	"\x10SyncPushResponse\x12\x16\n" +
 	"\x06synced\x18\x01 \x01(\x05R\x06synced\x12\x18\n" +
 	"\adeleted\x18\x02 \x01(\x05R\adeleted\"+\n" +

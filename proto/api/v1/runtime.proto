@@ -43,7 +43,6 @@ message SyncDiffRequest {
   string stage_id = 1;
   map<string, string> files = 2;  // relative path → sha256
   string entry = 3;               // HTML entry point filename
-  string sync_id = 4;             // client-provided timestamp for snapshot semantics
 }
 
 message SyncDiffResponse {
@@ -53,7 +52,6 @@ message SyncDiffResponse {
 message SyncPushRequest {
   string stage_id = 1;
   bytes chunk = 2;        // tar chunk
-  string sync_id = 3;     // client-provided timestamp for snapshot semantics
 }
 
 message SyncPushResponse {
