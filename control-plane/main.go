@@ -933,7 +933,7 @@ func (m *Manager) waitForStage(ctx context.Context, id string) (*Stage, error) {
 
 // resolveChromeWSURL fetches /json/version from the pod and returns Chrome's actual webSocketDebuggerUrl.
 func (m *Manager) resolveChromeWSURL(stage *Stage) (string, error) {
-	resp, err := http.Get(fmt.Sprintf("http://%s:8080/json/version?token=%s", stage.PodIP, url.QueryEscape(m.podToken)))
+	resp, err := http.Get(fmt.Sprintf("http://%s:9222/json/version", stage.PodIP))
 	if err != nil {
 		return "", fmt.Errorf("fetch /json/version from pod: %w", err)
 	}
@@ -951,7 +951,7 @@ func (m *Manager) resolveChromeWSURL(stage *Stage) (string, error) {
 
 // proxyCDPDiscovery proxies /json/* requests to the pod, rewriting webSocketDebuggerUrl.
 func (m *Manager) proxyCDPDiscovery(w http.ResponseWriter, r *http.Request, stage *Stage, subPath string) {
-	podURL := fmt.Sprintf("http://%s:8080%s?token=%s", stage.PodIP, subPath, url.QueryEscape(m.podToken))
+	podURL := fmt.Sprintf("http://%s:9222%s", stage.PodIP, subPath)
 	resp, err := http.Get(podURL)
 	if err != nil {
 		writeJSON(w, http.StatusBadGateway, map[string]any{"error": fmt.Sprintf("pod request failed: %v", err)})
