@@ -249,23 +249,5 @@ for i in $(seq 1 10); do
 done
 
 echo "All processes started. Waiting..."
-echo "Tracked PIDs: XVFB=$XVFB_PID NODE=$NODE_PID CHROME=$CHROME_PID OBS=$OBS_PID FFMPEG=${FFMPEG_PID:-unset}"
-# Check which processes are still alive before waiting
-for name_pid in "XVFB:$XVFB_PID" "NODE:$NODE_PID" "CHROME:$CHROME_PID" "OBS:$OBS_PID" "FFMPEG:${FFMPEG_PID:-}"; do
-    name="${name_pid%%:*}"
-    pid="${name_pid##*:}"
-    if [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then
-        echo "WARNING: $name (PID $pid) already dead before wait"
-    fi
-done
-wait -n $XVFB_PID $NODE_PID $CHROME_PID $OBS_PID ${FFMPEG_PID:-}
-EXIT_CODE=$?
-# Identify which process exited
-for name_pid in "XVFB:$XVFB_PID" "NODE:$NODE_PID" "CHROME:$CHROME_PID" "OBS:$OBS_PID" "FFMPEG:${FFMPEG_PID:-}"; do
-    name="${name_pid%%:*}"
-    pid="${name_pid##*:}"
-    if [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then
-        echo "EXITED: $name (PID $pid)"
-    fi
-done
-echo "A process exited (code=$EXIT_CODE), shutting down."
+wait -n
+echo "A process exited, shutting down."

@@ -70,7 +70,7 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm install
 
-COPY index.js shell.html prelude.js style.css vite-init.mjs ./
+COPY index.js sync.js shell.html prelude.js style.css vite-init.mjs ./
 
 # Remove npm (only needed for install, not runtime) to eliminate bundled dep vulns
 RUN rm -rf /usr/lib/node_modules/npm /usr/bin/npm /usr/bin/npx
