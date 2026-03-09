@@ -33,15 +33,6 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// RuntimeServiceSetScriptProcedure is the fully-qualified name of the RuntimeService's SetScript
-	// RPC.
-	RuntimeServiceSetScriptProcedure = "/dazzle.v1.RuntimeService/SetScript"
-	// RuntimeServiceGetScriptProcedure is the fully-qualified name of the RuntimeService's GetScript
-	// RPC.
-	RuntimeServiceGetScriptProcedure = "/dazzle.v1.RuntimeService/GetScript"
-	// RuntimeServiceEditScriptProcedure is the fully-qualified name of the RuntimeService's EditScript
-	// RPC.
-	RuntimeServiceEditScriptProcedure = "/dazzle.v1.RuntimeService/EditScript"
 	// RuntimeServiceEmitEventProcedure is the fully-qualified name of the RuntimeService's EmitEvent
 	// RPC.
 	RuntimeServiceEmitEventProcedure = "/dazzle.v1.RuntimeService/EmitEvent"
@@ -63,9 +54,6 @@ const (
 
 // RuntimeServiceClient is a client for the dazzle.v1.RuntimeService service.
 type RuntimeServiceClient interface {
-	SetScript(context.Context, *connect.Request[v1.SetScriptRequest]) (*connect.Response[v1.SetScriptResponse], error)
-	GetScript(context.Context, *connect.Request[v1.GetScriptRequest]) (*connect.Response[v1.GetScriptResponse], error)
-	EditScript(context.Context, *connect.Request[v1.EditScriptRequest]) (*connect.Response[v1.EditScriptResponse], error)
 	EmitEvent(context.Context, *connect.Request[v1.EmitEventRequest]) (*connect.Response[v1.EmitEventResponse], error)
 	GetLogs(context.Context, *connect.Request[v1.GetLogsRequest]) (*connect.Response[v1.GetLogsResponse], error)
 	Screenshot(context.Context, *connect.Request[v1.ScreenshotRequest]) (*connect.Response[v1.ScreenshotResponse], error)
@@ -86,24 +74,6 @@ func NewRuntimeServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 	baseURL = strings.TrimRight(baseURL, "/")
 	runtimeServiceMethods := v1.File_api_v1_runtime_proto.Services().ByName("RuntimeService").Methods()
 	return &runtimeServiceClient{
-		setScript: connect.NewClient[v1.SetScriptRequest, v1.SetScriptResponse](
-			httpClient,
-			baseURL+RuntimeServiceSetScriptProcedure,
-			connect.WithSchema(runtimeServiceMethods.ByName("SetScript")),
-			connect.WithClientOptions(opts...),
-		),
-		getScript: connect.NewClient[v1.GetScriptRequest, v1.GetScriptResponse](
-			httpClient,
-			baseURL+RuntimeServiceGetScriptProcedure,
-			connect.WithSchema(runtimeServiceMethods.ByName("GetScript")),
-			connect.WithClientOptions(opts...),
-		),
-		editScript: connect.NewClient[v1.EditScriptRequest, v1.EditScriptResponse](
-			httpClient,
-			baseURL+RuntimeServiceEditScriptProcedure,
-			connect.WithSchema(runtimeServiceMethods.ByName("EditScript")),
-			connect.WithClientOptions(opts...),
-		),
 		emitEvent: connect.NewClient[v1.EmitEventRequest, v1.EmitEventResponse](
 			httpClient,
 			baseURL+RuntimeServiceEmitEventProcedure,
@@ -151,9 +121,6 @@ func NewRuntimeServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 
 // runtimeServiceClient implements RuntimeServiceClient.
 type runtimeServiceClient struct {
-	setScript  *connect.Client[v1.SetScriptRequest, v1.SetScriptResponse]
-	getScript  *connect.Client[v1.GetScriptRequest, v1.GetScriptResponse]
-	editScript *connect.Client[v1.EditScriptRequest, v1.EditScriptResponse]
 	emitEvent  *connect.Client[v1.EmitEventRequest, v1.EmitEventResponse]
 	getLogs    *connect.Client[v1.GetLogsRequest, v1.GetLogsResponse]
 	screenshot *connect.Client[v1.ScreenshotRequest, v1.ScreenshotResponse]
@@ -161,21 +128,6 @@ type runtimeServiceClient struct {
 	syncDiff   *connect.Client[v1.SyncDiffRequest, v1.SyncDiffResponse]
 	syncPush   *connect.Client[v1.SyncPushRequest, v1.SyncPushResponse]
 	refresh    *connect.Client[v1.RefreshRequest, v1.RefreshResponse]
-}
-
-// SetScript calls dazzle.v1.RuntimeService.SetScript.
-func (c *runtimeServiceClient) SetScript(ctx context.Context, req *connect.Request[v1.SetScriptRequest]) (*connect.Response[v1.SetScriptResponse], error) {
-	return c.setScript.CallUnary(ctx, req)
-}
-
-// GetScript calls dazzle.v1.RuntimeService.GetScript.
-func (c *runtimeServiceClient) GetScript(ctx context.Context, req *connect.Request[v1.GetScriptRequest]) (*connect.Response[v1.GetScriptResponse], error) {
-	return c.getScript.CallUnary(ctx, req)
-}
-
-// EditScript calls dazzle.v1.RuntimeService.EditScript.
-func (c *runtimeServiceClient) EditScript(ctx context.Context, req *connect.Request[v1.EditScriptRequest]) (*connect.Response[v1.EditScriptResponse], error) {
-	return c.editScript.CallUnary(ctx, req)
 }
 
 // EmitEvent calls dazzle.v1.RuntimeService.EmitEvent.
@@ -215,9 +167,6 @@ func (c *runtimeServiceClient) Refresh(ctx context.Context, req *connect.Request
 
 // RuntimeServiceHandler is an implementation of the dazzle.v1.RuntimeService service.
 type RuntimeServiceHandler interface {
-	SetScript(context.Context, *connect.Request[v1.SetScriptRequest]) (*connect.Response[v1.SetScriptResponse], error)
-	GetScript(context.Context, *connect.Request[v1.GetScriptRequest]) (*connect.Response[v1.GetScriptResponse], error)
-	EditScript(context.Context, *connect.Request[v1.EditScriptRequest]) (*connect.Response[v1.EditScriptResponse], error)
 	EmitEvent(context.Context, *connect.Request[v1.EmitEventRequest]) (*connect.Response[v1.EmitEventResponse], error)
 	GetLogs(context.Context, *connect.Request[v1.GetLogsRequest]) (*connect.Response[v1.GetLogsResponse], error)
 	Screenshot(context.Context, *connect.Request[v1.ScreenshotRequest]) (*connect.Response[v1.ScreenshotResponse], error)
@@ -234,24 +183,6 @@ type RuntimeServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewRuntimeServiceHandler(svc RuntimeServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	runtimeServiceMethods := v1.File_api_v1_runtime_proto.Services().ByName("RuntimeService").Methods()
-	runtimeServiceSetScriptHandler := connect.NewUnaryHandler(
-		RuntimeServiceSetScriptProcedure,
-		svc.SetScript,
-		connect.WithSchema(runtimeServiceMethods.ByName("SetScript")),
-		connect.WithHandlerOptions(opts...),
-	)
-	runtimeServiceGetScriptHandler := connect.NewUnaryHandler(
-		RuntimeServiceGetScriptProcedure,
-		svc.GetScript,
-		connect.WithSchema(runtimeServiceMethods.ByName("GetScript")),
-		connect.WithHandlerOptions(opts...),
-	)
-	runtimeServiceEditScriptHandler := connect.NewUnaryHandler(
-		RuntimeServiceEditScriptProcedure,
-		svc.EditScript,
-		connect.WithSchema(runtimeServiceMethods.ByName("EditScript")),
-		connect.WithHandlerOptions(opts...),
-	)
 	runtimeServiceEmitEventHandler := connect.NewUnaryHandler(
 		RuntimeServiceEmitEventProcedure,
 		svc.EmitEvent,
@@ -296,12 +227,6 @@ func NewRuntimeServiceHandler(svc RuntimeServiceHandler, opts ...connect.Handler
 	)
 	return "/dazzle.v1.RuntimeService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case RuntimeServiceSetScriptProcedure:
-			runtimeServiceSetScriptHandler.ServeHTTP(w, r)
-		case RuntimeServiceGetScriptProcedure:
-			runtimeServiceGetScriptHandler.ServeHTTP(w, r)
-		case RuntimeServiceEditScriptProcedure:
-			runtimeServiceEditScriptHandler.ServeHTTP(w, r)
 		case RuntimeServiceEmitEventProcedure:
 			runtimeServiceEmitEventHandler.ServeHTTP(w, r)
 		case RuntimeServiceGetLogsProcedure:
@@ -324,18 +249,6 @@ func NewRuntimeServiceHandler(svc RuntimeServiceHandler, opts ...connect.Handler
 
 // UnimplementedRuntimeServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedRuntimeServiceHandler struct{}
-
-func (UnimplementedRuntimeServiceHandler) SetScript(context.Context, *connect.Request[v1.SetScriptRequest]) (*connect.Response[v1.SetScriptResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.RuntimeService.SetScript is not implemented"))
-}
-
-func (UnimplementedRuntimeServiceHandler) GetScript(context.Context, *connect.Request[v1.GetScriptRequest]) (*connect.Response[v1.GetScriptResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.RuntimeService.GetScript is not implemented"))
-}
-
-func (UnimplementedRuntimeServiceHandler) EditScript(context.Context, *connect.Request[v1.EditScriptRequest]) (*connect.Response[v1.EditScriptResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.RuntimeService.EditScript is not implemented"))
-}
 
 func (UnimplementedRuntimeServiceHandler) EmitEvent(context.Context, *connect.Request[v1.EmitEventRequest]) (*connect.Response[v1.EmitEventResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.RuntimeService.EmitEvent is not implemented"))

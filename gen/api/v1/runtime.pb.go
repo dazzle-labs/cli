@@ -21,294 +21,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type SetScriptRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"`
-	Script        string                 `protobuf:"bytes,2,opt,name=script,proto3" json:"script,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SetScriptRequest) Reset() {
-	*x = SetScriptRequest{}
-	mi := &file_api_v1_runtime_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SetScriptRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SetScriptRequest) ProtoMessage() {}
-
-func (x *SetScriptRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_runtime_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SetScriptRequest.ProtoReflect.Descriptor instead.
-func (*SetScriptRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_runtime_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *SetScriptRequest) GetStageId() string {
-	if x != nil {
-		return x.StageId
-	}
-	return ""
-}
-
-func (x *SetScriptRequest) GetScript() string {
-	if x != nil {
-		return x.Script
-	}
-	return ""
-}
-
-type SetScriptResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SetScriptResponse) Reset() {
-	*x = SetScriptResponse{}
-	mi := &file_api_v1_runtime_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SetScriptResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SetScriptResponse) ProtoMessage() {}
-
-func (x *SetScriptResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_runtime_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SetScriptResponse.ProtoReflect.Descriptor instead.
-func (*SetScriptResponse) Descriptor() ([]byte, []int) {
-	return file_api_v1_runtime_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *SetScriptResponse) GetOk() bool {
-	if x != nil {
-		return x.Ok
-	}
-	return false
-}
-
-type GetScriptRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetScriptRequest) Reset() {
-	*x = GetScriptRequest{}
-	mi := &file_api_v1_runtime_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetScriptRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetScriptRequest) ProtoMessage() {}
-
-func (x *GetScriptRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_runtime_proto_msgTypes[2]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetScriptRequest.ProtoReflect.Descriptor instead.
-func (*GetScriptRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_runtime_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *GetScriptRequest) GetStageId() string {
-	if x != nil {
-		return x.StageId
-	}
-	return ""
-}
-
-type GetScriptResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Script        string                 `protobuf:"bytes,1,opt,name=script,proto3" json:"script,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetScriptResponse) Reset() {
-	*x = GetScriptResponse{}
-	mi := &file_api_v1_runtime_proto_msgTypes[3]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetScriptResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetScriptResponse) ProtoMessage() {}
-
-func (x *GetScriptResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_runtime_proto_msgTypes[3]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetScriptResponse.ProtoReflect.Descriptor instead.
-func (*GetScriptResponse) Descriptor() ([]byte, []int) {
-	return file_api_v1_runtime_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *GetScriptResponse) GetScript() string {
-	if x != nil {
-		return x.Script
-	}
-	return ""
-}
-
-type EditScriptRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"`
-	OldString     string                 `protobuf:"bytes,2,opt,name=old_string,json=oldString,proto3" json:"old_string,omitempty"`
-	NewString     string                 `protobuf:"bytes,3,opt,name=new_string,json=newString,proto3" json:"new_string,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *EditScriptRequest) Reset() {
-	*x = EditScriptRequest{}
-	mi := &file_api_v1_runtime_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *EditScriptRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*EditScriptRequest) ProtoMessage() {}
-
-func (x *EditScriptRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_runtime_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use EditScriptRequest.ProtoReflect.Descriptor instead.
-func (*EditScriptRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_runtime_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *EditScriptRequest) GetStageId() string {
-	if x != nil {
-		return x.StageId
-	}
-	return ""
-}
-
-func (x *EditScriptRequest) GetOldString() string {
-	if x != nil {
-		return x.OldString
-	}
-	return ""
-}
-
-func (x *EditScriptRequest) GetNewString() string {
-	if x != nil {
-		return x.NewString
-	}
-	return ""
-}
-
-type EditScriptResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *EditScriptResponse) Reset() {
-	*x = EditScriptResponse{}
-	mi := &file_api_v1_runtime_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *EditScriptResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*EditScriptResponse) ProtoMessage() {}
-
-func (x *EditScriptResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_runtime_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use EditScriptResponse.ProtoReflect.Descriptor instead.
-func (*EditScriptResponse) Descriptor() ([]byte, []int) {
-	return file_api_v1_runtime_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *EditScriptResponse) GetOk() bool {
-	if x != nil {
-		return x.Ok
-	}
-	return false
-}
-
 type EmitEventRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"`
@@ -320,7 +32,7 @@ type EmitEventRequest struct {
 
 func (x *EmitEventRequest) Reset() {
 	*x = EmitEventRequest{}
-	mi := &file_api_v1_runtime_proto_msgTypes[6]
+	mi := &file_api_v1_runtime_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -332,7 +44,7 @@ func (x *EmitEventRequest) String() string {
 func (*EmitEventRequest) ProtoMessage() {}
 
 func (x *EmitEventRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_runtime_proto_msgTypes[6]
+	mi := &file_api_v1_runtime_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -345,7 +57,7 @@ func (x *EmitEventRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EmitEventRequest.ProtoReflect.Descriptor instead.
 func (*EmitEventRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_runtime_proto_rawDescGZIP(), []int{6}
+	return file_api_v1_runtime_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *EmitEventRequest) GetStageId() string {
@@ -378,7 +90,7 @@ type EmitEventResponse struct {
 
 func (x *EmitEventResponse) Reset() {
 	*x = EmitEventResponse{}
-	mi := &file_api_v1_runtime_proto_msgTypes[7]
+	mi := &file_api_v1_runtime_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -390,7 +102,7 @@ func (x *EmitEventResponse) String() string {
 func (*EmitEventResponse) ProtoMessage() {}
 
 func (x *EmitEventResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_runtime_proto_msgTypes[7]
+	mi := &file_api_v1_runtime_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -403,7 +115,7 @@ func (x *EmitEventResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EmitEventResponse.ProtoReflect.Descriptor instead.
 func (*EmitEventResponse) Descriptor() ([]byte, []int) {
-	return file_api_v1_runtime_proto_rawDescGZIP(), []int{7}
+	return file_api_v1_runtime_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *EmitEventResponse) GetOk() bool {
@@ -423,7 +135,7 @@ type GetLogsRequest struct {
 
 func (x *GetLogsRequest) Reset() {
 	*x = GetLogsRequest{}
-	mi := &file_api_v1_runtime_proto_msgTypes[8]
+	mi := &file_api_v1_runtime_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -435,7 +147,7 @@ func (x *GetLogsRequest) String() string {
 func (*GetLogsRequest) ProtoMessage() {}
 
 func (x *GetLogsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_runtime_proto_msgTypes[8]
+	mi := &file_api_v1_runtime_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -448,7 +160,7 @@ func (x *GetLogsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLogsRequest.ProtoReflect.Descriptor instead.
 func (*GetLogsRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_runtime_proto_rawDescGZIP(), []int{8}
+	return file_api_v1_runtime_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *GetLogsRequest) GetStageId() string {
@@ -476,7 +188,7 @@ type LogEntry struct {
 
 func (x *LogEntry) Reset() {
 	*x = LogEntry{}
-	mi := &file_api_v1_runtime_proto_msgTypes[9]
+	mi := &file_api_v1_runtime_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -488,7 +200,7 @@ func (x *LogEntry) String() string {
 func (*LogEntry) ProtoMessage() {}
 
 func (x *LogEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_runtime_proto_msgTypes[9]
+	mi := &file_api_v1_runtime_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -501,7 +213,7 @@ func (x *LogEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogEntry.ProtoReflect.Descriptor instead.
 func (*LogEntry) Descriptor() ([]byte, []int) {
-	return file_api_v1_runtime_proto_rawDescGZIP(), []int{9}
+	return file_api_v1_runtime_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *LogEntry) GetLevel() string {
@@ -534,7 +246,7 @@ type GetLogsResponse struct {
 
 func (x *GetLogsResponse) Reset() {
 	*x = GetLogsResponse{}
-	mi := &file_api_v1_runtime_proto_msgTypes[10]
+	mi := &file_api_v1_runtime_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -546,7 +258,7 @@ func (x *GetLogsResponse) String() string {
 func (*GetLogsResponse) ProtoMessage() {}
 
 func (x *GetLogsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_runtime_proto_msgTypes[10]
+	mi := &file_api_v1_runtime_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -559,7 +271,7 @@ func (x *GetLogsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLogsResponse.ProtoReflect.Descriptor instead.
 func (*GetLogsResponse) Descriptor() ([]byte, []int) {
-	return file_api_v1_runtime_proto_rawDescGZIP(), []int{10}
+	return file_api_v1_runtime_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *GetLogsResponse) GetEntries() []*LogEntry {
@@ -578,7 +290,7 @@ type ScreenshotRequest struct {
 
 func (x *ScreenshotRequest) Reset() {
 	*x = ScreenshotRequest{}
-	mi := &file_api_v1_runtime_proto_msgTypes[11]
+	mi := &file_api_v1_runtime_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -590,7 +302,7 @@ func (x *ScreenshotRequest) String() string {
 func (*ScreenshotRequest) ProtoMessage() {}
 
 func (x *ScreenshotRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_runtime_proto_msgTypes[11]
+	mi := &file_api_v1_runtime_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -603,7 +315,7 @@ func (x *ScreenshotRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScreenshotRequest.ProtoReflect.Descriptor instead.
 func (*ScreenshotRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_runtime_proto_rawDescGZIP(), []int{11}
+	return file_api_v1_runtime_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ScreenshotRequest) GetStageId() string {
@@ -622,7 +334,7 @@ type ScreenshotResponse struct {
 
 func (x *ScreenshotResponse) Reset() {
 	*x = ScreenshotResponse{}
-	mi := &file_api_v1_runtime_proto_msgTypes[12]
+	mi := &file_api_v1_runtime_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -634,7 +346,7 @@ func (x *ScreenshotResponse) String() string {
 func (*ScreenshotResponse) ProtoMessage() {}
 
 func (x *ScreenshotResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_runtime_proto_msgTypes[12]
+	mi := &file_api_v1_runtime_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -647,7 +359,7 @@ func (x *ScreenshotResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScreenshotResponse.ProtoReflect.Descriptor instead.
 func (*ScreenshotResponse) Descriptor() ([]byte, []int) {
-	return file_api_v1_runtime_proto_rawDescGZIP(), []int{12}
+	return file_api_v1_runtime_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ScreenshotResponse) GetImage() []byte {
@@ -667,7 +379,7 @@ type ObsCommandRequest struct {
 
 func (x *ObsCommandRequest) Reset() {
 	*x = ObsCommandRequest{}
-	mi := &file_api_v1_runtime_proto_msgTypes[13]
+	mi := &file_api_v1_runtime_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -679,7 +391,7 @@ func (x *ObsCommandRequest) String() string {
 func (*ObsCommandRequest) ProtoMessage() {}
 
 func (x *ObsCommandRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_runtime_proto_msgTypes[13]
+	mi := &file_api_v1_runtime_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -692,7 +404,7 @@ func (x *ObsCommandRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ObsCommandRequest.ProtoReflect.Descriptor instead.
 func (*ObsCommandRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_runtime_proto_rawDescGZIP(), []int{13}
+	return file_api_v1_runtime_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ObsCommandRequest) GetStageId() string {
@@ -718,7 +430,7 @@ type ObsCommandResponse struct {
 
 func (x *ObsCommandResponse) Reset() {
 	*x = ObsCommandResponse{}
-	mi := &file_api_v1_runtime_proto_msgTypes[14]
+	mi := &file_api_v1_runtime_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -730,7 +442,7 @@ func (x *ObsCommandResponse) String() string {
 func (*ObsCommandResponse) ProtoMessage() {}
 
 func (x *ObsCommandResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_runtime_proto_msgTypes[14]
+	mi := &file_api_v1_runtime_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -743,7 +455,7 @@ func (x *ObsCommandResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ObsCommandResponse.ProtoReflect.Descriptor instead.
 func (*ObsCommandResponse) Descriptor() ([]byte, []int) {
-	return file_api_v1_runtime_proto_rawDescGZIP(), []int{14}
+	return file_api_v1_runtime_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *ObsCommandResponse) GetOutput() string {
@@ -764,7 +476,7 @@ type SyncDiffRequest struct {
 
 func (x *SyncDiffRequest) Reset() {
 	*x = SyncDiffRequest{}
-	mi := &file_api_v1_runtime_proto_msgTypes[15]
+	mi := &file_api_v1_runtime_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -776,7 +488,7 @@ func (x *SyncDiffRequest) String() string {
 func (*SyncDiffRequest) ProtoMessage() {}
 
 func (x *SyncDiffRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_runtime_proto_msgTypes[15]
+	mi := &file_api_v1_runtime_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -789,7 +501,7 @@ func (x *SyncDiffRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncDiffRequest.ProtoReflect.Descriptor instead.
 func (*SyncDiffRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_runtime_proto_rawDescGZIP(), []int{15}
+	return file_api_v1_runtime_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *SyncDiffRequest) GetStageId() string {
@@ -822,7 +534,7 @@ type SyncDiffResponse struct {
 
 func (x *SyncDiffResponse) Reset() {
 	*x = SyncDiffResponse{}
-	mi := &file_api_v1_runtime_proto_msgTypes[16]
+	mi := &file_api_v1_runtime_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -834,7 +546,7 @@ func (x *SyncDiffResponse) String() string {
 func (*SyncDiffResponse) ProtoMessage() {}
 
 func (x *SyncDiffResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_runtime_proto_msgTypes[16]
+	mi := &file_api_v1_runtime_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -847,7 +559,7 @@ func (x *SyncDiffResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncDiffResponse.ProtoReflect.Descriptor instead.
 func (*SyncDiffResponse) Descriptor() ([]byte, []int) {
-	return file_api_v1_runtime_proto_rawDescGZIP(), []int{16}
+	return file_api_v1_runtime_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *SyncDiffResponse) GetNeed() []string {
@@ -867,7 +579,7 @@ type SyncPushRequest struct {
 
 func (x *SyncPushRequest) Reset() {
 	*x = SyncPushRequest{}
-	mi := &file_api_v1_runtime_proto_msgTypes[17]
+	mi := &file_api_v1_runtime_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -879,7 +591,7 @@ func (x *SyncPushRequest) String() string {
 func (*SyncPushRequest) ProtoMessage() {}
 
 func (x *SyncPushRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_runtime_proto_msgTypes[17]
+	mi := &file_api_v1_runtime_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -892,7 +604,7 @@ func (x *SyncPushRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncPushRequest.ProtoReflect.Descriptor instead.
 func (*SyncPushRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_runtime_proto_rawDescGZIP(), []int{17}
+	return file_api_v1_runtime_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *SyncPushRequest) GetStageId() string {
@@ -919,7 +631,7 @@ type SyncPushResponse struct {
 
 func (x *SyncPushResponse) Reset() {
 	*x = SyncPushResponse{}
-	mi := &file_api_v1_runtime_proto_msgTypes[18]
+	mi := &file_api_v1_runtime_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -931,7 +643,7 @@ func (x *SyncPushResponse) String() string {
 func (*SyncPushResponse) ProtoMessage() {}
 
 func (x *SyncPushResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_runtime_proto_msgTypes[18]
+	mi := &file_api_v1_runtime_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -944,7 +656,7 @@ func (x *SyncPushResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncPushResponse.ProtoReflect.Descriptor instead.
 func (*SyncPushResponse) Descriptor() ([]byte, []int) {
-	return file_api_v1_runtime_proto_rawDescGZIP(), []int{18}
+	return file_api_v1_runtime_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *SyncPushResponse) GetSynced() int32 {
@@ -970,7 +682,7 @@ type RefreshRequest struct {
 
 func (x *RefreshRequest) Reset() {
 	*x = RefreshRequest{}
-	mi := &file_api_v1_runtime_proto_msgTypes[19]
+	mi := &file_api_v1_runtime_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -982,7 +694,7 @@ func (x *RefreshRequest) String() string {
 func (*RefreshRequest) ProtoMessage() {}
 
 func (x *RefreshRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_runtime_proto_msgTypes[19]
+	mi := &file_api_v1_runtime_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -995,7 +707,7 @@ func (x *RefreshRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RefreshRequest.ProtoReflect.Descriptor instead.
 func (*RefreshRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_runtime_proto_rawDescGZIP(), []int{19}
+	return file_api_v1_runtime_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *RefreshRequest) GetStageId() string {
@@ -1014,7 +726,7 @@ type RefreshResponse struct {
 
 func (x *RefreshResponse) Reset() {
 	*x = RefreshResponse{}
-	mi := &file_api_v1_runtime_proto_msgTypes[20]
+	mi := &file_api_v1_runtime_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1026,7 +738,7 @@ func (x *RefreshResponse) String() string {
 func (*RefreshResponse) ProtoMessage() {}
 
 func (x *RefreshResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_runtime_proto_msgTypes[20]
+	mi := &file_api_v1_runtime_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1039,7 +751,7 @@ func (x *RefreshResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RefreshResponse.ProtoReflect.Descriptor instead.
 func (*RefreshResponse) Descriptor() ([]byte, []int) {
-	return file_api_v1_runtime_proto_rawDescGZIP(), []int{20}
+	return file_api_v1_runtime_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *RefreshResponse) GetOk() bool {
@@ -1053,24 +765,7 @@ var File_api_v1_runtime_proto protoreflect.FileDescriptor
 
 const file_api_v1_runtime_proto_rawDesc = "" +
 	"\n" +
-	"\x14api/v1/runtime.proto\x12\tdazzle.v1\"E\n" +
-	"\x10SetScriptRequest\x12\x19\n" +
-	"\bstage_id\x18\x01 \x01(\tR\astageId\x12\x16\n" +
-	"\x06script\x18\x02 \x01(\tR\x06script\"#\n" +
-	"\x11SetScriptResponse\x12\x0e\n" +
-	"\x02ok\x18\x01 \x01(\bR\x02ok\"-\n" +
-	"\x10GetScriptRequest\x12\x19\n" +
-	"\bstage_id\x18\x01 \x01(\tR\astageId\"+\n" +
-	"\x11GetScriptResponse\x12\x16\n" +
-	"\x06script\x18\x01 \x01(\tR\x06script\"l\n" +
-	"\x11EditScriptRequest\x12\x19\n" +
-	"\bstage_id\x18\x01 \x01(\tR\astageId\x12\x1d\n" +
-	"\n" +
-	"old_string\x18\x02 \x01(\tR\toldString\x12\x1d\n" +
-	"\n" +
-	"new_string\x18\x03 \x01(\tR\tnewString\"$\n" +
-	"\x12EditScriptResponse\x12\x0e\n" +
-	"\x02ok\x18\x01 \x01(\bR\x02ok\"W\n" +
+	"\x14api/v1/runtime.proto\x12\tdazzle.v1\"W\n" +
 	"\x10EmitEventRequest\x12\x19\n" +
 	"\bstage_id\x18\x01 \x01(\tR\astageId\x12\x14\n" +
 	"\x05event\x18\x02 \x01(\tR\x05event\x12\x12\n" +
@@ -1114,12 +809,8 @@ const file_api_v1_runtime_proto_rawDesc = "" +
 	"\x0eRefreshRequest\x12\x19\n" +
 	"\bstage_id\x18\x01 \x01(\tR\astageId\"!\n" +
 	"\x0fRefreshResponse\x12\x0e\n" +
-	"\x02ok\x18\x01 \x01(\bR\x02ok2\xd9\x05\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok2\xfe\x03\n" +
 	"\x0eRuntimeService\x12F\n" +
-	"\tSetScript\x12\x1b.dazzle.v1.SetScriptRequest\x1a\x1c.dazzle.v1.SetScriptResponse\x12F\n" +
-	"\tGetScript\x12\x1b.dazzle.v1.GetScriptRequest\x1a\x1c.dazzle.v1.GetScriptResponse\x12I\n" +
-	"\n" +
-	"EditScript\x12\x1c.dazzle.v1.EditScriptRequest\x1a\x1d.dazzle.v1.EditScriptResponse\x12F\n" +
 	"\tEmitEvent\x12\x1b.dazzle.v1.EmitEventRequest\x1a\x1c.dazzle.v1.EmitEventResponse\x12@\n" +
 	"\aGetLogs\x12\x19.dazzle.v1.GetLogsRequest\x1a\x1a.dazzle.v1.GetLogsResponse\x12I\n" +
 	"\n" +
@@ -1142,56 +833,44 @@ func file_api_v1_runtime_proto_rawDescGZIP() []byte {
 	return file_api_v1_runtime_proto_rawDescData
 }
 
-var file_api_v1_runtime_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
+var file_api_v1_runtime_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_api_v1_runtime_proto_goTypes = []any{
-	(*SetScriptRequest)(nil),   // 0: dazzle.v1.SetScriptRequest
-	(*SetScriptResponse)(nil),  // 1: dazzle.v1.SetScriptResponse
-	(*GetScriptRequest)(nil),   // 2: dazzle.v1.GetScriptRequest
-	(*GetScriptResponse)(nil),  // 3: dazzle.v1.GetScriptResponse
-	(*EditScriptRequest)(nil),  // 4: dazzle.v1.EditScriptRequest
-	(*EditScriptResponse)(nil), // 5: dazzle.v1.EditScriptResponse
-	(*EmitEventRequest)(nil),   // 6: dazzle.v1.EmitEventRequest
-	(*EmitEventResponse)(nil),  // 7: dazzle.v1.EmitEventResponse
-	(*GetLogsRequest)(nil),     // 8: dazzle.v1.GetLogsRequest
-	(*LogEntry)(nil),           // 9: dazzle.v1.LogEntry
-	(*GetLogsResponse)(nil),    // 10: dazzle.v1.GetLogsResponse
-	(*ScreenshotRequest)(nil),  // 11: dazzle.v1.ScreenshotRequest
-	(*ScreenshotResponse)(nil), // 12: dazzle.v1.ScreenshotResponse
-	(*ObsCommandRequest)(nil),  // 13: dazzle.v1.ObsCommandRequest
-	(*ObsCommandResponse)(nil), // 14: dazzle.v1.ObsCommandResponse
-	(*SyncDiffRequest)(nil),    // 15: dazzle.v1.SyncDiffRequest
-	(*SyncDiffResponse)(nil),   // 16: dazzle.v1.SyncDiffResponse
-	(*SyncPushRequest)(nil),    // 17: dazzle.v1.SyncPushRequest
-	(*SyncPushResponse)(nil),   // 18: dazzle.v1.SyncPushResponse
-	(*RefreshRequest)(nil),     // 19: dazzle.v1.RefreshRequest
-	(*RefreshResponse)(nil),    // 20: dazzle.v1.RefreshResponse
-	nil,                        // 21: dazzle.v1.SyncDiffRequest.FilesEntry
+	(*EmitEventRequest)(nil),   // 0: dazzle.v1.EmitEventRequest
+	(*EmitEventResponse)(nil),  // 1: dazzle.v1.EmitEventResponse
+	(*GetLogsRequest)(nil),     // 2: dazzle.v1.GetLogsRequest
+	(*LogEntry)(nil),           // 3: dazzle.v1.LogEntry
+	(*GetLogsResponse)(nil),    // 4: dazzle.v1.GetLogsResponse
+	(*ScreenshotRequest)(nil),  // 5: dazzle.v1.ScreenshotRequest
+	(*ScreenshotResponse)(nil), // 6: dazzle.v1.ScreenshotResponse
+	(*ObsCommandRequest)(nil),  // 7: dazzle.v1.ObsCommandRequest
+	(*ObsCommandResponse)(nil), // 8: dazzle.v1.ObsCommandResponse
+	(*SyncDiffRequest)(nil),    // 9: dazzle.v1.SyncDiffRequest
+	(*SyncDiffResponse)(nil),   // 10: dazzle.v1.SyncDiffResponse
+	(*SyncPushRequest)(nil),    // 11: dazzle.v1.SyncPushRequest
+	(*SyncPushResponse)(nil),   // 12: dazzle.v1.SyncPushResponse
+	(*RefreshRequest)(nil),     // 13: dazzle.v1.RefreshRequest
+	(*RefreshResponse)(nil),    // 14: dazzle.v1.RefreshResponse
+	nil,                        // 15: dazzle.v1.SyncDiffRequest.FilesEntry
 }
 var file_api_v1_runtime_proto_depIdxs = []int32{
-	9,  // 0: dazzle.v1.GetLogsResponse.entries:type_name -> dazzle.v1.LogEntry
-	21, // 1: dazzle.v1.SyncDiffRequest.files:type_name -> dazzle.v1.SyncDiffRequest.FilesEntry
-	0,  // 2: dazzle.v1.RuntimeService.SetScript:input_type -> dazzle.v1.SetScriptRequest
-	2,  // 3: dazzle.v1.RuntimeService.GetScript:input_type -> dazzle.v1.GetScriptRequest
-	4,  // 4: dazzle.v1.RuntimeService.EditScript:input_type -> dazzle.v1.EditScriptRequest
-	6,  // 5: dazzle.v1.RuntimeService.EmitEvent:input_type -> dazzle.v1.EmitEventRequest
-	8,  // 6: dazzle.v1.RuntimeService.GetLogs:input_type -> dazzle.v1.GetLogsRequest
-	11, // 7: dazzle.v1.RuntimeService.Screenshot:input_type -> dazzle.v1.ScreenshotRequest
-	13, // 8: dazzle.v1.RuntimeService.ObsCommand:input_type -> dazzle.v1.ObsCommandRequest
-	15, // 9: dazzle.v1.RuntimeService.SyncDiff:input_type -> dazzle.v1.SyncDiffRequest
-	17, // 10: dazzle.v1.RuntimeService.SyncPush:input_type -> dazzle.v1.SyncPushRequest
-	19, // 11: dazzle.v1.RuntimeService.Refresh:input_type -> dazzle.v1.RefreshRequest
-	1,  // 12: dazzle.v1.RuntimeService.SetScript:output_type -> dazzle.v1.SetScriptResponse
-	3,  // 13: dazzle.v1.RuntimeService.GetScript:output_type -> dazzle.v1.GetScriptResponse
-	5,  // 14: dazzle.v1.RuntimeService.EditScript:output_type -> dazzle.v1.EditScriptResponse
-	7,  // 15: dazzle.v1.RuntimeService.EmitEvent:output_type -> dazzle.v1.EmitEventResponse
-	10, // 16: dazzle.v1.RuntimeService.GetLogs:output_type -> dazzle.v1.GetLogsResponse
-	12, // 17: dazzle.v1.RuntimeService.Screenshot:output_type -> dazzle.v1.ScreenshotResponse
-	14, // 18: dazzle.v1.RuntimeService.ObsCommand:output_type -> dazzle.v1.ObsCommandResponse
-	16, // 19: dazzle.v1.RuntimeService.SyncDiff:output_type -> dazzle.v1.SyncDiffResponse
-	18, // 20: dazzle.v1.RuntimeService.SyncPush:output_type -> dazzle.v1.SyncPushResponse
-	20, // 21: dazzle.v1.RuntimeService.Refresh:output_type -> dazzle.v1.RefreshResponse
-	12, // [12:22] is the sub-list for method output_type
-	2,  // [2:12] is the sub-list for method input_type
+	3,  // 0: dazzle.v1.GetLogsResponse.entries:type_name -> dazzle.v1.LogEntry
+	15, // 1: dazzle.v1.SyncDiffRequest.files:type_name -> dazzle.v1.SyncDiffRequest.FilesEntry
+	0,  // 2: dazzle.v1.RuntimeService.EmitEvent:input_type -> dazzle.v1.EmitEventRequest
+	2,  // 3: dazzle.v1.RuntimeService.GetLogs:input_type -> dazzle.v1.GetLogsRequest
+	5,  // 4: dazzle.v1.RuntimeService.Screenshot:input_type -> dazzle.v1.ScreenshotRequest
+	7,  // 5: dazzle.v1.RuntimeService.ObsCommand:input_type -> dazzle.v1.ObsCommandRequest
+	9,  // 6: dazzle.v1.RuntimeService.SyncDiff:input_type -> dazzle.v1.SyncDiffRequest
+	11, // 7: dazzle.v1.RuntimeService.SyncPush:input_type -> dazzle.v1.SyncPushRequest
+	13, // 8: dazzle.v1.RuntimeService.Refresh:input_type -> dazzle.v1.RefreshRequest
+	1,  // 9: dazzle.v1.RuntimeService.EmitEvent:output_type -> dazzle.v1.EmitEventResponse
+	4,  // 10: dazzle.v1.RuntimeService.GetLogs:output_type -> dazzle.v1.GetLogsResponse
+	6,  // 11: dazzle.v1.RuntimeService.Screenshot:output_type -> dazzle.v1.ScreenshotResponse
+	8,  // 12: dazzle.v1.RuntimeService.ObsCommand:output_type -> dazzle.v1.ObsCommandResponse
+	10, // 13: dazzle.v1.RuntimeService.SyncDiff:output_type -> dazzle.v1.SyncDiffResponse
+	12, // 14: dazzle.v1.RuntimeService.SyncPush:output_type -> dazzle.v1.SyncPushResponse
+	14, // 15: dazzle.v1.RuntimeService.Refresh:output_type -> dazzle.v1.RefreshResponse
+	9,  // [9:16] is the sub-list for method output_type
+	2,  // [2:9] is the sub-list for method input_type
 	2,  // [2:2] is the sub-list for extension type_name
 	2,  // [2:2] is the sub-list for extension extendee
 	0,  // [0:2] is the sub-list for field type_name
@@ -1208,7 +887,7 @@ func file_api_v1_runtime_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_v1_runtime_proto_rawDesc), len(file_api_v1_runtime_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   22,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

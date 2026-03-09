@@ -5,9 +5,6 @@ package dazzle.v1;
 option go_package = "github.com/dazzle-labs/cli/gen/api/v1;apiv1";
 
 service RuntimeService {
-  rpc SetScript(SetScriptRequest) returns (SetScriptResponse);
-  rpc GetScript(GetScriptRequest) returns (GetScriptResponse);
-  rpc EditScript(EditScriptRequest) returns (EditScriptResponse);
   rpc EmitEvent(EmitEventRequest) returns (EmitEventResponse);
   rpc GetLogs(GetLogsRequest) returns (GetLogsResponse);
   rpc Screenshot(ScreenshotRequest) returns (ScreenshotResponse);
@@ -16,15 +13,6 @@ service RuntimeService {
   rpc SyncPush(stream SyncPushRequest) returns (SyncPushResponse);
   rpc Refresh(RefreshRequest) returns (RefreshResponse);
 }
-
-message SetScriptRequest { string stage_id = 1; string script = 2; }
-message SetScriptResponse { bool ok = 1; }
-
-message GetScriptRequest { string stage_id = 1; }
-message GetScriptResponse { string script = 1; }
-
-message EditScriptRequest { string stage_id = 1; string old_string = 2; string new_string = 3; }
-message EditScriptResponse { bool ok = 1; }
 
 message EmitEventRequest { string stage_id = 1; string event = 2; string data = 3; }
 message EmitEventResponse { bool ok = 1; }
