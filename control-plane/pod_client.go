@@ -33,8 +33,8 @@ type ScriptResponse struct {
 // LogEntry is a single browser console log entry returned by GET /api/logs.
 type LogEntry struct {
 	Level     string `json:"level"`
-	Message   string `json:"message"`
-	Timestamp string `json:"timestamp"`
+	Message   string `json:"text"`
+	Timestamp string `json:"ts"`
 }
 
 func (p *podClient) GetScript(podIP string) (*ScriptResponse, error) {
@@ -116,11 +116,13 @@ func (p *podClient) GetLogs(podIP string, limit int) ([]LogEntry, error) {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("get logs: pod returned %d: %s", resp.StatusCode, string(body))
 	}
-	var entries []LogEntry
-	if err := json.NewDecoder(resp.Body).Decode(&entries); err != nil {
+	var wrapper struct {
+		Entries []LogEntry `json:"entries"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&wrapper); err != nil {
 		return nil, fmt.Errorf("get logs: decode response: %w", err)
 	}
-	return entries, nil
+	return wrapper.Entries, nil
 }
 
 // Screenshot captures a screenshot via OBS WebSocket and returns the raw PNG bytes.

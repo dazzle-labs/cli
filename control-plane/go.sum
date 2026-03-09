@@ -12,6 +12,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dazzle-labs/cli v0.1.0-beta.20 h1:jZkliXOYXK09Rlu+Az3mjU16lAtVxg1yFmwFXgg5mEM=
 github.com/dazzle-labs/cli v0.1.0-beta.20/go.mod h1:lyH9GCIw9Sx2rftuFQH55IWky0jYU+dF2DF24hV7+1A=
+github.com/dazzle-labs/cli v0.1.0-beta.21 h1:WH1ZTqA2aJkKQ+oAyXLhBjlEuTF9GW1IG8JQiYA2K0Y=
+github.com/dazzle-labs/cli v0.1.0-beta.21/go.mod h1:lyH9GCIw9Sx2rftuFQH55IWky0jYU+dF2DF24hV7+1A=
 github.com/emicklei/go-restful/v3 v3.11.0 h1:rAQeMHw1c7zTmncogyy8VvRZwtkmkZ4FxERmMY4rD+g=
 github.com/emicklei/go-restful/v3 v3.11.0/go.mod h1:6n3XBCmQQb25CM2LCACGz8ukIrRry+4bhvbpWn3mrbc=
 github.com/frankban/quicktest v1.14.6 h1:7Xjx+VpznH+oBnejlPUj8oUpdxnVs4f8XU8WnHkI4W8=
