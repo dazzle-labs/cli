@@ -233,7 +233,7 @@ prod/infra/encrypt-state:
 	@if [ -f "$(TFSTATE)" ]; then \
 		sops --encrypt $(TFSTATE) > $(TFSTATE_ENC); \
 		rm -f $(TFSTATE) $(TFSTATE).backup; \
-		$(OK) "State encrypted to $(TFSTATE_ENC)"; \
+		printf "$(_bold)$(_green)✓ State encrypted to $(TFSTATE_ENC)$(_reset)\n"; \
 	fi
 
 prod/infra/init: ## Initialize OpenTofu providers
