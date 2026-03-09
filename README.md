@@ -104,9 +104,9 @@ For stage-scoped commands, the stage is resolved in this order:
 2. Auto-select if you have exactly one stage
 
 ```bash
-# Specify stage per-command (flag goes at the end)
-dazzle stage sync ./app -s my-stage
-dazzle stage status -s my-stage
+# Specify which stage to use
+dazzle stage sync ./app --stage my-stage
+dazzle stage status --stage my-stage
 
 # Or set for your session
 export DAZZLE_STAGE=my-stage
