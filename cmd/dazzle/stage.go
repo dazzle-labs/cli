@@ -15,8 +15,8 @@ type StageCmd struct {
 	List       StageListCmd   `cmd:"" aliases:"ls" help:"List stages."`
 	Create     StageCreateCmd `cmd:"" aliases:"new" help:"Create a stage."`
 	Delete     StageDeleteCmd `cmd:"" aliases:"rm" help:"Delete a stage."`
-	Activate   StageStartCmd  `cmd:"" aliases:"start,up" help:"Activate a stage."`
-	Deactivate StageStopCmd   `cmd:"" aliases:"stop,down" help:"Deactivate a stage."`
+	Up   StageStartCmd `cmd:"" help:"Activate a stage."`
+	Down StageStopCmd  `cmd:"" help:"Deactivate a stage."`
 	Status     StageStatusCmd `cmd:"" aliases:"st" help:"Show stage status."`
 	Preview    StagePreviewCmd `cmd:"" help:"Show the shareable preview URL for a running stage."`
 	// Stage operations

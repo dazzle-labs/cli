@@ -42,7 +42,7 @@ dazzle login
 
 # Create and activate a stage
 dazzle stage create my-stage
-dazzle stage activate
+dazzle stage up
 
 # Push content (JS or JSX, hot-swapped via HMR)
 dazzle stage script set my-overlay.jsx
@@ -76,8 +76,8 @@ dazzle stage broadcast on
 | `dazzle stage list` | `s ls` | List stages |
 | `dazzle stage create <name>` | `s new` | Create a stage |
 | `dazzle stage delete <name>` | `s rm` | Delete a stage |
-| `dazzle stage activate` | `s up` | Activate a stage |
-| `dazzle stage deactivate` | `s down` | Deactivate a stage |
+| `dazzle stage up` | `s up` | Activate a stage |
+| `dazzle stage down` | `s down` | Deactivate a stage |
 | `dazzle stage status` | `s st` | Show stage status |
 | `dazzle stage script set <file>` | `s sc set` | Push JS/JSX to stage |
 | `dazzle stage script get` | `s sc get` | Get current script |
