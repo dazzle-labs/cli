@@ -87,9 +87,9 @@ func (c *StageListCmd) Run(ctx *Context) error {
 		return nil
 	}
 
-	tableHeader("NAME", "ID", "STATUS")
+	tableHeader("NAME", "STATUS")
 	for _, s := range resp.Msg.Stages {
-		printText("%s", tableRow(stageDisplayName(s), s.Id, s.Status))
+		printText("%s", tableRow(stageDisplayName(s), s.Status))
 	}
 	return nil
 }
@@ -117,7 +117,7 @@ func (c *StageCreateCmd) Run(ctx *Context) error {
 		return nil
 	}
 
-	printText("Stage %q created (ID: %s)", stageDisplayName(resp.Msg.Stage), resp.Msg.Stage.Id)
+	printText("Stage %q created.", stageDisplayName(resp.Msg.Stage))
 	return nil
 }
 
@@ -239,7 +239,7 @@ func (c *StageStatusCmd) Run(ctx *Context) error {
 		return nil
 	}
 
-	printText("Name:   %s\nID:     %s\nStatus: %s", stageDisplayName(stage), stage.Id, stage.Status)
+	printText("Name:   %s\nStatus: %s", stageDisplayName(stage), stage.Status)
 	if stage.Preview != nil {
 		printText("Watch:  %s\nHLS:    %s", stage.Preview.WatchUrl, stage.Preview.HlsUrl)
 	}
