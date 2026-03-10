@@ -3,7 +3,10 @@ import { stageClient } from "../../client.js";
 import type { Stage } from "../../gen/api/v1/stage_pb.js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { ArrowRight, AlertTriangle } from "lucide-react";
 
 interface EndpointCreatorProps {
   onCreated: (stage: Stage, apiKey: string | null) => void;
@@ -36,13 +39,10 @@ export function EndpointCreator({ onCreated, onNavigate }: EndpointCreatorProps)
 
   return (
     <div className="flex flex-col items-center">
-      <h2
-        className="text-2xl tracking-[-0.02em] text-white mb-2"
-        style={{ fontFamily: "'DM Serif Display', serif" }}
-      >
+      <h2 className="text-2xl tracking-[-0.02em] text-foreground mb-2 font-display">
         Set up your stage
       </h2>
-      <p className="text-sm text-zinc-500 mb-6 max-w-md text-center">
+      <p className="text-sm text-muted-foreground mb-6 max-w-md text-center">
         A cloud environment your agent can control.
       </p>
 
@@ -50,12 +50,19 @@ export function EndpointCreator({ onCreated, onNavigate }: EndpointCreatorProps)
         {status === "input" && (
           <>
             <div>
-              <label className="text-xs font-medium text-zinc-500 mb-1.5 block">
+              <Label htmlFor="stage-name" className="text-xs font-medium text-muted-foreground mb-1.5">
                 Stage name
-              </label>
+              </Label>
               <Input
+                id="stage-name"
                 value={stageName}
                 onChange={(e) => setStageName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleCreate();
+                  }
+                }}
                 placeholder="e.g. My Stream, Demo Bot"
               />
             </div>
@@ -63,7 +70,7 @@ export function EndpointCreator({ onCreated, onNavigate }: EndpointCreatorProps)
             <div className="flex justify-center">
               <Button
                 onClick={handleCreate}
-                className="bg-emerald-500 text-zinc-950 hover:bg-emerald-400 font-semibold"
+                className="font-semibold"
               >
                 Create Stage
                 <ArrowRight className="h-4 w-4 ml-1" />
@@ -73,15 +80,17 @@ export function EndpointCreator({ onCreated, onNavigate }: EndpointCreatorProps)
         )}
 
         {status === "creating" && (
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-6 flex flex-col items-center gap-3">
-            <Loader2 className="h-8 w-8 text-emerald-400 animate-spin" />
-            <p className="text-sm text-zinc-400">Creating stage...</p>
+          <div className="rounded-xl border border-border bg-card p-6 flex flex-col items-center gap-3">
+            <Spinner className="text-primary" />
+            <p className="text-sm text-muted-foreground">Creating stage...</p>
           </div>
         )}
 
         {status === "error" && (
-          <div className="rounded-xl border border-red-500/20 bg-red-500/[0.05] p-6 text-center">
-            <p className="text-sm text-red-400 mb-3">{error}</p>
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
             <Button
               onClick={() => {
                 setStatus("input");
@@ -90,11 +99,11 @@ export function EndpointCreator({ onCreated, onNavigate }: EndpointCreatorProps)
               }}
               variant="ghost"
               size="sm"
-              className="text-zinc-400 hover:text-white"
+              className="mt-2"
             >
               Try again
             </Button>
-          </div>
+          </Alert>
         )}
       </div>
     </div>

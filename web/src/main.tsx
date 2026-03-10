@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { ClerkProvider } from "@clerk/react";
 import { dark } from "@clerk/ui/themes";
 import { App } from "./App.js";
+import { Toaster } from "./components/ui/sonner.js";
 import "./index.css";
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string;
@@ -15,6 +16,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <ClerkProvider publishableKey={clerkPubKey} appearance={{ theme: dark }}>
       <App />
+      <Toaster richColors />
     </ClerkProvider>
   </React.StrictMode>
 );

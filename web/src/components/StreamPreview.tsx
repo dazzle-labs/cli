@@ -1,6 +1,8 @@
 import { useEffect, useRef, useCallback } from "react";
+import { motion } from "motion/react";
 import { useAuth } from "@clerk/react";
 import Hls from "hls.js";
+import { springs } from "@/lib/motion";
 
 interface StreamPreviewProps {
   stageId: string;
@@ -84,13 +86,23 @@ export function StreamPreview({ stageId, status }: StreamPreviewProps) {
     return destroyHls;
   }, [stageId, status, getToken, destroyHls]);
 
+  if (status === "starting") {
+    return (
+      <div className="aspect-video rounded-xl bg-card border border-border flex items-center justify-center overflow-hidden relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-muted/40 to-transparent animate-pulse" />
+        <p className="text-base text-muted-foreground z-10">
+          Starting up...
+        </p>
+      </div>
+    );
+  }
+
   if (status !== "running") {
     return (
-      <div className="aspect-video rounded-xl bg-zinc-900 border border-white/[0.06] flex items-center justify-center">
-        <p
-          className="text-sm text-zinc-600 text-center px-8 leading-relaxed"
-          style={{ fontFamily: "'Outfit', sans-serif" }}
-        >
+      <div className="aspect-video rounded-xl bg-card border border-border flex items-center justify-center relative overflow-hidden">
+        {/* Animated gradient border hint */}
+        <div className="absolute inset-0 rounded-xl ring-1 ring-inset ring-emerald-500/10 animate-live-pulse" />
+        <p className="text-base text-muted-foreground text-center px-8 leading-relaxed">
           Your stage is dark.
           <br />
           It'll light up when the stage is activated.
@@ -100,7 +112,12 @@ export function StreamPreview({ stageId, status }: StreamPreviewProps) {
   }
 
   return (
-    <div className="aspect-video rounded-xl bg-zinc-900 border border-white/[0.06] overflow-hidden">
+    <motion.div
+      className="aspect-video rounded-xl bg-card border border-border overflow-hidden"
+      initial={{ scale: 0.97, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={springs.gentle}
+    >
       <video
         ref={videoRef}
         className="w-full h-full object-contain bg-black"
@@ -108,6 +125,6 @@ export function StreamPreview({ stageId, status }: StreamPreviewProps) {
         muted
         playsInline
       />
-    </div>
+    </motion.div>
   );
 }

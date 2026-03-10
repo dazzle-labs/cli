@@ -8,7 +8,7 @@ CLI_COMMIT := $(shell git -C cli rev-parse HEAD 2>/dev/null || echo main)
 CP_BUILD := docker build -f control-plane/docker/Dockerfile --build-arg VITE_CLERK_PUBLISHABLE_KEY=$(CLERK_PK) --build-arg GIT_COMMIT=$(CLI_COMMIT) -t $(CP_IMG) .
 SIDECAR_IMG := dazzlefm/agent-streamer-sidecar:main
 STR_BUILD := docker build --platform linux/amd64 -f streamer/docker/Dockerfile -t $(STR_IMG) streamer/
-SIDECAR_BUILD := docker build --platform linux/amd64 -f sidecar/Dockerfile -t $(SIDECAR_IMG) sidecar/
+SIDECAR_BUILD := docker build -f sidecar/Dockerfile -t $(SIDECAR_IMG) sidecar/
 
 # Colored log helpers
 _cyan    = \033[36m
@@ -29,7 +29,7 @@ INFRA_DIR := k8s/hetzner
 TFSTATE   := $(INFRA_DIR)/terraform.tfstate
 TFSTATE_ENC := $(INFRA_DIR)/terraform.tfstate.enc
 
-.PHONY: help check-deps proto up down build build-cp build-streamer deploy dev llms-txt logs status \
+.PHONY: help check-deps check-cli proto up down build build-cp build-streamer deploy dev llms-txt logs status \
         kubectx prod/kubectl prod/status prod/nodes \
         prod/infra/init prod/infra/plan prod/infra/apply prod/infra/output \
         k8s/% prod/k8s/% \
@@ -81,11 +81,26 @@ check-cluster:
 	@kind get clusters 2>/dev/null | grep -q '^$(NS)$$' || { echo "ERROR: Kind cluster not running. Run 'make up' first."; exit 1; }
 	@kubectl --context $(KIND_CTX) cluster-info >/dev/null 2>&1 || { echo "ERROR: Kind cluster not reachable. Try 'make down && make up'."; exit 1; }
 
-proto: ## Generate protobuf code (Go + TypeScript)
+check-cli:
+	@if git submodule status cli | grep -q '^-'; then \
+		echo ""; \
+		echo "ERROR: cli/ submodule is not initialized."; \
+		echo ""; \
+		echo "  Run:  git submodule update --init cli"; \
+		echo ""; \
+		exit 1; \
+	fi
+	@if git submodule status cli | grep -q '^\+'; then \
+		printf "$(_yellow)WARNING: cli/ submodule is out-of-date (checked-out commit differs from what this branch expects).$(_reset)\n"; \
+		printf "$(_yellow)  To update:  git submodule update cli$(_reset)\n"; \
+		echo ""; \
+	fi
+
+proto: check-cli ## Generate protobuf code (Go + TypeScript)
 	$(MAKE) -C cli proto
 	$(MAKE) -C control-plane proto
 
-up: check-deps ## Create Kind cluster, build images, deploy full stack
+up: check-deps check-cli ## Create Kind cluster, build images, deploy full stack
 	$(STEP) "Building control-plane image"
 	$(CP_BUILD)
 	$(STEP) "Building streamer image"
@@ -107,7 +122,7 @@ up: check-deps ## Create Kind cluster, build images, deploy full stack
 	kind load docker-image $(SIDECAR_IMG) --name $(NS)
 	$(STEP) "Applying secrets"
 	sops -d k8s/local/local.secrets.yaml | $(KCTL) apply -f -
-	@if sops -d k8s/control-plane/oauth.secrets.yaml 2>/dev/null | $(KCTL) apply -f - 2>/dev/null; then \
+	@if sops -d k8s/secrets/oauth.secrets.yaml 2>/dev/null | $(KCTL) apply -f - 2>/dev/null; then \
 		echo "  oauth secrets applied"; \
 	fi
 	@if sops -d k8s/secrets/r2-credentials.secrets.yaml 2>/dev/null | $(KCTL) apply -f - 2>/dev/null; then \
@@ -119,11 +134,11 @@ up: check-deps ## Create Kind cluster, build images, deploy full stack
 	$(KCTL) apply -f k8s/control-plane/rbac.yaml
 	$(KCTL) apply -f k8s/control-plane/deployment.yaml
 	$(KCTL) apply -f k8s/local/service.yaml
-	$(KCTL) set env deployment/control-plane OAUTH_REDIRECT_BASE_URL=http://localhost:8080
+	$(KCTL) set env deployment/control-plane OAUTH_REDIRECT_BASE_URL=http://localhost:5173
 	$(STEP) "Waiting for pods"
 	$(KCTL) wait --for=condition=ready pod -l app=postgres --timeout=120s
 	$(KCTL) rollout status deployment/control-plane --timeout=120s
-	$(OK) "Local stack ready — http://localhost:8080"
+	$(OK) "Local stack ready — http://localhost:5173"
 
 down: ## Delete the Kind cluster
 	kind delete cluster --name $(NS)
@@ -151,7 +166,7 @@ build-sidecar: check-deps check-cluster ## Build sidecar image and load into Kin
 deploy: check-deps check-cluster ## Apply manifests and restart control-plane in Kind
 	$(STEP) "Applying secrets"
 	sops -d k8s/local/local.secrets.yaml | $(KCTL) apply -f -
-	@if sops -d k8s/control-plane/oauth.secrets.yaml 2>/dev/null | $(KCTL) apply -f - 2>/dev/null; then \
+	@if sops -d k8s/secrets/oauth.secrets.yaml 2>/dev/null | $(KCTL) apply -f - 2>/dev/null; then \
 		echo "  oauth secrets applied"; \
 	fi
 	@if sops -d k8s/secrets/r2-credentials.secrets.yaml 2>/dev/null | $(KCTL) apply -f - 2>/dev/null; then \
@@ -163,7 +178,7 @@ deploy: check-deps check-cluster ## Apply manifests and restart control-plane in
 	$(KCTL) apply -f k8s/control-plane/rbac.yaml
 	$(KCTL) apply -f k8s/control-plane/deployment.yaml
 	$(KCTL) apply -f k8s/local/service.yaml
-	$(KCTL) set env deployment/control-plane OAUTH_REDIRECT_BASE_URL=http://localhost:8080
+	$(KCTL) set env deployment/control-plane OAUTH_REDIRECT_BASE_URL=http://localhost:5173
 	$(STEP) "Restarting control-plane"
 	$(KCTL) rollout restart deployment/control-plane
 	$(KCTL) rollout status deployment/control-plane --timeout=120s
@@ -191,7 +206,7 @@ dev: up ## ★ Full local dev — build, deploy, watch everything
 	$(KCTL) logs -f deployment/control-plane & \
 	wait
 
-llms-txt: ## Regenerate llms.txt
+llms-txt: check-cli ## Regenerate llms.txt
 	./scripts/generate-llms-txt.sh > llms.txt
 	cp llms.txt web/public/llms.txt
 	$(OK) "llms.txt updated"

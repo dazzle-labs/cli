@@ -423,6 +423,45 @@ export const RegeneratePreviewTokenResponseSchema: GenMessage<RegeneratePreviewT
   messageDesc(file_api_v1_stage, 19);
 
 /**
+ * @generated from message dazzle.v1.RenameStageRequest
+ */
+export type RenameStageRequest = Message<"dazzle.v1.RenameStageRequest"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string name = 2;
+   */
+  name: string;
+};
+
+/**
+ * Describes the message dazzle.v1.RenameStageRequest.
+ * Use `create(RenameStageRequestSchema)` to create a new message.
+ */
+export const RenameStageRequestSchema: GenMessage<RenameStageRequest> = /*@__PURE__*/
+  messageDesc(file_api_v1_stage, 15);
+
+/**
+ * @generated from message dazzle.v1.RenameStageResponse
+ */
+export type RenameStageResponse = Message<"dazzle.v1.RenameStageResponse"> & {
+  /**
+   * @generated from field: dazzle.v1.Stage stage = 1;
+   */
+  stage?: Stage;
+};
+
+/**
+ * Describes the message dazzle.v1.RenameStageResponse.
+ * Use `create(RenameStageResponseSchema)` to create a new message.
+ */
+export const RenameStageResponseSchema: GenMessage<RenameStageResponse> = /*@__PURE__*/
+  messageDesc(file_api_v1_stage, 16);
+
+/**
  * @generated from service dazzle.v1.StageService
  */
 export const StageService: GenService<{

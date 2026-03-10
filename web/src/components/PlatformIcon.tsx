@@ -2,12 +2,19 @@ import { Twitch, Youtube, Repeat, Settings } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Custom Kick "K" icon matching Kick's app icon style
+// Custom Kick "K" icon — 8-bit pixel art style
 function KickIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <rect x="3" y="3" width="18" height="18" rx="4" />
-      <path d="M9.5 7v10M9.5 12l5-5M9.5 12l5 5" />
+    <svg viewBox="0 0 10 10" fill="currentColor" className={className} shapeRendering="crispEdges">
+      <rect x="1" y="1" width="3" height="8" />
+      <rect x="6" y="1" width="4" height="1" />
+      <rect x="5" y="2" width="4" height="1" />
+      <rect x="4" y="3" width="4" height="1" />
+      <rect x="3" y="4" width="4" height="1" />
+      <rect x="3" y="5" width="4" height="1" />
+      <rect x="4" y="6" width="4" height="1" />
+      <rect x="5" y="7" width="4" height="1" />
+      <rect x="6" y="8" width="4" height="1" />
     </svg>
   );
 }
@@ -30,6 +37,15 @@ export const PLATFORM_LIST = Object.entries(PLATFORMS).map(([value, config]) => 
   value,
   ...config,
 }));
+
+/** Per-platform brand-color hover classes for buttons/cards */
+export const PLATFORM_HOVER_COLORS: Record<string, string> = {
+  twitch: "hover:border-purple-500/20 hover:bg-purple-500/[0.03]",
+  youtube: "hover:border-red-500/20 hover:bg-red-500/[0.03]",
+  kick: "hover:border-green-500/20 hover:bg-green-500/[0.03]",
+  restream: "hover:border-blue-500/20 hover:bg-blue-500/[0.03]",
+  custom: "hover:border-zinc-400/20 hover:bg-zinc-400/[0.03]",
+};
 
 export function PlatformIcon({
   platform,

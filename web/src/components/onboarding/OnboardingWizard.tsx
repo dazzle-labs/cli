@@ -1,8 +1,9 @@
 import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@clerk/react";
-import { X, ArrowLeft, ArrowRight, Monitor, Tv, Cpu } from "lucide-react";
-import { Overlay } from "@/components/ui/overlay";
+import { motion, AnimatePresence } from "motion/react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { StepIndicator } from "./StepIndicator";
 import { EndpointCreator } from "./EndpointCreator";
 import { StreamDestinationForm } from "./StreamDestinationForm";
@@ -10,7 +11,9 @@ import type { StreamDestinationData } from "./StreamDestinationForm";
 import type { StreamDestination } from "../../gen/api/v1/stream_pb.js";
 import { stageClient, streamClient } from "../../client.js";
 import { Button } from "@/components/ui/button";
-import { PlatformIcon, PLATFORM_LIST } from "@/components/PlatformIcon";
+import { PlatformIcon, PLATFORM_LIST, PLATFORM_HOVER_COLORS } from "@/components/PlatformIcon";
+import { FlowDiagram } from "@/components/FlowDiagram";
+import { springs } from "@/lib/motion";
 
 interface OnboardingWizardProps {
   open: boolean;
@@ -18,9 +21,15 @@ interface OnboardingWizardProps {
   skipIntro?: boolean;
 }
 
-const WIZARD_STEPS = ["Set up platform", "Set up stage"];
+const WIZARD_STEPS = ["Connect a platform", "Create a stage"];
 
-const OAUTH_PLATFORMS = ["twitch", "youtube", "kick"] as const;
+const OAUTH_PLATFORMS = ["twitch", "youtube", "kick", "restream"] as const;
+
+const stepVariants = {
+  enter: { opacity: 0, y: 16 },
+  center: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -8 },
+};
 
 export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardProps) {
   const { getToken } = useAuth();
@@ -98,64 +107,22 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
   function renderInfoScreen() {
     return (
       <div className="flex flex-col items-center">
-        <h2
-          className="text-2xl tracking-[-0.02em] text-white mb-3"
-          style={{ fontFamily: "'DM Serif Display', serif" }}
-        >
+        <h2 className="text-2xl tracking-[-0.02em] text-foreground mb-3 font-display">
           How Dazzle works
         </h2>
-        <p className="text-sm text-zinc-500 mb-10 text-center max-w-md">
+        <p className="text-base text-muted-foreground mb-10 text-center max-w-md">
           Your AI agent connects to a Stage — a cloud environment it can control.
           The stage streams everything to your chosen platform.
         </p>
 
-        {/* Data flow diagram */}
-        <div className="flex items-start gap-4 sm:gap-6 mb-10 flex-wrap justify-center">
-          <div className="flex flex-col items-center gap-2">
-            <div className="h-16 w-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-              <Monitor className="h-7 w-7 text-blue-400" />
-            </div>
-            <div className="text-center">
-              <p className="text-xs font-medium text-zinc-300">Agent</p>
-              <p className="text-[10px] text-zinc-600">Claude, OpenAI,</p>
-              <p className="text-[10px] text-zinc-600">any AI agent</p>
-            </div>
-          </div>
-
-          <div className="flex items-center mt-[26px]">
-            <div className="w-8 sm:w-12 h-px bg-gradient-to-r from-blue-500/40 to-emerald-500/40" />
-            <ArrowRight className="h-3 w-3 text-zinc-600 -ml-1" />
-          </div>
-
-          <div className="flex flex-col items-center gap-2">
-            <div className="h-16 w-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-              <Cpu className="h-7 w-7 text-emerald-400" />
-            </div>
-            <div className="text-center">
-              <p className="text-xs font-medium text-zinc-300">Stage</p>
-              <p className="text-[10px] text-zinc-600">Cloud environment</p>
-            </div>
-          </div>
-
-          <div className="flex items-center mt-[26px]">
-            <div className="w-8 sm:w-12 h-px bg-gradient-to-r from-emerald-500/40 to-purple-500/40" />
-            <ArrowRight className="h-3 w-3 text-zinc-600 -ml-1" />
-          </div>
-
-          <div className="flex flex-col items-center gap-2">
-            <div className="h-16 w-16 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
-              <Tv className="h-7 w-7 text-purple-400" />
-            </div>
-            <div className="text-center">
-              <p className="text-xs font-medium text-zinc-300">Platform</p>
-              <p className="text-[10px] text-zinc-600">Twitch, YouTube</p>
-            </div>
-          </div>
+        {/* Animated flow diagram */}
+        <div className="mb-10">
+          <FlowDiagram />
         </div>
 
         <Button
           onClick={() => setShowInfoScreen(false)}
-          className="bg-emerald-500 text-zinc-950 hover:bg-emerald-400 font-semibold"
+          className="font-semibold"
         >
           Continue
           <ArrowRight className="h-4 w-4 ml-1" />
@@ -167,13 +134,10 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
   function renderDestinationsStep() {
     return (
       <div className="flex flex-col items-center">
-        <h2
-          className="text-2xl tracking-[-0.02em] text-white mb-2"
-          style={{ fontFamily: "'DM Serif Display', serif" }}
-        >
+        <h2 className="text-2xl tracking-[-0.02em] text-foreground mb-2 font-display">
           Stream Destinations
         </h2>
-        <p className="text-sm text-zinc-500 mb-6 text-center max-w-md">
+        <p className="text-base text-muted-foreground mb-6 text-center max-w-md">
           Stream destinations are the platforms your stage broadcasts to.
           Connect an account or add a custom RTMP destination.
         </p>
@@ -181,28 +145,30 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
         {/* Existing destinations */}
         {destinations.length > 0 && (
           <div className="w-full max-w-md mb-6">
-            <p className="text-xs font-medium text-zinc-400 mb-3">Select a destination</p>
+            <p className="text-sm font-medium text-muted-foreground mb-3">Use an existing destination</p>
             <div className="flex flex-col gap-2">
               {destinations.map((d) => (
-                <button
+                <motion.button
                   key={d.id}
                   type="button"
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => setSelectedDestId(d.id)}
-                  className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-all cursor-pointer ${
+                  className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-colors cursor-pointer ${
                     selectedDestId === d.id
-                      ? "border-emerald-500/30 bg-emerald-500/[0.06]"
-                      : "border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12]"
+                      ? "border-primary/30 bg-primary/[0.06]"
+                      : "border-border bg-card hover:border-border/80"
                   }`}
                 >
                   <PlatformIcon platform={d.platform} size="sm" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-zinc-300 truncate">{d.name || d.platformUsername || d.platform}</p>
-                    <p className="text-xs text-zinc-600">{d.platform}</p>
+                    <p className="text-base text-foreground truncate">{d.name || d.platformUsername || d.platform}</p>
+                    <p className="text-sm text-muted-foreground">{d.platform}</p>
                   </div>
                   {selectedDestId === d.id && (
-                    <div className="h-2 w-2 rounded-full bg-emerald-400 shrink-0" />
+                    <div className="h-2 w-2 rounded-full bg-primary shrink-0" />
                   )}
-                </button>
+                </motion.button>
               ))}
             </div>
           </div>
@@ -210,60 +176,82 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
 
         {/* Connect new destination */}
         <div className="mb-6">
-          <p className="text-xs font-medium text-zinc-400 mb-3 text-center">
+          <p className="text-sm font-medium text-muted-foreground mb-3 text-center">
             {destinations.length > 0 ? "Connect a new one" : "Platforms"}
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
             {OAUTH_PLATFORMS.filter(p => availablePlatforms.includes(p)).map((platform) => {
               const label = PLATFORM_LIST.find((p) => p.value === platform)?.label ?? platform;
+              const hoverColor = PLATFORM_HOVER_COLORS[platform] ?? "";
               return (
-                <button
+                <motion.div
                   key={platform}
-                  type="button"
-                  onClick={() => handleOAuthConnect(platform)}
-                  className="flex items-center gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 transition-all hover:border-emerald-500/20 hover:bg-emerald-500/[0.02] cursor-pointer"
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={springs.quick}
                 >
-                  <PlatformIcon platform={platform} size="sm" />
-                  <span className="text-xs text-zinc-300">{label}</span>
-                </button>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleOAuthConnect(platform)}
+                    className={`rounded-xl h-auto px-4 py-3 ${hoverColor}`}
+                  >
+                    <PlatformIcon platform={platform} size="sm" />
+                    <span className="text-sm">{label}</span>
+                  </Button>
+                </motion.div>
               );
             })}
-            <button
-              type="button"
-              onClick={() => setShowCustomForm(true)}
-              className="flex items-center gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 transition-all hover:border-emerald-500/20 hover:bg-emerald-500/[0.02] cursor-pointer"
+            <motion.div
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.97 }}
+              transition={springs.quick}
             >
-              <PlatformIcon platform="custom" size="sm" />
-              <span className="text-xs text-zinc-300">Custom</span>
-            </button>
+              <Button
+                variant="outline"
+                onClick={() => setShowCustomForm(!showCustomForm)}
+                className={`rounded-xl h-auto px-4 py-3 ${PLATFORM_HOVER_COLORS.custom} ${showCustomForm ? "border-primary/30 bg-primary/[0.06]" : ""}`}
+              >
+                <PlatformIcon platform="custom" size="sm" />
+                <span className="text-sm">Custom</span>
+              </Button>
+            </motion.div>
           </div>
         </div>
 
         {/* Custom form inline */}
-        {showCustomForm && (
-          <div className="w-full max-w-md mb-6">
-            <StreamDestinationForm
-              compact
-              hideSkip
-              submitLabel="Add Destination"
-              onNext={(data) => {
-                if (data) handleCreateCustomDest(data);
-              }}
-            />
-          </div>
-        )}
+        <AnimatePresence>
+          {showCustomForm && (
+            <motion.div
+              className="w-full max-w-md mb-6"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={springs.snappy}
+            >
+              <StreamDestinationForm
+                compact
+                hideSkip
+                submitLabel="Add Destination"
+                onNext={(data) => {
+                  if (data) handleCreateCustomDest(data);
+                }}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="mt-6 flex items-center gap-3">
           <Button
+            variant="secondary"
             onClick={() => setStep(1)}
-            className="bg-zinc-700 text-zinc-200 hover:bg-zinc-600 font-semibold"
+            className="font-semibold"
           >
             Skip
           </Button>
           <Button
             disabled={!selectedDestId && destinations.length > 0}
             onClick={() => setStep(1)}
-            className="bg-emerald-500 text-zinc-950 hover:bg-emerald-400 font-semibold disabled:opacity-30"
+            className="font-semibold disabled:opacity-30"
           >
             Continue
             <ArrowRight className="h-4 w-4 ml-1" />
@@ -303,37 +291,39 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
   }
 
   return (
-    <Overlay open={open} onClose={handleClose}>
-      <div className="relative w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto rounded-2xl border border-white/[0.06] bg-zinc-900 p-8">
-        {/* Close button */}
-        <button
-          onClick={handleClose}
-          className="absolute top-4 right-4 text-zinc-600 hover:text-zinc-300 transition-colors cursor-pointer"
-        >
-          <X className="h-5 w-5" />
-        </button>
-
+    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) handleClose(); }}>
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         {/* Back button + Step indicator */}
         {!showInfoScreen && (
-          <div className="mb-8 flex justify-center">
+          <div className="mb-2 flex justify-center relative">
             {canGoBack && (
-              <button
+              <Button
+                variant="ghost"
+                size="icon-sm"
                 onClick={handleBack}
-                className="absolute left-6 top-7 flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
+                className="absolute left-0 top-0 text-muted-foreground hover:text-foreground"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
-                Back
-              </button>
+              </Button>
             )}
             <StepIndicator steps={WIZARD_STEPS} current={step} />
           </div>
         )}
 
-        {/* Content */}
-        <div className="transition-all duration-300">
-          {showInfoScreen ? renderInfoScreen() : renderStep()}
-        </div>
-      </div>
-    </Overlay>
+        {/* Content with AnimatePresence for smooth step transitions */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={showInfoScreen ? "info" : `step-${step}`}
+            variants={stepVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={springs.gentle}
+          >
+            {showInfoScreen ? renderInfoScreen() : renderStep()}
+          </motion.div>
+        </AnimatePresence>
+      </DialogContent>
+    </Dialog>
   );
 }

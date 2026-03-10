@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
+import { motion } from "motion/react";
 import { apiKeyClient } from "../../client.js";
 import type { Framework } from "./frameworks";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Copy, Check, PartyPopper, Plus, Loader2 } from "lucide-react";
+import { springs, scaleIn } from "@/lib/motion";
 
 interface ConnectionDetailsProps {
   framework: Framework;
@@ -75,7 +78,7 @@ export function ConnectionDetails({ framework, endpointId: _endpointId, apiKey: 
   if (!initialKey && hasExistingKeys === null) {
     return (
       <div className="flex flex-col items-center">
-        <Loader2 className="h-6 w-6 text-emerald-400 animate-spin" />
+        <Loader2 className="h-6 w-6 text-primary animate-spin" />
       </div>
     );
   }
@@ -86,13 +89,10 @@ export function ConnectionDetails({ framework, endpointId: _endpointId, apiKey: 
 
   return (
     <div className="flex flex-col items-center">
-      <h2
-        className="text-2xl tracking-[-0.02em] text-white mb-2"
-        style={{ fontFamily: "'DM Serif Display', serif" }}
-      >
+      <h2 className="text-2xl tracking-[-0.02em] text-foreground mb-2 font-display">
         {verbose ? "Get started with the CLI" : "Get Started"}
       </h2>
-      <p className="text-sm text-zinc-500 mb-6 max-w-md text-center">
+      <p className="text-base text-muted-foreground mb-6 max-w-md text-center">
         {verbose
           ? "Install the Dazzle CLI to control your stage."
           : "Use the CLI to manage your stage."}
@@ -100,12 +100,14 @@ export function ConnectionDetails({ framework, endpointId: _endpointId, apiKey: 
 
       <div className="w-full max-w-lg">
         {/* Code snippet */}
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.06]">
-            <span className="text-xs font-medium text-zinc-500">{framework.language}</span>
-            <button
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
+            <span className="text-sm font-medium text-muted-foreground">{framework.language}</span>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={handleCopySnippet}
-              className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-emerald-400 transition-colors cursor-pointer"
+              className="text-sm text-muted-foreground hover:text-primary"
             >
               {copiedSnippet ? (
                 <>
@@ -118,47 +120,54 @@ export function ConnectionDetails({ framework, endpointId: _endpointId, apiKey: 
                   Copy
                 </>
               )}
-            </button>
+            </Button>
           </div>
-          <pre className="p-4 text-sm font-mono text-zinc-300 overflow-x-auto leading-relaxed">
+          <pre className="p-4 text-sm font-mono text-foreground overflow-x-auto leading-relaxed">
             {snippet}
           </pre>
         </div>
 
         {/* API key section */}
-        <div className="mt-4 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+        <div className="mt-4 rounded-xl border border-border bg-card p-4">
           <div className="mb-3">
-            <p className="text-xs font-medium text-zinc-400 mb-1">
-              Authenticate with <code className="text-emerald-400 bg-white/[0.04] px-1 py-0.5 rounded">dazzle login</code>
+            <p className="text-sm font-medium text-muted-foreground mb-1">
+              Authenticate with <code className="text-primary bg-muted px-1 py-0.5 rounded">dazzle login</code>
             </p>
-            <p className="text-xs text-zinc-600">
-              Or set <code className="text-zinc-500">export DAZZLE_API_KEY=&lt;key&gt;</code> in your shell profile.
+            <p className="text-sm text-muted-foreground">
+              Or set <code className="text-muted-foreground">export DAZZLE_API_KEY=&lt;key&gt;</code> in your shell profile.
             </p>
           </div>
 
           {activeKey ? (
             <div className="flex items-center gap-2">
-              <code className="flex-1 text-xs font-mono text-zinc-500 bg-zinc-950/50 rounded-lg px-3 py-2 border border-white/[0.06] truncate min-w-0">
+              <code className="flex-1 text-sm font-mono text-muted-foreground bg-card rounded-lg px-3 py-2 border border-border truncate min-w-0">
                 {maskedKey}
               </code>
-              <button
-                onClick={handleCopyKey}
-                className="text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10 p-2 rounded-md transition-colors cursor-pointer shrink-0"
-                title="Copy API key"
-              >
-                {copiedKey ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleCopyKey}
+                    className="text-muted-foreground hover:text-primary shrink-0"
+                    aria-label="Copy API key"
+                  >
+                    {copiedKey ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Copy API key</TooltipContent>
+              </Tooltip>
             </div>
           ) : hasExistingKeys ? (
             <div className="flex items-center gap-2">
-              <p className="flex-1 text-xs text-zinc-500">
+              <p className="flex-1 text-sm text-muted-foreground">
                 Use an existing key from the API Keys page, or create a new one.
               </p>
               <Button
                 size="sm"
                 onClick={handleCreateKey}
                 disabled={creatingKey}
-                className="bg-emerald-500 text-zinc-950 hover:bg-emerald-400 font-semibold text-xs shrink-0"
+                className="font-semibold text-sm shrink-0"
               >
                 {creatingKey ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -173,18 +182,37 @@ export function ConnectionDetails({ framework, endpointId: _endpointId, apiKey: 
           ) : null}
         </div>
 
-        <div className="mt-8 flex flex-col items-center gap-3">
-          <div className="flex items-center gap-2 text-emerald-400">
-            <PartyPopper className="h-5 w-5" />
-            <span className="text-sm font-medium">You're all set!</span>
+        {/* Success celebration */}
+        <motion.div
+          className="mt-8 flex flex-col items-center gap-3"
+          variants={scaleIn}
+          initial="hidden"
+          animate="visible"
+          transition={{ ...springs.bouncy, delay: 0.2 }}
+        >
+          <div className="flex items-center gap-2 text-primary">
+            <motion.div
+              initial={{ rotate: -15, scale: 0 }}
+              animate={{ rotate: 0, scale: 1 }}
+              transition={springs.bouncy}
+            >
+              <PartyPopper className="h-5 w-5" />
+            </motion.div>
+            <span className="text-base font-medium">You're all set!</span>
           </div>
-          <Button
-            onClick={onDone}
-            className="bg-emerald-500 text-zinc-950 hover:bg-emerald-400 font-semibold"
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
           >
-            Go to Dashboard
-          </Button>
-        </div>
+            <Button
+              onClick={onDone}
+              className="font-semibold"
+            >
+              Go to Dashboard
+            </Button>
+          </motion.div>
+        </motion.div>
       </div>
     </div>
   );
