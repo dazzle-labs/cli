@@ -7,6 +7,7 @@ option go_package = "github.com/dazzle-labs/cli/gen/api/v1;apiv1";
 service RuntimeService {
   rpc EmitEvent(EmitEventRequest) returns (EmitEventResponse);
   rpc GetLogs(GetLogsRequest) returns (GetLogsResponse);
+  rpc GetStageStats(GetStageStatsRequest) returns (GetStageStatsResponse);
   rpc Screenshot(ScreenshotRequest) returns (ScreenshotResponse);
   rpc ObsCommand(ObsCommandRequest) returns (ObsCommandResponse);
   rpc SyncDiff(SyncDiffRequest) returns (SyncDiffResponse);
@@ -53,4 +54,17 @@ message RefreshRequest {
 
 message RefreshResponse {
   bool ok = 1;
+}
+
+message GetStageStatsRequest { string stage_id = 1; }
+
+message GetStageStatsResponse {
+  double fps = 1;
+  int64 dropped_frames = 2;
+  int64 dropped_frames_recent = 3;
+  int64 total_bytes = 4;
+  double speed = 5;
+  bool broadcasting = 6;
+  int64 pipeline_uptime_seconds = 7;
+  int64 stage_uptime_seconds = 8;
 }
