@@ -64,7 +64,7 @@ func WithHLSSize(w, h int) Option {
 	return func(p *Pipeline) { p.hlsWidth = w; p.hlsHeight = h }
 }
 
-// WithHLSBitrate sets the HLS preview bitrate in kbps (default 1500).
+// WithHLSBitrate sets the HLS preview bitrate in kbps (default 2500).
 func WithHLSBitrate(kbps int) Option {
 	return func(p *Pipeline) { p.hlsBitrate = kbps }
 }
@@ -239,9 +239,14 @@ func (p *Pipeline) monitor(cmd *exec.Cmd) {
 	}
 }
 
+// needsScale returns true if HLS output differs from capture resolution.
+func (p *Pipeline) needsScale() bool {
+	captureSize := fmt.Sprintf("%dx%d", p.hlsWidth, p.hlsHeight)
+	return p.screenSize != captureSize
+}
+
 func (p *Pipeline) buildArgs() []string {
 	gop := fmt.Sprintf("%d", p.framerate) // keyframe every second
-	hlsScale := fmt.Sprintf("scale=%d:%d", p.hlsWidth, p.hlsHeight)
 	segPattern := fmt.Sprintf("%s/seg%%03d.ts", p.hlsDir)
 	hlsOut := fmt.Sprintf("%s/stream.m3u8", p.hlsDir)
 
@@ -259,15 +264,24 @@ func (p *Pipeline) buildArgs() []string {
 		"-progress", "pipe:1",
 	}
 
+	// HLS video filter: only scale if capture != output resolution
+	hlsVF := []string{}
+	if p.needsScale() {
+		hlsVF = append(hlsVF, fmt.Sprintf("scale=%d:%d", p.hlsWidth, p.hlsHeight))
+	}
+
 	if p.broadcasting {
-		// Two outputs: HLS preview + RTMP broadcast (both full res)
-		args = append(args,
-			// HLS output (preview quality)
+		// Two outputs: HLS preview + RTMP broadcast
+		hlsArgs := []string{
 			"-map", "0:v", "-map", "1:a",
-			"-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency",
-			"-b:v", fmt.Sprintf("%dk", p.hlsBitrate),
+			"-c:v", "libx264", "-preset", "ultrafast", "-threads", "2",
+			"-crf", "28", "-maxrate", fmt.Sprintf("%dk", p.hlsBitrate), "-bufsize", fmt.Sprintf("%dk", p.hlsBitrate*2),
 			"-g", gop,
-			"-vf", hlsScale,
+		}
+		if len(hlsVF) > 0 {
+			hlsArgs = append(hlsArgs, "-vf", strings.Join(hlsVF, ","))
+		}
+		hlsArgs = append(hlsArgs,
 			"-c:a", "aac", "-b:a", "96k",
 			"-f", "hls",
 			"-hls_time", "1",
@@ -275,10 +289,13 @@ func (p *Pipeline) buildArgs() []string {
 			"-hls_flags", "delete_segments+append_list",
 			"-hls_segment_filename", segPattern,
 			hlsOut,
+		)
+		args = append(args, hlsArgs...)
 
-			// RTMP output (broadcast quality)
+		// RTMP output (broadcast quality — keeps zerolatency for live delivery)
+		args = append(args,
 			"-map", "0:v", "-map", "1:a",
-			"-c:v", "libx264", "-preset", p.rtmpPreset, "-tune", "zerolatency",
+			"-c:v", "libx264", "-preset", p.rtmpPreset, "-tune", "zerolatency", "-threads", "2",
 			"-b:v", fmt.Sprintf("%dk", p.rtmpBitrate),
 			"-maxrate", fmt.Sprintf("%dk", p.rtmpBitrate),
 			"-bufsize", fmt.Sprintf("%dk", p.rtmpBitrate*2),
@@ -288,12 +305,17 @@ func (p *Pipeline) buildArgs() []string {
 			p.rtmpURL,
 		)
 	} else {
-		// HLS only (preview quality)
-		args = append(args,
-			"-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency",
-			"-b:v", fmt.Sprintf("%dk", p.hlsBitrate),
+		// HLS only — CRF mode lets ultrafast take shortcuts on easy frames;
+		// no zerolatency since HLS already has multi-second latency.
+		hlsArgs := []string{
+			"-c:v", "libx264", "-preset", "ultrafast", "-threads", "2",
+			"-crf", "28", "-maxrate", fmt.Sprintf("%dk", p.hlsBitrate), "-bufsize", fmt.Sprintf("%dk", p.hlsBitrate*2),
 			"-g", gop,
-			"-vf", hlsScale,
+		}
+		if len(hlsVF) > 0 {
+			hlsArgs = append(hlsArgs, "-vf", strings.Join(hlsVF, ","))
+		}
+		hlsArgs = append(hlsArgs,
 			"-c:a", "aac", "-b:a", "96k",
 			"-f", "hls",
 			"-hls_time", "1",
@@ -302,6 +324,7 @@ func (p *Pipeline) buildArgs() []string {
 			"-hls_segment_filename", segPattern,
 			hlsOut,
 		)
+		args = append(args, hlsArgs...)
 	}
 
 	return args
