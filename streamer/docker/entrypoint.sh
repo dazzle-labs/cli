@@ -20,9 +20,8 @@ if [ "${DISABLE_WEBGL:-false}" = "true" ]; then
     echo "WebGL disabled via DISABLE_WEBGL=true"
     CHROME_GL_FLAGS="--disable-gpu"
 else
-    # Use LavaPipe (Mesa's CPU Vulkan driver) instead of SwiftShader for ~40% better WebGL perf
-    export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json
-    CHROME_GL_FLAGS="--use-gl=angle --use-angle=vulkan --disable-vulkan-surface --disable-gpu-compositing --disable-gpu-watchdog"
+    # Use ANGLE's SwiftShader-WebGL backend (direct path, no Vulkan layer)
+    CHROME_GL_FLAGS="--use-gl=angle --use-angle=swiftshader-webgl --disable-gpu-compositing --disable-gpu-watchdog"
 fi
 
 # SwiftShader config (no-op when using LavaPipe, kept for DISABLE_WEBGL fallback)
