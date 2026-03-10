@@ -11,6 +11,7 @@ import { StageDetail } from "./pages/StageDetail.js";
 import { StreamConfig } from "./pages/StreamConfig.js";
 import { ApiKeys } from "./pages/ApiKeys.js";
 import { Docs } from "./pages/Docs.js";
+import { PublicDocs } from "./pages/PublicDocs.js";
 import { LandingPage } from "./pages/LandingPage.js";
 import { PreviewPage } from "./pages/PreviewPage.js";
 import { TooltipProvider } from "./components/ui/tooltip.js";
@@ -21,6 +22,24 @@ function AuthSetup() {
     setTokenGetter(getToken);
   }, [getToken]);
   return null;
+}
+
+function DocsRouter() {
+  return (
+    <>
+      <Show when="signed-out">
+        <PublicDocs />
+      </Show>
+      <Show when="signed-in">
+        <AuthSetup />
+        <TooltipProvider>
+          <Layout>
+            <Docs />
+          </Layout>
+        </TooltipProvider>
+      </Show>
+    </>
+  );
 }
 
 function AuthenticatedApp() {
@@ -38,7 +57,6 @@ function AuthenticatedApp() {
               <Route path="/stage/:stageId" element={<StageDetail />} />
               <Route path="/destinations" element={<StreamConfig />} />
               <Route path="/api-keys" element={<ApiKeys />} />
-              <Route path="/docs" element={<Docs />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Layout>
@@ -53,6 +71,7 @@ export function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/stage/:stageId/preview" element={<PreviewPage />} />
+        <Route path="/docs" element={<DocsRouter />} />
         <Route path="*" element={<AuthenticatedApp />} />
       </Routes>
     </BrowserRouter>

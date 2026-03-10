@@ -180,3 +180,57 @@
 .animate-attention-ring {
   animation: attention-ring 2s ease-out forwards;
 }
+
+/* Landing page — GPU-accelerated floating orbs */
+.landing-orb {
+  position: absolute;
+  border-radius: 50%;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.landing-orb-1 {
+  width: 900px;
+  height: 900px;
+  top: -300px;
+  right: -200px;
+  background: radial-gradient(circle, oklch(0.72 0.19 163 / 0.07) 0%, transparent 70%);
+  animation: landing-float-1 28s ease-in-out infinite;
+}
+
+.landing-orb-2 {
+  width: 700px;
+  height: 700px;
+  bottom: 5%;
+  left: -200px;
+  background: radial-gradient(circle, oklch(0.65 0.14 180 / 0.05) 0%, transparent 70%);
+  animation: landing-float-2 34s ease-in-out infinite;
+}
+
+.landing-orb-3 {
+  width: 500px;
+  height: 500px;
+  top: 45%;
+  right: 15%;
+  background: radial-gradient(circle, oklch(0.68 0.11 195 / 0.04) 0%, transparent 70%);
+  animation: landing-float-3 22s ease-in-out infinite;
+}
+
+@keyframes landing-float-1 {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  33% { transform: translate3d(-50px, 70px, 0); }
+  66% { transform: translate3d(40px, -40px, 0); }
+}
+
+@keyframes landing-float-2 {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  33% { transform: translate3d(60px, -50px, 0); }
+  66% { transform: translate3d(-40px, 60px, 0); }
+}
+
+@keyframes landing-float-3 {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  25% { transform: translate3d(70px, 40px, 0); }
+  50% { transform: translate3d(-30px, 70px, 0); }
+  75% { transform: translate3d(-50px, -30px, 0); }
+}

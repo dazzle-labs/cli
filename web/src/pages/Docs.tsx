@@ -1,11 +1,15 @@
-import { useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { ChevronDown } from "lucide-react";
 import { CopyAgentPromptButton } from "@/components/CopyAgentPromptButton";
 import { CodeBlock } from "@/components/ui/code-block";
 import { CopyButton } from "@/components/CopyButton";
 import { AnimatedPage } from "@/components/AnimatedPage";
-import { springs } from "@/lib/motion";
+import { CollapsibleSection } from "@/components/CollapsibleSection";
+import {
+  INSTALL_SNIPPET_UNIX,
+  INSTALL_SNIPPET_WINDOWS,
+  QUICK_START_SNIPPET,
+  QUICK_START_STEPS,
+  MULTI_STAGE_SNIPPET,
+} from "./docs-content";
 
 function useOS(): "windows" | "mac" | "linux" {
   const ua = navigator.userAgent.toLowerCase();
@@ -22,91 +26,12 @@ function StepBadge({ n }: { n: number }) {
   );
 }
 
-function CollapsibleSection({
-  title,
-  copyText,
-  children,
-  defaultOpen = false,
-}: {
-  title: string;
-  copyText: string;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-
-  return (
-    <section className="mb-8">
-      <div className="flex items-center justify-between mb-2">
-        <button
-          onClick={() => setOpen(!open)}
-          className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-        >
-          <motion.div
-            animate={{ rotate: open ? 180 : 0 }}
-            transition={springs.quick}
-          >
-            <ChevronDown className="h-4 w-4" />
-          </motion.div>
-          {title}
-        </button>
-        <CopyButton text={copyText} tooltip="Copy to clipboard" size="icon-xs" />
-      </div>
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={springs.snappy}
-            className="overflow-hidden"
-          >
-            {children}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </section>
-  );
-}
-
 export function Docs() {
   const os = useOS();
 
-  const installSnippet = os === "windows"
-    ? `irm https://stream.dazzle.fm/install.ps1 | iex`
-    : `curl -sSL https://stream.dazzle.fm/install.sh | sh`;
-
-  const altSnippet = os === "windows"
-    ? `curl -sSL https://stream.dazzle.fm/install.sh | sh`
-    : `irm https://stream.dazzle.fm/install.ps1 | iex`;
-
+  const installSnippet = os === "windows" ? INSTALL_SNIPPET_WINDOWS : INSTALL_SNIPPET_UNIX;
+  const altSnippet = os === "windows" ? INSTALL_SNIPPET_UNIX : INSTALL_SNIPPET_WINDOWS;
   const altLabel = os === "windows" ? "macOS / Linux" : "Windows (PowerShell)";
-
-  const quickStartSnippet = `# Authenticate
-dazzle login
-
-# Create and activate a stage
-dazzle stage create my-stage
-dazzle stage activate
-
-# Push content (JS or JSX, hot-swapped via HMR)
-dazzle stage script set ./my-overlay.jsx
-
-# Take a screenshot to verify
-dazzle stage screenshot -o preview.png
-
-# Go live
-dazzle stage broadcast on`;
-
-  const multiStageSnippet = `# List all stages
-dazzle stage list
-
-# Target a specific stage
-dazzle stage activate -s my-stage
-dazzle stage script set app.jsx -s my-stage
-
-# Set a default stage for all commands
-dazzle stage default my-stage`;
 
   return (
     <AnimatedPage>
@@ -153,47 +78,29 @@ dazzle stage default my-stage`;
           <h2 className="text-xl tracking-[-0.02em] text-foreground font-display">
             Quick Start
           </h2>
-          <CopyButton text={quickStartSnippet} tooltip="Copy to clipboard" size="icon-xs" />
+          <CopyButton text={QUICK_START_SNIPPET} tooltip="Copy to clipboard" size="icon-xs" />
         </div>
         <p className="text-base text-muted-foreground mb-4">
           Create a stage, push content, and go live.
         </p>
         <div className="flex flex-col gap-3 mb-4">
-          <div className="flex items-center gap-3">
-            <StepBadge n={1} />
-            <span className="text-base text-foreground">Authenticate</span>
-            <code className="text-sm font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded ml-auto">dazzle login</code>
-          </div>
-          <div className="flex items-center gap-3">
-            <StepBadge n={2} />
-            <span className="text-base text-foreground">Create a stage</span>
-            <code className="text-sm font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded ml-auto">dazzle stage create my-stage</code>
-          </div>
-          <div className="flex items-center gap-3">
-            <StepBadge n={3} />
-            <span className="text-base text-foreground">Push content</span>
-            <code className="text-sm font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded ml-auto">dazzle stage script set ./app.jsx</code>
-          </div>
-          <div className="flex items-center gap-3">
-            <StepBadge n={4} />
-            <span className="text-base text-foreground">Screenshot to verify</span>
-            <code className="text-sm font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded ml-auto">dazzle stage screenshot</code>
-          </div>
-          <div className="flex items-center gap-3">
-            <StepBadge n={5} />
-            <span className="text-base text-foreground">Go live</span>
-            <code className="text-sm font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded ml-auto">dazzle stage broadcast on</code>
-          </div>
+          {QUICK_START_STEPS.map((step) => (
+            <div key={step.n} className="flex items-center gap-3">
+              <StepBadge n={step.n} />
+              <span className="text-base text-foreground">{step.label}</span>
+              <code className="text-sm font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded ml-auto">{step.cmd}</code>
+            </div>
+          ))}
         </div>
-        <CodeBlock code={quickStartSnippet} />
+        <CodeBlock code={QUICK_START_SNIPPET} />
       </section>
 
       {/* Multi-stage — collapsible */}
       <CollapsibleSection
         title="Working with multiple stages"
-        copyText={multiStageSnippet}
+        copyText={MULTI_STAGE_SNIPPET}
       >
-        <CodeBlock code={multiStageSnippet} />
+        <CodeBlock code={MULTI_STAGE_SNIPPET} />
       </CollapsibleSection>
 
       {/* CLI reference — collapsible */}
