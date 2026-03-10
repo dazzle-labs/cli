@@ -3,8 +3,10 @@ import { Link, useLocation } from "react-router-dom";
 import { Monitor, Radio, Key, Rocket, BookOpen } from "lucide-react";
 import { useEffect } from "react";
 import type { ReactNode } from "react";
+import { motion } from "motion/react";
 import { OnboardingWizard } from "./onboarding/OnboardingWizard";
 import { useState } from "react";
+import { springs } from "@/lib/motion";
 import {
   Sidebar,
   SidebarContent,
@@ -15,6 +17,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
+  SidebarSeparator,
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
@@ -24,8 +27,8 @@ const navItems = [
   { path: "/", label: "Stages", icon: Monitor },
   { path: "/destinations", label: "Destinations", icon: Radio },
   { path: "/api-keys", label: "API Keys", icon: Key },
-  { path: "/docs", label: "Docs", icon: BookOpen },
 ];
+
 
 function SidebarNav({ onGetStarted }: { onGetStarted: () => void }) {
   const location = useLocation();
@@ -41,7 +44,7 @@ function SidebarNav({ onGetStarted }: { onGetStarted: () => void }) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" className="cursor-default hover:bg-transparent active:bg-transparent">
-              <span className="text-[15px] font-semibold tracking-tight text-foreground">
+              <span className="text-[15px] font-semibold tracking-wide text-foreground font-display">
                 Dazzle
               </span>
               <div className="ml-auto hidden md:block">
@@ -54,19 +57,17 @@ function SidebarNav({ onGetStarted }: { onGetStarted: () => void }) {
       <SidebarContent>
         <SidebarGroup>
           <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                onClick={onGetStarted}
-                className="bg-primary text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground active:bg-primary/80 active:text-primary-foreground font-semibold cursor-pointer"
-              >
-                <Rocket className="h-4 w-4" />
-                <span>Get Started</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
             {navItems.map((item) => {
               const active = location.pathname === item.path;
               return (
-                <SidebarMenuItem key={item.path}>
+                <SidebarMenuItem key={item.path} className="relative">
+                  {active && (
+                    <motion.div
+                      layoutId="nav-indicator"
+                      className="absolute left-0 top-1 bottom-1 w-[2px] rounded-full bg-primary"
+                      transition={springs.snappy}
+                    />
+                  )}
                   <SidebarMenuButton
                     asChild
                     isActive={active}
@@ -80,6 +81,40 @@ function SidebarNav({ onGetStarted }: { onGetStarted: () => void }) {
                 </SidebarMenuItem>
               );
             })}
+          </SidebarMenu>
+          <SidebarSeparator className="my-2" />
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={onGetStarted}
+                className="text-muted-foreground hover:text-primary hover:bg-primary/[0.06] active:bg-primary/[0.06] active:text-primary cursor-pointer"
+              >
+                <Rocket className="h-4 w-4" />
+                <span>Get Started</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem className="relative">
+              {location.pathname === "/docs" && (
+                <motion.div
+                  layoutId="nav-indicator"
+                  className="absolute left-0 top-1 bottom-1 w-[2px] rounded-full bg-primary"
+                  transition={springs.snappy}
+                />
+              )}
+              <SidebarMenuButton
+                asChild
+                isActive={location.pathname === "/docs"}
+                className={location.pathname === "/docs"
+                  ? "bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary active:bg-primary/15 active:text-primary"
+                  : "text-muted-foreground hover:text-primary hover:bg-primary/[0.06]"
+                }
+              >
+                <Link to="/docs">
+                  <BookOpen className="h-4 w-4" />
+                  <span>Docs</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
@@ -97,7 +132,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <header className="flex h-14 items-center gap-2 border-b px-4 md:hidden">
           <SidebarTrigger />
           <Separator orientation="vertical" className="mr-2 h-4" />
-          <span className="text-[15px] font-semibold tracking-tight text-foreground">
+          <span className="text-[15px] font-semibold tracking-wide text-foreground font-display">
             Dazzle
           </span>
           <div className="ml-auto">
@@ -108,7 +143,7 @@ export function Layout({ children }: { children: ReactNode }) {
           {/* Subtle top-left emerald glow */}
           <div className="pointer-events-none absolute inset-0 overflow-hidden">
             <div
-              className="absolute -top-[30%] -left-[10%] w-[60%] aspect-square rounded-full opacity-[0.035]"
+              className="absolute -top-[30%] -left-[10%] w-[60%] aspect-square rounded-full animate-ambient-glow"
               style={{
                 background:
                   "radial-gradient(circle, oklch(0.72 0.19 163) 0%, transparent 60%)",

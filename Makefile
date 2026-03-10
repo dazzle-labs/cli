@@ -122,7 +122,7 @@ up: check-deps check-cli ## Create Kind cluster, build images, deploy full stack
 	kind load docker-image $(SIDECAR_IMG) --name $(NS)
 	$(STEP) "Applying secrets"
 	sops -d k8s/local/local.secrets.yaml | $(KCTL) apply -f -
-	@if sops -d k8s/control-plane/oauth.secrets.yaml 2>/dev/null | $(KCTL) apply -f - 2>/dev/null; then \
+	@if sops -d k8s/secrets/oauth.secrets.yaml 2>/dev/null | $(KCTL) apply -f - 2>/dev/null; then \
 		echo "  oauth secrets applied"; \
 	fi
 	@if sops -d k8s/secrets/r2-credentials.secrets.yaml 2>/dev/null | $(KCTL) apply -f - 2>/dev/null; then \
@@ -166,7 +166,7 @@ build-sidecar: check-deps check-cluster ## Build sidecar image and load into Kin
 deploy: check-deps check-cluster ## Apply manifests and restart control-plane in Kind
 	$(STEP) "Applying secrets"
 	sops -d k8s/local/local.secrets.yaml | $(KCTL) apply -f -
-	@if sops -d k8s/control-plane/oauth.secrets.yaml 2>/dev/null | $(KCTL) apply -f - 2>/dev/null; then \
+	@if sops -d k8s/secrets/oauth.secrets.yaml 2>/dev/null | $(KCTL) apply -f - 2>/dev/null; then \
 		echo "  oauth secrets applied"; \
 	fi
 	@if sops -d k8s/secrets/r2-credentials.secrets.yaml 2>/dev/null | $(KCTL) apply -f - 2>/dev/null; then \

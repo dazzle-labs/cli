@@ -57,6 +57,12 @@ export function EndpointCreator({ onCreated, onNavigate }: EndpointCreatorProps)
                 id="stage-name"
                 value={stageName}
                 onChange={(e) => setStageName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleCreate();
+                  }
+                }}
                 placeholder="e.g. My Stream, Demo Bot"
               />
             </div>

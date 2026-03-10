@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { apiKeyClient } from "../client.js";
 import type { ApiKey } from "../gen/api/v1/apikey_pb.js";
@@ -8,19 +9,20 @@ import { Spinner } from "@/components/ui/spinner";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
-import { Key, Trash2, Copy, Check, Shield, AlertTriangle } from "lucide-react";
+import { Key, Trash2, Shield, AlertTriangle } from "lucide-react";
+import { AnimatedPage } from "@/components/AnimatedPage";
+import { CopyButton } from "@/components/CopyButton";
+import { springs } from "@/lib/motion";
 
 export function ApiKeys() {
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [newSecret, setNewSecret] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-  const [copiedExport, setCopiedExport] = useState(false);
+  const [dismissing, setDismissing] = useState(false);
 
   async function refresh() {
     const resp = await apiKeyClient.listApiKeys({});
@@ -46,23 +48,9 @@ export function ApiKeys() {
     await refresh();
   }
 
-  async function handleCopy() {
-    if (!newSecret) return;
-    await navigator.clipboard.writeText(newSecret);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
-
-  async function handleCopyExport() {
-    if (!newSecret) return;
-    await navigator.clipboard.writeText(`export DAZZLE_API_KEY=${newSecret}`);
-    setCopiedExport(true);
-    setTimeout(() => setCopiedExport(false), 2000);
-  }
-
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-muted-foreground text-sm pt-12">
+      <div className="flex items-center gap-2 text-muted-foreground text-base pt-12">
         <Spinner className="text-primary" />
         Loading API keys...
       </div>
@@ -70,13 +58,13 @@ export function ApiKeys() {
   }
 
   return (
-    <div>
+    <AnimatedPage>
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl tracking-[-0.02em] text-foreground mb-1 font-display">
           API Keys
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-base text-muted-foreground">
           Keys for CLI and agent authentication. The full key is shown only once.
         </p>
       </div>
@@ -104,58 +92,61 @@ export function ApiKeys() {
       </Card>
 
       {/* New key reveal */}
-      {newSecret && (
-        <div className="rounded-xl border border-primary/20 bg-primary/[0.05] p-5 mb-8">
-          <div className="flex items-center gap-2 mb-3">
-            <AlertTriangle className="h-4 w-4 text-amber-400" />
-            <p className="text-sm font-medium text-primary">New API key created — copy it now, it won't be shown again</p>
-          </div>
-          <div className="flex items-center gap-2 mb-3">
-            <pre className="flex-1 font-mono text-sm text-foreground bg-card rounded-lg px-4 py-2.5 break-all border border-border">
-              {newSecret}
-            </pre>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCopy}
-                  className="text-muted-foreground hover:text-primary hover:bg-primary/10 shrink-0"
-                >
-                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Copy API key</TooltipContent>
-            </Tooltip>
-          </div>
-          <div className="flex items-center gap-2 mb-3">
-            <code className="flex-1 font-mono text-xs text-muted-foreground bg-card rounded-lg px-4 py-2 border border-border">
-              export DAZZLE_API_KEY={newSecret}
-            </code>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCopyExport}
-                  className="text-muted-foreground hover:text-primary hover:bg-primary/10 shrink-0"
-                >
-                  {copiedExport ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Copy export command</TooltipContent>
-            </Tooltip>
-          </div>
-          <Button
-            variant="link"
-            size="sm"
-            className="text-xs text-muted-foreground hover:text-foreground h-auto p-0"
-            onClick={() => { setNewSecret(null); setCopied(false); setCopiedExport(false); }}
+      <AnimatePresence onExitComplete={() => { setNewSecret(null); setDismissing(false); }}>
+        {newSecret && !dismissing && (
+          <motion.div
+            className="rounded-xl border border-primary/20 bg-primary/[0.05] animate-attention-ring"
+            initial={{
+              height: 0,
+              opacity: 0,
+              paddingTop: 0,
+              paddingBottom: 0,
+              marginBottom: 0,
+            }}
+            animate={{
+              height: "auto",
+              opacity: 1,
+              paddingTop: 20,
+              paddingBottom: 20,
+              marginBottom: 32,
+            }}
+            exit={{
+              height: 0,
+              opacity: 0,
+              paddingTop: 0,
+              paddingBottom: 0,
+              marginBottom: 0,
+              transition: { duration: 0.25, ease: "easeOut" },
+            }}
+            style={{ overflow: "hidden", paddingLeft: 20, paddingRight: 20 }}
           >
-            I've saved it, dismiss
-          </Button>
-        </div>
-      )}
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle className="h-4 w-4 text-amber-400" />
+              <p className="text-base font-medium text-primary">New API key created — copy it now, it won't be shown again</p>
+            </div>
+            <div className="flex items-center gap-2 mb-3">
+              <pre className="flex-1 font-mono text-sm text-foreground bg-card rounded-lg px-4 py-2.5 break-all border border-border">
+                {newSecret}
+              </pre>
+              <CopyButton text={newSecret} tooltip="Copy API key" />
+            </div>
+            <div className="flex items-center gap-2 mb-3">
+              <code className="flex-1 font-mono text-sm text-muted-foreground bg-card rounded-lg px-4 py-2 border border-border">
+                export DAZZLE_API_KEY={newSecret}
+              </code>
+              <CopyButton text={`export DAZZLE_API_KEY=${newSecret}`} tooltip="Copy export command" />
+            </div>
+            <Button
+              variant="link"
+              size="sm"
+              className="text-sm text-muted-foreground hover:text-foreground h-auto p-0"
+              onClick={() => setDismissing(true)}
+            >
+              I've saved it, dismiss
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Keys list */}
       {keys.length === 0 ? (
@@ -181,93 +172,114 @@ export function ApiKeys() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {keys.map((k) => (
-                  <TableRow key={k.id}>
-                    <TableCell className="text-foreground">{k.name}</TableCell>
-                    <TableCell>
-                      <code className="font-mono text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
-                        {k.prefix}
-                      </code>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {k.createdAt ? timestampDate(k.createdAt).toLocaleDateString() : ""}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {k.lastUsedAt ? timestampDate(k.lastUsedAt).toLocaleDateString() : "Never"}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10" aria-label="Delete API key"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete this API key?</AlertDialogTitle>
-                            <AlertDialogDescription>This will revoke the key immediately. Any agents using it will lose access.</AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction variant="destructive" onClick={() => handleDelete(k.id)}>Delete</AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                <AnimatePresence>
+                  {keys.map((k) => (
+                    <motion.tr
+                      key={k.id}
+                      layout
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={springs.snappy}
+                      className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+                    >
+                      <TableCell className="text-foreground">{k.name}</TableCell>
+                      <TableCell>
+                        <code className="font-mono text-sm text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                          {k.prefix}
+                        </code>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {k.createdAt ? timestampDate(k.createdAt).toLocaleDateString() : ""}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {k.lastUsedAt ? timestampDate(k.lastUsedAt).toLocaleDateString() : "Never"}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10" aria-label="Delete API key"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete this API key?</AlertDialogTitle>
+                              <AlertDialogDescription>This will revoke the key immediately. Any agents using it will lose access.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction variant="destructive" onClick={() => handleDelete(k.id)}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </TableCell>
+                    </motion.tr>
+                  ))}
+                </AnimatePresence>
               </TableBody>
             </Table>
           </div>
 
           {/* Mobile cards */}
           <div className="flex flex-col gap-3 sm:hidden">
-            {keys.map((k) => (
-              <Card key={k.id}>
-                <CardContent className="pt-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-foreground font-medium">{k.name}</span>
-                    <code className="font-mono text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
-                      {k.prefix}
-                    </code>
-                  </div>
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
-                    <span>{k.createdAt ? timestampDate(k.createdAt).toLocaleDateString() : ""}</span>
-                    <span>Used: {k.lastUsedAt ? timestampDate(k.lastUsedAt).toLocaleDateString() : "Never"}</span>
-                  </div>
-                  <div className="flex justify-end">
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-muted-foreground hover:text-destructive hover:bg-destructive/10" aria-label="Delete API key"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete this API key?</AlertDialogTitle>
-                          <AlertDialogDescription>This will revoke the key immediately. Any agents using it will lose access.</AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction variant="destructive" onClick={() => handleDelete(k.id)}>Delete</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+            <AnimatePresence>
+              {keys.map((k) => (
+                <motion.div
+                  key={k.id}
+                  layout
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={springs.snappy}
+                >
+                  <Card>
+                    <CardContent className="pt-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-base text-foreground font-medium">{k.name}</span>
+                        <code className="font-mono text-sm text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                          {k.prefix}
+                        </code>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
+                        <span>{k.createdAt ? timestampDate(k.createdAt).toLocaleDateString() : ""}</span>
+                        <span>Used: {k.lastUsedAt ? timestampDate(k.lastUsedAt).toLocaleDateString() : "Never"}</span>
+                      </div>
+                      <div className="flex justify-end">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10" aria-label="Delete API key"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete this API key?</AlertDialogTitle>
+                              <AlertDialogDescription>This will revoke the key immediately. Any agents using it will lose access.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction variant="destructive" onClick={() => handleDelete(k.id)}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         </>
       )}
-    </div>
+    </AnimatedPage>
   );
 }

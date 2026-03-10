@@ -403,31 +403,31 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@clerk/localizations@npm:^4.0.0":
-  version: 4.0.0
-  resolution: "@clerk/localizations@npm:4.0.0"
+"@clerk/localizations@npm:^4.1.0":
+  version: 4.1.0
+  resolution: "@clerk/localizations@npm:4.1.0"
   dependencies:
-    "@clerk/shared": "npm:^4.0.0"
-  checksum: 10/5569c330e035dc211554f7db984f8d44dc67f567635e27d782f816cf6043cbcbab9889ad69a6f6f47a31699213e1fd15f34b58dd631cfa3244aca29b028128c4
+    "@clerk/shared": "npm:^4.1.0"
+  checksum: 10/edf562eaa08bb870135c46e157a71e729842d0b4fb652675ffe7181635e45d72fc35718412544dc12ec5d5ad786a094a909f12739335c6c61a18a034274d8d96
   languageName: node
   linkType: hard
 
 "@clerk/react@npm:^6.0.1":
-  version: 6.0.1
-  resolution: "@clerk/react@npm:6.0.1"
+  version: 6.0.2
+  resolution: "@clerk/react@npm:6.0.2"
   dependencies:
-    "@clerk/shared": "npm:^4.0.0"
+    "@clerk/shared": "npm:^4.1.0"
     tslib: "npm:2.8.1"
   peerDependencies:
     react: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
     react-dom: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
-  checksum: 10/b957f83612bedfcf705e8ef82fac82b0b8f015e1870da52b6dfa119a1c991977a52e17812b7664991babaa7cab0fad70cf5bbe54a1cdc45b0f7e33a5c333ca1e
+  checksum: 10/329be11746fe333f2f0d570317b113f00f6c4920070792e480f8ce25093d595c3a4f5377b6e1c2f5d2cdfd89022be58c1381741414740d9f3a90e348367c5859
   languageName: node
   linkType: hard
 
-"@clerk/shared@npm:^4.0.0":
-  version: 4.0.0
-  resolution: "@clerk/shared@npm:4.0.0"
+"@clerk/shared@npm:^4.1.0":
+  version: 4.1.0
+  resolution: "@clerk/shared@npm:4.1.0"
   dependencies:
     "@tanstack/query-core": "npm:5.90.16"
     dequal: "npm:2.0.3"
@@ -442,16 +442,16 @@ __metadata:
       optional: true
     react-dom:
       optional: true
-  checksum: 10/cb76b4e80cb16d1cfef3a977ee9b26f68853c5c312ff5fdbdcae1b72469c35fa479e09f6835a8ff1e7653edb0f2e304d3808968671808e35c81e3e575d4a9cdc
+  checksum: 10/ba5628610c64cb3a6bbfb9215413c92d1949e565e2aaa1860c0c51cf26dad9a25e7fce6f242c3921d300247ae78df330bac38fa2ea42ccb01b3d5378372059b0
   languageName: node
   linkType: hard
 
 "@clerk/ui@npm:^1.0.1":
-  version: 1.0.1
-  resolution: "@clerk/ui@npm:1.0.1"
+  version: 1.1.0
+  resolution: "@clerk/ui@npm:1.1.0"
   dependencies:
-    "@clerk/localizations": "npm:^4.0.0"
-    "@clerk/shared": "npm:^4.0.0"
+    "@clerk/localizations": "npm:^4.1.0"
+    "@clerk/shared": "npm:^4.1.0"
     "@emotion/cache": "npm:11.11.0"
     "@emotion/react": "npm:11.11.1"
     "@floating-ui/react": "npm:0.27.12"
@@ -468,7 +468,7 @@ __metadata:
     qrcode.react: "npm:4.2.0"
     react: "npm:^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0"
     react-dom: "npm:^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0"
-  checksum: 10/afde7c6e38b9645a16c2c9aed5b0c3e3bdd0c0ea8be724fecf0def647e88db0af91dfb682be792a1e9afe5a35980d7a0e1d594d0be53c001d786f433cad67a79
+  checksum: 10/2e7398cd174c35fc030af981f6588afdc16205ceeb9b7d53d442db088ecc62995979361e279264a777ec18c1cd20342ddd1d1d48c92a09815bed4f8e1bd6a024
   languageName: node
   linkType: hard
 
@@ -3545,6 +3545,7 @@ __metadata:
     highlight.js: "npm:^11.11.1"
     hls.js: "npm:^1.6.15"
     lucide-react: "npm:^0.577.0"
+    motion: "npm:^12.35.2"
     next-themes: "npm:^0.4.6"
     radix-ui: "npm:^1.4.3"
     react: "npm:^19.0.0"
@@ -4056,14 +4057,14 @@ __metadata:
   linkType: hard
 
 "eciesjs@npm:^0.4.10":
-  version: 0.4.17
-  resolution: "eciesjs@npm:0.4.17"
+  version: 0.4.18
+  resolution: "eciesjs@npm:0.4.18"
   dependencies:
     "@ecies/ciphers": "npm:^0.2.5"
     "@noble/ciphers": "npm:^1.3.0"
     "@noble/curves": "npm:^1.9.7"
     "@noble/hashes": "npm:^1.8.0"
-  checksum: 10/89e3db5d916e9b4badb516f0a89514300ce7bbc4e1a8a0b8f1e0ef4ac1d88c5aef622a65cb277b6a020e423c3b04f981398eeb349d5bd7e3e42a35132e871e7f
+  checksum: 10/c2e58ce1ce67c7959da064372081bea38b9769a1db61bf91e084001a3906ce7cc1ce77536737446eb83365ec567e50c879209b5647a00d45c9727dd3a79b0543
   languageName: node
   linkType: hard
 
@@ -4346,13 +4347,13 @@ __metadata:
   linkType: hard
 
 "express-rate-limit@npm:^8.2.1":
-  version: 8.3.0
-  resolution: "express-rate-limit@npm:8.3.0"
+  version: 8.3.1
+  resolution: "express-rate-limit@npm:8.3.1"
   dependencies:
     ip-address: "npm:10.1.0"
   peerDependencies:
     express: ">= 4.11"
-  checksum: 10/e896a66fecc10639e65873186fdfb71f19d6af650220eb7ea5450725215c3eed8dc6ddcfa1e68a9db8c9facc3326fbc281512ad3ccd8f107f42a2466ce12c18c
+  checksum: 10/dd97bfc48c01a6d4c5433203232b5e7a1e55e21322bde49033e5f8c4339584fe671a94096144a0810f4ea21dcec8aaaf15823109627e609f8ed1bc5912a345cf
   languageName: node
   linkType: hard
 
@@ -4512,6 +4513,28 @@ __metadata:
   version: 0.2.0
   resolution: "forwarded@npm:0.2.0"
   checksum: 10/29ba9fd347117144e97cbb8852baae5e8b2acb7d1b591ef85695ed96f5b933b1804a7fac4a15dd09ca7ac7d0cdc104410e8102aae2dd3faa570a797ba07adb81
+  languageName: node
+  linkType: hard
+
+"framer-motion@npm:^12.35.2":
+  version: 12.35.2
+  resolution: "framer-motion@npm:12.35.2"
+  dependencies:
+    motion-dom: "npm:^12.35.2"
+    motion-utils: "npm:^12.29.2"
+    tslib: "npm:^2.4.0"
+  peerDependencies:
+    "@emotion/is-prop-valid": "*"
+    react: ^18.0.0 || ^19.0.0
+    react-dom: ^18.0.0 || ^19.0.0
+  peerDependenciesMeta:
+    "@emotion/is-prop-valid":
+      optional: true
+    react:
+      optional: true
+    react-dom:
+      optional: true
+  checksum: 10/10af699ff1e35a166ef60ceab464479b81624ef74de3ec9e11b427f86bd7bf2c8c8a9f24fb0646288b2d4b0c1b219203da351821fc568c7b91c6821594af4a3f
   languageName: node
   linkType: hard
 
@@ -5081,9 +5104,9 @@ __metadata:
   linkType: hard
 
 "jose@npm:^6.1.3":
-  version: 6.2.0
-  resolution: "jose@npm:6.2.0"
-  checksum: 10/5b27d04aa2176726d42897758d91ece12210eec11674a42124db280d3560e0ba32c8e75b9d1341589b42384fe40cd8d06ee682f9c5c9fe79e0065be7ba9fddce
+  version: 6.2.1
+  resolution: "jose@npm:6.2.1"
+  checksum: 10/12f06a76ac743eb48314e662e02b141f6e4644dbcbdb1cd083c3867b1f72f1e148a67ebf4978d0d5adeb62f4be1572feee76f1849cbc32f8af1457ec9f788299
   languageName: node
   linkType: hard
 
@@ -5557,6 +5580,43 @@ __metadata:
   dependencies:
     minipass: "npm:^7.1.2"
   checksum: 10/f47365cc2cb7f078cbe7e046eb52655e2e7e97f8c0a9a674f4da60d94fb0624edfcec9b5db32e8ba5a99a5f036f595680ae6fe02a262beaa73026e505cc52f99
+  languageName: node
+  linkType: hard
+
+"motion-dom@npm:^12.35.2":
+  version: 12.35.2
+  resolution: "motion-dom@npm:12.35.2"
+  dependencies:
+    motion-utils: "npm:^12.29.2"
+  checksum: 10/dd009e58b178dd80b123a86199ae78ecd6b2fc6c8e03464b2daf43b4218dfcc36042ec0af8fad2c6c157198f56849f90dc033b58f46478b45fbaeaefcc2710ad
+  languageName: node
+  linkType: hard
+
+"motion-utils@npm:^12.29.2":
+  version: 12.29.2
+  resolution: "motion-utils@npm:12.29.2"
+  checksum: 10/ae5f9be58c07939af72334894ed1a18653d724946182a718dc3d11268ef26e63804c3f16dee5a6110596d4406b539c4513822b74f86adebef9488601c34b18b7
+  languageName: node
+  linkType: hard
+
+"motion@npm:^12.35.2":
+  version: 12.35.2
+  resolution: "motion@npm:12.35.2"
+  dependencies:
+    framer-motion: "npm:^12.35.2"
+    tslib: "npm:^2.4.0"
+  peerDependencies:
+    "@emotion/is-prop-valid": "*"
+    react: ^18.0.0 || ^19.0.0
+    react-dom: ^18.0.0 || ^19.0.0
+  peerDependenciesMeta:
+    "@emotion/is-prop-valid":
+      optional: true
+    react:
+      optional: true
+    react-dom:
+      optional: true
+  checksum: 10/3d99a53816634cbee1b38ed8a9a5d88bafbd29eb3bc02e78fc741c604972b4b88d317cf374bba30a1486f727bb1657ef8826f83e669a3b04fd1ec3ef75bfb62d
   languageName: node
   linkType: hard
 
@@ -6610,8 +6670,8 @@ __metadata:
   linkType: hard
 
 "shadcn@npm:^4.0.0":
-  version: 4.0.0
-  resolution: "shadcn@npm:4.0.0"
+  version: 4.0.2
+  resolution: "shadcn@npm:4.0.2"
   dependencies:
     "@antfu/ni": "npm:^25.0.0"
     "@babel/core": "npm:^7.28.0"
@@ -6650,7 +6710,7 @@ __metadata:
     zod-to-json-schema: "npm:^3.24.6"
   bin:
     shadcn: dist/index.js
-  checksum: 10/0fbf8d3bdc401fc6efe6beacf551a44c577fd3e33bc73379f008fea2caddf6f797cd936c75fac593e70d8f78ff042f4e60b3a24f313b7a14c67f3e0178206c1a
+  checksum: 10/8c430e7785c8e39e82aab53ac97de576fc138a501ac3b16ca2d6b8484a6265336f969502f777a993f170041b27c2b0b7e4600b8a1bbd1c175a7e9b4230ae0e50
   languageName: node
   linkType: hard
 
@@ -6957,15 +7017,15 @@ __metadata:
   linkType: hard
 
 "tar@npm:^7.5.4":
-  version: 7.5.10
-  resolution: "tar@npm:7.5.10"
+  version: 7.5.11
+  resolution: "tar@npm:7.5.11"
   dependencies:
     "@isaacs/fs-minipass": "npm:^4.0.0"
     chownr: "npm:^3.0.0"
     minipass: "npm:^7.1.2"
     minizlib: "npm:^3.1.0"
     yallist: "npm:^5.0.0"
-  checksum: 10/98ba6421a250b233c36a54f7441647bdfee1ed0b916cd57850259a3602154d996f5b8422f67ef5c8ce77f582ed938054775c2873fc7c901e0c7530ed50febc40
+  checksum: 10/fb2e77ee858a73936c68e066f4a602d428d6f812e6da0cc1e14a41f99498e4f7fd3535e355fa15157240a5538aa416026cfa6306bb0d1d1c1abf314b1f878e9a
   languageName: node
   linkType: hard
 

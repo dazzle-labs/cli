@@ -6,16 +6,26 @@ import type { StreamDestination } from "../gen/api/v1/stream_pb.js";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Cpu, Globe, Copy, Check, ArrowUpRight, Pencil, X as XIcon, Link2, RefreshCw, ExternalLink } from "lucide-react";
+import { Trash2, Cpu, Globe, Check, ArrowUpRight, Pencil, X as XIcon, Link2, RefreshCw, ExternalLink } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { StreamPreview } from "@/components/StreamPreview";
-import { CodeBlock } from "@/components/ui/code-block";
-import { Spinner } from "@/components/ui/spinner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { AnimatedPage } from "@/components/AnimatedPage";
+import { AnimatedList, AnimatedListItem } from "@/components/AnimatedList";
+import { CopyButton } from "@/components/CopyButton";
+import { Spinner } from "@/components/ui/spinner";
+
+const cliCommands = [
+  { label: "Set as default stage", cmd: (name: string) => `dazzle stage default "${name}"` },
+  { label: "Activate this stage", cmd: () => `dazzle stage activate` },
+  { label: "Push content", cmd: () => `dazzle stage script set app.jsx` },
+  { label: "Screenshot to verify", cmd: () => `dazzle stage screenshot` },
+  { label: "Go live", cmd: () => `dazzle stage broadcast on` },
+];
 
 export function StageDetail() {
   const { stageId } = useParams<{ stageId: string }>();
@@ -23,9 +33,7 @@ export function StageDetail() {
   const [stage, setStage] = useState<Stage | null>(null);
   const [destinations, setDestinations] = useState<StreamDestination[]>([]);
   const [loading, setLoading] = useState(true);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [confirmingRegen, setConfirmingRegen] = useState(false);
-  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
 
   // Inline name editing
   const [editingName, setEditingName] = useState(false);
@@ -51,23 +59,6 @@ export function StageDetail() {
   useEffect(() => {
     refresh();
   }, [stageId]);
-
-  useEffect(() => {
-    return () => {
-      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
-    };
-  }, []);
-
-  async function handleCopy(text: string, id: string) {
-    if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedId(id);
-      copyTimeoutRef.current = setTimeout(() => setCopiedId(null), 2000);
-    } catch {
-      // clipboard not available
-    }
-  }
 
   async function handleDelete() {
     if (!stageId) return;
@@ -104,7 +95,7 @@ export function StageDetail() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-muted-foreground text-sm pt-12">
+      <div className="flex items-center gap-2 text-muted-foreground text-base pt-12">
         <Spinner className="text-primary" />
         Loading stage...
       </div>
@@ -114,33 +105,21 @@ export function StageDetail() {
   if (!stage) {
     return (
       <div className="pt-12 text-center">
-        <p className="text-muted-foreground text-sm mb-4">Stage not found.</p>
-        <Link to="/" className="text-primary hover:text-primary/80 text-sm">
+        <p className="text-muted-foreground text-base mb-4">Stage not found.</p>
+        <Link to="/" className="text-primary hover:text-primary/80 text-base">
           Back to stages
         </Link>
       </div>
     );
   }
 
-  const cliSnippet = `# Set as default stage (then -s flag is optional)
-dazzle stage default "${stage?.name || stageId}"
-
-# Activate this stage
-dazzle stage activate
-
-# Push content
-dazzle stage script set app.jsx
-
-# Screenshot to verify
-dazzle stage screenshot
-
-# Go live
-dazzle stage broadcast on`;
-
   const displayName = stage.name && stage.name !== "default" ? stage.name : "Untitled Stage";
+  const isRunning = stage.status === "running";
+  const isStarting = stage.status === "starting";
+  const allCmds = cliCommands.map(c => c.cmd(stage?.name || stageId!)).join("\n");
 
   return (
-    <div>
+    <AnimatedPage>
       {/* Breadcrumb */}
       <Breadcrumb className="mb-6">
         <BreadcrumbList>
@@ -186,9 +165,17 @@ dazzle stage broadcast on`;
             </Tooltip>
           </div>
         )}
-        <Badge variant={stage.status === "running" ? "success" : stage.status === "starting" ? "warning" : "secondary"}>
-          {stage.status === "running" ? "active" : stage.status || "inactive"}
-        </Badge>
+        <div className="flex items-center gap-2">
+          {(isRunning || isStarting) && (
+            <span className="relative flex h-2.5 w-2.5">
+              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isRunning ? "bg-emerald-400" : "bg-amber-400"}`} />
+              <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${isRunning ? "bg-emerald-500" : "bg-amber-500"}`} />
+            </span>
+          )}
+          <Badge variant={isRunning ? "success" : isStarting ? "warning" : "secondary"}>
+            {isRunning ? "active" : stage.status || "inactive"}
+          </Badge>
+        </div>
       </div>
 
       {/* Main + Sidebar layout */}
@@ -197,28 +184,16 @@ dazzle stage broadcast on`;
         <div className="flex-1 min-w-0 mb-8 xl:mb-0">
           <StreamPreview
             stageId={stageId!}
-            status={stage.status === "running" ? "running" : stage.status === "starting" ? "starting" : "stopped"}
+            status={isRunning ? "running" : isStarting ? "starting" : "stopped"}
           />
           {stage.preview && (
             <div className="mt-3 rounded-xl border border-border bg-card px-3 py-2">
               <div className="flex items-center gap-1.5">
                 <Link2 className="h-3 w-3 text-muted-foreground shrink-0" />
-                <code className="flex-1 text-xs font-mono text-muted-foreground truncate">
+                <code className="flex-1 text-sm font-mono text-muted-foreground truncate">
                   {stage.preview.watchUrl.replace(/token=.*/, "token=••••••••")}
                 </code>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 text-muted-foreground hover:text-primary shrink-0"
-                      onClick={() => handleCopy(stage.preview!.watchUrl, "preview-watch")}
-                    >
-                      {copiedId === "preview-watch" ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Copy preview URL</TooltipContent>
-                </Tooltip>
+                <CopyButton text={stage.preview.watchUrl} tooltip="Copy preview URL" size="icon" iconSize="h-3 w-3" className="h-6 w-6" />
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -253,7 +228,7 @@ dazzle stage broadcast on`;
                     <Button
                       variant="link"
                       size="sm"
-                      className="text-[10px] text-primary hover:text-primary/80 h-auto p-0"
+                      className="text-xs text-primary hover:text-primary/80 h-auto p-0"
                       onClick={async () => {
                         try {
                           await stageClient.regeneratePreviewToken({ id: stageId! });
@@ -267,7 +242,7 @@ dazzle stage broadcast on`;
                     <Button
                       variant="link"
                       size="sm"
-                      className="text-[10px] text-muted-foreground hover:text-foreground h-auto p-0"
+                      className="text-xs text-muted-foreground hover:text-foreground h-auto p-0"
                       onClick={() => setConfirmingRegen(false)}
                     >
                       Cancel
@@ -284,27 +259,27 @@ dazzle stage broadcast on`;
           {/* Metadata */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-xs font-medium text-muted-foreground">Details</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Details</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-col gap-2.5">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <span className="text-muted-foreground w-[52px]">ID</span>
                   <code className="font-mono text-muted-foreground">{stage.id}</code>
                 </div>
                 {stage.podName && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Cpu className="h-3.5 w-3.5 shrink-0" />
                     <span className="font-mono truncate">{stage.podName}</span>
                   </div>
                 )}
                 {stage.directPort > 0 && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Globe className="h-3.5 w-3.5 shrink-0" />
                     <span>Port {stage.directPort}</span>
                   </div>
                 )}
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <span className="text-muted-foreground w-[52px]">Created</span>
                   <span>{stage.createdAt ? timestampDate(stage.createdAt).toLocaleDateString() : "\u2014"}</span>
                 </div>
@@ -315,7 +290,7 @@ dazzle stage broadcast on`;
           {/* Streaming */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-xs font-medium text-muted-foreground">Streaming</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Streaming</CardTitle>
             </CardHeader>
             <CardContent>
               {destinations.length > 0 ? (
@@ -343,7 +318,7 @@ dazzle stage broadcast on`;
                     </SelectContent>
                   </Select>
                   {!stage.destinationId && (
-                    <Button size="sm" className="font-semibold text-xs" asChild>
+                    <Button size="sm" className="font-semibold text-sm" asChild>
                       <Link to="/destinations">
                         Add a streaming destination
                         <ArrowUpRight className="h-3 w-3 ml-1" />
@@ -352,13 +327,13 @@ dazzle stage broadcast on`;
                   )}
                   {stage.destinationId && (
                     <div className="flex flex-col gap-1.5">
-                      <Button variant="link" size="sm" className="text-xs text-muted-foreground hover:text-primary h-auto p-0 justify-start" asChild>
+                      <Button variant="link" size="sm" className="text-sm text-muted-foreground hover:text-primary h-auto p-0 justify-start" asChild>
                         <Link to="/destinations">
                           Manage destinations
                           <ArrowUpRight className="h-3 w-3 ml-1" />
                         </Link>
                       </Button>
-                      <Button variant="link" size="sm" className="text-xs text-muted-foreground hover:text-primary h-auto p-0 justify-start" asChild>
+                      <Button variant="link" size="sm" className="text-sm text-muted-foreground hover:text-primary h-auto p-0 justify-start" asChild>
                         <Link to="/api-keys">
                           Manage API keys
                           <ArrowUpRight className="h-3 w-3 ml-1" />
@@ -368,7 +343,7 @@ dazzle stage broadcast on`;
                   )}
                 </>
               ) : (
-                <Button size="sm" className="font-semibold text-xs" asChild>
+                <Button size="sm" className="font-semibold text-sm" asChild>
                   <Link to="/destinations">
                     Add a streaming destination
                     <ArrowUpRight className="h-3 w-3 ml-1" />
@@ -380,35 +355,36 @@ dazzle stage broadcast on`;
         </div>
       </div>
 
-      {/* CLI usage section */}
-      <Card className="mb-8">
+      {/* CLI usage section — per-command rows */}
+      <Card className="mb-8 mt-6">
         <CardHeader>
-          <CardTitle className="text-xs font-medium text-muted-foreground">CLI Usage</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-medium text-muted-foreground">CLI Usage</CardTitle>
+            <CopyButton text={allCmds} tooltip="Copy all commands" size="sm" iconSize="h-3.5 w-3.5" />
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="relative">
-            <CodeBlock code={cliSnippet} />
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-primary"
-                  onClick={() => handleCopy(cliSnippet, "cli")}
-                >
-                  {copiedId === "cli" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Copy to clipboard</TooltipContent>
-            </Tooltip>
-          </div>
+          <AnimatedList className="flex flex-col gap-2" delay={0.04}>
+            {cliCommands.map((cmd, i) => {
+              const cmdText = cmd.cmd(stage?.name || stageId!);
+              return (
+                <AnimatedListItem key={i}>
+                  <div className="flex items-center gap-3 rounded-lg border border-border bg-card/50 px-3 py-2 group">
+                    <span className="text-sm text-muted-foreground whitespace-nowrap">{cmd.label}</span>
+                    <code className="flex-1 text-sm font-mono text-foreground truncate">{cmdText}</code>
+                    <CopyButton text={cmdText} tooltip="Copy command" size="icon" iconSize="h-3 w-3" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </AnimatedListItem>
+              );
+            })}
+          </AnimatedList>
         </CardContent>
       </Card>
 
       {/* Danger zone */}
       <Card className="border-destructive/10 bg-destructive/[0.02]">
         <CardHeader>
-          <CardTitle className="text-xs font-medium text-muted-foreground">Danger zone</CardTitle>
+          <CardTitle className="text-sm font-medium text-muted-foreground">Danger zone</CardTitle>
         </CardHeader>
         <CardContent>
           <AlertDialog>
@@ -431,6 +407,6 @@ dazzle stage broadcast on`;
           </AlertDialog>
         </CardContent>
       </Card>
-    </div>
+    </AnimatedPage>
   );
 }

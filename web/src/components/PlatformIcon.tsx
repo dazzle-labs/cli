@@ -31,6 +31,15 @@ export const PLATFORM_LIST = Object.entries(PLATFORMS).map(([value, config]) => 
   ...config,
 }));
 
+/** Per-platform brand-color hover classes for buttons/cards */
+export const PLATFORM_HOVER_COLORS: Record<string, string> = {
+  twitch: "hover:border-purple-500/20 hover:bg-purple-500/[0.03]",
+  youtube: "hover:border-red-500/20 hover:bg-red-500/[0.03]",
+  kick: "hover:border-green-500/20 hover:bg-green-500/[0.03]",
+  restream: "hover:border-blue-500/20 hover:bg-blue-500/[0.03]",
+  custom: "hover:border-zinc-400/20 hover:bg-zinc-400/[0.03]",
+};
+
 export function PlatformIcon({
   platform,
   className,

@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@clerk/react";
-import { ArrowLeft, ArrowRight, Monitor, Tv, Cpu } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { StepIndicator } from "./StepIndicator";
 import { EndpointCreator } from "./EndpointCreator";
@@ -10,7 +11,9 @@ import type { StreamDestinationData } from "./StreamDestinationForm";
 import type { StreamDestination } from "../../gen/api/v1/stream_pb.js";
 import { stageClient, streamClient } from "../../client.js";
 import { Button } from "@/components/ui/button";
-import { PlatformIcon, PLATFORM_LIST } from "@/components/PlatformIcon";
+import { PlatformIcon, PLATFORM_LIST, PLATFORM_HOVER_COLORS } from "@/components/PlatformIcon";
+import { FlowDiagram } from "@/components/FlowDiagram";
+import { springs } from "@/lib/motion";
 
 interface OnboardingWizardProps {
   open: boolean;
@@ -18,10 +21,15 @@ interface OnboardingWizardProps {
   skipIntro?: boolean;
 }
 
-const WIZARD_STEPS = ["Set up platform", "Set up stage"];
+const WIZARD_STEPS = ["Connect a platform", "Create a stage"];
 
+const OAUTH_PLATFORMS = ["twitch", "youtube", "kick", "restream"] as const;
 
-const OAUTH_PLATFORMS = ["twitch", "youtube", "kick"] as const;
+const stepVariants = {
+  enter: { opacity: 0, y: 16 },
+  center: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -8 },
+};
 
 export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardProps) {
   const { getToken } = useAuth();
@@ -102,53 +110,14 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
         <h2 className="text-2xl tracking-[-0.02em] text-foreground mb-3 font-display">
           How Dazzle works
         </h2>
-        <p className="text-sm text-muted-foreground mb-10 text-center max-w-md">
+        <p className="text-base text-muted-foreground mb-10 text-center max-w-md">
           Your AI agent connects to a Stage — a cloud environment it can control.
           The stage streams everything to your chosen platform.
         </p>
 
-        {/* Data flow diagram */}
-        <div className="flex items-start gap-4 sm:gap-6 mb-10 flex-wrap justify-center">
-          <div className="flex flex-col items-center gap-2">
-            <div className="h-16 w-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-              <Monitor className="h-7 w-7 text-blue-400" />
-            </div>
-            <div className="text-center">
-              <p className="text-xs font-medium text-foreground">Agent</p>
-              <p className="text-xs text-muted-foreground">Claude, OpenAI,</p>
-              <p className="text-xs text-muted-foreground">any AI agent</p>
-            </div>
-          </div>
-
-          <div className="flex items-center mt-[26px]">
-            <div className="w-8 sm:w-12 h-px bg-gradient-to-r from-blue-500/40 to-emerald-500/40" />
-            <ArrowRight className="h-3 w-3 text-zinc-600 -ml-1" />
-          </div>
-
-          <div className="flex flex-col items-center gap-2">
-            <div className="h-16 w-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-              <Cpu className="h-7 w-7 text-emerald-400" />
-            </div>
-            <div className="text-center">
-              <p className="text-xs font-medium text-foreground">Stage</p>
-              <p className="text-xs text-muted-foreground">Cloud environment</p>
-            </div>
-          </div>
-
-          <div className="flex items-center mt-[26px]">
-            <div className="w-8 sm:w-12 h-px bg-gradient-to-r from-emerald-500/40 to-purple-500/40" />
-            <ArrowRight className="h-3 w-3 text-zinc-600 -ml-1" />
-          </div>
-
-          <div className="flex flex-col items-center gap-2">
-            <div className="h-16 w-16 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
-              <Tv className="h-7 w-7 text-purple-400" />
-            </div>
-            <div className="text-center">
-              <p className="text-xs font-medium text-foreground">Platform</p>
-              <p className="text-xs text-muted-foreground">Twitch, YouTube</p>
-            </div>
-          </div>
+        {/* Animated flow diagram */}
+        <div className="mb-10">
+          <FlowDiagram />
         </div>
 
         <Button
@@ -168,7 +137,7 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
         <h2 className="text-2xl tracking-[-0.02em] text-foreground mb-2 font-display">
           Stream Destinations
         </h2>
-        <p className="text-sm text-muted-foreground mb-6 text-center max-w-md">
+        <p className="text-base text-muted-foreground mb-6 text-center max-w-md">
           Stream destinations are the platforms your stage broadcasts to.
           Connect an account or add a custom RTMP destination.
         </p>
@@ -176,14 +145,16 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
         {/* Existing destinations */}
         {destinations.length > 0 && (
           <div className="w-full max-w-md mb-6">
-            <p className="text-xs font-medium text-muted-foreground mb-3">Select a destination</p>
+            <p className="text-sm font-medium text-muted-foreground mb-3">Use an existing destination</p>
             <div className="flex flex-col gap-2">
               {destinations.map((d) => (
-                <button
+                <motion.button
                   key={d.id}
                   type="button"
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => setSelectedDestId(d.id)}
-                  className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-all cursor-pointer ${
+                  className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-colors cursor-pointer ${
                     selectedDestId === d.id
                       ? "border-primary/30 bg-primary/[0.06]"
                       : "border-border bg-card hover:border-border/80"
@@ -191,13 +162,13 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
                 >
                   <PlatformIcon platform={d.platform} size="sm" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-foreground truncate">{d.name || d.platformUsername || d.platform}</p>
-                    <p className="text-xs text-muted-foreground">{d.platform}</p>
+                    <p className="text-base text-foreground truncate">{d.name || d.platformUsername || d.platform}</p>
+                    <p className="text-sm text-muted-foreground">{d.platform}</p>
                   </div>
                   {selectedDestId === d.id && (
                     <div className="h-2 w-2 rounded-full bg-primary shrink-0" />
                   )}
-                </button>
+                </motion.button>
               ))}
             </div>
           </div>
@@ -205,48 +176,69 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
 
         {/* Connect new destination */}
         <div className="mb-6">
-          <p className="text-xs font-medium text-muted-foreground mb-3 text-center">
+          <p className="text-sm font-medium text-muted-foreground mb-3 text-center">
             {destinations.length > 0 ? "Connect a new one" : "Platforms"}
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
             {OAUTH_PLATFORMS.filter(p => availablePlatforms.includes(p)).map((platform) => {
               const label = PLATFORM_LIST.find((p) => p.value === platform)?.label ?? platform;
+              const hoverColor = PLATFORM_HOVER_COLORS[platform] ?? "";
               return (
-                <Button
+                <motion.div
                   key={platform}
-                  variant="outline"
-                  onClick={() => handleOAuthConnect(platform)}
-                  className="rounded-xl h-auto px-4 py-3 hover:border-primary/20 hover:bg-primary/[0.02]"
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={springs.quick}
                 >
-                  <PlatformIcon platform={platform} size="sm" />
-                  <span className="text-xs">{label}</span>
-                </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleOAuthConnect(platform)}
+                    className={`rounded-xl h-auto px-4 py-3 ${hoverColor}`}
+                  >
+                    <PlatformIcon platform={platform} size="sm" />
+                    <span className="text-sm">{label}</span>
+                  </Button>
+                </motion.div>
               );
             })}
-            <Button
-              variant="outline"
-              onClick={() => setShowCustomForm(true)}
-              className="rounded-xl h-auto px-4 py-3 hover:border-primary/20 hover:bg-primary/[0.02]"
+            <motion.div
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.97 }}
+              transition={springs.quick}
             >
-              <PlatformIcon platform="custom" size="sm" />
-              <span className="text-xs">Custom</span>
-            </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowCustomForm(!showCustomForm)}
+                className={`rounded-xl h-auto px-4 py-3 ${PLATFORM_HOVER_COLORS.custom} ${showCustomForm ? "border-primary/30 bg-primary/[0.06]" : ""}`}
+              >
+                <PlatformIcon platform="custom" size="sm" />
+                <span className="text-sm">Custom</span>
+              </Button>
+            </motion.div>
           </div>
         </div>
 
         {/* Custom form inline */}
-        {showCustomForm && (
-          <div className="w-full max-w-md mb-6">
-            <StreamDestinationForm
-              compact
-              hideSkip
-              submitLabel="Add Destination"
-              onNext={(data) => {
-                if (data) handleCreateCustomDest(data);
-              }}
-            />
-          </div>
-        )}
+        <AnimatePresence>
+          {showCustomForm && (
+            <motion.div
+              className="w-full max-w-md mb-6"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={springs.snappy}
+            >
+              <StreamDestinationForm
+                compact
+                hideSkip
+                submitLabel="Add Destination"
+                onNext={(data) => {
+                  if (data) handleCreateCustomDest(data);
+                }}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="mt-6 flex items-center gap-3">
           <Button
@@ -307,22 +299,30 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
             {canGoBack && (
               <Button
                 variant="ghost"
-                size="sm"
+                size="icon-sm"
                 onClick={handleBack}
-                className="absolute left-0 top-0 text-xs text-muted-foreground hover:text-foreground"
+                className="absolute left-0 top-0 text-muted-foreground hover:text-foreground"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
-                Back
               </Button>
             )}
             <StepIndicator steps={WIZARD_STEPS} current={step} />
           </div>
         )}
 
-        {/* Content */}
-        <div className="transition-all duration-300">
-          {showInfoScreen ? renderInfoScreen() : renderStep()}
-        </div>
+        {/* Content with AnimatePresence for smooth step transitions */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={showInfoScreen ? "info" : `step-${step}`}
+            variants={stepVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={springs.gentle}
+          >
+            {showInfoScreen ? renderInfoScreen() : renderStep()}
+          </motion.div>
+        </AnimatePresence>
       </DialogContent>
     </Dialog>
   );

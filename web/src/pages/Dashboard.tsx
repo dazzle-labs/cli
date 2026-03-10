@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { motion, AnimatePresence } from "motion/react";
 import { stageClient, streamClient } from "../client.js";
 import type { Stage } from "../gen/api/v1/stage_pb.js";
 import type { StreamDestination } from "../gen/api/v1/stream_pb.js";
@@ -7,19 +8,14 @@ import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Radio, X, Loader2, ArrowRight, Monitor } from "lucide-react";
+import { Radio, X, Loader2, ArrowRight, Rocket } from "lucide-react";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 import { toast } from "sonner";
-import { Spinner } from "@/components/ui/spinner";
 import { Alert, AlertTitle, AlertAction } from "@/components/ui/alert";
-import {
-  Empty,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-  EmptyDescription,
-  EmptyContent,
-} from "@/components/ui/empty";
+import { AnimatedPage } from "@/components/AnimatedPage";
+import { AnimatedList, AnimatedListItem } from "@/components/AnimatedList";
+import { FlowDiagram } from "@/components/FlowDiagram";
+import { springs, fadeInUp } from "@/lib/motion";
 
 export function Dashboard() {
   const [stages, setStages] = useState<Stage[]>([]);
@@ -60,8 +56,8 @@ export function Dashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-muted-foreground text-sm pt-12">
-        <Spinner className="text-primary" />
+      <div className="flex items-center gap-2 text-muted-foreground text-base pt-12">
+        <Loader2 className="h-4 w-4 animate-spin text-primary" />
         Loading stages...
       </div>
     );
@@ -85,30 +81,39 @@ export function Dashboard() {
   const showStreamBanner = activeStageCount > 0 && !hasStreamDests && !bannerDismissed;
 
   return (
-    <div>
+    <AnimatedPage>
       {/* Streaming banner */}
-      {showStreamBanner && (
-        <Alert className="mb-6 border-primary/20 bg-primary/[0.04]">
-          <Radio className="h-4 w-4 text-primary" />
-          <AlertTitle className="text-foreground">
-            Your agent has a stage. Ready to open the curtains?
-          </AlertTitle>
-          <AlertAction>
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                className="font-semibold text-xs"
-                asChild
-              >
-                <Link to="/destinations">Set up streaming</Link>
-              </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={dismissBanner} aria-label="Dismiss">
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </AlertAction>
-        </Alert>
-      )}
+      <AnimatePresence>
+        {showStreamBanner && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={springs.snappy}
+          >
+            <Alert className="mb-6 border-primary/20 bg-primary/[0.04]">
+              <Radio className="h-4 w-4 text-primary" />
+              <AlertTitle className="text-foreground">
+                Your agent has a stage. Ready to open the curtains?
+              </AlertTitle>
+              <AlertAction>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    className="font-semibold text-sm"
+                    asChild
+                  >
+                    <Link to="/destinations">Set up streaming</Link>
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={dismissBanner} aria-label="Dismiss">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </AlertAction>
+            </Alert>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
@@ -116,7 +121,7 @@ export function Dashboard() {
           <h1 className="text-3xl tracking-[-0.02em] text-foreground mb-1 font-display">
             Stages
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-base text-muted-foreground">
             Cloud environments your agents can control and broadcast from.
           </p>
         </div>
@@ -147,64 +152,93 @@ export function Dashboard() {
 
       {/* Stages grid */}
       {stages.length === 0 ? (
-        <Empty>
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <Monitor className="h-7 w-7" />
-            </EmptyMedia>
-            <EmptyTitle>No stages yet</EmptyTitle>
-            <EmptyDescription>Create one to get started.</EmptyDescription>
-          </EmptyHeader>
-          <EmptyContent>
+        <motion.div
+          className="flex flex-col items-center pt-8"
+          variants={fadeInUp}
+          initial="hidden"
+          animate="visible"
+          transition={springs.gentle}
+        >
+          <FlowDiagram />
+          <div className="mt-10 text-center">
+            <h2 className="text-xl font-display text-foreground mb-2">
+              Give your agent a stage
+            </h2>
+            <p className="text-base text-muted-foreground mb-6 max-w-md">
+              A stage is a cloud environment your AI agent can control and stream from.
+              Set one up to get started.
+            </p>
             <Button
               onClick={() => setWizardOpen(true)}
               className="font-semibold"
+              size="lg"
             >
+              <Rocket className="h-4 w-4 mr-2" />
               Get Started
             </Button>
-          </EmptyContent>
-        </Empty>
+          </div>
+        </motion.div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {stages.map((stage) => (
-            <Link key={stage.id} to={`/stage/${stage.id}`} className="group">
-              <Card className="transition-all duration-200 hover:border-primary/15 hover:bg-primary/[0.02]">
-                <CardContent className="p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-medium text-foreground">
-                      {stage.name || "default"}
-                    </span>
-                    <Badge
-                      variant={
-                        stage.status === "running"
-                          ? "success"
-                          : stage.status === "starting"
-                            ? "warning"
-                            : "secondary"
-                      }
-                    >
-                      {stage.status === "running"
-                        ? "active"
-                        : stage.status || "inactive"}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">
-                      {stage.createdAt
-                        ? timestampDate(stage.createdAt).toLocaleDateString()
-                        : ""}
-                    </span>
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground group-hover:text-primary transition-colors">
-                      View details
-                      <ArrowRight className="h-3 w-3" />
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
+        <AnimatedList className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {stages.map((stage) => {
+            const isRunning = stage.status === "running";
+            const isStarting = stage.status === "starting";
+            return (
+              <AnimatedListItem key={stage.id}>
+                <Link to={`/stage/${stage.id}`} className="group">
+                  <motion.div
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={springs.quick}
+                  >
+                    <Card className={`transition-colors duration-200 hover:border-primary/15 hover:bg-primary/[0.02] ${isRunning ? "border-l-2 border-l-emerald-500/40" : ""}`}>
+                      <CardContent className="p-5">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-base font-medium text-foreground">
+                            {stage.name || "default"}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            {(isRunning || isStarting) && (
+                              <span className="relative flex h-2.5 w-2.5">
+                                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isRunning ? "bg-emerald-400" : "bg-amber-400"}`} />
+                                <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${isRunning ? "bg-emerald-500" : "bg-amber-500"}`} />
+                              </span>
+                            )}
+                            <Badge
+                              variant={
+                                isRunning
+                                  ? "success"
+                                  : isStarting
+                                    ? "warning"
+                                    : "secondary"
+                              }
+                            >
+                              {isRunning
+                                ? "active"
+                                : stage.status || "inactive"}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">
+                            {stage.createdAt
+                              ? timestampDate(stage.createdAt).toLocaleDateString()
+                              : ""}
+                          </span>
+                          <span className="flex items-center gap-1 text-sm text-muted-foreground group-hover:text-primary transition-colors">
+                            View details
+                            <ArrowRight className="h-3 w-3" />
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                </Link>
+              </AnimatedListItem>
+            );
+          })}
+        </AnimatedList>
       )}
-    </div>
+    </AnimatedPage>
   );
 }

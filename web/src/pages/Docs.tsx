@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { Copy, Check } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import { ChevronDown } from "lucide-react";
 import { CopyAgentPromptButton } from "@/components/CopyAgentPromptButton";
 import { CodeBlock } from "@/components/ui/code-block";
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { CopyButton } from "@/components/CopyButton";
+import { AnimatedPage } from "@/components/AnimatedPage";
+import { springs } from "@/lib/motion";
 
 function useOS(): "windows" | "mac" | "linux" {
   const ua = navigator.userAgent.toLowerCase();
@@ -12,33 +14,63 @@ function useOS(): "windows" | "mac" | "linux" {
   return "linux";
 }
 
-export function Docs() {
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-  const os = useOS();
+function StepBadge({ n }: { n: number }) {
+  return (
+    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 text-primary text-xs font-semibold shrink-0">
+      {n}
+    </span>
+  );
+}
 
-  async function copy(text: string, id: string) {
-    await navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
-  }
+function CollapsibleSection({
+  title,
+  copyText,
+  children,
+  defaultOpen = false,
+}: {
+  title: string;
+  copyText: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
 
-  function CopyIconBtn({ id, text }: { id: string; text: string }) {
-    return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            onClick={() => copy(text, id)}
-            className="text-muted-foreground hover:text-primary shrink-0"
+  return (
+    <section className="mb-8">
+      <div className="flex items-center justify-between mb-2">
+        <button
+          onClick={() => setOpen(!open)}
+          className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+        >
+          <motion.div
+            animate={{ rotate: open ? 180 : 0 }}
+            transition={springs.quick}
           >
-            {copiedId === id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Copy to clipboard</TooltipContent>
-      </Tooltip>
-    );
-  }
+            <ChevronDown className="h-4 w-4" />
+          </motion.div>
+          {title}
+        </button>
+        <CopyButton text={copyText} tooltip="Copy to clipboard" size="icon-xs" />
+      </div>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={springs.snappy}
+            className="overflow-hidden"
+          >
+            {children}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
+  );
+}
+
+export function Docs() {
+  const os = useOS();
 
   const installSnippet = os === "windows"
     ? `irm https://stream.dazzle.fm/install.ps1 | iex`
@@ -77,14 +109,14 @@ dazzle stage script set app.jsx -s my-stage
 dazzle stage default my-stage`;
 
   return (
-    <div>
+    <AnimatedPage>
       {/* Header */}
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl tracking-[-0.02em] text-foreground mb-1 font-display">
             Docs
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-base text-muted-foreground">
             Control your stages with the Dazzle CLI.
           </p>
         </div>
@@ -94,11 +126,11 @@ dazzle stage default my-stage`;
       {/* Install */}
       <section className="mb-6">
         <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-medium text-muted-foreground">Install the CLI</p>
-          <CopyIconBtn id="install" text={installSnippet} />
+          <p className="text-sm font-medium text-muted-foreground">Install the CLI</p>
+          <CopyButton text={installSnippet} tooltip="Copy to clipboard" size="icon-xs" />
         </div>
         <CodeBlock code={installSnippet} />
-        <p className="text-xs text-muted-foreground mt-2">
+        <p className="text-sm text-muted-foreground mt-2">
           {altLabel}: <code className="text-muted-foreground">{altSnippet}</code>. Or <code className="text-muted-foreground">go install github.com/dazzle-labs/cli/cmd/dazzle@latest</code>.
         </p>
       </section>
@@ -106,49 +138,74 @@ dazzle stage default my-stage`;
       {/* Authenticate */}
       <section className="mb-8">
         <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-medium text-muted-foreground">Authenticate</p>
-          <CopyIconBtn id="login" text="dazzle login" />
+          <p className="text-sm font-medium text-muted-foreground">Authenticate</p>
+          <CopyButton text="dazzle login" tooltip="Copy to clipboard" size="icon-xs" />
         </div>
         <CodeBlock code="dazzle login" />
-        <p className="text-xs text-muted-foreground mt-2">
+        <p className="text-sm text-muted-foreground mt-2">
           Create an API key in Settings {">"} API Keys, then paste it when prompted. Or set <code className="text-muted-foreground">export DAZZLE_API_KEY=dzl_...</code> in your shell profile.
         </p>
       </section>
 
-      {/* Quick Start */}
+      {/* Quick Start with numbered steps */}
       <section className="mb-8">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-xl tracking-[-0.02em] text-foreground font-display">
             Quick Start
           </h2>
-          <CopyIconBtn id="quickstart" text={quickStartSnippet} />
+          <CopyButton text={quickStartSnippet} tooltip="Copy to clipboard" size="icon-xs" />
         </div>
-        <p className="text-sm text-muted-foreground mb-3">
+        <p className="text-base text-muted-foreground mb-4">
           Create a stage, push content, and go live.
         </p>
+        <div className="flex flex-col gap-3 mb-4">
+          <div className="flex items-center gap-3">
+            <StepBadge n={1} />
+            <span className="text-base text-foreground">Authenticate</span>
+            <code className="text-sm font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded ml-auto">dazzle login</code>
+          </div>
+          <div className="flex items-center gap-3">
+            <StepBadge n={2} />
+            <span className="text-base text-foreground">Create a stage</span>
+            <code className="text-sm font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded ml-auto">dazzle stage create my-stage</code>
+          </div>
+          <div className="flex items-center gap-3">
+            <StepBadge n={3} />
+            <span className="text-base text-foreground">Push content</span>
+            <code className="text-sm font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded ml-auto">dazzle stage script set ./app.jsx</code>
+          </div>
+          <div className="flex items-center gap-3">
+            <StepBadge n={4} />
+            <span className="text-base text-foreground">Screenshot to verify</span>
+            <code className="text-sm font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded ml-auto">dazzle stage screenshot</code>
+          </div>
+          <div className="flex items-center gap-3">
+            <StepBadge n={5} />
+            <span className="text-base text-foreground">Go live</span>
+            <code className="text-sm font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded ml-auto">dazzle stage broadcast on</code>
+          </div>
+        </div>
         <CodeBlock code={quickStartSnippet} />
       </section>
 
-      {/* Multi-stage */}
-      <section className="mb-8">
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-medium text-muted-foreground">Working with multiple stages</p>
-          <CopyIconBtn id="multistage" text={multiStageSnippet} />
-        </div>
+      {/* Multi-stage — collapsible */}
+      <CollapsibleSection
+        title="Working with multiple stages"
+        copyText={multiStageSnippet}
+      >
         <CodeBlock code={multiStageSnippet} />
-      </section>
+      </CollapsibleSection>
 
-      {/* CLI reference */}
-      <section className="mb-8">
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-medium text-muted-foreground">Full CLI reference</p>
-          <CopyIconBtn id="help" text="dazzle --help" />
-        </div>
+      {/* CLI reference — collapsible */}
+      <CollapsibleSection
+        title="Full CLI reference"
+        copyText="dazzle --help"
+      >
         <CodeBlock code="dazzle --help" />
-        <p className="text-xs text-muted-foreground mt-2">
+        <p className="text-sm text-muted-foreground mt-2">
           Run <code className="text-muted-foreground">dazzle stage --help</code> for stage commands, or <code className="text-muted-foreground">dazzle stage script --help</code> for script commands.
         </p>
-      </section>
+      </CollapsibleSection>
 
       {/* llms.txt link */}
       <div className="text-center">
@@ -156,11 +213,11 @@ dazzle stage default my-stage`;
           href="/llms.txt"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs text-muted-foreground hover:text-primary transition-colors"
+          className="text-sm text-muted-foreground hover:text-primary transition-colors"
         >
           View llms.txt for AI agent consumption
         </a>
       </div>
-    </div>
+    </AnimatedPage>
   );
 }
