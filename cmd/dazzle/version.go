@@ -60,6 +60,13 @@ func fetchLatestTag() (string, error) {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusTooManyRequests {
+			return "", fmt.Errorf("GitHub API rate limit exceeded; try again later")
+		}
+		return "", fmt.Errorf("GitHub API returned HTTP %d", resp.StatusCode)
+	}
+
 	var release struct {
 		TagName string `json:"tag_name"`
 	}
