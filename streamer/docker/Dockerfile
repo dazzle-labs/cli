@@ -28,8 +28,10 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
     wget \
     unclutter \
+    libglvnd0 \
     libglx0 \
-    libgl1-amber-dri \
+    libgl1-mesa-dri \
+    libglapi-mesa \
     mesa-utils \
     && rm -rf /var/lib/apt/lists/*
 
