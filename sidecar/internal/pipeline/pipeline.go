@@ -272,10 +272,9 @@ func (p *Pipeline) buildArgs() []string {
 
 	if p.broadcasting {
 		// Two outputs: HLS preview + RTMP broadcast
-		// -bf 0: disable B-frames to prevent decode glitches at HLS segment boundaries
 		hlsArgs := []string{
 			"-map", "0:v", "-map", "1:a",
-			"-c:v", "libx264", "-preset", "ultrafast", "-threads", "2", "-bf", "0",
+			"-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency", "-threads", "2",
 			"-crf", "28", "-maxrate", fmt.Sprintf("%dk", p.hlsBitrate), "-bufsize", fmt.Sprintf("%dk", p.hlsBitrate*2),
 			"-g", gop,
 		}
@@ -306,11 +305,9 @@ func (p *Pipeline) buildArgs() []string {
 			p.rtmpURL,
 		)
 	} else {
-		// HLS only — CRF mode lets ultrafast take shortcuts on easy frames;
-		// no zerolatency (keeps rc-lookahead) but -bf 0 disables B-frames
-		// to prevent decode glitches at 1-second segment boundaries.
+		// HLS only — CRF mode lets ultrafast take shortcuts on easy frames.
 		hlsArgs := []string{
-			"-c:v", "libx264", "-preset", "ultrafast", "-threads", "2", "-bf", "0",
+			"-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency", "-threads", "2",
 			"-crf", "28", "-maxrate", fmt.Sprintf("%dk", p.hlsBitrate), "-bufsize", fmt.Sprintf("%dk", p.hlsBitrate*2),
 			"-g", gop,
 		}
