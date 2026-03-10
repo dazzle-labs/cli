@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html><head><style>
+* { margin: 0; padding: 0; } body { width: 100vw; height: 100vh; overflow: hidden; background: #000; }
+canvas { width: 100%; height: 100%; }
+</style></head><body>
+<canvas id="c"></canvas>
+<script>
+// Full-screen shader: single sphere SDF with simple lighting, no noise
+// Tests the baseline cost of per-pixel raymarching without expensive noise
+const canvas = document.getElementById('c');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+const gl = canvas.getContext('webgl');
+if (!gl) { document.body.innerHTML = '<h1 style="color:red;padding:40px">WebGL not available</h1>'; throw 'no webgl'; }
+
+const vsrc = `attribute vec2 a_pos; void main() { gl_Position = vec4(a_pos, 0, 1); }`;
+const fsrc = `
+precision mediump float;
+uniform float u_time;
+uniform vec2 u_res;
+
+float sdSphere(vec3 p, float r) { return length(p) - r; }
+float sdPlane(vec3 p) { return p.y + 1.0; }
+
+float scene(vec3 p) {
+  float s = sdSphere(p - vec3(0, 0.5 + sin(u_time) * 0.3, 0), 1.0);
+  float g = sdPlane(p);
+  return min(s, g);
+}
+
+vec3 normal(vec3 p) {
+  float e = 0.001;
+  return normalize(vec3(
+    scene(p+vec3(e,0,0)) - scene(p-vec3(e,0,0)),
+    scene(p+vec3(0,e,0)) - scene(p-vec3(0,e,0)),
+    scene(p+vec3(0,0,e)) - scene(p-vec3(0,0,e))));
+}
+
+void main() {
+  vec2 uv = (gl_FragCoord.xy - u_res * 0.5) / u_res.y;
+  vec3 ro = vec3(0, 1, -3);
+  vec3 rd = normalize(vec3(uv, 1.0));
+
+  float t = 0.0;
+  vec3 col = vec3(0.1, 0.1, 0.15);
+  for (int i = 0; i < 48; i++) {
+    vec3 p = ro + rd * t;
+    float d = scene(p);
+    if (d < 0.005) {
+      vec3 n = normal(p);
+      vec3 l = normalize(vec3(2, 3, -1));
+      float diff = max(dot(n, l), 0.0);
+      float spec = pow(max(dot(reflect(-l, n), -rd), 0.0), 32.0);
+      // Checkerboard ground
+      float check = p.y < -0.99 ? mod(floor(p.x) + floor(p.z), 2.0) : 0.5;
+      vec3 mat = mix(vec3(0.3), vec3(0.7), check);
+      if (p.y > -0.99) mat = vec3(0.3, 0.5, 0.9);
+      col = mat * (diff * 0.7 + 0.15) + vec3(1) * spec * 0.5;
+      break;
+    }
+    t += d;
+    if (t > 20.0) break;
+  }
+  gl_FragColor = vec4(col, 1.0);
+}`;
+
+function mkShader(type, src) {
+  const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(s));
+  return s;
+}
+const prog = gl.createProgram();
+gl.attachShader(prog, mkShader(gl.VERTEX_SHADER, vsrc));
+gl.attachShader(prog, mkShader(gl.FRAGMENT_SHADER, fsrc));
+gl.linkProgram(prog); gl.useProgram(prog);
+const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW);
+const aPos = gl.getAttribLocation(prog, 'a_pos'); gl.enableVertexAttribArray(aPos);
+gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+const uTime = gl.getUniformLocation(prog, 'u_time');
+gl.uniform2f(gl.getUniformLocation(prog, 'u_res'), canvas.width, canvas.height);
+function draw(t) { gl.uniform1f(uTime, t*0.001); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); requestAnimationFrame(draw); }
+draw(0);
+</script>
+</body></html>

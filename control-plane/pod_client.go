@@ -99,6 +99,37 @@ func (p *podClient) Screenshot(podIP string) ([]byte, error) {
 	return resp.Msg.Image, nil
 }
 
+// --- Stats ---
+
+type StageStats struct {
+	StageFPS               float64
+	BroadcastFPS           float64
+	DroppedFrames          int64
+	DroppedFramesRecent    int64
+	TotalBytes             int64
+	Broadcasting           bool
+	BroadcastUptimeSeconds int64
+	StageUptimeSeconds     int64
+}
+
+func (p *podClient) GetStats(podIP string) (*StageStats, error) {
+	client := sidecarv1connect.NewRuntimeServiceClient(p.httpClient, sidecarBaseURL(podIP), p.connectOpts()...)
+	resp, err := client.GetStats(context.Background(), connect.NewRequest(&sidecarv1.GetStatsRequest{}))
+	if err != nil {
+		return nil, fmt.Errorf("get stats: %w", err)
+	}
+	return &StageStats{
+		StageFPS:               resp.Msg.StageFps,
+		BroadcastFPS:           resp.Msg.BroadcastFps,
+		DroppedFrames:          resp.Msg.DroppedFrames,
+		DroppedFramesRecent:    resp.Msg.DroppedFramesRecent,
+		TotalBytes:             resp.Msg.TotalBytes,
+		Broadcasting:           resp.Msg.Broadcasting,
+		BroadcastUptimeSeconds: resp.Msg.BroadcastUptimeSeconds,
+		StageUptimeSeconds:     resp.Msg.StageUptimeSeconds,
+	}, nil
+}
+
 // --- Sync methods ---
 
 type SyncDiffResult struct {

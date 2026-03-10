@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html><head><style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { width: 100vw; height: 100vh; overflow: hidden; background: #0a0a0a; }
+.orb { position: absolute; border-radius: 50%; filter: blur(1px); }
+@keyframes float { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-40px) scale(1.1); } }
+@keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+@keyframes slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(calc(100vw + 100%)); } }
+.orb:nth-child(1) { width: 120px; height: 120px; background: radial-gradient(circle, #e94560, transparent); top: 20%; left: 15%; animation: float 3s ease-in-out infinite; }
+.orb:nth-child(2) { width: 80px; height: 80px; background: radial-gradient(circle, #0f3460, transparent); top: 50%; left: 40%; animation: float 4s ease-in-out infinite 0.5s; }
+.orb:nth-child(3) { width: 160px; height: 160px; background: radial-gradient(circle, #533483, transparent); top: 30%; left: 65%; animation: float 5s ease-in-out infinite 1s; }
+.orb:nth-child(4) { width: 60px; height: 60px; background: radial-gradient(circle, #16c79a, transparent); top: 70%; left: 25%; animation: float 2.5s ease-in-out infinite 0.3s; }
+.orb:nth-child(5) { width: 100px; height: 100px; background: radial-gradient(circle, #ff6b6b, transparent); top: 60%; left: 75%; animation: float 3.5s ease-in-out infinite 0.8s; }
+.bar { position: absolute; bottom: 0; height: 4px; background: linear-gradient(90deg, #e94560, #533483, #0f3460); animation: slide 8s linear infinite; width: 200px; }
+.bar:nth-child(7) { bottom: 40px; animation-duration: 6s; animation-delay: 1s; opacity: 0.7; }
+.bar:nth-child(8) { bottom: 80px; animation-duration: 10s; animation-delay: 2s; opacity: 0.5; }
+.counter { position: absolute; top: 20px; right: 20px; color: #333; font: 12px monospace; }
+</style></head><body>
+<div class="orb"></div><div class="orb"></div><div class="orb"></div><div class="orb"></div><div class="orb"></div>
+<div class="bar"></div><div class="bar"></div><div class="bar"></div>
+<div class="counter" id="fps"></div>
+<script>
+let frames = 0, last = performance.now();
+function tick() {
+  frames++;
+  const now = performance.now();
+  if (now - last >= 1000) { document.getElementById('fps').textContent = frames + ' fps'; frames = 0; last = now; }
+  requestAnimationFrame(tick);
+}
+tick();
+</script>
+</body></html>

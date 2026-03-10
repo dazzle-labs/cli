@@ -48,6 +48,8 @@ const (
 	RuntimeServiceEmitEventProcedure = "/dazzle.sidecar.v1.RuntimeService/EmitEvent"
 	// RuntimeServiceGetLogsProcedure is the fully-qualified name of the RuntimeService's GetLogs RPC.
 	RuntimeServiceGetLogsProcedure = "/dazzle.sidecar.v1.RuntimeService/GetLogs"
+	// RuntimeServiceGetStatsProcedure is the fully-qualified name of the RuntimeService's GetStats RPC.
+	RuntimeServiceGetStatsProcedure = "/dazzle.sidecar.v1.RuntimeService/GetStats"
 	// RuntimeServiceNavigateProcedure is the fully-qualified name of the RuntimeService's Navigate RPC.
 	RuntimeServiceNavigateProcedure = "/dazzle.sidecar.v1.RuntimeService/Navigate"
 	// RuntimeServiceScreenshotProcedure is the fully-qualified name of the RuntimeService's Screenshot
@@ -183,6 +185,7 @@ func (UnimplementedSyncServiceHandler) Refresh(context.Context, *connect.Request
 type RuntimeServiceClient interface {
 	EmitEvent(context.Context, *connect.Request[v1.EmitEventRequest]) (*connect.Response[v1.EmitEventResponse], error)
 	GetLogs(context.Context, *connect.Request[v1.GetLogsRequest]) (*connect.Response[v1.GetLogsResponse], error)
+	GetStats(context.Context, *connect.Request[v1.GetStatsRequest]) (*connect.Response[v1.GetStatsResponse], error)
 	Navigate(context.Context, *connect.Request[v1.NavigateRequest]) (*connect.Response[v1.NavigateResponse], error)
 	Screenshot(context.Context, *connect.Request[v1.ScreenshotRequest]) (*connect.Response[v1.ScreenshotResponse], error)
 }
@@ -210,6 +213,12 @@ func NewRuntimeServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(runtimeServiceMethods.ByName("GetLogs")),
 			connect.WithClientOptions(opts...),
 		),
+		getStats: connect.NewClient[v1.GetStatsRequest, v1.GetStatsResponse](
+			httpClient,
+			baseURL+RuntimeServiceGetStatsProcedure,
+			connect.WithSchema(runtimeServiceMethods.ByName("GetStats")),
+			connect.WithClientOptions(opts...),
+		),
 		navigate: connect.NewClient[v1.NavigateRequest, v1.NavigateResponse](
 			httpClient,
 			baseURL+RuntimeServiceNavigateProcedure,
@@ -229,6 +238,7 @@ func NewRuntimeServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 type runtimeServiceClient struct {
 	emitEvent  *connect.Client[v1.EmitEventRequest, v1.EmitEventResponse]
 	getLogs    *connect.Client[v1.GetLogsRequest, v1.GetLogsResponse]
+	getStats   *connect.Client[v1.GetStatsRequest, v1.GetStatsResponse]
 	navigate   *connect.Client[v1.NavigateRequest, v1.NavigateResponse]
 	screenshot *connect.Client[v1.ScreenshotRequest, v1.ScreenshotResponse]
 }
@@ -241,6 +251,11 @@ func (c *runtimeServiceClient) EmitEvent(ctx context.Context, req *connect.Reque
 // GetLogs calls dazzle.sidecar.v1.RuntimeService.GetLogs.
 func (c *runtimeServiceClient) GetLogs(ctx context.Context, req *connect.Request[v1.GetLogsRequest]) (*connect.Response[v1.GetLogsResponse], error) {
 	return c.getLogs.CallUnary(ctx, req)
+}
+
+// GetStats calls dazzle.sidecar.v1.RuntimeService.GetStats.
+func (c *runtimeServiceClient) GetStats(ctx context.Context, req *connect.Request[v1.GetStatsRequest]) (*connect.Response[v1.GetStatsResponse], error) {
+	return c.getStats.CallUnary(ctx, req)
 }
 
 // Navigate calls dazzle.sidecar.v1.RuntimeService.Navigate.
@@ -257,6 +272,7 @@ func (c *runtimeServiceClient) Screenshot(ctx context.Context, req *connect.Requ
 type RuntimeServiceHandler interface {
 	EmitEvent(context.Context, *connect.Request[v1.EmitEventRequest]) (*connect.Response[v1.EmitEventResponse], error)
 	GetLogs(context.Context, *connect.Request[v1.GetLogsRequest]) (*connect.Response[v1.GetLogsResponse], error)
+	GetStats(context.Context, *connect.Request[v1.GetStatsRequest]) (*connect.Response[v1.GetStatsResponse], error)
 	Navigate(context.Context, *connect.Request[v1.NavigateRequest]) (*connect.Response[v1.NavigateResponse], error)
 	Screenshot(context.Context, *connect.Request[v1.ScreenshotRequest]) (*connect.Response[v1.ScreenshotResponse], error)
 }
@@ -280,6 +296,12 @@ func NewRuntimeServiceHandler(svc RuntimeServiceHandler, opts ...connect.Handler
 		connect.WithSchema(runtimeServiceMethods.ByName("GetLogs")),
 		connect.WithHandlerOptions(opts...),
 	)
+	runtimeServiceGetStatsHandler := connect.NewUnaryHandler(
+		RuntimeServiceGetStatsProcedure,
+		svc.GetStats,
+		connect.WithSchema(runtimeServiceMethods.ByName("GetStats")),
+		connect.WithHandlerOptions(opts...),
+	)
 	runtimeServiceNavigateHandler := connect.NewUnaryHandler(
 		RuntimeServiceNavigateProcedure,
 		svc.Navigate,
@@ -298,6 +320,8 @@ func NewRuntimeServiceHandler(svc RuntimeServiceHandler, opts ...connect.Handler
 			runtimeServiceEmitEventHandler.ServeHTTP(w, r)
 		case RuntimeServiceGetLogsProcedure:
 			runtimeServiceGetLogsHandler.ServeHTTP(w, r)
+		case RuntimeServiceGetStatsProcedure:
+			runtimeServiceGetStatsHandler.ServeHTTP(w, r)
 		case RuntimeServiceNavigateProcedure:
 			runtimeServiceNavigateHandler.ServeHTTP(w, r)
 		case RuntimeServiceScreenshotProcedure:
@@ -317,6 +341,10 @@ func (UnimplementedRuntimeServiceHandler) EmitEvent(context.Context, *connect.Re
 
 func (UnimplementedRuntimeServiceHandler) GetLogs(context.Context, *connect.Request[v1.GetLogsRequest]) (*connect.Response[v1.GetLogsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.sidecar.v1.RuntimeService.GetLogs is not implemented"))
+}
+
+func (UnimplementedRuntimeServiceHandler) GetStats(context.Context, *connect.Request[v1.GetStatsRequest]) (*connect.Response[v1.GetStatsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.sidecar.v1.RuntimeService.GetStats is not implemented"))
 }
 
 func (UnimplementedRuntimeServiceHandler) Navigate(context.Context, *connect.Request[v1.NavigateRequest]) (*connect.Response[v1.NavigateResponse], error) {

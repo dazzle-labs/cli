@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package dazzle.sidecar.v1;
 
-option go_package = "github.com/browser-streamer/sidecar/internal/gen/api/v1;sidecarv1";
+option go_package = "github.com/browser-streamer/sidecar/gen/api/v1;sidecarv1";
 
 // SyncService handles content synchronization between the CLI and the stage.
 service SyncService {
@@ -15,6 +15,7 @@ service SyncService {
 service RuntimeService {
   rpc EmitEvent(EmitEventRequest) returns (EmitEventResponse);
   rpc GetLogs(GetLogsRequest) returns (GetLogsResponse);
+  rpc GetStats(GetStatsRequest) returns (GetStatsResponse);
   rpc Navigate(NavigateRequest) returns (NavigateResponse);
   rpc Screenshot(ScreenshotRequest) returns (ScreenshotResponse);
 }
@@ -78,6 +79,19 @@ message GetLogsResponse {
   int32 count = 1;
   int32 total = 2;
   repeated LogEntry entries = 3;
+}
+
+message GetStatsRequest {}
+
+message GetStatsResponse {
+  double stage_fps = 1;              // Browser rendering FPS (from Chrome rAF timing)
+  double broadcast_fps = 2;          // Encoder output FPS (from ffmpeg)
+  int64 dropped_frames = 3;
+  int64 dropped_frames_recent = 4;   // Last 60 seconds
+  int64 total_bytes = 5;
+  bool broadcasting = 6;
+  int64 broadcast_uptime_seconds = 7;
+  int64 stage_uptime_seconds = 8;
 }
 
 message NavigateRequest {

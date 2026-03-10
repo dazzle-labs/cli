@@ -404,6 +404,74 @@ func (c *Client) Screenshot() ([]byte, error) {
 	}
 }
 
+// Evaluate runs a JavaScript expression via CDP and returns the result as a string.
+// Uses a dedicated connection to avoid interfering with the event-listening connection.
+func (c *Client) Evaluate(expression string) (string, error) {
+	httpURL := fmt.Sprintf("http://%s:%s/json", c.host, c.port)
+	resp, err := http.Get(httpURL)
+	if err != nil {
+		return "", fmt.Errorf("get tabs: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var tabs []struct {
+		Type                 string `json:"type"`
+		WebSocketDebuggerURL string `json:"webSocketDebuggerUrl"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&tabs); err != nil || len(tabs) == 0 {
+		return "", fmt.Errorf("no browser tabs")
+	}
+
+	wsURL := tabs[0].WebSocketDebuggerURL
+	for _, t := range tabs {
+		if t.Type == "page" {
+			wsURL = t.WebSocketDebuggerURL
+			break
+		}
+	}
+
+	conn, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	if err != nil {
+		return "", fmt.Errorf("dial: %w", err)
+	}
+	defer conn.Close()
+
+	conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+	conn.WriteJSON(map[string]any{
+		"id":     1,
+		"method": "Runtime.evaluate",
+		"params": map[string]any{
+			"expression":    expression,
+			"returnByValue": true,
+		},
+	})
+
+	for {
+		_, raw, err := conn.ReadMessage()
+		if err != nil {
+			return "", fmt.Errorf("read: %w", err)
+		}
+		var msg struct {
+			ID     int `json:"id"`
+			Result struct {
+				Result struct {
+					Type  string `json:"type"`
+					Value any    `json:"value"`
+				} `json:"result"`
+			} `json:"result"`
+			Error *struct {
+				Message string `json:"message"`
+			} `json:"error"`
+		}
+		if json.Unmarshal(raw, &msg) == nil && msg.ID == 1 {
+			if msg.Error != nil {
+				return "", fmt.Errorf("evaluate: %s", msg.Error.Message)
+			}
+			return fmt.Sprintf("%v", msg.Result.Result.Value), nil
+		}
+	}
+}
+
 func base64Decode(s string) ([]byte, error) {
 	// Try standard encoding first, fall back to URL encoding
 	if b, err := base64.StdEncoding.DecodeString(s); err == nil {

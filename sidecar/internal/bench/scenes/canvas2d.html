@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html><head><style>
+* { margin: 0; padding: 0; } body { width: 100vw; height: 100vh; overflow: hidden; background: #000; }
+canvas { width: 100%; height: 100%; }
+</style></head><body>
+<canvas id="c"></canvas>
+<script>
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+const W = c.width = window.innerWidth;
+const H = c.height = window.innerHeight;
+
+const particles = Array.from({length: 300}, () => ({
+  x: Math.random() * W, y: Math.random() * H,
+  vx: (Math.random() - 0.5) * 3, vy: (Math.random() - 0.5) * 3,
+  r: Math.random() * 3 + 1,
+  hue: Math.random() * 360
+}));
+
+function draw(t) {
+  ctx.fillStyle = 'rgba(0,0,0,0.08)';
+  ctx.fillRect(0, 0, W, H);
+
+  for (const p of particles) {
+    p.x += p.vx; p.y += p.vy;
+    if (p.x < 0 || p.x > W) p.vx *= -1;
+    if (p.y < 0 || p.y > H) p.vy *= -1;
+    p.hue = (p.hue + 0.5) % 360;
+
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = `hsla(${p.hue}, 80%, 60%, 0.8)`;
+    ctx.fill();
+  }
+
+  // Draw connections between nearby particles
+  for (let i = 0; i < particles.length; i++) {
+    for (let j = i + 1; j < particles.length; j++) {
+      const dx = particles[i].x - particles[j].x;
+      const dy = particles[i].y - particles[j].y;
+      const d = dx * dx + dy * dy;
+      if (d < 8000) {
+        ctx.beginPath();
+        ctx.moveTo(particles[i].x, particles[i].y);
+        ctx.lineTo(particles[j].x, particles[j].y);
+        ctx.strokeStyle = `rgba(255,255,255,${1 - d / 8000})`;
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      }
+    }
+  }
+
+  requestAnimationFrame(draw);
+}
+draw(0);
+</script>
+</body></html>

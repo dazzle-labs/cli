@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"connectrpc.com/connect"
 
@@ -53,6 +54,31 @@ func (h *runtimeServer) GetLogs(ctx context.Context, req *connect.Request[sideca
 		Count:   int32(len(entries)),
 		Total:   int32(h.s.logBuffer.Total()),
 		Entries: pbEntries,
+	}), nil
+}
+
+func (h *runtimeServer) GetStats(ctx context.Context, req *connect.Request[sidecarv1.GetStatsRequest]) (*connect.Response[sidecarv1.GetStatsResponse], error) {
+	h.s.statsMu.Lock()
+	ps := h.s.pipelineStats
+	bFPS := h.s.browserFPS
+	pStart := h.s.pipelineStart
+	h.s.statsMu.Unlock()
+
+	now := time.Now()
+	var broadcastUptime int64
+	if !pStart.IsZero() {
+		broadcastUptime = int64(now.Sub(pStart).Seconds())
+	}
+
+	return connect.NewResponse(&sidecarv1.GetStatsResponse{
+		StageFps:               bFPS,
+		BroadcastFps:           ps.FPS,
+		DroppedFrames:          ps.DroppedFrames,
+		DroppedFramesRecent:    0, // TODO: implement windowed counter
+		TotalBytes:             ps.TotalBytes,
+		Broadcasting:           ps.Broadcasting,
+		BroadcastUptimeSeconds: broadcastUptime,
+		StageUptimeSeconds:     int64(now.Sub(h.s.stageStart).Seconds()),
 	}), nil
 }
 

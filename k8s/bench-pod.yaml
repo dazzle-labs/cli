@@ -1,0 +1,87 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bench
+  namespace: browser-streamer
+spec:
+  restartPolicy: Never
+  terminationGracePeriodSeconds: 10
+  containers:
+    # Streamer: Xvfb + Chrome + PulseAudio
+    - name: streamer
+      image: dazzlefm/agent-streamer-stage:main
+      imagePullPolicy: IfNotPresent
+      env:
+        - name: STAGE_ID
+          value: bench
+        - name: USER_ID
+          value: bench
+      resources:
+        requests:
+          cpu: 500m
+          memory: 2Gi
+        limits:
+          cpu: 3500m
+          memory: 14Gi
+      volumeMounts:
+        - name: dshm
+          mountPath: /dev/shm
+        - name: stage-data
+          mountPath: /data
+        - name: hls-data
+          mountPath: /tmp/hls
+        - name: x11-socket
+          mountPath: /tmp/.X11-unix
+        - name: pulse-socket
+          mountPath: /tmp/pulse
+    # Sidecar: serves content + runs bench
+    - name: sidecar
+      image: dazzlefm/agent-streamer-sidecar:main
+      imagePullPolicy: IfNotPresent
+      # Start with serve so Chrome can connect to sidecar health endpoint,
+      # then we exec in to run bench.
+      command: ["/sidecar", "serve"]
+      env:
+        - name: STAGE_ID
+          value: bench
+        - name: USER_ID
+          value: bench
+        - name: DISPLAY
+          value: ":99"
+        - name: PULSE_SERVER
+          value: unix:/tmp/pulse/native
+        - name: SCREEN_WIDTH
+          value: "1280"
+        - name: SCREEN_HEIGHT
+          value: "720"
+      volumeMounts:
+        - name: stage-data
+          mountPath: /data
+        - name: hls-data
+          mountPath: /tmp/hls
+        - name: x11-socket
+          mountPath: /tmp/.X11-unix
+        - name: pulse-socket
+          mountPath: /tmp/pulse
+      resources:
+        requests:
+          cpu: 500m
+          memory: 512Mi
+        limits:
+          cpu: 2000m
+          memory: 1Gi
+  volumes:
+    - name: dshm
+      emptyDir:
+        medium: Memory
+        sizeLimit: 2Gi
+    - name: stage-data
+      emptyDir:
+        sizeLimit: 2Gi
+    - name: hls-data
+      emptyDir:
+        sizeLimit: 512Mi
+    - name: x11-socket
+      emptyDir: {}
+    - name: pulse-socket
+      emptyDir: {}

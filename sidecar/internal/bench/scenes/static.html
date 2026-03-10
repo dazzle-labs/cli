@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html><head><style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { width: 100vw; height: 100vh; overflow: hidden; background: #1a1a2e; color: #e0e0e0; font-family: monospace; display: flex; align-items: center; justify-content: center; }
+.grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 40px; }
+.card { background: #16213e; border: 1px solid #0f3460; border-radius: 8px; padding: 24px; width: 200px; }
+.card h3 { color: #e94560; margin-bottom: 8px; }
+.card p { font-size: 12px; line-height: 1.6; color: #a0a0a0; }
+</style></head><body>
+<div class="grid">
+  <div class="card"><h3>Static A</h3><p>No animations. Pure layout benchmark. Tests baseline encoding cost of a still frame.</p></div>
+  <div class="card"><h3>Static B</h3><p>Multiple text blocks with different colors and borders to test color fidelity.</p></div>
+  <div class="card"><h3>Static C</h3><p>Grid layout with nested elements. Encoder should produce minimal bitrate here.</p></div>
+  <div class="card"><h3>Static D</h3><p>Benchmark baseline. If this stutters, the problem is infrastructure, not content.</p></div>
+</div>
+</body></html>

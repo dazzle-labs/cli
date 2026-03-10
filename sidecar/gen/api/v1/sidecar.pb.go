@@ -577,6 +577,142 @@ func (x *GetLogsResponse) GetEntries() []*LogEntry {
 	return nil
 }
 
+type GetStatsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetStatsRequest) Reset() {
+	*x = GetStatsRequest{}
+	mi := &file_api_v1_sidecar_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetStatsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetStatsRequest) ProtoMessage() {}
+
+func (x *GetStatsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_sidecar_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetStatsRequest.ProtoReflect.Descriptor instead.
+func (*GetStatsRequest) Descriptor() ([]byte, []int) {
+	return file_api_v1_sidecar_proto_rawDescGZIP(), []int{11}
+}
+
+type GetStatsResponse struct {
+	state                  protoimpl.MessageState `protogen:"open.v1"`
+	StageFps               float64                `protobuf:"fixed64,1,opt,name=stage_fps,json=stageFps,proto3" json:"stage_fps,omitempty"`             // Browser rendering FPS (from Chrome rAF timing)
+	BroadcastFps           float64                `protobuf:"fixed64,2,opt,name=broadcast_fps,json=broadcastFps,proto3" json:"broadcast_fps,omitempty"` // Encoder output FPS (from ffmpeg)
+	DroppedFrames          int64                  `protobuf:"varint,3,opt,name=dropped_frames,json=droppedFrames,proto3" json:"dropped_frames,omitempty"`
+	DroppedFramesRecent    int64                  `protobuf:"varint,4,opt,name=dropped_frames_recent,json=droppedFramesRecent,proto3" json:"dropped_frames_recent,omitempty"` // Last 60 seconds
+	TotalBytes             int64                  `protobuf:"varint,5,opt,name=total_bytes,json=totalBytes,proto3" json:"total_bytes,omitempty"`
+	Broadcasting           bool                   `protobuf:"varint,6,opt,name=broadcasting,proto3" json:"broadcasting,omitempty"`
+	BroadcastUptimeSeconds int64                  `protobuf:"varint,7,opt,name=broadcast_uptime_seconds,json=broadcastUptimeSeconds,proto3" json:"broadcast_uptime_seconds,omitempty"`
+	StageUptimeSeconds     int64                  `protobuf:"varint,8,opt,name=stage_uptime_seconds,json=stageUptimeSeconds,proto3" json:"stage_uptime_seconds,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *GetStatsResponse) Reset() {
+	*x = GetStatsResponse{}
+	mi := &file_api_v1_sidecar_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetStatsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetStatsResponse) ProtoMessage() {}
+
+func (x *GetStatsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_sidecar_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetStatsResponse.ProtoReflect.Descriptor instead.
+func (*GetStatsResponse) Descriptor() ([]byte, []int) {
+	return file_api_v1_sidecar_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *GetStatsResponse) GetStageFps() float64 {
+	if x != nil {
+		return x.StageFps
+	}
+	return 0
+}
+
+func (x *GetStatsResponse) GetBroadcastFps() float64 {
+	if x != nil {
+		return x.BroadcastFps
+	}
+	return 0
+}
+
+func (x *GetStatsResponse) GetDroppedFrames() int64 {
+	if x != nil {
+		return x.DroppedFrames
+	}
+	return 0
+}
+
+func (x *GetStatsResponse) GetDroppedFramesRecent() int64 {
+	if x != nil {
+		return x.DroppedFramesRecent
+	}
+	return 0
+}
+
+func (x *GetStatsResponse) GetTotalBytes() int64 {
+	if x != nil {
+		return x.TotalBytes
+	}
+	return 0
+}
+
+func (x *GetStatsResponse) GetBroadcasting() bool {
+	if x != nil {
+		return x.Broadcasting
+	}
+	return false
+}
+
+func (x *GetStatsResponse) GetBroadcastUptimeSeconds() int64 {
+	if x != nil {
+		return x.BroadcastUptimeSeconds
+	}
+	return 0
+}
+
+func (x *GetStatsResponse) GetStageUptimeSeconds() int64 {
+	if x != nil {
+		return x.StageUptimeSeconds
+	}
+	return 0
+}
+
 type NavigateRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Url           string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
@@ -586,7 +722,7 @@ type NavigateRequest struct {
 
 func (x *NavigateRequest) Reset() {
 	*x = NavigateRequest{}
-	mi := &file_api_v1_sidecar_proto_msgTypes[11]
+	mi := &file_api_v1_sidecar_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -598,7 +734,7 @@ func (x *NavigateRequest) String() string {
 func (*NavigateRequest) ProtoMessage() {}
 
 func (x *NavigateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_sidecar_proto_msgTypes[11]
+	mi := &file_api_v1_sidecar_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -611,7 +747,7 @@ func (x *NavigateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NavigateRequest.ProtoReflect.Descriptor instead.
 func (*NavigateRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_sidecar_proto_rawDescGZIP(), []int{11}
+	return file_api_v1_sidecar_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *NavigateRequest) GetUrl() string {
@@ -630,7 +766,7 @@ type NavigateResponse struct {
 
 func (x *NavigateResponse) Reset() {
 	*x = NavigateResponse{}
-	mi := &file_api_v1_sidecar_proto_msgTypes[12]
+	mi := &file_api_v1_sidecar_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -642,7 +778,7 @@ func (x *NavigateResponse) String() string {
 func (*NavigateResponse) ProtoMessage() {}
 
 func (x *NavigateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_sidecar_proto_msgTypes[12]
+	mi := &file_api_v1_sidecar_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -655,7 +791,7 @@ func (x *NavigateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NavigateResponse.ProtoReflect.Descriptor instead.
 func (*NavigateResponse) Descriptor() ([]byte, []int) {
-	return file_api_v1_sidecar_proto_rawDescGZIP(), []int{12}
+	return file_api_v1_sidecar_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *NavigateResponse) GetOk() bool {
@@ -673,7 +809,7 @@ type ScreenshotRequest struct {
 
 func (x *ScreenshotRequest) Reset() {
 	*x = ScreenshotRequest{}
-	mi := &file_api_v1_sidecar_proto_msgTypes[13]
+	mi := &file_api_v1_sidecar_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -685,7 +821,7 @@ func (x *ScreenshotRequest) String() string {
 func (*ScreenshotRequest) ProtoMessage() {}
 
 func (x *ScreenshotRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_sidecar_proto_msgTypes[13]
+	mi := &file_api_v1_sidecar_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -698,7 +834,7 @@ func (x *ScreenshotRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScreenshotRequest.ProtoReflect.Descriptor instead.
 func (*ScreenshotRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_sidecar_proto_rawDescGZIP(), []int{13}
+	return file_api_v1_sidecar_proto_rawDescGZIP(), []int{15}
 }
 
 type ScreenshotResponse struct {
@@ -710,7 +846,7 @@ type ScreenshotResponse struct {
 
 func (x *ScreenshotResponse) Reset() {
 	*x = ScreenshotResponse{}
-	mi := &file_api_v1_sidecar_proto_msgTypes[14]
+	mi := &file_api_v1_sidecar_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -722,7 +858,7 @@ func (x *ScreenshotResponse) String() string {
 func (*ScreenshotResponse) ProtoMessage() {}
 
 func (x *ScreenshotResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_sidecar_proto_msgTypes[14]
+	mi := &file_api_v1_sidecar_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -735,7 +871,7 @@ func (x *ScreenshotResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScreenshotResponse.ProtoReflect.Descriptor instead.
 func (*ScreenshotResponse) Descriptor() ([]byte, []int) {
-	return file_api_v1_sidecar_proto_rawDescGZIP(), []int{14}
+	return file_api_v1_sidecar_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *ScreenshotResponse) GetImage() []byte {
@@ -754,7 +890,7 @@ type ObsCommandRequest struct {
 
 func (x *ObsCommandRequest) Reset() {
 	*x = ObsCommandRequest{}
-	mi := &file_api_v1_sidecar_proto_msgTypes[15]
+	mi := &file_api_v1_sidecar_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -766,7 +902,7 @@ func (x *ObsCommandRequest) String() string {
 func (*ObsCommandRequest) ProtoMessage() {}
 
 func (x *ObsCommandRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_sidecar_proto_msgTypes[15]
+	mi := &file_api_v1_sidecar_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -779,7 +915,7 @@ func (x *ObsCommandRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ObsCommandRequest.ProtoReflect.Descriptor instead.
 func (*ObsCommandRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_sidecar_proto_rawDescGZIP(), []int{15}
+	return file_api_v1_sidecar_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *ObsCommandRequest) GetArgs() []string {
@@ -798,7 +934,7 @@ type ObsCommandResponse struct {
 
 func (x *ObsCommandResponse) Reset() {
 	*x = ObsCommandResponse{}
-	mi := &file_api_v1_sidecar_proto_msgTypes[16]
+	mi := &file_api_v1_sidecar_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -810,7 +946,7 @@ func (x *ObsCommandResponse) String() string {
 func (*ObsCommandResponse) ProtoMessage() {}
 
 func (x *ObsCommandResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_sidecar_proto_msgTypes[16]
+	mi := &file_api_v1_sidecar_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -823,7 +959,7 @@ func (x *ObsCommandResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ObsCommandResponse.ProtoReflect.Descriptor instead.
 func (*ObsCommandResponse) Descriptor() ([]byte, []int) {
-	return file_api_v1_sidecar_proto_rawDescGZIP(), []int{16}
+	return file_api_v1_sidecar_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *ObsCommandResponse) GetOutput() string {
@@ -872,7 +1008,18 @@ const file_api_v1_sidecar_proto_rawDesc = "" +
 	"\x0fGetLogsResponse\x12\x14\n" +
 	"\x05count\x18\x01 \x01(\x05R\x05count\x12\x14\n" +
 	"\x05total\x18\x02 \x01(\x05R\x05total\x125\n" +
-	"\aentries\x18\x03 \x03(\v2\x1b.dazzle.sidecar.v1.LogEntryR\aentries\"#\n" +
+	"\aentries\x18\x03 \x03(\v2\x1b.dazzle.sidecar.v1.LogEntryR\aentries\"\x11\n" +
+	"\x0fGetStatsRequest\"\xe0\x02\n" +
+	"\x10GetStatsResponse\x12\x1b\n" +
+	"\tstage_fps\x18\x01 \x01(\x01R\bstageFps\x12#\n" +
+	"\rbroadcast_fps\x18\x02 \x01(\x01R\fbroadcastFps\x12%\n" +
+	"\x0edropped_frames\x18\x03 \x01(\x03R\rdroppedFrames\x122\n" +
+	"\x15dropped_frames_recent\x18\x04 \x01(\x03R\x13droppedFramesRecent\x12\x1f\n" +
+	"\vtotal_bytes\x18\x05 \x01(\x03R\n" +
+	"totalBytes\x12\"\n" +
+	"\fbroadcasting\x18\x06 \x01(\bR\fbroadcasting\x128\n" +
+	"\x18broadcast_uptime_seconds\x18\a \x01(\x03R\x16broadcastUptimeSeconds\x120\n" +
+	"\x14stage_uptime_seconds\x18\b \x01(\x03R\x12stageUptimeSeconds\"#\n" +
 	"\x0fNavigateRequest\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\"\"\n" +
 	"\x10NavigateResponse\x12\x0e\n" +
@@ -887,16 +1034,17 @@ const file_api_v1_sidecar_proto_rawDesc = "" +
 	"\vSyncService\x12O\n" +
 	"\x04Diff\x12\".dazzle.sidecar.v1.SyncDiffRequest\x1a#.dazzle.sidecar.v1.SyncDiffResponse\x12Q\n" +
 	"\x04Push\x12\".dazzle.sidecar.v1.SyncPushRequest\x1a#.dazzle.sidecar.v1.SyncPushResponse(\x01\x12X\n" +
-	"\aRefresh\x12%.dazzle.sidecar.v1.SyncRefreshRequest\x1a&.dazzle.sidecar.v1.SyncRefreshResponse2\xea\x02\n" +
+	"\aRefresh\x12%.dazzle.sidecar.v1.SyncRefreshRequest\x1a&.dazzle.sidecar.v1.SyncRefreshResponse2\xbf\x03\n" +
 	"\x0eRuntimeService\x12V\n" +
 	"\tEmitEvent\x12#.dazzle.sidecar.v1.EmitEventRequest\x1a$.dazzle.sidecar.v1.EmitEventResponse\x12P\n" +
 	"\aGetLogs\x12!.dazzle.sidecar.v1.GetLogsRequest\x1a\".dazzle.sidecar.v1.GetLogsResponse\x12S\n" +
+	"\bGetStats\x12\".dazzle.sidecar.v1.GetStatsRequest\x1a#.dazzle.sidecar.v1.GetStatsResponse\x12S\n" +
 	"\bNavigate\x12\".dazzle.sidecar.v1.NavigateRequest\x1a#.dazzle.sidecar.v1.NavigateResponse\x12Y\n" +
 	"\n" +
 	"Screenshot\x12$.dazzle.sidecar.v1.ScreenshotRequest\x1a%.dazzle.sidecar.v1.ScreenshotResponse2d\n" +
 	"\n" +
 	"ObsService\x12V\n" +
-	"\aCommand\x12$.dazzle.sidecar.v1.ObsCommandRequest\x1a%.dazzle.sidecar.v1.ObsCommandResponseBCZAgithub.com/browser-streamer/sidecar/internal/gen/api/v1;sidecarv1b\x06proto3"
+	"\aCommand\x12$.dazzle.sidecar.v1.ObsCommandRequest\x1a%.dazzle.sidecar.v1.ObsCommandResponseB:Z8github.com/browser-streamer/sidecar/gen/api/v1;sidecarv1b\x06proto3"
 
 var (
 	file_api_v1_sidecar_proto_rawDescOnce sync.Once
@@ -910,7 +1058,7 @@ func file_api_v1_sidecar_proto_rawDescGZIP() []byte {
 	return file_api_v1_sidecar_proto_rawDescData
 }
 
-var file_api_v1_sidecar_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_api_v1_sidecar_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_api_v1_sidecar_proto_goTypes = []any{
 	(*SyncDiffRequest)(nil),     // 0: dazzle.sidecar.v1.SyncDiffRequest
 	(*SyncDiffResponse)(nil),    // 1: dazzle.sidecar.v1.SyncDiffResponse
@@ -923,35 +1071,39 @@ var file_api_v1_sidecar_proto_goTypes = []any{
 	(*GetLogsRequest)(nil),      // 8: dazzle.sidecar.v1.GetLogsRequest
 	(*LogEntry)(nil),            // 9: dazzle.sidecar.v1.LogEntry
 	(*GetLogsResponse)(nil),     // 10: dazzle.sidecar.v1.GetLogsResponse
-	(*NavigateRequest)(nil),     // 11: dazzle.sidecar.v1.NavigateRequest
-	(*NavigateResponse)(nil),    // 12: dazzle.sidecar.v1.NavigateResponse
-	(*ScreenshotRequest)(nil),   // 13: dazzle.sidecar.v1.ScreenshotRequest
-	(*ScreenshotResponse)(nil),  // 14: dazzle.sidecar.v1.ScreenshotResponse
-	(*ObsCommandRequest)(nil),   // 15: dazzle.sidecar.v1.ObsCommandRequest
-	(*ObsCommandResponse)(nil),  // 16: dazzle.sidecar.v1.ObsCommandResponse
-	nil,                         // 17: dazzle.sidecar.v1.SyncDiffRequest.FilesEntry
+	(*GetStatsRequest)(nil),     // 11: dazzle.sidecar.v1.GetStatsRequest
+	(*GetStatsResponse)(nil),    // 12: dazzle.sidecar.v1.GetStatsResponse
+	(*NavigateRequest)(nil),     // 13: dazzle.sidecar.v1.NavigateRequest
+	(*NavigateResponse)(nil),    // 14: dazzle.sidecar.v1.NavigateResponse
+	(*ScreenshotRequest)(nil),   // 15: dazzle.sidecar.v1.ScreenshotRequest
+	(*ScreenshotResponse)(nil),  // 16: dazzle.sidecar.v1.ScreenshotResponse
+	(*ObsCommandRequest)(nil),   // 17: dazzle.sidecar.v1.ObsCommandRequest
+	(*ObsCommandResponse)(nil),  // 18: dazzle.sidecar.v1.ObsCommandResponse
+	nil,                         // 19: dazzle.sidecar.v1.SyncDiffRequest.FilesEntry
 }
 var file_api_v1_sidecar_proto_depIdxs = []int32{
-	17, // 0: dazzle.sidecar.v1.SyncDiffRequest.files:type_name -> dazzle.sidecar.v1.SyncDiffRequest.FilesEntry
+	19, // 0: dazzle.sidecar.v1.SyncDiffRequest.files:type_name -> dazzle.sidecar.v1.SyncDiffRequest.FilesEntry
 	9,  // 1: dazzle.sidecar.v1.GetLogsResponse.entries:type_name -> dazzle.sidecar.v1.LogEntry
 	0,  // 2: dazzle.sidecar.v1.SyncService.Diff:input_type -> dazzle.sidecar.v1.SyncDiffRequest
 	2,  // 3: dazzle.sidecar.v1.SyncService.Push:input_type -> dazzle.sidecar.v1.SyncPushRequest
 	4,  // 4: dazzle.sidecar.v1.SyncService.Refresh:input_type -> dazzle.sidecar.v1.SyncRefreshRequest
 	6,  // 5: dazzle.sidecar.v1.RuntimeService.EmitEvent:input_type -> dazzle.sidecar.v1.EmitEventRequest
 	8,  // 6: dazzle.sidecar.v1.RuntimeService.GetLogs:input_type -> dazzle.sidecar.v1.GetLogsRequest
-	11, // 7: dazzle.sidecar.v1.RuntimeService.Navigate:input_type -> dazzle.sidecar.v1.NavigateRequest
-	13, // 8: dazzle.sidecar.v1.RuntimeService.Screenshot:input_type -> dazzle.sidecar.v1.ScreenshotRequest
-	15, // 9: dazzle.sidecar.v1.ObsService.Command:input_type -> dazzle.sidecar.v1.ObsCommandRequest
-	1,  // 10: dazzle.sidecar.v1.SyncService.Diff:output_type -> dazzle.sidecar.v1.SyncDiffResponse
-	3,  // 11: dazzle.sidecar.v1.SyncService.Push:output_type -> dazzle.sidecar.v1.SyncPushResponse
-	5,  // 12: dazzle.sidecar.v1.SyncService.Refresh:output_type -> dazzle.sidecar.v1.SyncRefreshResponse
-	7,  // 13: dazzle.sidecar.v1.RuntimeService.EmitEvent:output_type -> dazzle.sidecar.v1.EmitEventResponse
-	10, // 14: dazzle.sidecar.v1.RuntimeService.GetLogs:output_type -> dazzle.sidecar.v1.GetLogsResponse
-	12, // 15: dazzle.sidecar.v1.RuntimeService.Navigate:output_type -> dazzle.sidecar.v1.NavigateResponse
-	14, // 16: dazzle.sidecar.v1.RuntimeService.Screenshot:output_type -> dazzle.sidecar.v1.ScreenshotResponse
-	16, // 17: dazzle.sidecar.v1.ObsService.Command:output_type -> dazzle.sidecar.v1.ObsCommandResponse
-	10, // [10:18] is the sub-list for method output_type
-	2,  // [2:10] is the sub-list for method input_type
+	11, // 7: dazzle.sidecar.v1.RuntimeService.GetStats:input_type -> dazzle.sidecar.v1.GetStatsRequest
+	13, // 8: dazzle.sidecar.v1.RuntimeService.Navigate:input_type -> dazzle.sidecar.v1.NavigateRequest
+	15, // 9: dazzle.sidecar.v1.RuntimeService.Screenshot:input_type -> dazzle.sidecar.v1.ScreenshotRequest
+	17, // 10: dazzle.sidecar.v1.ObsService.Command:input_type -> dazzle.sidecar.v1.ObsCommandRequest
+	1,  // 11: dazzle.sidecar.v1.SyncService.Diff:output_type -> dazzle.sidecar.v1.SyncDiffResponse
+	3,  // 12: dazzle.sidecar.v1.SyncService.Push:output_type -> dazzle.sidecar.v1.SyncPushResponse
+	5,  // 13: dazzle.sidecar.v1.SyncService.Refresh:output_type -> dazzle.sidecar.v1.SyncRefreshResponse
+	7,  // 14: dazzle.sidecar.v1.RuntimeService.EmitEvent:output_type -> dazzle.sidecar.v1.EmitEventResponse
+	10, // 15: dazzle.sidecar.v1.RuntimeService.GetLogs:output_type -> dazzle.sidecar.v1.GetLogsResponse
+	12, // 16: dazzle.sidecar.v1.RuntimeService.GetStats:output_type -> dazzle.sidecar.v1.GetStatsResponse
+	14, // 17: dazzle.sidecar.v1.RuntimeService.Navigate:output_type -> dazzle.sidecar.v1.NavigateResponse
+	16, // 18: dazzle.sidecar.v1.RuntimeService.Screenshot:output_type -> dazzle.sidecar.v1.ScreenshotResponse
+	18, // 19: dazzle.sidecar.v1.ObsService.Command:output_type -> dazzle.sidecar.v1.ObsCommandResponse
+	11, // [11:20] is the sub-list for method output_type
+	2,  // [2:11] is the sub-list for method input_type
 	2,  // [2:2] is the sub-list for extension type_name
 	2,  // [2:2] is the sub-list for extension extendee
 	0,  // [0:2] is the sub-list for field type_name
@@ -968,7 +1120,7 @@ func file_api_v1_sidecar_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_v1_sidecar_proto_rawDesc), len(file_api_v1_sidecar_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   18,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   3,
 		},

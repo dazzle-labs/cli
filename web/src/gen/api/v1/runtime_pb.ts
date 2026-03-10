@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file api/v1/runtime.proto.
  */
 export const file_api_v1_runtime: GenFile = /*@__PURE__*/
-  fileDesc("ChRhcGkvdjEvcnVudGltZS5wcm90bxIJZGF6emxlLnYxIkEKEEVtaXRFdmVudFJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSDQoFZXZlbnQYAiABKAkSDAoEZGF0YRgDIAEoCSIfChFFbWl0RXZlbnRSZXNwb25zZRIKCgJvaxgBIAEoCCIxCg5HZXRMb2dzUmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRINCgVsaW1pdBgCIAEoBSI9CghMb2dFbnRyeRINCgVsZXZlbBgBIAEoCRIPCgdtZXNzYWdlGAIgASgJEhEKCXRpbWVzdGFtcBgDIAEoCSI3Cg9HZXRMb2dzUmVzcG9uc2USJAoHZW50cmllcxgBIAMoCzITLmRhenpsZS52MS5Mb2dFbnRyeSIlChFTY3JlZW5zaG90UmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCSIjChJTY3JlZW5zaG90UmVzcG9uc2USDQoFaW1hZ2UYASABKAwiMwoRT2JzQ29tbWFuZFJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSDAoEYXJncxgCIAMoCSIkChJPYnNDb21tYW5kUmVzcG9uc2USDgoGb3V0cHV0GAEgASgJIpYBCg9TeW5jRGlmZlJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSNAoFZmlsZXMYAiADKAsyJS5kYXp6bGUudjEuU3luY0RpZmZSZXF1ZXN0LkZpbGVzRW50cnkSDQoFZW50cnkYAyABKAkaLAoKRmlsZXNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIiAKEFN5bmNEaWZmUmVzcG9uc2USDAoEbmVlZBgBIAMoCSIyCg9TeW5jUHVzaFJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSDQoFY2h1bmsYAiABKAwiMwoQU3luY1B1c2hSZXNwb25zZRIOCgZzeW5jZWQYASABKAUSDwoHZGVsZXRlZBgCIAEoBSIiCg5SZWZyZXNoUmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCSIdCg9SZWZyZXNoUmVzcG9uc2USCgoCb2sYASABKAgy/gMKDlJ1bnRpbWVTZXJ2aWNlEkYKCUVtaXRFdmVudBIbLmRhenpsZS52MS5FbWl0RXZlbnRSZXF1ZXN0GhwuZGF6emxlLnYxLkVtaXRFdmVudFJlc3BvbnNlEkAKB0dldExvZ3MSGS5kYXp6bGUudjEuR2V0TG9nc1JlcXVlc3QaGi5kYXp6bGUudjEuR2V0TG9nc1Jlc3BvbnNlEkkKClNjcmVlbnNob3QSHC5kYXp6bGUudjEuU2NyZWVuc2hvdFJlcXVlc3QaHS5kYXp6bGUudjEuU2NyZWVuc2hvdFJlc3BvbnNlEkkKCk9ic0NvbW1hbmQSHC5kYXp6bGUudjEuT2JzQ29tbWFuZFJlcXVlc3QaHS5kYXp6bGUudjEuT2JzQ29tbWFuZFJlc3BvbnNlEkMKCFN5bmNEaWZmEhouZGF6emxlLnYxLlN5bmNEaWZmUmVxdWVzdBobLmRhenpsZS52MS5TeW5jRGlmZlJlc3BvbnNlEkUKCFN5bmNQdXNoEhouZGF6emxlLnYxLlN5bmNQdXNoUmVxdWVzdBobLmRhenpsZS52MS5TeW5jUHVzaFJlc3BvbnNlKAESQAoHUmVmcmVzaBIZLmRhenpsZS52MS5SZWZyZXNoUmVxdWVzdBoaLmRhenpsZS52MS5SZWZyZXNoUmVzcG9uc2VCLVorZ2l0aHViLmNvbS9kYXp6bGUtbGFicy9jbGkvZ2VuL2FwaS92MTthcGl2MWIGcHJvdG8z");
+  fileDesc("ChRhcGkvdjEvcnVudGltZS5wcm90bxIJZGF6emxlLnYxIkEKEEVtaXRFdmVudFJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSDQoFZXZlbnQYAiABKAkSDAoEZGF0YRgDIAEoCSIfChFFbWl0RXZlbnRSZXNwb25zZRIKCgJvaxgBIAEoCCIxCg5HZXRMb2dzUmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRINCgVsaW1pdBgCIAEoBSI9CghMb2dFbnRyeRINCgVsZXZlbBgBIAEoCRIPCgdtZXNzYWdlGAIgASgJEhEKCXRpbWVzdGFtcBgDIAEoCSI3Cg9HZXRMb2dzUmVzcG9uc2USJAoHZW50cmllcxgBIAMoCzITLmRhenpsZS52MS5Mb2dFbnRyeSIlChFTY3JlZW5zaG90UmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCSIjChJTY3JlZW5zaG90UmVzcG9uc2USDQoFaW1hZ2UYASABKAwiMwoRT2JzQ29tbWFuZFJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSDAoEYXJncxgCIAMoCSIkChJPYnNDb21tYW5kUmVzcG9uc2USDgoGb3V0cHV0GAEgASgJIpYBCg9TeW5jRGlmZlJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSNAoFZmlsZXMYAiADKAsyJS5kYXp6bGUudjEuU3luY0RpZmZSZXF1ZXN0LkZpbGVzRW50cnkSDQoFZW50cnkYAyABKAkaLAoKRmlsZXNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIiAKEFN5bmNEaWZmUmVzcG9uc2USDAoEbmVlZBgBIAMoCSIyCg9TeW5jUHVzaFJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSDQoFY2h1bmsYAiABKAwiMwoQU3luY1B1c2hSZXNwb25zZRIOCgZzeW5jZWQYASABKAUSDwoHZGVsZXRlZBgCIAEoBSIiCg5SZWZyZXNoUmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCSIdCg9SZWZyZXNoUmVzcG9uc2USCgoCb2sYASABKAgiKAoUR2V0U3RhZ2VTdGF0c1JlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAki4wEKFUdldFN0YWdlU3RhdHNSZXNwb25zZRIRCglzdGFnZV9mcHMYASABKAESFQoNYnJvYWRjYXN0X2ZwcxgCIAEoARIWCg5kcm9wcGVkX2ZyYW1lcxgDIAEoAxIdChVkcm9wcGVkX2ZyYW1lc19yZWNlbnQYBCABKAMSEwoLdG90YWxfYnl0ZXMYBSABKAMSFAoMYnJvYWRjYXN0aW5nGAYgASgIEiAKGGJyb2FkY2FzdF91cHRpbWVfc2Vjb25kcxgHIAEoAxIcChRzdGFnZV91cHRpbWVfc2Vjb25kcxgIIAEoAzLSBAoOUnVudGltZVNlcnZpY2USRgoJRW1pdEV2ZW50EhsuZGF6emxlLnYxLkVtaXRFdmVudFJlcXVlc3QaHC5kYXp6bGUudjEuRW1pdEV2ZW50UmVzcG9uc2USQAoHR2V0TG9ncxIZLmRhenpsZS52MS5HZXRMb2dzUmVxdWVzdBoaLmRhenpsZS52MS5HZXRMb2dzUmVzcG9uc2USUgoNR2V0U3RhZ2VTdGF0cxIfLmRhenpsZS52MS5HZXRTdGFnZVN0YXRzUmVxdWVzdBogLmRhenpsZS52MS5HZXRTdGFnZVN0YXRzUmVzcG9uc2USSQoKU2NyZWVuc2hvdBIcLmRhenpsZS52MS5TY3JlZW5zaG90UmVxdWVzdBodLmRhenpsZS52MS5TY3JlZW5zaG90UmVzcG9uc2USSQoKT2JzQ29tbWFuZBIcLmRhenpsZS52MS5PYnNDb21tYW5kUmVxdWVzdBodLmRhenpsZS52MS5PYnNDb21tYW5kUmVzcG9uc2USQwoIU3luY0RpZmYSGi5kYXp6bGUudjEuU3luY0RpZmZSZXF1ZXN0GhsuZGF6emxlLnYxLlN5bmNEaWZmUmVzcG9uc2USRQoIU3luY1B1c2gSGi5kYXp6bGUudjEuU3luY1B1c2hSZXF1ZXN0GhsuZGF6emxlLnYxLlN5bmNQdXNoUmVzcG9uc2UoARJACgdSZWZyZXNoEhkuZGF6emxlLnYxLlJlZnJlc2hSZXF1ZXN0GhouZGF6emxlLnYxLlJlZnJlc2hSZXNwb25zZUItWitnaXRodWIuY29tL2RhenpsZS1sYWJzL2NsaS9nZW4vYXBpL3YxO2FwaXYxYgZwcm90bzM");
 
 /**
  * @generated from message dazzle.v1.EmitEventRequest
@@ -326,6 +326,79 @@ export const RefreshResponseSchema: GenMessage<RefreshResponse> = /*@__PURE__*/
   messageDesc(file_api_v1_runtime, 14);
 
 /**
+ * @generated from message dazzle.v1.GetStageStatsRequest
+ */
+export type GetStageStatsRequest = Message<"dazzle.v1.GetStageStatsRequest"> & {
+  /**
+   * @generated from field: string stage_id = 1;
+   */
+  stageId: string;
+};
+
+/**
+ * Describes the message dazzle.v1.GetStageStatsRequest.
+ * Use `create(GetStageStatsRequestSchema)` to create a new message.
+ */
+export const GetStageStatsRequestSchema: GenMessage<GetStageStatsRequest> = /*@__PURE__*/
+  messageDesc(file_api_v1_runtime, 15);
+
+/**
+ * @generated from message dazzle.v1.GetStageStatsResponse
+ */
+export type GetStageStatsResponse = Message<"dazzle.v1.GetStageStatsResponse"> & {
+  /**
+   * Browser rendering FPS (from Chrome rAF timing)
+   *
+   * @generated from field: double stage_fps = 1;
+   */
+  stageFps: number;
+
+  /**
+   * Encoder output FPS (from ffmpeg)
+   *
+   * @generated from field: double broadcast_fps = 2;
+   */
+  broadcastFps: number;
+
+  /**
+   * @generated from field: int64 dropped_frames = 3;
+   */
+  droppedFrames: bigint;
+
+  /**
+   * @generated from field: int64 dropped_frames_recent = 4;
+   */
+  droppedFramesRecent: bigint;
+
+  /**
+   * @generated from field: int64 total_bytes = 5;
+   */
+  totalBytes: bigint;
+
+  /**
+   * @generated from field: bool broadcasting = 6;
+   */
+  broadcasting: boolean;
+
+  /**
+   * @generated from field: int64 broadcast_uptime_seconds = 7;
+   */
+  broadcastUptimeSeconds: bigint;
+
+  /**
+   * @generated from field: int64 stage_uptime_seconds = 8;
+   */
+  stageUptimeSeconds: bigint;
+};
+
+/**
+ * Describes the message dazzle.v1.GetStageStatsResponse.
+ * Use `create(GetStageStatsResponseSchema)` to create a new message.
+ */
+export const GetStageStatsResponseSchema: GenMessage<GetStageStatsResponse> = /*@__PURE__*/
+  messageDesc(file_api_v1_runtime, 16);
+
+/**
  * @generated from service dazzle.v1.RuntimeService
  */
 export const RuntimeService: GenService<{
@@ -344,6 +417,14 @@ export const RuntimeService: GenService<{
     methodKind: "unary";
     input: typeof GetLogsRequestSchema;
     output: typeof GetLogsResponseSchema;
+  },
+  /**
+   * @generated from rpc dazzle.v1.RuntimeService.GetStageStats
+   */
+  getStageStats: {
+    methodKind: "unary";
+    input: typeof GetStageStatsRequestSchema;
+    output: typeof GetStageStatsResponseSchema;
   },
   /**
    * @generated from rpc dazzle.v1.RuntimeService.Screenshot

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html><head><style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { width: 100vw; height: 100vh; overflow: hidden; background: #0a0a1a; }
+.el {
+  position: absolute;
+  border-radius: 4px;
+  transition: none;
+}
+</style></head><body>
+<script>
+// 200 DOM elements, each repositioned and recolored every frame via JS
+// Forces full compositing + repaint on every frame — stresses Chrome's rendering pipeline
+const N = 200;
+const els = [];
+for (let i = 0; i < N; i++) {
+  const el = document.createElement('div');
+  el.className = 'el';
+  el.style.width = (20 + Math.random() * 40) + 'px';
+  el.style.height = (20 + Math.random() * 40) + 'px';
+  document.body.appendChild(el);
+  els.push({
+    el, x: Math.random() * innerWidth, y: Math.random() * innerHeight,
+    vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.5) * 4,
+    hue: Math.random() * 360, size: 20 + Math.random() * 40
+  });
+}
+
+function frame(t) {
+  for (const e of els) {
+    e.x += e.vx; e.y += e.vy;
+    if (e.x < 0 || e.x + e.size > innerWidth) e.vx *= -1;
+    if (e.y < 0 || e.y + e.size > innerHeight) e.vy *= -1;
+    e.hue = (e.hue + 1) % 360;
+    e.el.style.transform = `translate(${e.x}px, ${e.y}px) rotate(${t * 0.05 + e.hue}deg)`;
+    e.el.style.background = `hsla(${e.hue}, 70%, 50%, 0.8)`;
+    e.el.style.boxShadow = `0 0 ${10 + Math.sin(t * 0.005 + e.hue) * 5}px hsla(${e.hue}, 90%, 60%, 0.5)`;
+  }
+  requestAnimationFrame(frame);
+}
+frame(0);
+</script>
+</body></html>

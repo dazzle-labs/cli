@@ -237,6 +237,31 @@ func (s *runtimeServer) SyncPush(ctx context.Context, stream *connect.ClientStre
 	return connect.NewResponse(&apiv1.SyncPushResponse{Synced: res.result.Synced, Deleted: res.result.Deleted}), nil
 }
 
+func (s *runtimeServer) GetStageStats(ctx context.Context, req *connect.Request[apiv1.GetStageStatsRequest]) (*connect.Response[apiv1.GetStageStatsResponse], error) {
+	info := mustAuth(ctx)
+
+	stage, err := s.requireRunningStageForUser(req.Msg.StageId, info.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	stats, err := s.mgr.pc.GetStats(stage.PodIP)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&apiv1.GetStageStatsResponse{
+		StageFps:               stats.StageFPS,
+		BroadcastFps:           stats.BroadcastFPS,
+		DroppedFrames:          stats.DroppedFrames,
+		DroppedFramesRecent:    stats.DroppedFramesRecent,
+		TotalBytes:             stats.TotalBytes,
+		Broadcasting:           stats.Broadcasting,
+		BroadcastUptimeSeconds: stats.BroadcastUptimeSeconds,
+		StageUptimeSeconds:     stats.StageUptimeSeconds,
+	}), nil
+}
+
 func (s *runtimeServer) Refresh(ctx context.Context, req *connect.Request[apiv1.RefreshRequest]) (*connect.Response[apiv1.RefreshResponse], error) {
 	info := mustAuth(ctx)
 

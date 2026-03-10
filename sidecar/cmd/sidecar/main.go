@@ -4,14 +4,17 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
+	"strings"
 
+	"github.com/browser-streamer/sidecar/internal/bench"
 	"github.com/browser-streamer/sidecar/internal/r2"
 	"github.com/browser-streamer/sidecar/internal/server"
 )
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintf(os.Stderr, "usage: sidecar <serve|restore>\n")
+		fmt.Fprintf(os.Stderr, "usage: sidecar <serve|restore|bench>\n")
 		os.Exit(1)
 	}
 
@@ -20,6 +23,8 @@ func main() {
 		runServe()
 	case "restore":
 		runRestore()
+	case "bench":
+		runBench()
 	default:
 		fmt.Fprintf(os.Stderr, "unknown command: %s\n", os.Args[1])
 		os.Exit(1)
@@ -80,6 +85,50 @@ func runRestore() {
 func ensureDirs() {
 	os.MkdirAll("/data/content", 0o755)
 	os.MkdirAll("/data/chrome", 0o755)
+}
+
+func runBench() {
+	cfg := bench.DefaultConfig()
+
+	// Parse flags from remaining args
+	args := os.Args[2:]
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--duration", "-d":
+			if i+1 < len(args) {
+				i++
+				if d, err := strconv.Atoi(args[i]); err == nil {
+					cfg.SceneDuration = d
+				}
+			}
+		case "--scene", "-s":
+			if i+1 < len(args) {
+				i++
+				cfg.Scenes = strings.Split(args[i], ",")
+			}
+		case "--min-fps":
+			if i+1 < len(args) {
+				i++
+				if f, err := strconv.ParseFloat(args[i], 64); err == nil {
+					cfg.MinBrowserFPS = f
+				}
+			}
+		default:
+			fmt.Fprintf(os.Stderr, "bench: unknown flag %q\n", args[i])
+			fmt.Fprintf(os.Stderr, "usage: sidecar bench [--duration 30] [--scene static,css_animation,...] [--min-fps 25]\n")
+			os.Exit(1)
+		}
+	}
+
+	report, err := bench.Run(cfg)
+	if err != nil {
+		log.Fatalf("bench failed: %v", err)
+	}
+	bench.PrintReport(report)
+
+	if !report.AllPass {
+		os.Exit(1)
+	}
 }
 
 func envOrDefault(key, def string) string {

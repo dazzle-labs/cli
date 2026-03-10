@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -54,9 +56,17 @@ type Server struct {
 	logBuffer    *LogBuffer
 	r2Syncer     *r2.Syncer
 	lastActivity time.Time
+	stageStart   time.Time
+
+	// Live stats (updated by pipeline callback and browser FPS poller)
+	statsMu       sync.Mutex
+	pipelineStats pipeline.Stats
+	pipelineStart time.Time
+	browserFPS    float64
 }
 
 func New(cfg Config) (*Server, error) {
+	now := time.Now()
 	s := &Server{
 		cfg:       cfg,
 		mux:       http.NewServeMux(),
@@ -66,7 +76,8 @@ func New(cfg Config) (*Server, error) {
 		),
 		syncState:    NewSyncState(cfg.SyncDir),
 		logBuffer:    NewLogBuffer(1000),
-		lastActivity: time.Now(),
+		lastActivity: now,
+		stageStart:   now,
 	}
 
 	// Set up R2 syncer if configured
@@ -219,12 +230,80 @@ func (s *Server) startPipeline() {
 		time.Sleep(500 * time.Millisecond)
 	}
 
-	s.pipeline.SetStatsCallback(UpdatePipelineStats)
+	s.pipeline.SetStatsCallback(func(stats pipeline.Stats) {
+		UpdatePipelineStats(stats)
+		s.statsMu.Lock()
+		s.pipelineStats = stats
+		s.statsMu.Unlock()
+	})
+
+	s.statsMu.Lock()
+	s.pipelineStart = time.Now()
+	s.statsMu.Unlock()
+
 	if err := s.pipeline.Start(); err != nil {
 		log.Printf("FATAL: ffmpeg pipeline failed to start: %v", err)
 		return
 	}
 	log.Println("ffmpeg pipeline started (HLS preview)")
+
+	// Start browser FPS polling after pipeline is running
+	go s.pollBrowserFPS()
+}
+
+// fpsScript is injected into the browser to measure rendering FPS via requestAnimationFrame.
+const fpsScript = `(function() {
+  if (window.__dzFPS !== undefined) return 'ok';
+  window.__dzFPS = { current: 0 };
+  let frames = 0, lastTime = performance.now();
+  function tick(now) {
+    frames++;
+    const elapsed = now - lastTime;
+    if (elapsed >= 1000) {
+      window.__dzFPS.current = Math.round(frames * 1000 / elapsed * 10) / 10;
+      frames = 0;
+      lastTime = now;
+    }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+  return 'ok';
+})();`
+
+// pollBrowserFPS periodically injects the FPS counter and reads the current value via CDP.
+func (s *Server) pollBrowserFPS() {
+	// Wait a bit for the page to load
+	time.Sleep(3 * time.Second)
+
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+
+	injected := false
+	for range ticker.C {
+		if !s.cdpClient.IsConnected() {
+			injected = false
+			continue
+		}
+
+		// Inject the FPS script if not yet done (or after a page reload)
+		if !injected {
+			if _, err := s.cdpClient.Evaluate(fpsScript); err == nil {
+				injected = true
+			}
+			continue
+		}
+
+		// Read the current FPS
+		val, err := s.cdpClient.Evaluate("window.__dzFPS ? window.__dzFPS.current : 0")
+		if err != nil {
+			injected = false
+			continue
+		}
+		fps, _ := strconv.ParseFloat(val, 64)
+		s.statsMu.Lock()
+		s.browserFPS = fps
+		s.statsMu.Unlock()
+	}
 }
 
 func (s *Server) seedPlaceholder() {

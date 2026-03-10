@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html><head><style>
+* { margin: 0; padding: 0; } body { width: 100vw; height: 100vh; overflow: hidden; background: #000; }
+canvas { width: 100%; height: 100%; }
+</style></head><body>
+<canvas id="c"></canvas>
+<script>
+// Per-pixel Phong lighting on a sphere mesh (642 vertices, icosphere)
+// More fragment work than flat vertex colors, but no raymarching
+const canvas = document.getElementById('c');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+const gl = canvas.getContext('webgl');
+if (!gl) { document.body.innerHTML = '<h1 style="color:red;padding:40px">WebGL not available</h1>'; throw 'no webgl'; }
+
+const vsrc = `
+attribute vec3 a_pos;
+attribute vec3 a_norm;
+uniform mat4 u_mvp;
+uniform mat4 u_model;
+varying vec3 v_norm;
+varying vec3 v_pos;
+void main() {
+  gl_Position = u_mvp * vec4(a_pos, 1.0);
+  v_norm = mat3(u_model) * a_norm;
+  v_pos = (u_model * vec4(a_pos, 1.0)).xyz;
+}`;
+
+const fsrc = `
+precision mediump float;
+varying vec3 v_norm;
+varying vec3 v_pos;
+uniform float u_time;
+void main() {
+  vec3 n = normalize(v_norm);
+  vec3 lightPos = vec3(3.0 * cos(u_time), 3.0, 3.0 * sin(u_time));
+  vec3 l = normalize(lightPos - v_pos);
+  vec3 v = normalize(-v_pos);
+  vec3 h = normalize(l + v);
+
+  float diff = max(dot(n, l), 0.0);
+  float spec = pow(max(dot(n, h), 0.0), 64.0);
+  float rim = pow(1.0 - max(dot(n, v), 0.0), 3.0);
+
+  vec3 baseColor = vec3(0.2, 0.5, 0.9);
+  vec3 col = baseColor * (diff * 0.7 + 0.15) + vec3(1.0) * spec * 0.6 + vec3(0.3, 0.4, 0.8) * rim * 0.3;
+  gl_FragColor = vec4(col, 1.0);
+}`;
+
+// Generate icosphere
+function icosphere(subdivisions) {
+  const t = (1 + Math.sqrt(5)) / 2;
+  let verts = [[-1,t,0],[1,t,0],[-1,-t,0],[1,-t,0],[0,-1,t],[0,1,t],[0,-1,-t],[0,1,-t],[t,0,-1],[t,0,1],[-t,0,-1],[-t,0,1]];
+  let faces = [[0,11,5],[0,5,1],[0,1,7],[0,7,10],[0,10,11],[1,5,9],[5,11,4],[11,10,2],[10,7,6],[7,1,8],[3,9,4],[3,4,2],[3,2,6],[3,6,8],[3,8,9],[4,9,5],[2,4,11],[6,2,10],[8,6,7],[9,8,1]];
+  const midCache = {};
+  function addMid(a, b) {
+    const key = Math.min(a,b) + ':' + Math.max(a,b);
+    if (midCache[key] !== undefined) return midCache[key];
+    const m = [(verts[a][0]+verts[b][0])/2,(verts[a][1]+verts[b][1])/2,(verts[a][2]+verts[b][2])/2];
+    const l = Math.sqrt(m[0]*m[0]+m[1]*m[1]+m[2]*m[2]);
+    verts.push([m[0]/l,m[1]/l,m[2]/l]);
+    midCache[key] = verts.length-1;
+    return midCache[key];
+  }
+  for (let s = 0; s < subdivisions; s++) {
+    const newFaces = [];
+    for (const [a,b,c] of faces) {
+      const ab=addMid(a,b), bc=addMid(b,c), ca=addMid(c,a);
+      newFaces.push([a,ab,ca],[b,bc,ab],[c,ca,bc],[ab,bc,ca]);
+    }
+    faces = newFaces;
+  }
+  // Normalize all verts
+  const positions = [], normals = [], indices = [];
+  for (const v of verts) {
+    const l = Math.sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
+    positions.push(v[0]/l, v[1]/l, v[2]/l);
+    normals.push(v[0]/l, v[1]/l, v[2]/l);
+  }
+  for (const f of faces) indices.push(...f);
+  return { positions: new Float32Array(positions), normals: new Float32Array(normals), indices: new Uint16Array(indices) };
+}
+
+const sphere = icosphere(4); // 2562 verts, 5120 triangles
+
+const posBuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+gl.bufferData(gl.ARRAY_BUFFER, sphere.positions, gl.STATIC_DRAW);
+const normBuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, normBuf);
+gl.bufferData(gl.ARRAY_BUFFER, sphere.normals, gl.STATIC_DRAW);
+const idxBuf = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, idxBuf);
+gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, sphere.indices, gl.STATIC_DRAW);
+
+function mkShader(type, src) {
+  const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(s));
+  return s;
+}
+const prog = gl.createProgram();
+gl.attachShader(prog, mkShader(gl.VERTEX_SHADER, vsrc));
+gl.attachShader(prog, mkShader(gl.FRAGMENT_SHADER, fsrc));
+gl.linkProgram(prog); gl.useProgram(prog);
+
+const aPos = gl.getAttribLocation(prog, 'a_pos');
+const aNorm = gl.getAttribLocation(prog, 'a_norm');
+const uMVP = gl.getUniformLocation(prog, 'u_mvp');
+const uModel = gl.getUniformLocation(prog, 'u_model');
+const uTime = gl.getUniformLocation(prog, 'u_time');
+
+gl.enable(gl.DEPTH_TEST);
+gl.clearColor(0.03, 0.03, 0.06, 1);
+
+function mat4_perspective(fov, aspect, near, far) {
+  const f = 1/Math.tan(fov/2), nf = 1/(near-far);
+  return [f/aspect,0,0,0, 0,f,0,0, 0,0,(far+near)*nf,-1, 0,0,2*far*near*nf,0];
+}
+function mat4_mul(a, b) {
+  const r = new Array(16);
+  for (let i=0;i<4;i++) for (let j=0;j<4;j++) { r[i*4+j]=0; for (let k=0;k<4;k++) r[i*4+j]+=a[i*4+k]*b[k*4+j]; }
+  return r;
+}
+function mat4_rotY(a) { const c=Math.cos(a),s=Math.sin(a); return [c,0,s,0, 0,1,0,0, -s,0,c,0, 0,0,0,1]; }
+function mat4_translate(x,y,z) { return [1,0,0,0, 0,1,0,0, 0,0,1,0, x,y,z,1]; }
+const proj = mat4_perspective(Math.PI/4, canvas.width/canvas.height, 0.1, 100);
+
+function draw(t) {
+  t *= 0.001;
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  const model = mat4_rotY(t * 0.5);
+  const view = mat4_translate(0, 0, -4);
+  const mvp = mat4_mul(proj, mat4_mul(view, model));
+  gl.uniformMatrix4fv(uMVP, false, mvp);
+  gl.uniformMatrix4fv(uModel, false, model);
+  gl.uniform1f(uTime, t);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+  gl.enableVertexAttribArray(aPos);
+  gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 0, 0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, normBuf);
+  gl.enableVertexAttribArray(aNorm);
+  gl.vertexAttribPointer(aNorm, 3, gl.FLOAT, false, 0, 0);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, idxBuf);
+  gl.drawElements(gl.TRIANGLES, sphere.indices.length, gl.UNSIGNED_SHORT, 0);
+  requestAnimationFrame(draw);
+}
+draw(0);
+</script>
+</body></html>
