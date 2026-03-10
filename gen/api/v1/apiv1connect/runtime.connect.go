@@ -38,6 +38,9 @@ const (
 	RuntimeServiceEmitEventProcedure = "/dazzle.v1.RuntimeService/EmitEvent"
 	// RuntimeServiceGetLogsProcedure is the fully-qualified name of the RuntimeService's GetLogs RPC.
 	RuntimeServiceGetLogsProcedure = "/dazzle.v1.RuntimeService/GetLogs"
+	// RuntimeServiceGetStageStatsProcedure is the fully-qualified name of the RuntimeService's
+	// GetStageStats RPC.
+	RuntimeServiceGetStageStatsProcedure = "/dazzle.v1.RuntimeService/GetStageStats"
 	// RuntimeServiceScreenshotProcedure is the fully-qualified name of the RuntimeService's Screenshot
 	// RPC.
 	RuntimeServiceScreenshotProcedure = "/dazzle.v1.RuntimeService/Screenshot"
@@ -56,6 +59,7 @@ const (
 type RuntimeServiceClient interface {
 	EmitEvent(context.Context, *connect.Request[v1.EmitEventRequest]) (*connect.Response[v1.EmitEventResponse], error)
 	GetLogs(context.Context, *connect.Request[v1.GetLogsRequest]) (*connect.Response[v1.GetLogsResponse], error)
+	GetStageStats(context.Context, *connect.Request[v1.GetStageStatsRequest]) (*connect.Response[v1.GetStageStatsResponse], error)
 	Screenshot(context.Context, *connect.Request[v1.ScreenshotRequest]) (*connect.Response[v1.ScreenshotResponse], error)
 	ObsCommand(context.Context, *connect.Request[v1.ObsCommandRequest]) (*connect.Response[v1.ObsCommandResponse], error)
 	SyncDiff(context.Context, *connect.Request[v1.SyncDiffRequest]) (*connect.Response[v1.SyncDiffResponse], error)
@@ -84,6 +88,12 @@ func NewRuntimeServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			httpClient,
 			baseURL+RuntimeServiceGetLogsProcedure,
 			connect.WithSchema(runtimeServiceMethods.ByName("GetLogs")),
+			connect.WithClientOptions(opts...),
+		),
+		getStageStats: connect.NewClient[v1.GetStageStatsRequest, v1.GetStageStatsResponse](
+			httpClient,
+			baseURL+RuntimeServiceGetStageStatsProcedure,
+			connect.WithSchema(runtimeServiceMethods.ByName("GetStageStats")),
 			connect.WithClientOptions(opts...),
 		),
 		screenshot: connect.NewClient[v1.ScreenshotRequest, v1.ScreenshotResponse](
@@ -121,13 +131,14 @@ func NewRuntimeServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 
 // runtimeServiceClient implements RuntimeServiceClient.
 type runtimeServiceClient struct {
-	emitEvent  *connect.Client[v1.EmitEventRequest, v1.EmitEventResponse]
-	getLogs    *connect.Client[v1.GetLogsRequest, v1.GetLogsResponse]
-	screenshot *connect.Client[v1.ScreenshotRequest, v1.ScreenshotResponse]
-	obsCommand *connect.Client[v1.ObsCommandRequest, v1.ObsCommandResponse]
-	syncDiff   *connect.Client[v1.SyncDiffRequest, v1.SyncDiffResponse]
-	syncPush   *connect.Client[v1.SyncPushRequest, v1.SyncPushResponse]
-	refresh    *connect.Client[v1.RefreshRequest, v1.RefreshResponse]
+	emitEvent     *connect.Client[v1.EmitEventRequest, v1.EmitEventResponse]
+	getLogs       *connect.Client[v1.GetLogsRequest, v1.GetLogsResponse]
+	getStageStats *connect.Client[v1.GetStageStatsRequest, v1.GetStageStatsResponse]
+	screenshot    *connect.Client[v1.ScreenshotRequest, v1.ScreenshotResponse]
+	obsCommand    *connect.Client[v1.ObsCommandRequest, v1.ObsCommandResponse]
+	syncDiff      *connect.Client[v1.SyncDiffRequest, v1.SyncDiffResponse]
+	syncPush      *connect.Client[v1.SyncPushRequest, v1.SyncPushResponse]
+	refresh       *connect.Client[v1.RefreshRequest, v1.RefreshResponse]
 }
 
 // EmitEvent calls dazzle.v1.RuntimeService.EmitEvent.
@@ -138,6 +149,11 @@ func (c *runtimeServiceClient) EmitEvent(ctx context.Context, req *connect.Reque
 // GetLogs calls dazzle.v1.RuntimeService.GetLogs.
 func (c *runtimeServiceClient) GetLogs(ctx context.Context, req *connect.Request[v1.GetLogsRequest]) (*connect.Response[v1.GetLogsResponse], error) {
 	return c.getLogs.CallUnary(ctx, req)
+}
+
+// GetStageStats calls dazzle.v1.RuntimeService.GetStageStats.
+func (c *runtimeServiceClient) GetStageStats(ctx context.Context, req *connect.Request[v1.GetStageStatsRequest]) (*connect.Response[v1.GetStageStatsResponse], error) {
+	return c.getStageStats.CallUnary(ctx, req)
 }
 
 // Screenshot calls dazzle.v1.RuntimeService.Screenshot.
@@ -169,6 +185,7 @@ func (c *runtimeServiceClient) Refresh(ctx context.Context, req *connect.Request
 type RuntimeServiceHandler interface {
 	EmitEvent(context.Context, *connect.Request[v1.EmitEventRequest]) (*connect.Response[v1.EmitEventResponse], error)
 	GetLogs(context.Context, *connect.Request[v1.GetLogsRequest]) (*connect.Response[v1.GetLogsResponse], error)
+	GetStageStats(context.Context, *connect.Request[v1.GetStageStatsRequest]) (*connect.Response[v1.GetStageStatsResponse], error)
 	Screenshot(context.Context, *connect.Request[v1.ScreenshotRequest]) (*connect.Response[v1.ScreenshotResponse], error)
 	ObsCommand(context.Context, *connect.Request[v1.ObsCommandRequest]) (*connect.Response[v1.ObsCommandResponse], error)
 	SyncDiff(context.Context, *connect.Request[v1.SyncDiffRequest]) (*connect.Response[v1.SyncDiffResponse], error)
@@ -193,6 +210,12 @@ func NewRuntimeServiceHandler(svc RuntimeServiceHandler, opts ...connect.Handler
 		RuntimeServiceGetLogsProcedure,
 		svc.GetLogs,
 		connect.WithSchema(runtimeServiceMethods.ByName("GetLogs")),
+		connect.WithHandlerOptions(opts...),
+	)
+	runtimeServiceGetStageStatsHandler := connect.NewUnaryHandler(
+		RuntimeServiceGetStageStatsProcedure,
+		svc.GetStageStats,
+		connect.WithSchema(runtimeServiceMethods.ByName("GetStageStats")),
 		connect.WithHandlerOptions(opts...),
 	)
 	runtimeServiceScreenshotHandler := connect.NewUnaryHandler(
@@ -231,6 +254,8 @@ func NewRuntimeServiceHandler(svc RuntimeServiceHandler, opts ...connect.Handler
 			runtimeServiceEmitEventHandler.ServeHTTP(w, r)
 		case RuntimeServiceGetLogsProcedure:
 			runtimeServiceGetLogsHandler.ServeHTTP(w, r)
+		case RuntimeServiceGetStageStatsProcedure:
+			runtimeServiceGetStageStatsHandler.ServeHTTP(w, r)
 		case RuntimeServiceScreenshotProcedure:
 			runtimeServiceScreenshotHandler.ServeHTTP(w, r)
 		case RuntimeServiceObsCommandProcedure:
@@ -256,6 +281,10 @@ func (UnimplementedRuntimeServiceHandler) EmitEvent(context.Context, *connect.Re
 
 func (UnimplementedRuntimeServiceHandler) GetLogs(context.Context, *connect.Request[v1.GetLogsRequest]) (*connect.Response[v1.GetLogsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.RuntimeService.GetLogs is not implemented"))
+}
+
+func (UnimplementedRuntimeServiceHandler) GetStageStats(context.Context, *connect.Request[v1.GetStageStatsRequest]) (*connect.Response[v1.GetStageStatsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.RuntimeService.GetStageStats is not implemented"))
 }
 
 func (UnimplementedRuntimeServiceHandler) Screenshot(context.Context, *connect.Request[v1.ScreenshotRequest]) (*connect.Response[v1.ScreenshotResponse], error) {

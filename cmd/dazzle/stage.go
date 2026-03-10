@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	apiv1 "github.com/dazzle-labs/cli/gen/api/v1"
 	"github.com/dazzle-labs/cli/gen/api/v1/apiv1connect"
@@ -18,6 +19,7 @@ type StageCmd struct {
 	Up   StageStartCmd `cmd:"" help:"Activate a stage."`
 	Down StageStopCmd  `cmd:"" help:"Deactivate a stage."`
 	Status     StageStatusCmd `cmd:"" aliases:"st" help:"Show stage status."`
+	Stats      StageStatsCmd  `cmd:"" help:"Show live pipeline stats."`
 	Preview    StagePreviewCmd `cmd:"" help:"Show the shareable preview URL for a running stage."`
 	// Content — sync a local directory to the stage (the primary way to push content)
 	Sync       SyncCmd       `cmd:"" aliases:"sy" help:"Sync a local directory to the stage. This is the primary way to push content — use --watch for live development."`
@@ -319,5 +321,83 @@ func (c *StagePreviewCmd) Run(ctx *Context) error {
 	printText("%s", stage.Preview.WatchUrl)
 	openBrowser(stage.Preview.WatchUrl)
 	return nil
+}
+
+// StageStatsCmd shows live pipeline stats for a running stage.
+type StageStatsCmd struct{}
+
+func (c *StageStatsCmd) Run(ctx *Context) error {
+	if err := ctx.requireAuth(); err != nil {
+		return err
+	}
+	if err := ctx.resolveStage(); err != nil {
+		return err
+	}
+
+	client := apiv1connect.NewRuntimeServiceClient(ctx.HTTPClient, ctx.APIURL)
+	req := connect.NewRequest(&apiv1.GetStageStatsRequest{StageId: ctx.StageID})
+	req.Header().Set("Authorization", ctx.authHeader())
+	resp, err := client.GetStageStats(context.Background(), req)
+	if err != nil {
+		return err
+	}
+
+	s := resp.Msg
+	if ctx.JSON {
+		printJSON(map[string]any{
+			"fps":                     s.Fps,
+			"dropped_frames":          s.DroppedFrames,
+			"dropped_frames_recent":   s.DroppedFramesRecent,
+			"total_bytes":             s.TotalBytes,
+			"speed":                   s.Speed,
+			"broadcasting":            s.Broadcasting,
+			"pipeline_uptime_seconds": s.PipelineUptimeSeconds,
+			"stage_uptime_seconds":    s.StageUptimeSeconds,
+		})
+		return nil
+	}
+
+	printText("FPS:             %.1f", s.Fps)
+	printText("Dropped Frames:  %d (%d last 60s)", s.DroppedFrames, s.DroppedFramesRecent)
+	printText("Data:            %s", formatBytes(s.TotalBytes))
+	printText("Broadcasting:    %s", yesNo(s.Broadcasting))
+	printText("Uptime:          %s", formatDuration(s.StageUptimeSeconds))
+	return nil
+}
+
+func formatBytes(b int64) string {
+	const (
+		MB = 1_000_000
+		GB = 1_000_000_000
+	)
+	switch {
+	case b >= GB:
+		return fmt.Sprintf("%.2f GB", float64(b)/float64(GB))
+	case b >= MB:
+		return fmt.Sprintf("%.1f MB", float64(b)/float64(MB))
+	default:
+		return fmt.Sprintf("%d bytes", b)
+	}
+}
+
+func formatDuration(seconds int64) string {
+	d := time.Duration(seconds) * time.Second
+	h := int(d / time.Hour)
+	m := int((d % time.Hour) / time.Minute)
+	s := int((d % time.Minute) / time.Second)
+	if h > 0 {
+		return fmt.Sprintf("%dh %dm %ds", h, m, s)
+	}
+	if m > 0 {
+		return fmt.Sprintf("%dm %ds", m, s)
+	}
+	return fmt.Sprintf("%ds", s)
+}
+
+func yesNo(b bool) string {
+	if b {
+		return "yes"
+	}
+	return "no"
 }
 
