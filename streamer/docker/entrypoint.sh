@@ -20,8 +20,16 @@ if [ "${DISABLE_WEBGL:-false}" = "true" ]; then
     echo "WebGL disabled via DISABLE_WEBGL=true"
     CHROME_GL_FLAGS="--disable-gpu"
 else
-    CHROME_GL_FLAGS="--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader"
+    CHROME_GL_FLAGS="--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader --disable-vulkan-surface --disable-gpu-compositing --disable-gpu-watchdog"
 fi
+
+# Configure SwiftShader thread count to match pod CPU allocation
+# Default (0) creates min(cores, 16) threads which over-subscribes in containers
+mkdir -p /data/chrome
+cat > /data/chrome/SwiftShader.ini << 'SWCFG'
+[Processor]
+ThreadCount=4
+SWCFG
 
 # 1. Start Xvfb
 echo "Starting Xvfb (${SCREEN_WIDTH}x${SCREEN_HEIGHT})..."
@@ -71,7 +79,6 @@ echo "Starting Chromium..."
 google-chrome-stable \
     --no-sandbox \
     $CHROME_GL_FLAGS \
-    --disable-dev-shm-usage \
     --no-first-run \
     --no-default-browser-check \
     --disable-infobars \
@@ -79,6 +86,7 @@ google-chrome-stable \
     --remote-debugging-port=9222 \
     --remote-debugging-address=0.0.0.0 \
     --user-data-dir=/data/chrome \
+    --renderer-process-limit=1 \
     --kiosk \
     --window-size=${SCREEN_WIDTH},${SCREEN_HEIGHT} \
     --window-position=0,0 \
