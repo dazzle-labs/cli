@@ -283,8 +283,8 @@ export function StreamConfig() {
                   exit={{ opacity: 0, height: 0 }}
                   transition={springs.snappy}
                 >
-                  <Card>
-                    <CardContent className="pt-4">
+                  <Card size="sm">
+                    <CardContent>
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-base text-foreground font-medium">{d.name || d.platformUsername || "\u2014"}</span>
                         <div className="flex items-center gap-2">
