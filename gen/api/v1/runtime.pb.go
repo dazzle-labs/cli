@@ -806,17 +806,17 @@ func (x *GetStageStatsRequest) GetStageId() string {
 }
 
 type GetStageStatsResponse struct {
-	state                 protoimpl.MessageState `protogen:"open.v1"`
-	Fps                   float64                `protobuf:"fixed64,1,opt,name=fps,proto3" json:"fps,omitempty"`
-	DroppedFrames         int64                  `protobuf:"varint,2,opt,name=dropped_frames,json=droppedFrames,proto3" json:"dropped_frames,omitempty"`
-	DroppedFramesRecent   int64                  `protobuf:"varint,3,opt,name=dropped_frames_recent,json=droppedFramesRecent,proto3" json:"dropped_frames_recent,omitempty"`
-	TotalBytes            int64                  `protobuf:"varint,4,opt,name=total_bytes,json=totalBytes,proto3" json:"total_bytes,omitempty"`
-	Speed                 float64                `protobuf:"fixed64,5,opt,name=speed,proto3" json:"speed,omitempty"`
-	Broadcasting          bool                   `protobuf:"varint,6,opt,name=broadcasting,proto3" json:"broadcasting,omitempty"`
-	PipelineUptimeSeconds int64                  `protobuf:"varint,7,opt,name=pipeline_uptime_seconds,json=pipelineUptimeSeconds,proto3" json:"pipeline_uptime_seconds,omitempty"`
-	StageUptimeSeconds    int64                  `protobuf:"varint,8,opt,name=stage_uptime_seconds,json=stageUptimeSeconds,proto3" json:"stage_uptime_seconds,omitempty"`
-	unknownFields         protoimpl.UnknownFields
-	sizeCache             protoimpl.SizeCache
+	state                  protoimpl.MessageState `protogen:"open.v1"`
+	StageFps               float64                `protobuf:"fixed64,1,opt,name=stage_fps,json=stageFps,proto3" json:"stage_fps,omitempty"`             // Browser rendering FPS (from Chrome rAF timing)
+	BroadcastFps           float64                `protobuf:"fixed64,2,opt,name=broadcast_fps,json=broadcastFps,proto3" json:"broadcast_fps,omitempty"` // Encoder output FPS (from ffmpeg)
+	DroppedFrames          int64                  `protobuf:"varint,3,opt,name=dropped_frames,json=droppedFrames,proto3" json:"dropped_frames,omitempty"`
+	DroppedFramesRecent    int64                  `protobuf:"varint,4,opt,name=dropped_frames_recent,json=droppedFramesRecent,proto3" json:"dropped_frames_recent,omitempty"`
+	TotalBytes             int64                  `protobuf:"varint,5,opt,name=total_bytes,json=totalBytes,proto3" json:"total_bytes,omitempty"`
+	Broadcasting           bool                   `protobuf:"varint,6,opt,name=broadcasting,proto3" json:"broadcasting,omitempty"`
+	BroadcastUptimeSeconds int64                  `protobuf:"varint,7,opt,name=broadcast_uptime_seconds,json=broadcastUptimeSeconds,proto3" json:"broadcast_uptime_seconds,omitempty"`
+	StageUptimeSeconds     int64                  `protobuf:"varint,8,opt,name=stage_uptime_seconds,json=stageUptimeSeconds,proto3" json:"stage_uptime_seconds,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *GetStageStatsResponse) Reset() {
@@ -849,9 +849,16 @@ func (*GetStageStatsResponse) Descriptor() ([]byte, []int) {
 	return file_api_v1_runtime_proto_rawDescGZIP(), []int{16}
 }
 
-func (x *GetStageStatsResponse) GetFps() float64 {
+func (x *GetStageStatsResponse) GetStageFps() float64 {
 	if x != nil {
-		return x.Fps
+		return x.StageFps
+	}
+	return 0
+}
+
+func (x *GetStageStatsResponse) GetBroadcastFps() float64 {
+	if x != nil {
+		return x.BroadcastFps
 	}
 	return 0
 }
@@ -877,13 +884,6 @@ func (x *GetStageStatsResponse) GetTotalBytes() int64 {
 	return 0
 }
 
-func (x *GetStageStatsResponse) GetSpeed() float64 {
-	if x != nil {
-		return x.Speed
-	}
-	return 0
-}
-
 func (x *GetStageStatsResponse) GetBroadcasting() bool {
 	if x != nil {
 		return x.Broadcasting
@@ -891,9 +891,9 @@ func (x *GetStageStatsResponse) GetBroadcasting() bool {
 	return false
 }
 
-func (x *GetStageStatsResponse) GetPipelineUptimeSeconds() int64 {
+func (x *GetStageStatsResponse) GetBroadcastUptimeSeconds() int64 {
 	if x != nil {
-		return x.PipelineUptimeSeconds
+		return x.BroadcastUptimeSeconds
 	}
 	return 0
 }
@@ -955,16 +955,16 @@ const file_api_v1_runtime_proto_rawDesc = "" +
 	"\x0fRefreshResponse\x12\x0e\n" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\"1\n" +
 	"\x14GetStageStatsRequest\x12\x19\n" +
-	"\bstage_id\x18\x01 \x01(\tR\astageId\"\xc9\x02\n" +
-	"\x15GetStageStatsResponse\x12\x10\n" +
-	"\x03fps\x18\x01 \x01(\x01R\x03fps\x12%\n" +
-	"\x0edropped_frames\x18\x02 \x01(\x03R\rdroppedFrames\x122\n" +
-	"\x15dropped_frames_recent\x18\x03 \x01(\x03R\x13droppedFramesRecent\x12\x1f\n" +
-	"\vtotal_bytes\x18\x04 \x01(\x03R\n" +
-	"totalBytes\x12\x14\n" +
-	"\x05speed\x18\x05 \x01(\x01R\x05speed\x12\"\n" +
-	"\fbroadcasting\x18\x06 \x01(\bR\fbroadcasting\x126\n" +
-	"\x17pipeline_uptime_seconds\x18\a \x01(\x03R\x15pipelineUptimeSeconds\x120\n" +
+	"\bstage_id\x18\x01 \x01(\tR\astageId\"\xe5\x02\n" +
+	"\x15GetStageStatsResponse\x12\x1b\n" +
+	"\tstage_fps\x18\x01 \x01(\x01R\bstageFps\x12#\n" +
+	"\rbroadcast_fps\x18\x02 \x01(\x01R\fbroadcastFps\x12%\n" +
+	"\x0edropped_frames\x18\x03 \x01(\x03R\rdroppedFrames\x122\n" +
+	"\x15dropped_frames_recent\x18\x04 \x01(\x03R\x13droppedFramesRecent\x12\x1f\n" +
+	"\vtotal_bytes\x18\x05 \x01(\x03R\n" +
+	"totalBytes\x12\"\n" +
+	"\fbroadcasting\x18\x06 \x01(\bR\fbroadcasting\x128\n" +
+	"\x18broadcast_uptime_seconds\x18\a \x01(\x03R\x16broadcastUptimeSeconds\x120\n" +
 	"\x14stage_uptime_seconds\x18\b \x01(\x03R\x12stageUptimeSeconds2\xd2\x04\n" +
 	"\x0eRuntimeService\x12F\n" +
 	"\tEmitEvent\x12\x1b.dazzle.v1.EmitEventRequest\x1a\x1c.dazzle.v1.EmitEventResponse\x12@\n" +

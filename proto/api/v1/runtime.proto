@@ -59,12 +59,12 @@ message RefreshResponse {
 message GetStageStatsRequest { string stage_id = 1; }
 
 message GetStageStatsResponse {
-  double fps = 1;
-  int64 dropped_frames = 2;
-  int64 dropped_frames_recent = 3;
-  int64 total_bytes = 4;
-  double speed = 5;
+  double stage_fps = 1;                // Browser rendering FPS (from Chrome rAF timing)
+  double broadcast_fps = 2;            // Encoder output FPS (from ffmpeg)
+  int64 dropped_frames = 3;
+  int64 dropped_frames_recent = 4;
+  int64 total_bytes = 5;
   bool broadcasting = 6;
-  int64 pipeline_uptime_seconds = 7;
+  int64 broadcast_uptime_seconds = 7;
   int64 stage_uptime_seconds = 8;
 }

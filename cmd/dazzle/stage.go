@@ -345,19 +345,20 @@ func (c *StageStatsCmd) Run(ctx *Context) error {
 	s := resp.Msg
 	if ctx.JSON {
 		printJSON(map[string]any{
-			"fps":                     s.Fps,
-			"dropped_frames":          s.DroppedFrames,
-			"dropped_frames_recent":   s.DroppedFramesRecent,
-			"total_bytes":             s.TotalBytes,
-			"speed":                   s.Speed,
-			"broadcasting":            s.Broadcasting,
-			"pipeline_uptime_seconds": s.PipelineUptimeSeconds,
-			"stage_uptime_seconds":    s.StageUptimeSeconds,
+			"stage_fps":                s.StageFps,
+			"broadcast_fps":            s.BroadcastFps,
+			"dropped_frames":           s.DroppedFrames,
+			"dropped_frames_recent":    s.DroppedFramesRecent,
+			"total_bytes":              s.TotalBytes,
+			"broadcasting":             s.Broadcasting,
+			"broadcast_uptime_seconds": s.BroadcastUptimeSeconds,
+			"stage_uptime_seconds":     s.StageUptimeSeconds,
 		})
 		return nil
 	}
 
-	printText("FPS:             %.1f", s.Fps)
+	printText("Stage FPS:       %.1f", s.StageFps)
+	printText("Broadcast FPS:   %.1f", s.BroadcastFps)
 	printText("Dropped Frames:  %d (%d last 60s)", s.DroppedFrames, s.DroppedFramesRecent)
 	printText("Data:            %s", formatBytes(s.TotalBytes))
 	printText("Broadcasting:    %s", yesNo(s.Broadcasting))
