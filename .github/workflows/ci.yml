@@ -67,7 +67,7 @@ jobs:
         run: |
           SUBMODULE_COMMIT=$(git ls-tree HEAD cli | awk '{print $3}')
           git -C cli fetch --quiet --tags origin
-          LATEST_TAG=$(git -C cli tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+          LATEST_TAG=$(git -C cli tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+' | head -1)
           LATEST_RELEASE_COMMIT=$(git -C cli rev-list -n 1 "$LATEST_TAG")
           # Pass if submodule is at or ahead of the latest release.
           # Fail only if it's behind (i.e. the release commit is not an ancestor of the submodule commit).
