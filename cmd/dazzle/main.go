@@ -16,6 +16,7 @@ var cli struct {
 	// Meta commands
 	Version VersionCmd `cmd:"" help:"Print version information."`
 	Update  UpdateCmd  `cmd:"" help:"Update dazzle to the latest release."`
+	Guide   GuideCmd   `cmd:"" help:"Show content authoring guide (rendering tips, performance, best practices)."`
 
 	// Auth commands
 	Login  LoginCmd  `cmd:"" help:"Authenticate with your API key."`
