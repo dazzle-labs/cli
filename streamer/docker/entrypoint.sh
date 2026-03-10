@@ -21,7 +21,7 @@ if [ "${DISABLE_WEBGL:-false}" = "true" ]; then
     CHROME_GL_FLAGS="--disable-gpu"
 else
     # Use ANGLE's SwiftShader-WebGL backend (direct path, no Vulkan layer)
-    CHROME_GL_FLAGS="--use-gl=angle --use-angle=swiftshader-webgl --disable-gpu-compositing --disable-gpu-watchdog"
+    CHROME_GL_FLAGS="--use-gl=angle --use-angle=swiftshader-webgl --enable-unsafe-swiftshader --disable-gpu-compositing --disable-gpu-watchdog"
 fi
 
 # SwiftShader config (no-op when using LavaPipe, kept for DISABLE_WEBGL fallback)
