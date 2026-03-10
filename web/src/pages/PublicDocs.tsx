@@ -9,19 +9,18 @@ import { CommandLine, TerminalBlock } from "@/components/CommandLine";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
-  INSTALL_SNIPPET_UNIX,
-  INSTALL_SNIPPET_WINDOWS,
+  INSTALL_TABS,
   QUICK_START_STEPS,
   MULTI_STAGE_SNIPPET,
 } from "./docs-content";
+import type { InstallTab } from "./docs-content";
 
 const ease = [0.25, 0.1, 0.25, 1] as const;
 
-function useOS(): "windows" | "mac" | "linux" {
+function detectDefaultTab(): InstallTab {
   const ua = navigator.userAgent.toLowerCase();
   if (ua.includes("win")) return "windows";
-  if (ua.includes("mac")) return "mac";
-  return "linux";
+  return "unix";
 }
 
 function StepBadge({ n }: { n: number }) {
@@ -70,13 +69,9 @@ function CopyPromptButton() {
 
 export function PublicDocs() {
   const [signInOpen, setSignInOpen] = useState(false);
+  const [installTab, setInstallTab] = useState<InstallTab>(detectDefaultTab);
   const openSignIn = () => setSignInOpen(true);
-  const os = useOS();
-
-  const installSnippet = os === "windows" ? INSTALL_SNIPPET_WINDOWS : INSTALL_SNIPPET_UNIX;
-  const altSnippet = os === "windows" ? INSTALL_SNIPPET_UNIX : INSTALL_SNIPPET_WINDOWS;
-  const primaryLabel = os === "windows" ? "Windows (PowerShell)" : "macOS / Linux";
-  const altLabel = os === "windows" ? "macOS / Linux" : "Windows (PowerShell)";
+  const activeInstall = INSTALL_TABS.find((t) => t.id === installTab)!;
 
   return (
     <div className="dark">
@@ -149,20 +144,22 @@ export function PublicDocs() {
               <h2 className="text-xl tracking-[-0.02em] text-white font-display mb-4">
                 Installing the CLI
               </h2>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-sm font-medium text-zinc-400 mb-1.5">{primaryLabel}</p>
-                  <CommandLine cmd={installSnippet} />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-zinc-400 mb-1.5">{altLabel}</p>
-                  <CommandLine cmd={altSnippet} />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-zinc-400 mb-1.5">Go</p>
-                  <CommandLine cmd="go install github.com/dazzle-labs/cli/cmd/dazzle@latest" />
-                </div>
+              <div className="flex gap-1 mb-3">
+                {INSTALL_TABS.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setInstallTab(tab.id)}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors cursor-pointer ${
+                      installTab === tab.id
+                        ? "bg-emerald-500/15 text-emerald-400"
+                        : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
               </div>
+              <CommandLine cmd={activeInstall.cmd} />
             </section>
 
             {/* Quick Start */}
@@ -203,18 +200,6 @@ export function PublicDocs() {
             <CollapsibleSection title="Full CLI reference">
               <TerminalBlock code={`# All top-level commands\ndazzle --help\n\n# Stage commands\ndazzle stage --help\n\n# Script commands\ndazzle stage script --help`} />
             </CollapsibleSection>
-
-            {/* llms.txt link */}
-            <div className="text-center">
-              <a
-                href="/llms.txt"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-zinc-500 hover:text-emerald-400 transition-colors"
-              >
-                View llms.txt for AI agent consumption
-              </a>
-            </div>
           </motion.div>
         </TooltipProvider>
 

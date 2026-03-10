@@ -4,6 +4,17 @@ export const INSTALL_SNIPPET_UNIX =
 export const INSTALL_SNIPPET_WINDOWS =
   "irm https://stream.dazzle.fm/install.ps1 | iex";
 
+export const INSTALL_SNIPPET_GO =
+  "go install github.com/dazzle-labs/cli/cmd/dazzle@latest";
+
+export type InstallTab = "unix" | "windows" | "go";
+
+export const INSTALL_TABS: { id: InstallTab; label: string; cmd: string }[] = [
+  { id: "unix", label: "macOS / Linux", cmd: INSTALL_SNIPPET_UNIX },
+  { id: "windows", label: "Windows", cmd: INSTALL_SNIPPET_WINDOWS },
+  { id: "go", label: "Go", cmd: INSTALL_SNIPPET_GO },
+];
+
 export const QUICK_START_STEPS = [
   { n: 1, label: "Authenticate", cmd: "dazzle login" },
   { n: 2, label: "Create a stage", cmd: "dazzle stage create my-stage" },
