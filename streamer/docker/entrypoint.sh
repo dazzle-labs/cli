@@ -15,6 +15,14 @@ trap cleanup EXIT INT TERM
 SCREEN_WIDTH="${SCREEN_WIDTH:-1280}"
 SCREEN_HEIGHT="${SCREEN_HEIGHT:-720}"
 
+# Allow per-stage WebGL disable if needed (default: enabled)
+if [ "${DISABLE_WEBGL:-false}" = "true" ]; then
+    echo "WebGL disabled via DISABLE_WEBGL=true"
+    CHROME_GL_FLAG="--disable-gpu"
+else
+    CHROME_GL_FLAG="--use-gl=swiftshader"
+fi
+
 # 1. Start Xvfb
 echo "Starting Xvfb (${SCREEN_WIDTH}x${SCREEN_HEIGHT})..."
 Xvfb :99 -screen 0 ${SCREEN_WIDTH}x${SCREEN_HEIGHT}x24 -ac +extension GLX +render -noreset &
@@ -30,6 +38,19 @@ PULSE_PID=$(pgrep -f pulseaudio || true)
 
 # Brief wait for Xvfb display to be ready
 sleep 0.3
+
+# Verify GLX is working
+echo "Verifying GLX extension..."
+for i in $(seq 1 10); do
+    if glxinfo -B 2>/dev/null | grep -q "OpenGL version"; then
+        echo "✓ GLX verified and working."
+        break
+    fi
+    if [ $i -eq 10 ]; then
+        echo "⚠ GLX verification inconclusive (may still work)"
+    fi
+    sleep 0.2
+done
 
 # Hide cursor
 unclutter -idle 0 -root &
@@ -49,7 +70,7 @@ done
 echo "Starting Chromium..."
 google-chrome-stable \
     --no-sandbox \
-    --disable-gpu \
+    $CHROME_GL_FLAG \
     --disable-dev-shm-usage \
     --no-first-run \
     --no-default-browser-check \
@@ -78,11 +99,26 @@ for i in $(seq 1 60); do
     sleep 0.2
 done
 
+# Test WebGL context creation
+echo "Verifying WebGL context via SwiftShader..."
+curl -s -X POST http://localhost:9222/json/evaluate \
+  -H "Content-Type: application/json" \
+  -d '{"expression":"typeof WebGLRenderingContext"}' \
+  2>/dev/null | grep -q "function" && \
+  echo "✓ WebGL context available" || \
+  echo "⚠ WebGL context test inconclusive (check Chrome console)"
+
 # 5. HLS + RTMP encoding is handled by the sidecar (manages ffmpeg directly).
 # No OBS needed — the sidecar's pipeline package captures Xvfb via x11grab
 # and encodes to HLS (always-on preview) + RTMP (when broadcasting).
 mkdir -p /tmp/hls
 
 echo "All processes started. Waiting..."
+# Wait for any process to exit and log if it's Chrome
 wait -n
+EXITED_PID=$!
+if [ "$EXITED_PID" = "$CHROME_PID" ]; then
+    echo "ERROR: Chrome process exited unexpectedly"
+    echo "Chrome command was: $(ps -p $CHROME_PID -o cmd= 2>/dev/null || echo 'process not found')"
+fi
 echo "A process exited, shutting down."

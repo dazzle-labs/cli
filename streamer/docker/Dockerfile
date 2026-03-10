@@ -28,6 +28,9 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
     wget \
     unclutter \
+    libglx0 \
+    libgl1-amber-dri \
+    mesa-utils \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Chromium from the official Google Chrome stable channel (real .deb, not snap)
