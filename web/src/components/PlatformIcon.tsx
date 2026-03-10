@@ -1,4 +1,4 @@
-import { Twitch, Youtube, Repeat, Settings } from "lucide-react";
+import { Twitch, Youtube, Settings } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +19,15 @@ function KickIcon({ className }: { className?: string }) {
   );
 }
 
+// Custom Restream "R" icon — smooth semibold letter matching official logo
+function RestreamIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M4.5 1.5h9a5.8 5.8 0 0 1 1.3 11.46L20.5 22.5h-5.7l-4.3-8H9v8h-4.5V1.5ZM9 5v5h4a2.5 2.5 0 0 0 0-5H9Z" />
+    </svg>
+  );
+}
+
 interface PlatformConfig {
   icon: LucideIcon | typeof KickIcon;
   bg: string;
@@ -29,7 +38,7 @@ const PLATFORMS: Record<string, PlatformConfig> = {
   twitch: { icon: Twitch, bg: "bg-purple-500/15 text-purple-400", label: "Twitch" },
   youtube: { icon: Youtube, bg: "bg-red-500/15 text-red-400", label: "YouTube" },
   kick: { icon: KickIcon, bg: "bg-green-500/15 text-green-400", label: "Kick" },
-  restream: { icon: Repeat, bg: "bg-blue-500/15 text-blue-400", label: "Restream" },
+  restream: { icon: RestreamIcon, bg: "bg-blue-500/15 text-blue-400", label: "Restream" },
   custom: { icon: Settings, bg: "bg-zinc-500/15 text-zinc-400", label: "Custom" },
 };
 

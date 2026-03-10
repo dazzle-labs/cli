@@ -1,15 +1,7 @@
 import { motion } from "motion/react";
 import { springs, scaleIn } from "@/lib/motion";
-import { Monitor, Cpu, Twitch, Youtube } from "lucide-react";
-
-function KickIconSmall({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <rect x="3" y="3" width="18" height="18" rx="4" />
-      <path d="M9.5 7v10M9.5 12l5-5M9.5 12l5 5" />
-    </svg>
-  );
-}
+import { Monitor, Cpu } from "lucide-react";
+import { PlatformIcon } from "@/components/PlatformIcon";
 
 const nodeDelay = 0.15;
 
@@ -115,12 +107,10 @@ export function FlowDiagram() {
       >
         <div className="h-16 w-16 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
           <div className="grid grid-cols-2 gap-1">
-            <Twitch className="h-3.5 w-3.5 text-purple-400" />
-            <Youtube className="h-3.5 w-3.5 text-red-400" />
-            <KickIconSmall className="h-3.5 w-3.5 text-green-400" />
-            <svg className="h-3.5 w-3.5 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="17 1 10 9 17 9 10 17" />
-            </svg>
+            <PlatformIcon platform="twitch" size="sm" className="h-6 w-6 rounded-md" />
+            <PlatformIcon platform="youtube" size="sm" className="h-6 w-6 rounded-md" />
+            <PlatformIcon platform="kick" size="sm" className="h-6 w-6 rounded-md" />
+            <PlatformIcon platform="restream" size="sm" className="h-6 w-6 rounded-md" />
           </div>
         </div>
         <div className="text-center">
