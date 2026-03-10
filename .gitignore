@@ -3,6 +3,9 @@
 /dazzle
 dist/
 
+# Claude Code
+.claude/worktrees/
+
 # Go
 *.test
 *.out
