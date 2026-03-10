@@ -33,9 +33,7 @@ type Pipeline struct {
 	hlsDir     string // e.g. "/tmp/hls"
 	framerate  int
 
-	// HLS preview settings
-	hlsWidth   int
-	hlsHeight  int
+	// HLS settings
 	hlsBitrate int // kbps
 
 	// Broadcast settings
@@ -59,12 +57,7 @@ type Pipeline struct {
 // Option configures the pipeline.
 type Option func(*Pipeline)
 
-// WithHLSSize sets the HLS preview resolution (default 1280x720).
-func WithHLSSize(w, h int) Option {
-	return func(p *Pipeline) { p.hlsWidth = w; p.hlsHeight = h }
-}
-
-// WithHLSBitrate sets the HLS preview bitrate in kbps (default 2500).
+// WithHLSBitrate sets the HLS bitrate in kbps (default 2500).
 func WithHLSBitrate(kbps int) Option {
 	return func(p *Pipeline) { p.hlsBitrate = kbps }
 }
@@ -91,8 +84,6 @@ func New(display, screenSize, hlsDir string, opts ...Option) *Pipeline {
 		screenSize:  screenSize,
 		hlsDir:      hlsDir,
 		framerate:   30,
-		hlsWidth:    1280,
-		hlsHeight:   720,
 		hlsBitrate:  2500,
 		rtmpBitrate: 2500,
 		rtmpPreset:  "veryfast",
@@ -239,49 +230,41 @@ func (p *Pipeline) monitor(cmd *exec.Cmd) {
 	}
 }
 
-// needsScale returns true if HLS output differs from capture resolution.
-func (p *Pipeline) needsScale() bool {
-	captureSize := fmt.Sprintf("%dx%d", p.hlsWidth, p.hlsHeight)
-	return p.screenSize != captureSize
-}
-
 func (p *Pipeline) buildArgs() []string {
 	gop := fmt.Sprintf("%d", p.framerate*2) // keyframe every 2 seconds
 	segPattern := fmt.Sprintf("%s/seg%%03d.ts", p.hlsDir)
 	hlsOut := fmt.Sprintf("%s/stream.m3u8", p.hlsDir)
+	fpsStr := fmt.Sprintf("%d", p.framerate)
 
 	args := []string{
 		"-loglevel", "warning",
 		"-nostdin",
+		// Use wall clock for all input timestamps — prevents x11grab's
+		// internal clock from drifting when input threads stall.
+		"-use_wallclock_as_timestamps", "1",
 		// Video input: X11 grab
+		// Large thread queue absorbs Chrome's bursty SwiftShader rendering
+		// without blocking the input thread (default 8 is ~250ms at 30fps).
+		"-thread_queue_size", "512",
 		"-f", "x11grab",
 		"-video_size", p.screenSize,
-		"-framerate", fmt.Sprintf("%d", p.framerate),
+		"-framerate", fpsStr,
 		"-i", p.display,
 		// Audio input: PulseAudio
+		"-thread_queue_size", "512",
 		"-f", "pulse", "-i", "default",
 		// Progress output for stats
 		"-progress", "pipe:1",
 	}
 
-	// HLS video filter: only scale if capture != output resolution
-	hlsVF := []string{}
-	if p.needsScale() {
-		hlsVF = append(hlsVF, fmt.Sprintf("scale=%d:%d", p.hlsWidth, p.hlsHeight))
-	}
-
 	if p.broadcasting {
-		// Two outputs: HLS preview + RTMP broadcast
-		hlsArgs := []string{
+		// Two outputs: HLS + RTMP broadcast (both native resolution)
+		args = append(args,
+			// HLS output
 			"-map", "0:v", "-map", "1:a",
 			"-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency", "-threads", "2",
 			"-crf", "28",
 			"-g", gop,
-		}
-		if len(hlsVF) > 0 {
-			hlsArgs = append(hlsArgs, "-vf", strings.Join(hlsVF, ","))
-		}
-		hlsArgs = append(hlsArgs,
 			"-c:a", "aac", "-b:a", "96k",
 			"-f", "hls",
 			"-hls_time", "2",
@@ -289,11 +272,8 @@ func (p *Pipeline) buildArgs() []string {
 			"-hls_flags", "delete_segments+append_list",
 			"-hls_segment_filename", segPattern,
 			hlsOut,
-		)
-		args = append(args, hlsArgs...)
 
-		// RTMP output (broadcast quality — keeps zerolatency for live delivery)
-		args = append(args,
+			// RTMP output (broadcast quality — keeps zerolatency for live delivery)
 			"-map", "0:v", "-map", "1:a",
 			"-c:v", "libx264", "-preset", p.rtmpPreset, "-tune", "zerolatency", "-threads", "2",
 			"-b:v", fmt.Sprintf("%dk", p.rtmpBitrate),
@@ -306,15 +286,10 @@ func (p *Pipeline) buildArgs() []string {
 		)
 	} else {
 		// HLS only — CRF mode lets ultrafast take shortcuts on easy frames.
-		hlsArgs := []string{
+		args = append(args,
 			"-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency", "-threads", "2",
 			"-crf", "28",
 			"-g", gop,
-		}
-		if len(hlsVF) > 0 {
-			hlsArgs = append(hlsArgs, "-vf", strings.Join(hlsVF, ","))
-		}
-		hlsArgs = append(hlsArgs,
 			"-c:a", "aac", "-b:a", "96k",
 			"-f", "hls",
 			"-hls_time", "2",
@@ -323,7 +298,6 @@ func (p *Pipeline) buildArgs() []string {
 			"-hls_segment_filename", segPattern,
 			hlsOut,
 		)
-		args = append(args, hlsArgs...)
 	}
 
 	return args
