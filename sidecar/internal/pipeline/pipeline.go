@@ -246,7 +246,7 @@ func (p *Pipeline) needsScale() bool {
 }
 
 func (p *Pipeline) buildArgs() []string {
-	gop := fmt.Sprintf("%d", p.framerate) // keyframe every second
+	gop := fmt.Sprintf("%d", p.framerate*2) // keyframe every 2 seconds
 	segPattern := fmt.Sprintf("%s/seg%%03d.ts", p.hlsDir)
 	hlsOut := fmt.Sprintf("%s/stream.m3u8", p.hlsDir)
 
@@ -275,7 +275,7 @@ func (p *Pipeline) buildArgs() []string {
 		hlsArgs := []string{
 			"-map", "0:v", "-map", "1:a",
 			"-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency", "-threads", "2",
-			"-crf", "28", "-maxrate", fmt.Sprintf("%dk", p.hlsBitrate), "-bufsize", fmt.Sprintf("%dk", p.hlsBitrate*2),
+			"-crf", "28", "-maxrate", fmt.Sprintf("%dk", p.hlsBitrate), "-bufsize", fmt.Sprintf("%dk", p.hlsBitrate*4),
 			"-g", gop,
 		}
 		if len(hlsVF) > 0 {
@@ -284,8 +284,8 @@ func (p *Pipeline) buildArgs() []string {
 		hlsArgs = append(hlsArgs,
 			"-c:a", "aac", "-b:a", "96k",
 			"-f", "hls",
-			"-hls_time", "1",
-			"-hls_list_size", "5",
+			"-hls_time", "2",
+			"-hls_list_size", "3",
 			"-hls_flags", "delete_segments+append_list",
 			"-hls_segment_filename", segPattern,
 			hlsOut,
@@ -308,7 +308,7 @@ func (p *Pipeline) buildArgs() []string {
 		// HLS only — CRF mode lets ultrafast take shortcuts on easy frames.
 		hlsArgs := []string{
 			"-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency", "-threads", "2",
-			"-crf", "28", "-maxrate", fmt.Sprintf("%dk", p.hlsBitrate), "-bufsize", fmt.Sprintf("%dk", p.hlsBitrate*2),
+			"-crf", "28", "-maxrate", fmt.Sprintf("%dk", p.hlsBitrate), "-bufsize", fmt.Sprintf("%dk", p.hlsBitrate*4),
 			"-g", gop,
 		}
 		if len(hlsVF) > 0 {
@@ -317,8 +317,8 @@ func (p *Pipeline) buildArgs() []string {
 		hlsArgs = append(hlsArgs,
 			"-c:a", "aac", "-b:a", "96k",
 			"-f", "hls",
-			"-hls_time", "1",
-			"-hls_list_size", "5",
+			"-hls_time", "2",
+			"-hls_list_size", "3",
 			"-hls_flags", "delete_segments+append_list",
 			"-hls_segment_filename", segPattern,
 			hlsOut,
