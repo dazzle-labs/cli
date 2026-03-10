@@ -74,7 +74,7 @@ https://stream.dazzle.fm`),
 		os.Exit(1)
 	}
 
-	if !cli.JSON {
+	if !cli.JSON && k.Command() != "update" {
 		checkForUpdate()
 	}
 }
