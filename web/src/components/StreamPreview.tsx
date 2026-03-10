@@ -51,9 +51,9 @@ export function StreamPreview({ stageId, status }: StreamPreviewProps) {
 
       const hls = new Hls({
         liveSyncDurationCount: 3,
-        liveMaxLatencyDurationCount: 6,
-        maxBufferLength: 5,
-        lowLatencyMode: true,
+        liveMaxLatencyDurationCount: 10,
+        maxBufferLength: 10,
+        lowLatencyMode: false,
         xhrSetup: (xhr) => {
           if (authToken) {
             xhr.setRequestHeader("Authorization", `Bearer ${authToken}`);
