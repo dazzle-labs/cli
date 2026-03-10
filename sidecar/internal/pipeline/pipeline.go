@@ -275,7 +275,7 @@ func (p *Pipeline) buildArgs() []string {
 		hlsArgs := []string{
 			"-map", "0:v", "-map", "1:a",
 			"-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency", "-threads", "2",
-			"-crf", "28", "-maxrate", fmt.Sprintf("%dk", p.hlsBitrate), "-bufsize", fmt.Sprintf("%dk", p.hlsBitrate*4),
+			"-crf", "28",
 			"-g", gop,
 		}
 		if len(hlsVF) > 0 {
@@ -308,7 +308,7 @@ func (p *Pipeline) buildArgs() []string {
 		// HLS only — CRF mode lets ultrafast take shortcuts on easy frames.
 		hlsArgs := []string{
 			"-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency", "-threads", "2",
-			"-crf", "28", "-maxrate", fmt.Sprintf("%dk", p.hlsBitrate), "-bufsize", fmt.Sprintf("%dk", p.hlsBitrate*4),
+			"-crf", "28",
 			"-g", gop,
 		}
 		if len(hlsVF) > 0 {
