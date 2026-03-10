@@ -59,7 +59,7 @@ type Pipeline struct {
 // Option configures the pipeline.
 type Option func(*Pipeline)
 
-// WithHLSSize sets the HLS preview resolution (default 960x540).
+// WithHLSSize sets the HLS preview resolution (default 1280x720).
 func WithHLSSize(w, h int) Option {
 	return func(p *Pipeline) { p.hlsWidth = w; p.hlsHeight = h }
 }
@@ -91,9 +91,9 @@ func New(display, screenSize, hlsDir string, opts ...Option) *Pipeline {
 		screenSize:  screenSize,
 		hlsDir:      hlsDir,
 		framerate:   30,
-		hlsWidth:    960,
-		hlsHeight:   540,
-		hlsBitrate:  1500,
+		hlsWidth:    1280,
+		hlsHeight:   720,
+		hlsBitrate:  2500,
 		rtmpBitrate: 2500,
 		rtmpPreset:  "veryfast",
 	}
@@ -260,7 +260,7 @@ func (p *Pipeline) buildArgs() []string {
 	}
 
 	if p.broadcasting {
-		// Two outputs: HLS preview (downscaled) + RTMP broadcast (full res)
+		// Two outputs: HLS preview + RTMP broadcast (both full res)
 		args = append(args,
 			// HLS output (preview quality)
 			"-map", "0:v", "-map", "1:a",
