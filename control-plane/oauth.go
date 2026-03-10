@@ -85,6 +85,17 @@ func newOAuthHandler(mgr *Manager) *oauthHandler {
 		}
 	}
 
+	if id, secret := os.Getenv("RESTREAM_CLIENT_ID"), os.Getenv("RESTREAM_CLIENT_SECRET"); id != "" && secret != "" {
+		h.configs["restream"] = &oauthPlatformConfig{
+			ClientID:     id,
+			ClientSecret: secret,
+			AuthURL:      "https://api.restream.io/login",
+			TokenURL:     "https://api.restream.io/oauth/token",
+			Scopes:       "",
+			UserInfoFunc: fetchRestreamUserInfo,
+		}
+	}
+
 	// Clean expired states every minute
 	go func() {
 		for {
@@ -168,13 +179,18 @@ func (h *oauthHandler) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 
 	redirectURI := h.redirectBase + "/oauth/" + platform + "/callback"
 	params := url.Values{
-		"client_id":             {cfg.ClientID},
-		"redirect_uri":         {redirectURI},
-		"response_type":        {"code"},
-		"scope":                {cfg.Scopes},
-		"state":                {state},
-		"code_challenge":       {codeChallenge},
-		"code_challenge_method": {"S256"},
+		"client_id":     {cfg.ClientID},
+		"redirect_uri":  {redirectURI},
+		"response_type": {"code"},
+		"state":         {state},
+	}
+	if cfg.Scopes != "" {
+		params.Set("scope", cfg.Scopes)
+	}
+	// Restream does not support PKCE
+	if platform != "restream" {
+		params.Set("code_challenge", codeChallenge)
+		params.Set("code_challenge_method", "S256")
 	}
 
 	// YouTube needs access_type=offline for refresh tokens
@@ -222,7 +238,7 @@ func (h *oauthHandler) handleCallback(w http.ResponseWriter, r *http.Request) {
 
 	// Exchange code for tokens
 	redirectURI := h.redirectBase + "/oauth/" + platform + "/callback"
-	tokenResp, err := exchangeCode(cfg, code, redirectURI, oauthSt.CodeVerifier)
+	tokenResp, err := exchangeCode(cfg, code, redirectURI, oauthSt.CodeVerifier, platform)
 	if err != nil {
 		log.Printf("OAuth token exchange failed for %s: %v", platform, err)
 		http.Redirect(w, r, "/destinations?error="+url.QueryEscape("token exchange failed"), http.StatusFound)
@@ -304,17 +320,31 @@ type tokenResponse struct {
 	TokenType    string `json:"token_type"`
 }
 
-func exchangeCode(cfg *oauthPlatformConfig, code, redirectURI, codeVerifier string) (*tokenResponse, error) {
+func exchangeCode(cfg *oauthPlatformConfig, code, redirectURI, codeVerifier, platform string) (*tokenResponse, error) {
 	data := url.Values{
-		"client_id":     {cfg.ClientID},
-		"client_secret": {cfg.ClientSecret},
-		"code":          {code},
-		"grant_type":    {"authorization_code"},
-		"redirect_uri":  {redirectURI},
-		"code_verifier": {codeVerifier},
+		"code":         {code},
+		"grant_type":   {"authorization_code"},
+		"redirect_uri": {redirectURI},
 	}
 
-	resp, err := http.PostForm(cfg.TokenURL, data)
+	// Restream uses HTTP Basic Auth and no PKCE; other platforms send credentials in body
+	if platform != "restream" {
+		data.Set("client_id", cfg.ClientID)
+		data.Set("client_secret", cfg.ClientSecret)
+		data.Set("code_verifier", codeVerifier)
+	}
+
+	req, err := http.NewRequest("POST", cfg.TokenURL, strings.NewReader(data.Encode()))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create token request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	if platform == "restream" {
+		req.SetBasicAuth(cfg.ClientID, cfg.ClientSecret)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("token request failed: %w", err)
 	}
@@ -329,6 +359,20 @@ func exchangeCode(cfg *oauthPlatformConfig, code, redirectURI, codeVerifier stri
 	if err := json.Unmarshal(body, &tok); err != nil {
 		return nil, fmt.Errorf("failed to parse token response: %w", err)
 	}
+
+	// Restream returns camelCase fields (accessToken, refreshToken)
+	if tok.AccessToken == "" {
+		var alt struct {
+			AccessToken  string `json:"accessToken"`
+			RefreshToken string `json:"refreshToken"`
+		}
+		json.Unmarshal(body, &alt)
+		tok.AccessToken = alt.AccessToken
+		if tok.RefreshToken == "" {
+			tok.RefreshToken = alt.RefreshToken
+		}
+	}
+
 	return &tok, nil
 }
 
@@ -357,13 +401,27 @@ func refreshPlatformToken(db *sql.DB, encKey []byte, dest *streamDestRow, config
 	}
 
 	data := url.Values{
-		"client_id":     {cfg.ClientID},
-		"client_secret": {cfg.ClientSecret},
 		"grant_type":    {"refresh_token"},
 		"refresh_token": {refreshToken},
 	}
 
-	resp, err := http.PostForm(cfg.TokenURL, data)
+	// Restream uses HTTP Basic Auth; other platforms send credentials in body
+	if dest.Platform != "restream" {
+		data.Set("client_id", cfg.ClientID)
+		data.Set("client_secret", cfg.ClientSecret)
+	}
+
+	req, err := http.NewRequest("POST", cfg.TokenURL, strings.NewReader(data.Encode()))
+	if err != nil {
+		return accessToken, fmt.Errorf("failed to create refresh request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	if dest.Platform == "restream" {
+		req.SetBasicAuth(cfg.ClientID, cfg.ClientSecret)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return accessToken, fmt.Errorf("refresh request failed: %w", err)
 	}
@@ -377,6 +435,19 @@ func refreshPlatformToken(db *sql.DB, encKey []byte, dest *streamDestRow, config
 	var tok tokenResponse
 	if err := json.Unmarshal(body, &tok); err != nil {
 		return accessToken, fmt.Errorf("failed to parse refresh response: %w", err)
+	}
+
+	// Restream returns camelCase fields (accessToken, refreshToken)
+	if tok.AccessToken == "" {
+		var alt struct {
+			AccessToken  string `json:"accessToken"`
+			RefreshToken string `json:"refreshToken"`
+		}
+		json.Unmarshal(body, &alt)
+		tok.AccessToken = alt.AccessToken
+		if tok.RefreshToken == "" {
+			tok.RefreshToken = alt.RefreshToken
+		}
 	}
 
 	// Update stored tokens
@@ -526,4 +597,41 @@ func fetchKickUserInfo(accessToken, clientID string) (string, string, error) {
 	}
 
 	return "", "", fmt.Errorf("failed to get user info from Kick (%s)", string(body))
+}
+
+// fetchRestreamUserInfo gets the Restream user ID and display name.
+func fetchRestreamUserInfo(accessToken, clientID string) (string, string, error) {
+	req, _ := http.NewRequest("GET", "https://api.restream.io/v2/user/profile", nil)
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", "", err
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		return "", "", fmt.Errorf("restream user profile returned %d: %s", resp.StatusCode, string(body))
+	}
+
+	// id may be int or string depending on the API version
+	var result struct {
+		ID          json.Number `json:"id"`
+		DisplayName string      `json:"displayName"`
+		Username    string      `json:"username"`
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		return "", "", fmt.Errorf("failed to parse restream user profile: %w", err)
+	}
+
+	userID := result.ID.String()
+	if userID == "" {
+		return "", "", fmt.Errorf("no user ID returned from Restream")
+	}
+	displayName := result.DisplayName
+	if displayName == "" {
+		displayName = result.Username
+	}
+	return userID, displayName, nil
 }

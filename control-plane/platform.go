@@ -31,7 +31,9 @@ func GetPlatformClient(platform string) (PlatformClient, error) {
 		return &YouTubeClient{}, nil
 	case "kick":
 		return &KickClient{}, nil
+	case "restream":
+		return &RestreamClient{}, nil
 	default:
-		return nil, fmt.Errorf("platform %q does not support metadata/chat tools — only Twitch, YouTube, and Kick are supported", platform)
+		return nil, fmt.Errorf("platform %q does not support metadata/chat tools — only Twitch, YouTube, Kick, and Restream are supported", platform)
 	}
 }

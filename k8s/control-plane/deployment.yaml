@@ -112,6 +112,18 @@ spec:
                   name: oauth-platform
                   key: kick-client-secret
                   optional: true
+            - name: RESTREAM_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: oauth-platform
+                  key: restream-client-id
+                  optional: true
+            - name: RESTREAM_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: oauth-platform
+                  key: restream-client-secret
+                  optional: true
             - name: OAUTH_REDIRECT_BASE_URL
               value: "https://stream.dazzle.fm"
             - name: SIDECAR_IMAGE

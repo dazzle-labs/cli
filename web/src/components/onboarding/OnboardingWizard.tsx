@@ -4,6 +4,7 @@ import { useAuth } from "@clerk/react";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
 import { StepIndicator } from "./StepIndicator";
 import { EndpointCreator } from "./EndpointCreator";
 import { StreamDestinationForm } from "./StreamDestinationForm";
@@ -21,7 +22,7 @@ interface OnboardingWizardProps {
   skipIntro?: boolean;
 }
 
-const WIZARD_STEPS = ["Connect a platform", "Create a stage"];
+const WIZARD_STEPS = ["Where to stream", "Create a stage"];
 
 const OAUTH_PLATFORMS = ["twitch", "youtube", "kick", "restream"] as const;
 
@@ -102,7 +103,7 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
     }
   }
 
-  const canGoBack = !showInfoScreen && step === 0;
+  const canGoBack = !showInfoScreen;
 
   function renderInfoScreen() {
     return (
@@ -132,20 +133,23 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
   }
 
   function renderDestinationsStep() {
+    const hasDestinations = destinations.length > 0;
+
     return (
       <div className="flex flex-col items-center">
         <h2 className="text-2xl tracking-[-0.02em] text-foreground mb-2 font-display">
-          Stream Destinations
+          Where do you want to stream?
         </h2>
         <p className="text-base text-muted-foreground mb-6 text-center max-w-md">
-          Stream destinations are the platforms your stage broadcasts to.
-          Connect an account or add a custom RTMP destination.
+          {hasDestinations
+            ? "Pick a connected platform, or add a new one."
+            : "Connect a platform to get started."}
         </p>
 
         {/* Existing destinations */}
-        {destinations.length > 0 && (
+        {hasDestinations && (
           <div className="w-full max-w-md mb-6">
-            <p className="text-sm font-medium text-muted-foreground mb-3">Use an existing destination</p>
+            <p className="text-sm font-medium text-muted-foreground mb-3">Your platforms</p>
             <div className="flex flex-col gap-2">
               {destinations.map((d) => (
                 <motion.button
@@ -174,11 +178,8 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
           </div>
         )}
 
-        {/* Connect new destination */}
+        {/* Platform OAuth buttons */}
         <div className="mb-6">
-          <p className="text-sm font-medium text-muted-foreground mb-3 text-center">
-            {destinations.length > 0 ? "Connect a new one" : "Platforms"}
-          </p>
           <div className="flex flex-wrap gap-3 justify-center">
             {OAUTH_PLATFORMS.filter(p => availablePlatforms.includes(p)).map((platform) => {
               const label = PLATFORM_LIST.find((p) => p.value === platform)?.label ?? platform;
@@ -201,21 +202,32 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
                 </motion.div>
               );
             })}
-            <motion.div
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.97 }}
-              transition={springs.quick}
-            >
-              <Button
-                variant="outline"
-                onClick={() => setShowCustomForm(!showCustomForm)}
-                className={`rounded-xl h-auto px-4 py-3 ${PLATFORM_HOVER_COLORS.custom} ${showCustomForm ? "border-primary/30 bg-primary/[0.06]" : ""}`}
-              >
-                <PlatformIcon platform="custom" size="sm" />
-                <span className="text-sm">Custom</span>
-              </Button>
-            </motion.div>
           </div>
+        </div>
+
+        {/* "or" divider */}
+        <div className="w-full max-w-md mb-6 flex items-center gap-3">
+          <Separator className="flex-1" />
+          <span className="text-xs text-muted-foreground">or</span>
+          <Separator className="flex-1" />
+        </div>
+
+        {/* Custom RTMP button */}
+        <div className="mb-6">
+          <motion.div
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.97 }}
+            transition={springs.quick}
+          >
+            <Button
+              variant="outline"
+              onClick={() => setShowCustomForm(!showCustomForm)}
+              className={`rounded-xl h-auto px-4 py-3 ${PLATFORM_HOVER_COLORS.custom} ${showCustomForm ? "border-primary/30 bg-primary/[0.06]" : ""}`}
+            >
+              <PlatformIcon platform="custom" size="sm" />
+              <span className="text-sm">Custom RTMP</span>
+            </Button>
+          </motion.div>
         </div>
 
         {/* Custom form inline */}
@@ -231,7 +243,7 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
               <StreamDestinationForm
                 compact
                 hideSkip
-                submitLabel="Add Destination"
+                submitLabel="Add"
                 onNext={(data) => {
                   if (data) handleCreateCustomDest(data);
                 }}
@@ -240,22 +252,25 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
           )}
         </AnimatePresence>
 
-        <div className="mt-6 flex items-center gap-3">
-          <Button
-            variant="secondary"
+        {/* Footer actions */}
+        <div className="mt-6 flex flex-col items-center gap-2">
+          {hasDestinations && (
+            <Button
+              disabled={!selectedDestId}
+              onClick={() => setStep(1)}
+              className="font-semibold disabled:opacity-30"
+            >
+              Continue
+              <ArrowRight className="h-4 w-4 ml-1" />
+            </Button>
+          )}
+          <button
+            type="button"
             onClick={() => setStep(1)}
-            className="font-semibold"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            Skip
-          </Button>
-          <Button
-            disabled={!selectedDestId && destinations.length > 0}
-            onClick={() => setStep(1)}
-            className="font-semibold disabled:opacity-30"
-          >
-            Continue
-            <ArrowRight className="h-4 w-4 ml-1" />
-          </Button>
+            Skip for now
+          </button>
         </div>
       </div>
     );
