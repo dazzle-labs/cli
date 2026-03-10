@@ -46,6 +46,58 @@ jobs:
 
       # Public proto breaking changes are checked in the CLI repo's own CI
 
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure git auth
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "https://x-access-token:${GH_TOKEN}@github.com" > ~/.git-credentials
+          git config --global credential.helper store
+          git config --global url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "git@github.com:"
+
+      - name: Fetch CLI submodule
+        run: git submodule update --init cli
+
+      - name: Check cli submodule is at latest release
+        run: |
+          SUBMODULE_COMMIT=$(git ls-tree HEAD cli | awk '{print $3}')
+          git -C cli fetch --quiet --tags origin
+          LATEST_TAG=$(git -C cli tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+          LATEST_RELEASE_COMMIT=$(git -C cli rev-list -n 1 "$LATEST_TAG")
+          # Pass if submodule is at or ahead of the latest release.
+          # Fail only if it's behind (i.e. the release commit is not an ancestor of the submodule commit).
+          if ! git -C cli merge-base --is-ancestor "$LATEST_RELEASE_COMMIT" "$SUBMODULE_COMMIT"; then
+            echo ""
+            echo "cli submodule is behind the latest release ($LATEST_TAG)."
+            echo "  Current commit: $SUBMODULE_COMMIT"
+            echo "  Latest release: $LATEST_TAG ($LATEST_RELEASE_COMMIT)"
+            echo ""
+            echo "Update with: cd cli && git fetch --tags && git checkout $LATEST_TAG && cd .. && git add cli && git commit"
+            exit 1
+          fi
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache: true
+
+      - name: Regenerate llms.txt
+        run: make llms-txt
+
+      - name: Check llms.txt is up-to-date
+        run: |
+          if ! git diff --exit-code llms.txt web/public/llms.txt; then
+            echo ""
+            echo "llms.txt is stale. Run 'make llms-txt' and commit the result."
+            exit 1
+          fi
+
   control-plane:
     runs-on: ubuntu-latest
     permissions:

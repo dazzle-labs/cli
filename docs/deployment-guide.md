@@ -103,7 +103,28 @@ Secrets are applied automatically — by CI/CD for production, and by `make up`/
 
 Images are built and deployed automatically by **GitHub Actions** on push to `main`.
 
-### Pipeline Steps
+### PR Checks
+
+Every pull request must pass the following jobs before merging:
+
+| Job | What it checks |
+|-----|----------------|
+| `buf` | Proto lint + breaking change detection |
+| `docs` | `llms.txt` is up-to-date; `cli` submodule is at or ahead of the latest stable CLI release |
+| `control-plane` | Docker image builds cleanly; Docker Scout CVE scan |
+| `streamer` | Docker image builds cleanly |
+| `sidecar` | Docker image builds cleanly |
+
+**`cli` submodule policy:** the submodule must be pinned to a commit that is at or ahead of the latest stable release tag (e.g. `v1.2.3`). Unreleased commits on top of a release are allowed; being behind the latest release is not. To update:
+
+```bash
+cd cli && git fetch --tags && git checkout <latest-tag>
+cd .. && git add cli && git commit
+```
+
+**`llms.txt` policy:** `llms.txt` and `web/public/llms.txt` are auto-generated from `llms.txt.tmpl` by embedding actual CLI help output. Run `make llms-txt` to regenerate — CI will fail if the committed file doesn't match.
+
+### Build & Deploy Steps (main only)
 1. Build `control-plane` image (includes `web/` SPA build)
 2. Build `streamer` image
 3. Build `sidecar` image

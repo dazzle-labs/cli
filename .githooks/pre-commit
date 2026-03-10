@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Regenerate llms.txt from template and auto-stage if changed.
+set -euo pipefail
+
+make llms-txt
+
+if ! git diff --quiet llms.txt web/public/llms.txt; then
+  git add llms.txt web/public/llms.txt
+  echo "llms.txt regenerated and staged."
+fi

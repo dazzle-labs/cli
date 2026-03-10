@@ -29,7 +29,8 @@ INFRA_DIR := k8s/hetzner
 TFSTATE   := $(INFRA_DIR)/terraform.tfstate
 TFSTATE_ENC := $(INFRA_DIR)/terraform.tfstate.enc
 
-.PHONY: help check-deps check-cli proto up down build build-cp build-streamer deploy dev llms-txt logs status \
+.PHONY: help check-deps check-hooks check-cli proto up down build build-cp build-streamer deploy dev llms-txt logs status \
+        install-hooks \
         kubectx prod/kubectl prod/status prod/nodes \
         prod/infra/init prod/infra/plan prod/infra/apply prod/infra/output \
         k8s/% prod/k8s/% \
@@ -58,7 +59,13 @@ help: ## Show this help
 # Local development (Kind)
 # ══════════════════════════════════════════════════════
 
-check-deps:
+check-hooks:
+	@if [ "$$(git config core.hooksPath)" != ".githooks" ]; then \
+		echo "Installing git hooks..."; \
+		git config core.hooksPath .githooks; \
+	fi
+
+check-deps: check-hooks
 	@which docker >/dev/null 2>&1 || { echo "ERROR: docker not found. Install Docker Desktop: https://www.docker.com/products/docker-desktop"; exit 1; }
 	@which kind >/dev/null 2>&1 || { echo "ERROR: kind not found. Install: brew install kind"; exit 1; }
 	@which kubectl >/dev/null 2>&1 || { echo "ERROR: kubectl not found. Install: brew install kubectl"; exit 1; }
@@ -207,9 +214,11 @@ dev: up ## ★ Full local dev — build, deploy, watch everything
 	wait
 
 llms-txt: check-cli ## Regenerate llms.txt
-	./scripts/generate-llms-txt.sh > llms.txt
-	cp llms.txt web/public/llms.txt
+	go run ./control-plane/cmd/gen-llms-txt
 	$(OK) "llms.txt updated"
+
+install-hooks: ## Install git hooks (run once after cloning)
+	git config core.hooksPath .githooks
 
 kubectx: check-cluster ## Set kubectl context to local Kind cluster + browser-streamer namespace
 	@kubectl config use-context $(KIND_CTX)
