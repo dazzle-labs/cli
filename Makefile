@@ -134,11 +134,11 @@ up: check-deps check-cli ## Create Kind cluster, build images, deploy full stack
 	$(KCTL) apply -f k8s/control-plane/rbac.yaml
 	$(KCTL) apply -f k8s/control-plane/deployment.yaml
 	$(KCTL) apply -f k8s/local/service.yaml
-	$(KCTL) set env deployment/control-plane OAUTH_REDIRECT_BASE_URL=http://localhost:8080
+	$(KCTL) set env deployment/control-plane OAUTH_REDIRECT_BASE_URL=http://localhost:5173
 	$(STEP) "Waiting for pods"
 	$(KCTL) wait --for=condition=ready pod -l app=postgres --timeout=120s
 	$(KCTL) rollout status deployment/control-plane --timeout=120s
-	$(OK) "Local stack ready — http://localhost:8080"
+	$(OK) "Local stack ready — http://localhost:5173"
 
 down: ## Delete the Kind cluster
 	kind delete cluster --name $(NS)
@@ -178,7 +178,7 @@ deploy: check-deps check-cluster ## Apply manifests and restart control-plane in
 	$(KCTL) apply -f k8s/control-plane/rbac.yaml
 	$(KCTL) apply -f k8s/control-plane/deployment.yaml
 	$(KCTL) apply -f k8s/local/service.yaml
-	$(KCTL) set env deployment/control-plane OAUTH_REDIRECT_BASE_URL=http://localhost:8080
+	$(KCTL) set env deployment/control-plane OAUTH_REDIRECT_BASE_URL=http://localhost:5173
 	$(STEP) "Restarting control-plane"
 	$(KCTL) rollout restart deployment/control-plane
 	$(KCTL) rollout status deployment/control-plane --timeout=120s
