@@ -305,11 +305,11 @@ func (h *oauthHandler) handleCallback(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("OAuth stream destination upserted for %s/%s (user=%s)", platform, username, oauthSt.UserID)
 
-	redirectURL := "/destinations?connected=" + platform
 	if oauthSt.Onboarding {
-		redirectURL += "&onboarding=true"
+		http.Redirect(w, r, "/?connected="+platform+"&onboarding=true", http.StatusFound)
+	} else {
+		http.Redirect(w, r, "/destinations?connected="+platform, http.StatusFound)
 	}
-	http.Redirect(w, r, redirectURL, http.StatusFound)
 }
 
 // tokenResponse is the standard OAuth token response.

@@ -23,6 +23,7 @@ export function Dashboard() {
 
   const [creatingStage, setCreatingStage] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardSkipIntro, setWizardSkipIntro] = useState(false);
 
   // Streaming banner
   const [bannerDismissed, setBannerDismissed] = useState(
@@ -46,6 +47,21 @@ export function Dashboard() {
 
   useEffect(() => {
     refresh();
+
+    // Handle OAuth callback redirect (onboarding flow)
+    const searchParams = new URLSearchParams(window.location.search);
+    const connected = searchParams.get("connected");
+    const onboarding = searchParams.get("onboarding");
+    if (connected) {
+      toast.success(`Connected to ${connected.charAt(0).toUpperCase() + connected.slice(1)}!`);
+    }
+    if (onboarding === "true") {
+      setWizardSkipIntro(true);
+      setWizardOpen(true);
+    }
+    if (connected || onboarding) {
+      window.history.replaceState(null, "", "/");
+    }
   }, []);
 
   function dismissBanner() {
@@ -143,8 +159,10 @@ export function Dashboard() {
       {/* Onboarding wizard overlay */}
       <OnboardingWizard
         open={wizardOpen}
+        skipIntro={wizardSkipIntro}
         onClose={() => {
           setWizardOpen(false);
+          setWizardSkipIntro(false);
           refresh();
         }}
       />

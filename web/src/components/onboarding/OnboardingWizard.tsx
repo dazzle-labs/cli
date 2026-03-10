@@ -2,8 +2,9 @@ import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@clerk/react";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, Plus } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import { StepIndicator } from "./StepIndicator";
 import { EndpointCreator } from "./EndpointCreator";
@@ -66,6 +67,10 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
       const resp = await streamClient.listStreamDestinations({});
       setDestinations(resp.destinations);
       setAvailablePlatforms(resp.availablePlatforms);
+      // Auto-select the most recently connected destination when returning from OAuth
+      if (skipIntro && resp.destinations.length > 0 && !selectedDestId) {
+        setSelectedDestId(resp.destinations[resp.destinations.length - 1].id);
+      }
     } catch {
       // ignore
     }
@@ -135,21 +140,76 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
   function renderDestinationsStep() {
     const hasDestinations = destinations.length > 0;
 
-    return (
-      <div className="flex flex-col items-center">
-        <h2 className="text-2xl tracking-[-0.02em] text-foreground mb-2 font-display">
-          Where do you want to stream?
-        </h2>
-        <p className="text-base text-muted-foreground mb-6 text-center max-w-md">
-          {hasDestinations
-            ? "Pick a connected platform, or add a new one."
-            : "Connect a platform to get started."}
-        </p>
+    if (hasDestinations) {
+      return (
+        <div className="flex flex-col items-center">
+          <h2 className="text-2xl tracking-[-0.02em] text-foreground mb-2 font-display">
+            Where do you want to stream?
+          </h2>
+          <p className="text-base text-muted-foreground mb-6 text-center max-w-md">
+            Pick a connected platform, or add a new one.
+          </p>
 
-        {/* Existing destinations */}
-        {hasDestinations && (
-          <div className="w-full max-w-md mb-6">
-            <p className="text-sm font-medium text-muted-foreground mb-3">Your platforms</p>
+          {/* Compact add-platform row */}
+          <div className="flex items-center gap-1.5 mb-4">
+            <Plus className="h-3.5 w-3.5 text-muted-foreground mr-0.5" />
+            {OAUTH_PLATFORMS.filter(p => availablePlatforms.includes(p)).map((platform) => {
+              const label = PLATFORM_LIST.find((p) => p.value === platform)?.label ?? platform;
+              return (
+                <Tooltip key={platform} delayDuration={500}>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => handleOAuthConnect(platform)}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <PlatformIcon platform={platform} size="sm" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Connect {label}</TooltipContent>
+                </Tooltip>
+              );
+            })}
+            <Tooltip delayDuration={500}>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => setShowCustomForm(!showCustomForm)}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <PlatformIcon platform="custom" size="sm" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Add custom RTMP</TooltipContent>
+            </Tooltip>
+          </div>
+
+          {/* Custom form inline */}
+          <AnimatePresence>
+            {showCustomForm && (
+              <motion.div
+                className="w-full max-w-md mb-4 overflow-hidden"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+              >
+                <StreamDestinationForm
+                  compact
+                  hideSkip
+                  submitLabel="Add"
+                  onNext={(data) => {
+                    if (data) handleCreateCustomDest(data);
+                  }}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Destinations list */}
+          <div className="w-full max-w-md mb-6 max-h-64 overflow-y-auto">
             <div className="flex flex-col gap-2">
               {destinations.map((d) => (
                 <motion.button
@@ -176,7 +236,38 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
               ))}
             </div>
           </div>
-        )}
+
+          {/* Footer actions */}
+          <div className="flex flex-col items-center gap-2">
+            <Button
+              disabled={!selectedDestId}
+              onClick={() => setStep(1)}
+              className="font-semibold disabled:opacity-30"
+            >
+              Continue
+              <ArrowRight className="h-4 w-4 ml-1" />
+            </Button>
+            <button
+              type="button"
+              onClick={() => setStep(1)}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Skip for now
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // No destinations — full discovery layout
+    return (
+      <div className="flex flex-col items-center">
+        <h2 className="text-2xl tracking-[-0.02em] text-foreground mb-2 font-display">
+          Where do you want to stream?
+        </h2>
+        <p className="text-base text-muted-foreground mb-6 text-center max-w-md">
+          Connect a platform to get started.
+        </p>
 
         {/* Platform OAuth buttons */}
         <div className="mb-6">
@@ -234,11 +325,11 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
         <AnimatePresence>
           {showCustomForm && (
             <motion.div
-              className="w-full max-w-md mb-6"
+              className="w-full max-w-md mb-6 overflow-hidden"
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={springs.snappy}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
             >
               <StreamDestinationForm
                 compact
@@ -254,16 +345,6 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
 
         {/* Footer actions */}
         <div className="mt-6 flex flex-col items-center gap-2">
-          {hasDestinations && (
-            <Button
-              disabled={!selectedDestId}
-              onClick={() => setStep(1)}
-              className="font-semibold disabled:opacity-30"
-            >
-              Continue
-              <ArrowRight className="h-4 w-4 ml-1" />
-            </Button>
-          )}
           <button
             type="button"
             onClick={() => setStep(1)}
