@@ -11,7 +11,7 @@ export function CollapsibleSection({
   defaultOpen = false,
 }: {
   title: string;
-  copyText: string;
+  copyText?: string;
   children: React.ReactNode;
   defaultOpen?: boolean;
 }) {
@@ -32,7 +32,7 @@ export function CollapsibleSection({
           </motion.div>
           {title}
         </button>
-        <CopyButton text={copyText} tooltip="Copy to clipboard" size="icon-xs" />
+        {copyText && <CopyButton text={copyText} tooltip="Copy to clipboard" size="icon-xs" />}
       </div>
       <AnimatePresence initial={false}>
         {open && (

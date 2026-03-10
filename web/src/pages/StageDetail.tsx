@@ -368,7 +368,7 @@ export function StageDetail() {
           </div>
         </CardHeader>
         <CardContent className="px-0 pb-0">
-          <div className="bg-zinc-950 overflow-x-auto py-3">
+          <div className="bg-zinc-900 overflow-x-auto py-3">
             {cliCommands.map((cmd, i) => {
               const cmdText = cmd.cmd(stage?.name || stageId!);
               return (
@@ -379,7 +379,6 @@ export function StageDetail() {
                     </span>
                   </div>
                   <div className="flex items-center gap-2 px-5 py-0.5 hover:bg-white/[0.06] transition-colors">
-                    <span className="text-primary/60 select-none text-sm font-mono shrink-0">$</span>
                     <code className="text-sm font-mono text-zinc-200 whitespace-nowrap">{cmdText}</code>
                     <CopyButton
                       text={cmdText}

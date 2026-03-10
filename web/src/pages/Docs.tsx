@@ -1,12 +1,11 @@
 import { CopyAgentPromptButton } from "@/components/CopyAgentPromptButton";
-import { CodeBlock } from "@/components/ui/code-block";
-import { CopyButton } from "@/components/CopyButton";
+import { CommandLine, TerminalBlock } from "@/components/CommandLine";
 import { AnimatedPage } from "@/components/AnimatedPage";
+import { AnimatedList, AnimatedListItem } from "@/components/AnimatedList";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
 import {
   INSTALL_SNIPPET_UNIX,
   INSTALL_SNIPPET_WINDOWS,
-  QUICK_START_SNIPPET,
   QUICK_START_STEPS,
   MULTI_STAGE_SNIPPET,
 } from "./docs-content";
@@ -31,12 +30,13 @@ export function Docs() {
 
   const installSnippet = os === "windows" ? INSTALL_SNIPPET_WINDOWS : INSTALL_SNIPPET_UNIX;
   const altSnippet = os === "windows" ? INSTALL_SNIPPET_UNIX : INSTALL_SNIPPET_WINDOWS;
+  const primaryLabel = os === "windows" ? "Windows (PowerShell)" : "macOS / Linux";
   const altLabel = os === "windows" ? "macOS / Linux" : "Windows (PowerShell)";
 
   return (
     <AnimatedPage>
       {/* Header */}
-      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="mb-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl tracking-[-0.02em] text-foreground mb-1 font-display">
             Docs
@@ -49,69 +49,58 @@ export function Docs() {
       </div>
 
       {/* Install */}
-      <section className="mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-sm font-medium text-muted-foreground">Install the CLI</p>
-          <CopyButton text={installSnippet} tooltip="Copy to clipboard" size="icon-xs" />
+      <section className="mb-10">
+        <h2 className="text-xl tracking-[-0.02em] text-foreground font-display mb-4">
+          Installing the CLI
+        </h2>
+        <div className="space-y-3">
+          <div>
+            <p className="text-sm font-medium text-muted-foreground mb-1.5">{primaryLabel}</p>
+            <CommandLine cmd={installSnippet} />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-muted-foreground mb-1.5">{altLabel}</p>
+            <CommandLine cmd={altSnippet} />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-muted-foreground mb-1.5">Go</p>
+            <CommandLine cmd="go install github.com/dazzle-labs/cli/cmd/dazzle@latest" />
+          </div>
         </div>
-        <CodeBlock code={installSnippet} />
-        <p className="text-sm text-muted-foreground mt-2">
-          {altLabel}: <code className="text-muted-foreground">{altSnippet}</code>. Or <code className="text-muted-foreground">go install github.com/dazzle-labs/cli/cmd/dazzle@latest</code>.
-        </p>
       </section>
 
-      {/* Authenticate */}
-      <section className="mb-8">
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-sm font-medium text-muted-foreground">Authenticate</p>
-          <CopyButton text="dazzle login" tooltip="Copy to clipboard" size="icon-xs" />
-        </div>
-        <CodeBlock code="dazzle login" />
-        <p className="text-sm text-muted-foreground mt-2">
-          Create an API key in Settings {">"} API Keys, then paste it when prompted. Or set <code className="text-muted-foreground">export DAZZLE_API_KEY=dzl_...</code> in your shell profile.
-        </p>
-      </section>
+      {/* Quick Start */}
+      <section className="mb-10">
+        <h2 className="text-xl tracking-[-0.02em] text-foreground font-display mb-6">
+          Quick Start
+        </h2>
 
-      {/* Quick Start with numbered steps */}
-      <section className="mb-8">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-xl tracking-[-0.02em] text-foreground font-display">
-            Quick Start
-          </h2>
-          <CopyButton text={QUICK_START_SNIPPET} tooltip="Copy to clipboard" size="icon-xs" />
-        </div>
-        <p className="text-base text-muted-foreground mb-4">
-          Create a stage, push content, and go live.
-        </p>
-        <div className="flex flex-col gap-3 mb-4">
+        <AnimatedList className="flex flex-col gap-5" delay={0.06}>
           {QUICK_START_STEPS.map((step) => (
-            <div key={step.n} className="flex items-center gap-3">
-              <StepBadge n={step.n} />
-              <span className="text-base text-foreground">{step.label}</span>
-              <code className="text-sm font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded ml-auto">{step.cmd}</code>
-            </div>
+            <AnimatedListItem key={step.n}>
+              <div className="flex items-center gap-2.5 mb-2">
+                <StepBadge n={step.n} />
+                <span className="text-base text-foreground">{step.label}</span>
+              </div>
+              <CommandLine cmd={step.cmd} />
+              {step.n === 1 && (
+                <p className="text-sm text-muted-foreground mt-2">
+                  Create an API key in <a href="/api-keys" className="text-primary hover:text-primary/80">API Keys</a>, then paste it when prompted.
+                </p>
+              )}
+            </AnimatedListItem>
           ))}
-        </div>
-        <CodeBlock code={QUICK_START_SNIPPET} />
+        </AnimatedList>
       </section>
 
       {/* Multi-stage — collapsible */}
-      <CollapsibleSection
-        title="Working with multiple stages"
-        copyText={MULTI_STAGE_SNIPPET}
-      >
-        <CodeBlock code={MULTI_STAGE_SNIPPET} />
+      <CollapsibleSection title="Working with multiple stages">
+        <TerminalBlock code={MULTI_STAGE_SNIPPET} />
       </CollapsibleSection>
 
       {/* CLI reference — collapsible */}
-      <CollapsibleSection
-        title="Full CLI reference"
-        copyText="dazzle --help"
-      >
-        <CodeBlock code="dazzle --help" />
-        <p className="text-sm text-muted-foreground mt-2">
-          Run <code className="text-muted-foreground">dazzle stage --help</code> for stage commands, or <code className="text-muted-foreground">dazzle stage script --help</code> for script commands.
-        </p>
+      <CollapsibleSection title="Full CLI reference">
+        <TerminalBlock code={`# All top-level commands\ndazzle --help\n\n# Stage commands\ndazzle stage --help\n\n# Script commands\ndazzle stage script --help`} />
       </CollapsibleSection>
 
       {/* llms.txt link */}
