@@ -32,6 +32,7 @@ RUN apt-get update && apt-get install -y \
     libglx0 \
     libgl1-mesa-dri \
     libglapi-mesa \
+    mesa-vulkan-drivers \
     mesa-utils \
     && rm -rf /var/lib/apt/lists/*
 
