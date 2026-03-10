@@ -1,0 +1,140 @@
+# dazzle CLI
+
+The official CLI for [Dazzle](https://stream.dazzle.fm) — manage your cloud stages from the terminal.
+
+## Installation
+
+### macOS / Linux
+
+```bash
+curl -sSL https://stream.dazzle.fm/install.sh | sh
+```
+
+Installs to `~/.local/bin/dazzle`. Override with `INSTALL_DIR`:
+
+```bash
+INSTALL_DIR=/usr/local/bin curl -sSL https://stream.dazzle.fm/install.sh | sh
+```
+
+### Windows (PowerShell)
+
+```powershell
+irm https://stream.dazzle.fm/install.ps1 | iex
+```
+
+Or download `dazzle_Windows_x86_64.exe` (or `arm64`) from the [releases page](https://github.com/dazzle-labs/cli/releases) and add it to your `PATH`.
+
+### go install
+
+```bash
+go install github.com/dazzle-labs/cli/cmd/dazzle@latest
+```
+
+### GitHub Releases
+
+Pre-built binaries for macOS (arm64/amd64), Linux (amd64/arm64), and Windows (amd64/arm64) are available on the [releases page](https://github.com/dazzle-labs/cli/releases).
+
+## Quick Start
+
+```bash
+# Authenticate with your API key from stream.dazzle.fm
+dazzle login
+
+# Create and activate a stage
+dazzle stage create my-stage
+dazzle stage up
+
+# Sync a local directory to the stage
+dazzle stage sync ./my-app --watch
+
+# Take a screenshot to verify
+dazzle stage screenshot -o preview.png
+
+# Add a stream destination and go live
+dazzle destination create
+dazzle destination set my-destination
+dazzle stage broadcast on
+```
+
+## Commands
+
+```
+{{ .HelpMain }}
+```
+
+### Stage subcommands
+
+```
+{{ .HelpStage }}
+```
+
+#### `stage sync` flags
+
+```
+{{ .HelpStageSync }}
+```
+
+#### `stage screenshot` flags
+
+```
+{{ .HelpStageScreenshot }}
+```
+
+#### `stage broadcast` subcommands
+
+```
+{{ .HelpStageBroadcast }}
+```
+
+#### `stage event` subcommands
+
+```
+{{ .HelpStageEvent }}
+```
+
+### Destination subcommands
+
+```
+{{ .HelpDestination }}
+```
+
+## Stage Resolution
+
+For stage-scoped commands, the stage is resolved in this order:
+
+1. `-s` / `--stage` flag or `DAZZLE_STAGE` environment variable
+2. Auto-select if you have exactly one stage
+
+```bash
+# Specify which stage to use
+dazzle stage sync ./app --stage my-stage
+dazzle stage status --stage my-stage
+
+# Or set for your session
+export DAZZLE_STAGE=my-stage
+dazzle stage sync ./app
+```
+
+## Configuration
+
+Config files are stored in `~/.config/dazzle/`:
+
+```
+~/.config/dazzle/
+  config.json        # { "api_url": "..." }
+  credentials.json   # { "api_key": "dzl_..." }
+```
+
+## Security
+
+- Your API key is stored in `~/.config/dazzle/credentials.json` with file permissions `0600` (owner read/write only)
+- The API key is transmitted as a `Bearer` token in the `Authorization` header over HTTPS
+- The API key is **never logged**, **never echoed to the terminal**, and **never sent to any third party**
+- Input is hidden during interactive `dazzle login` (no shell history exposure)
+- **No telemetry**: the CLI does not collect usage data, crash reports, or analytics of any kind
+- All source code is open source and auditable: `github.com/dazzle-labs/cli`
+- All dependencies are minimal and listed in `go.sum`: only `kong` (CLI framework), `connectrpc` (RPC client), `protobuf` (serialization), and `golang.org/x/term` (hidden input)
+
+## License
+
+Apache 2.0 — see [LICENSE](LICENSE)

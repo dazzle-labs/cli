@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Regenerate README.md from template and auto-stage if changed.
+set -euo pipefail
+
+make readme
+
+if ! git diff --quiet README.md; then
+  git add README.md
+  echo "README.md regenerated and staged."
+fi

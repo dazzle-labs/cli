@@ -33,3 +33,21 @@ jobs:
         uses: golangci/golangci-lint-action@v6
         with:
           version: latest
+
+  readme:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: true
+      - name: Regenerate README
+        run: make readme
+      - name: Check README is up-to-date
+        run: |
+          if ! git diff --exit-code README.md; then
+            echo ""
+            echo "README.md is stale. Run 'make readme' and commit the result."
+            exit 1
+          fi

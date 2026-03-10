@@ -43,12 +43,24 @@ Follow the existing pattern:
 - Call `ctx.resolveStage()` for stage-scoped commands
 - Use `printText(...)` for human output and `printJSON(v)` for `--json` mode
 
+## README
+
+`README.md` is generated from `README.md.tmpl` — **do not edit `README.md` directly**. The template embeds actual `--help` output so the docs never drift from the code.
+
+To regenerate:
+```bash
+make readme
+```
+
+The pre-commit hook (installed automatically when you run any `make` target) regenerates and stages `README.md` on every commit. CI also fails if `README.md` is stale.
+
 ## CI
 
 CI runs on every push to `main` and on pull requests:
 - `go build ./...`
 - `go test ./...`
 - `golangci-lint` (the `unused` linter is enabled — delete dead code rather than leaving it)
+- `make readme` + diff check — fails if `README.md` doesn't match the template output
 
 ## Releases
 
