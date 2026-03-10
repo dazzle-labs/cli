@@ -17,11 +17,13 @@ import (
 
 // Stats holds current pipeline metrics.
 type Stats struct {
-	FPS           float64
-	DroppedFrames int64
-	TotalBytes    int64
-	Speed         float64
-	Broadcasting  bool
+	FPS                 float64
+	DroppedFrames       int64
+	DroppedFramesRecent int64
+	TotalBytes          int64
+	Speed               float64
+	Broadcasting        bool
+	UptimeSeconds       int64
 }
 
 // Pipeline manages the ffmpeg process lifecycle.
@@ -49,6 +51,12 @@ type Pipeline struct {
 	// Stats
 	stats         Stats
 	statsCallback func(Stats)
+	startedAt     time.Time
+
+	// Rolling window for dropped frames (ring buffer, ~60s at 1 sample/s)
+	dropHistory [60]int64
+	dropHead    int
+	dropCount   int
 
 	// Shutdown
 	stopped bool
@@ -155,10 +163,21 @@ func (p *Pipeline) GetStats() Stats {
 	defer p.mu.Unlock()
 	s := p.stats
 	s.Broadcasting = p.broadcasting
+	if !p.startedAt.IsZero() {
+		s.UptimeSeconds = int64(time.Since(p.startedAt).Seconds())
+	}
+	if p.dropCount > 0 {
+		oldest := p.dropHistory[(p.dropHead-p.dropCount+60)%60]
+		s.DroppedFramesRecent = s.DroppedFrames - oldest
+	}
 	return s
 }
 
 func (p *Pipeline) startLocked() error {
+	p.startedAt = time.Now()
+	p.dropHead = 0
+	p.dropCount = 0
+
 	args := p.buildArgs()
 	log.Printf("ffmpeg pipeline: starting [broadcasting=%v]", p.broadcasting)
 
@@ -326,6 +345,12 @@ func (p *Pipeline) parseProgress(scanner *bufio.Scanner) {
 			val = strings.TrimSuffix(val, "x")
 			p.stats.Speed, _ = strconv.ParseFloat(val, 64)
 		case "progress":
+			// Record dropped frames in ring buffer for rolling window
+			p.dropHistory[p.dropHead] = p.stats.DroppedFrames
+			p.dropHead = (p.dropHead + 1) % 60
+			if p.dropCount < 60 {
+				p.dropCount++
+			}
 			// End of a stats block — fire callback
 			if p.statsCallback != nil {
 				s := p.stats

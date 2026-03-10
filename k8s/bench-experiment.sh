@@ -11,8 +11,9 @@
 #   ./bench-experiment.sh "custom-flags" "" "shader_simple" 15 "--no-sandbox --use-gl=angle ..."
 set -euo pipefail
 
-CTX="--context kind-browser-streamer"
+CTX="${BENCH_CTX:---context kind-browser-streamer}"
 NS="browser-streamer"
+TAG="${BENCH_IMAGE_TAG:-main}"
 NAME=$1
 INI_CONTENT=${2:-"[Processor]\nThreadCount=4"}
 SCENE=${3:-"shader_simple"}
@@ -24,7 +25,7 @@ CHROME_FLAGS=${5:-"$DEFAULT_CHROME_FLAGS"}
 
 echo "=== Experiment: $NAME ==="
 echo "SwiftShader.ini: $(echo -e "$INI_CONTENT" | tr '\n' ' ')"
-echo "Scene: $SCENE  Duration: ${DURATION}s"
+echo "Scene: $SCENE  Duration: ${DURATION}s  Image: $TAG"
 [ "$CHROME_FLAGS" != "$DEFAULT_CHROME_FLAGS" ] && echo "Chrome flags override: $CHROME_FLAGS"
 
 # Clean up
@@ -50,7 +51,7 @@ spec:
   terminationGracePeriodSeconds: 10
   containers:
     - name: streamer
-      image: dazzlefm/agent-streamer-stage:main
+      image: dazzlefm/agent-streamer-stage:${TAG}
       imagePullPolicy: IfNotPresent
       env:
         - name: STAGE_ID
@@ -81,7 +82,7 @@ spec:
           mountPath: /data/chrome/SwiftShader.ini
           subPath: SwiftShader.ini
     - name: sidecar
-      image: dazzlefm/agent-streamer-sidecar:main
+      image: dazzlefm/agent-streamer-sidecar:${TAG}
       imagePullPolicy: IfNotPresent
       command: ["/sidecar", "serve"]
       env:

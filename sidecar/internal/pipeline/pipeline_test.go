@@ -3,6 +3,7 @@ package pipeline
 import (
 	"fmt"
 	"testing"
+	"time"
 )
 
 // helper: build args for a pipeline with defaults.
@@ -50,6 +51,111 @@ func countArg(args []string, arg string) int {
 		}
 	}
 	return n
+}
+
+// ---------------------------------------------------------------------------
+// GetStats tests
+// ---------------------------------------------------------------------------
+
+func TestGetStats_EmptyPipeline(t *testing.T) {
+	p := New(":99", "1280x720", "/tmp/hls")
+	stats := p.GetStats()
+
+	if stats.UptimeSeconds != 0 {
+		t.Errorf("UptimeSeconds = %d, want 0 (pipeline never started)", stats.UptimeSeconds)
+	}
+	if stats.DroppedFramesRecent != 0 {
+		t.Errorf("DroppedFramesRecent = %d, want 0 (empty buffer)", stats.DroppedFramesRecent)
+	}
+}
+
+func TestDroppedFramesRecent_PartialBuffer(t *testing.T) {
+	p := New(":99", "1280x720", "/tmp/hls")
+	p.startedAt = time.Now()
+
+	// Simulate 5 progress callbacks with increasing drop counts
+	drops := []int64{0, 2, 5, 8, 10}
+	for _, d := range drops {
+		p.stats.DroppedFrames = d
+		p.dropHistory[p.dropHead] = d
+		p.dropHead = (p.dropHead + 1) % 60
+		if p.dropCount < 60 {
+			p.dropCount++
+		}
+	}
+
+	stats := p.GetStats()
+	// Recent = current(10) - oldest(0) = 10
+	if stats.DroppedFramesRecent != 10 {
+		t.Errorf("DroppedFramesRecent = %d, want 10", stats.DroppedFramesRecent)
+	}
+}
+
+func TestDroppedFramesRecent_FullBuffer(t *testing.T) {
+	p := New(":99", "1280x720", "/tmp/hls")
+	p.startedAt = time.Now()
+
+	// Fill exactly 60 entries
+	for i := 0; i < 60; i++ {
+		d := int64(i * 2)
+		p.stats.DroppedFrames = d
+		p.dropHistory[p.dropHead] = d
+		p.dropHead = (p.dropHead + 1) % 60
+		if p.dropCount < 60 {
+			p.dropCount++
+		}
+	}
+
+	stats := p.GetStats()
+	// oldest = 0 (entry 0), current = 118, recent = 118
+	if stats.DroppedFramesRecent != 118 {
+		t.Errorf("DroppedFramesRecent = %d, want 118", stats.DroppedFramesRecent)
+	}
+}
+
+func TestDroppedFramesRecent_Wrapped(t *testing.T) {
+	p := New(":99", "1280x720", "/tmp/hls")
+	p.startedAt = time.Now()
+
+	// Write 70 entries (wraps around)
+	for i := 0; i < 70; i++ {
+		d := int64(i * 3)
+		p.stats.DroppedFrames = d
+		p.dropHistory[p.dropHead] = d
+		p.dropHead = (p.dropHead + 1) % 60
+		if p.dropCount < 60 {
+			p.dropCount++
+		}
+	}
+
+	stats := p.GetStats()
+	// After 70 writes, head=10, count=60
+	// oldest is at index (10-60+60)%60 = 10, which is entry 10 → value 30
+	// current = 69*3 = 207
+	// recent = 207 - 30 = 177
+	if stats.DroppedFramesRecent != 177 {
+		t.Errorf("DroppedFramesRecent = %d, want 177", stats.DroppedFramesRecent)
+	}
+}
+
+func TestUptimeSeconds_ZeroStartedAt(t *testing.T) {
+	p := New(":99", "1280x720", "/tmp/hls")
+	// startedAt is zero value
+	stats := p.GetStats()
+	if stats.UptimeSeconds != 0 {
+		t.Errorf("UptimeSeconds = %d, want 0", stats.UptimeSeconds)
+	}
+}
+
+func TestUptimeSeconds_NonZero(t *testing.T) {
+	p := New(":99", "1280x720", "/tmp/hls")
+	p.startedAt = time.Now().Add(-10 * time.Second)
+
+	stats := p.GetStats()
+	// Allow some tolerance for test execution time
+	if stats.UptimeSeconds < 9 || stats.UptimeSeconds > 12 {
+		t.Errorf("UptimeSeconds = %d, want ~10", stats.UptimeSeconds)
+	}
 }
 
 // ---------------------------------------------------------------------------
