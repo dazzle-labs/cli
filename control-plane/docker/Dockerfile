@@ -5,6 +5,7 @@ COPY web/package.json web/yarn.lock web/.yarnrc.yml ./
 COPY web/.yarn/ ./.yarn/
 RUN corepack enable && yarn install --immutable
 COPY web/src/ ./src/
+COPY web/public/ ./public/
 COPY web/index.html web/tsconfig.json web/vite.config.ts ./
 RUN yarn build
 
