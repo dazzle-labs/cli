@@ -14,7 +14,6 @@ import { toast } from "sonner";
 import { Alert, AlertTitle, AlertAction } from "@/components/ui/alert";
 import { AnimatedPage } from "@/components/AnimatedPage";
 import { AnimatedList, AnimatedListItem } from "@/components/AnimatedList";
-import { FlowDiagram } from "@/components/FlowDiagram";
 import { springs, fadeInUp } from "@/lib/motion";
 
 export function Dashboard() {
@@ -153,30 +152,26 @@ export function Dashboard() {
       {/* Stages grid */}
       {stages.length === 0 ? (
         <motion.div
-          className="flex flex-col items-center pt-8"
+          className="flex flex-col items-center pt-24"
           variants={fadeInUp}
           initial="hidden"
           animate="visible"
           transition={springs.gentle}
         >
-          <FlowDiagram />
-          <div className="mt-10 text-center">
-            <h2 className="text-xl font-display text-foreground mb-2">
-              Give your agent a stage
-            </h2>
-            <p className="text-base text-muted-foreground mb-6 max-w-md">
-              A stage is a cloud environment your AI agent can control and stream from.
-              Set one up to get started.
-            </p>
-            <Button
-              onClick={() => setWizardOpen(true)}
-              className="font-semibold"
-              size="lg"
-            >
-              <Rocket className="h-4 w-4 mr-2" />
-              Get Started
-            </Button>
-          </div>
+          <h2 className="text-xl font-display text-foreground mb-2">
+            Give your agent a stage
+          </h2>
+          <p className="text-base text-muted-foreground mb-6 max-w-sm text-center">
+            A cloud environment your AI agent can control and stream from.
+          </p>
+          <Button
+            onClick={() => setWizardOpen(true)}
+            className="font-semibold"
+            size="lg"
+          >
+            <Rocket className="h-4 w-4 mr-2" />
+            Get Started
+          </Button>
         </motion.div>
       ) : (
         <AnimatedList className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
