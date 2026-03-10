@@ -139,7 +139,7 @@ export function Layout({ children }: { children: ReactNode }) {
             <UserButton />
           </div>
         </header>
-        <main className="flex-1 relative">
+        <main className="flex-1 relative min-w-0">
           {/* Subtle top-left emerald glow */}
           <div className="pointer-events-none absolute inset-0 overflow-hidden">
             <div

@@ -15,7 +15,6 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AnimatedPage } from "@/components/AnimatedPage";
-import { AnimatedList, AnimatedListItem } from "@/components/AnimatedList";
 import { CopyButton } from "@/components/CopyButton";
 import { Spinner } from "@/components/ui/spinner";
 
@@ -179,9 +178,9 @@ export function StageDetail() {
       </div>
 
       {/* Main + Sidebar layout */}
-      <div className="xl:flex xl:gap-6">
+      <div className="3xl:flex 3xl:gap-6">
         {/* Main: Stream Preview */}
-        <div className="flex-1 min-w-0 mb-8 xl:mb-0">
+        <div className="flex-1 min-w-0 mb-8 3xl:mb-0">
           <StreamPreview
             stageId={stageId!}
             status={isRunning ? "running" : isStarting ? "starting" : "stopped"}
@@ -255,7 +254,7 @@ export function StageDetail() {
         </div>
 
         {/* Sidebar */}
-        <div className="xl:w-[340px] xl:shrink-0 flex flex-col gap-6">
+        <div className="3xl:w-[340px] 3xl:shrink-0 flex flex-col gap-6">
           {/* Metadata */}
           <Card>
             <CardHeader>
@@ -355,29 +354,46 @@ export function StageDetail() {
         </div>
       </div>
 
-      {/* CLI usage section — per-command rows */}
-      <Card className="mb-8 mt-6">
-        <CardHeader>
+      {/* CLI usage */}
+      <Card className="mb-8 mt-6 gap-0 py-0">
+        <CardHeader className="py-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm font-medium text-muted-foreground">CLI Usage</CardTitle>
-            <CopyButton text={allCmds} tooltip="Copy all commands" size="sm" iconSize="h-3.5 w-3.5" />
+            <CopyButton
+              text={allCmds}
+              tooltip="Copy all commands"
+              size="icon"
+              iconSize="h-4 w-4"
+            />
           </div>
         </CardHeader>
-        <CardContent>
-          <AnimatedList className="flex flex-col gap-2" delay={0.04}>
+        <CardContent className="px-0 pb-0">
+          <div className="bg-zinc-950 overflow-x-auto py-3">
             {cliCommands.map((cmd, i) => {
               const cmdText = cmd.cmd(stage?.name || stageId!);
               return (
-                <AnimatedListItem key={i}>
-                  <div className="flex items-center gap-3 rounded-lg border border-border bg-card/50 px-3 py-2 group">
-                    <span className="text-sm text-muted-foreground whitespace-nowrap">{cmd.label}</span>
-                    <code className="flex-1 text-sm font-mono text-foreground truncate">{cmdText}</code>
-                    <CopyButton text={cmdText} tooltip="Copy command" size="icon" iconSize="h-3 w-3" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div key={i} className={`group/cmd${i > 0 ? " mt-2.5" : ""}`}>
+                  <div className="px-5">
+                    <span className="text-xs font-mono text-zinc-500 select-none">
+                      {"# "}{cmd.label}
+                    </span>
                   </div>
-                </AnimatedListItem>
+                  <div className="flex items-center gap-2 px-5 py-0.5 hover:bg-white/[0.06] transition-colors">
+                    <span className="text-primary/60 select-none text-sm font-mono shrink-0">$</span>
+                    <code className="text-sm font-mono text-zinc-200 whitespace-nowrap">{cmdText}</code>
+                    <CopyButton
+                      text={cmdText}
+                      tooltip="Copy"
+                      size="icon-xs"
+                      iconSize="h-3.5 w-3.5"
+                      className="text-zinc-500 hover:text-primary hover:bg-white/[0.08] shrink-0"
+                    />
+                  </div>
+                </div>
               );
             })}
-          </AnimatedList>
+            <div className="h-1" />
+          </div>
         </CardContent>
       </Card>
 
