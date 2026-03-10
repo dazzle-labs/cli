@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/react";
+import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { streamClient } from "../client.js";
@@ -13,14 +14,93 @@ import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
-import { Trash2, Radio } from "lucide-react";
+import { Trash2, Radio, ChevronDown } from "lucide-react";
+import { CopyButton } from "@/components/CopyButton";
 import { PlatformIcon, PLATFORM_LIST, PLATFORM_HOVER_COLORS } from "@/components/PlatformIcon";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 import { AnimatedPage } from "@/components/AnimatedPage";
 import { AnimatedList, AnimatedListItem } from "@/components/AnimatedList";
 import { springs } from "@/lib/motion";
+import { TouchTooltip } from "@/components/ui/tooltip";
 
 const OAUTH_PLATFORMS = ["twitch", "youtube", "kick", "restream"] as const;
+
+function MobileDestinationCard({ d, onDelete }: { d: StreamDestination; onDelete: (id: string) => void }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <motion.div
+      key={d.id}
+      layout
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0, height: 0 }}
+      transition={springs.snappy}
+    >
+      <Card size="sm">
+        <CardContent>
+          <div className="flex items-center gap-3">
+            <PlatformIcon platform={d.platform} size="sm" />
+            <div className="flex-1 min-w-0">
+              <span className="text-sm font-medium text-foreground truncate block">
+                {d.name || d.platformUsername || "\u2014"}
+              </span>
+              <span className="text-xs text-muted-foreground capitalize">{d.platform}</span>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              {d.rtmpUrl && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                  onClick={() => setExpanded((v) => !v)}
+                  aria-label={expanded ? "Hide RTMP URL" : "Show RTMP URL"}
+                >
+                  <ChevronDown className={cn("h-3.5 w-3.5 transition-transform duration-200", expanded && "rotate-180")} />
+                </Button>
+              )}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10" aria-label="Delete destination">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete destination?</AlertDialogTitle>
+                    <AlertDialogDescription>This will unlink it from any stages using it.</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction variant="destructive" onClick={() => onDelete(d.id)}>Delete</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </div>
+          <AnimatePresence initial={false}>
+            {expanded && d.rtmpUrl && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="overflow-hidden"
+              >
+                <div className="mt-3 flex items-center gap-2 rounded-lg bg-muted/50 border border-border/50 px-3 py-2">
+                  <code className="flex-1 text-xs font-mono text-muted-foreground break-all">
+                    {d.rtmpUrl}
+                  </code>
+                  <CopyButton text={d.rtmpUrl} tooltip="Copy RTMP URL" size="icon-xs" iconSize="h-3 w-3" className="shrink-0 self-start" />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
 
 export function StreamConfig() {
   const { getToken } = useAuth();
@@ -106,15 +186,6 @@ export function StreamConfig() {
     window.location.href = `/oauth/${platform}/authorize?token=${encodeURIComponent(token)}`;
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center gap-2 text-muted-foreground text-base pt-12">
-        <Spinner className="text-primary" />
-        Loading destinations...
-      </div>
-    );
-  }
-
   return (
     <AnimatedPage>
       {/* Header */}
@@ -127,6 +198,12 @@ export function StreamConfig() {
         </p>
       </div>
 
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Spinner className="text-primary" />
+        </div>
+      ) : (
+      <>
       {/* Platforms */}
       <div className="mb-8">
         <p className="text-sm font-medium text-muted-foreground mb-3">Platforms</p>
@@ -136,38 +213,42 @@ export function StreamConfig() {
             const hoverColor = PLATFORM_HOVER_COLORS[platform] ?? "";
             return (
               <AnimatedListItem key={platform}>
-                <motion.div
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                  transition={springs.quick}
-                >
-                  <Button
-                    variant="outline"
-                    onClick={() => handleOAuthConnect(platform)}
-                    className={`rounded-xl h-auto px-4 py-3 ${hoverColor}`}
+                <TouchTooltip content={`Connect ${label}`} contentClassName="sm:hidden">
+                  <motion.div
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    transition={springs.quick}
                   >
-                    <PlatformIcon platform={platform} size="sm" />
-                    <span className="text-sm">{label}</span>
-                  </Button>
-                </motion.div>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleOAuthConnect(platform)}
+                      className={cn("rounded-xl h-auto px-2 py-2 sm:px-4 sm:py-3 max-sm:border-transparent max-sm:bg-transparent max-sm:shadow-none dark:max-sm:bg-transparent dark:max-sm:border-transparent", hoverColor)}
+                    >
+                      <PlatformIcon platform={platform} size="sm" />
+                      <span className="hidden sm:inline text-sm">{label}</span>
+                    </Button>
+                  </motion.div>
+                </TouchTooltip>
               </AnimatedListItem>
             );
           })}
           <AnimatedListItem>
-            <motion.div
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              transition={springs.quick}
-            >
-              <Button
-                variant="outline"
-                onClick={() => setShowCustomModal(true)}
-                className={`rounded-xl h-auto px-4 py-3 ${PLATFORM_HOVER_COLORS.custom}`}
+            <TouchTooltip content="Add custom RTMP" contentClassName="sm:hidden">
+              <motion.div
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                transition={springs.quick}
               >
-                <PlatformIcon platform="custom" size="sm" />
-                <span className="text-sm">Custom</span>
-              </Button>
-            </motion.div>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowCustomModal(true)}
+                  className={cn("rounded-xl h-auto px-2 py-2 sm:px-4 sm:py-3 max-sm:border-transparent max-sm:bg-transparent max-sm:shadow-none dark:max-sm:bg-transparent dark:max-sm:border-transparent", PLATFORM_HOVER_COLORS.custom)}
+                >
+                  <PlatformIcon platform="custom" size="sm" />
+                  <span className="hidden sm:inline text-sm">Custom</span>
+                </Button>
+              </motion.div>
+            </TouchTooltip>
           </AnimatedListItem>
         </AnimatedList>
       </div>
@@ -272,53 +353,16 @@ export function StreamConfig() {
           </div>
 
           {/* Mobile cards */}
-          <div className="flex flex-col gap-3 sm:hidden">
+          <div className="flex flex-col gap-2 sm:hidden">
             <AnimatePresence>
               {destinations.map((d) => (
-                <motion.div
-                  key={d.id}
-                  layout
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={springs.snappy}
-                >
-                  <Card size="sm">
-                    <CardContent>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-base text-foreground font-medium">{d.name || d.platformUsername || "\u2014"}</span>
-                        <div className="flex items-center gap-2">
-                          <PlatformIcon platform={d.platform} size="sm" />
-                          <span className="text-sm text-muted-foreground">{d.platform}</span>
-                        </div>
-                      </div>
-                      <code className="text-sm text-muted-foreground font-mono break-all">{d.rtmpUrl || "\u2014"}</code>
-                      <div className="mt-3 flex justify-end">
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10" aria-label="Delete destination">
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete destination?</AlertDialogTitle>
-                              <AlertDialogDescription>This will unlink it from any stages using it.</AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction variant="destructive" onClick={() => handleDelete(d.id)}>Delete</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
+                <MobileDestinationCard key={d.id} d={d} onDelete={handleDelete} />
               ))}
             </AnimatePresence>
           </div>
         </>
+      )}
+      </>
       )}
     </AnimatedPage>
   );

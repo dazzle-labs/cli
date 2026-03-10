@@ -1,11 +1,11 @@
 import { UserButton } from "@clerk/react";
 import { Link, useLocation } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import { Monitor, Radio, Key, Rocket, BookOpen } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState, useCallback, memo } from "react";
 import type { ReactNode } from "react";
 import { motion } from "motion/react";
 import { OnboardingWizard } from "./onboarding/OnboardingWizard";
-import { useState } from "react";
 import { springs } from "@/lib/motion";
 import {
   Sidebar,
@@ -30,7 +30,7 @@ const navItems = [
 ];
 
 
-function SidebarNav({ onGetStarted }: { onGetStarted: () => void }) {
+const SidebarNav = memo(function SidebarNav({ onGetStarted }: { onGetStarted: () => void }) {
   const location = useLocation();
   const { setOpenMobile } = useSidebar();
 
@@ -71,7 +71,7 @@ function SidebarNav({ onGetStarted }: { onGetStarted: () => void }) {
                   <SidebarMenuButton
                     asChild
                     isActive={active}
-                    className={active ? "bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary active:bg-primary/15 active:text-primary" : ""}
+                    className={cn(active && "bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary active:bg-primary/15 active:text-primary")}
                   >
                     <Link to={item.path}>
                       <item.icon className="h-4 w-4" />
@@ -104,10 +104,11 @@ function SidebarNav({ onGetStarted }: { onGetStarted: () => void }) {
               <SidebarMenuButton
                 asChild
                 isActive={location.pathname === "/docs"}
-                className={location.pathname === "/docs"
-                  ? "bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary active:bg-primary/15 active:text-primary"
-                  : "text-muted-foreground hover:text-primary hover:bg-primary/[0.06]"
-                }
+                className={cn(
+                  location.pathname === "/docs"
+                    ? "bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary active:bg-primary/15 active:text-primary"
+                    : "text-muted-foreground hover:text-primary hover:bg-primary/[0.06]"
+                )}
               >
                 <Link to="/docs">
                   <BookOpen className="h-4 w-4" />
@@ -120,14 +121,17 @@ function SidebarNav({ onGetStarted }: { onGetStarted: () => void }) {
       </SidebarContent>
     </Sidebar>
   );
-}
+});
 
 export function Layout({ children }: { children: ReactNode }) {
   const [wizardOpen, setWizardOpen] = useState(false);
 
+  const handleGetStarted = useCallback(() => setWizardOpen(true), []);
+  const handleCloseWizard = useCallback(() => setWizardOpen(false), []);
+
   return (
     <SidebarProvider>
-      <SidebarNav onGetStarted={() => setWizardOpen(true)} />
+      <SidebarNav onGetStarted={handleGetStarted} />
       <SidebarInset>
         <header className="flex h-14 items-center gap-2 border-b px-4 md:hidden">
           <SidebarTrigger />
@@ -155,7 +159,7 @@ export function Layout({ children }: { children: ReactNode }) {
           </div>
         </main>
       </SidebarInset>
-      <OnboardingWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />
+      <OnboardingWizard open={wizardOpen} onClose={handleCloseWizard} />
     </SidebarProvider>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import { stageClient, streamClient } from "../client.js";
 import type { Stage } from "../gen/api/v1/stage_pb.js";
@@ -8,7 +9,8 @@ import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Radio, X, Loader2, ArrowRight, Rocket } from "lucide-react";
+import { Radio, X, Loader2, ArrowRight, Rocket, Plus } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 import { toast } from "sonner";
 import { Alert, AlertTitle, AlertAction } from "@/components/ui/alert";
@@ -69,21 +71,15 @@ export function Dashboard() {
     localStorage.setItem("dazzle-stream-banner-dismissed", "true");
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center gap-2 text-muted-foreground text-base pt-12">
-        <Loader2 className="h-4 w-4 animate-spin text-primary" />
-        Loading stages...
-      </div>
-    );
-  }
+  const navigate = useNavigate();
 
   async function handleCreateStage() {
     setCreatingStage(true);
     try {
-      await stageClient.createStage({ name: "" });
-      await refresh();
-      toast.success("Stage created");
+      const resp = await stageClient.createStage({ name: "" });
+      if (resp.stage) {
+        navigate(`/stage/${resp.stage.id}`);
+      }
     } catch {
       // ignore
     } finally {
@@ -131,29 +127,32 @@ export function Dashboard() {
       </AnimatePresence>
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl tracking-[-0.02em] text-foreground mb-1 font-display">
+      <div className="mb-8">
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl tracking-[-0.02em] text-foreground font-display">
             Stages
           </h1>
-          <p className="text-base text-muted-foreground">
-            Cloud environments your agents can control and broadcast from.
-          </p>
+          {stages.length > 0 && (
+            <Button
+              onClick={handleCreateStage}
+              disabled={creatingStage}
+              variant="outline"
+              size="sm"
+              className="text-primary border-primary/25 hover:bg-primary/10 hover:border-primary/40"
+            >
+              {creatingStage ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Plus className="h-4 w-4" />
+              )}
+              <span className="sm:hidden">Create</span>
+              <span className="hidden sm:inline">Create Stage</span>
+            </Button>
+          )}
         </div>
-        {stages.length > 0 && (
-          <Button
-            onClick={handleCreateStage}
-            disabled={creatingStage}
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground hover:text-primary hover:bg-primary/10"
-          >
-            {creatingStage ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-1" />
-            ) : null}
-            New stage
-          </Button>
-        )}
+        <p className="text-base text-muted-foreground mt-1">
+          Cloud environments your agents can control and broadcast from.
+        </p>
       </div>
 
       {/* Onboarding wizard overlay */}
@@ -168,7 +167,11 @@ export function Dashboard() {
       />
 
       {/* Stages grid */}
-      {stages.length === 0 ? (
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Spinner className="text-primary" />
+        </div>
+      ) : stages.length === 0 ? (
         <motion.div
           className="flex flex-col items-center pt-24"
           variants={fadeInUp}
@@ -204,17 +207,17 @@ export function Dashboard() {
                     whileTap={{ scale: 0.98 }}
                     transition={springs.quick}
                   >
-                    <Card className={`transition-colors duration-200 hover:border-primary/15 hover:bg-primary/[0.02] ${isRunning ? "border-l-2 border-l-emerald-500/40" : ""}`}>
+                    <Card className={cn("transition-colors duration-200 hover:border-primary/15 hover:bg-primary/[0.02]", isRunning && "border-l-2 border-l-emerald-500/40")}>
                       <CardContent className="p-5">
                         <div className="flex items-center justify-between mb-3">
                           <span className="text-base font-medium text-foreground">
-                            {stage.name || "default"}
+                            {stage.name || "Untitled Stage"}
                           </span>
                           <div className="flex items-center gap-2">
                             {(isRunning || isStarting) && (
                               <span className="relative flex h-2.5 w-2.5">
-                                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isRunning ? "bg-emerald-400" : "bg-amber-400"}`} />
-                                <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${isRunning ? "bg-emerald-500" : "bg-amber-500"}`} />
+                                <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", isRunning ? "bg-emerald-400" : "bg-amber-400")} />
+                                <span className={cn("relative inline-flex rounded-full h-2.5 w-2.5", isRunning ? "bg-emerald-500" : "bg-amber-500")} />
                               </span>
                             )}
                             <Badge
