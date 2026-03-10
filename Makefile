@@ -29,7 +29,7 @@ INFRA_DIR := k8s/hetzner
 TFSTATE   := $(INFRA_DIR)/terraform.tfstate
 TFSTATE_ENC := $(INFRA_DIR)/terraform.tfstate.enc
 
-.PHONY: help check-deps check-hooks check-cli proto up down build build-cp build-streamer deploy dev llms-txt logs status \
+.PHONY: help check-deps check-hooks check-cli pull-cli proto up down build build-cp build-streamer deploy dev llms-txt logs status \
         install-hooks \
         kubectx prod/kubectl prod/status prod/nodes \
         prod/infra/init prod/infra/plan prod/infra/apply prod/infra/output \
@@ -102,6 +102,20 @@ check-cli:
 		printf "$(_yellow)  To update:  git submodule update cli$(_reset)\n"; \
 		echo ""; \
 	fi
+
+pull-cli: ## Pull latest cli, update go.mod, and commit
+	@if ! git -C cli diff --quiet || ! git -C cli diff --cached --quiet; then \
+		printf "$(_yellow)ERROR: cli/ has uncommitted changes. Commit or stash them first.$(_reset)\n"; \
+		git -C cli status --short; \
+		exit 1; \
+	fi
+	$(STEP) "Pulling latest cli"
+	git -C cli checkout main
+	git -C cli pull
+	$(STEP) "Updating control-plane go.mod"
+	cd control-plane && go get github.com/dazzle-labs/cli@$$(git -C ../cli rev-parse HEAD)
+	cd control-plane && go build ./...
+	$(OK) "cli bumped to $$(git -C cli rev-parse --short HEAD)"
 
 proto: check-cli ## Generate protobuf code (Go + TypeScript)
 	$(MAKE) -C cli proto
