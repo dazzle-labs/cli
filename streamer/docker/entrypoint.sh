@@ -15,21 +15,18 @@ trap cleanup EXIT INT TERM
 SCREEN_WIDTH="${SCREEN_WIDTH:-1280}"
 SCREEN_HEIGHT="${SCREEN_HEIGHT:-720}"
 
-# Allow per-stage WebGL disable if needed (default: enabled)
-if [ "${DISABLE_WEBGL:-false}" = "true" ]; then
-    echo "WebGL disabled via DISABLE_WEBGL=true"
-    CHROME_GL_FLAGS="--disable-gpu"
-else
-    # Use ANGLE's SwiftShader-WebGL backend (direct path, no Vulkan layer)
-    CHROME_GL_FLAGS="--use-gl=angle --use-angle=swiftshader-webgl --enable-unsafe-swiftshader --disable-gpu-compositing --disable-gpu-watchdog"
+# Chrome flags — set via CHROME_FLAGS env var from the k8s deployment.
+# No defaults baked in — all flags are explicit in the deployment manifest.
+if [ -z "${CHROME_FLAGS:-}" ]; then
+    echo "ERROR: CHROME_FLAGS env var is required"
+    exit 1
 fi
 
-# SwiftShader config (no-op when using LavaPipe, kept for DISABLE_WEBGL fallback)
+# SwiftShader.ini is mounted from the swiftshader-ini ConfigMap.
+# The control-plane adds the volume mount; entrypoint just ensures the dir exists.
 mkdir -p /data/chrome
-cat > /data/chrome/SwiftShader.ini << 'SWCFG'
-[Processor]
-ThreadCount=4
-SWCFG
+echo "SwiftShader.ini:"
+cat /data/chrome/SwiftShader.ini 2>/dev/null || echo "  (not mounted — using Chrome defaults)"
 
 # 1. Start Xvfb
 echo "Starting Xvfb (${SCREEN_WIDTH}x${SCREEN_HEIGHT})..."
@@ -75,26 +72,9 @@ for i in $(seq 1 120); do
 done
 
 # 4. Start Chromium pointed at sidecar (serves user content at /)
-echo "Starting Chromium..."
-google-chrome-stable \
-    --no-sandbox \
-    $CHROME_GL_FLAGS \
-    --no-first-run \
-    --no-default-browser-check \
-    --disable-infobars \
-    --autoplay-policy=no-user-gesture-required \
-    --remote-debugging-port=9222 \
-    --remote-debugging-address=0.0.0.0 \
-    --user-data-dir=/data/chrome \
-    --renderer-process-limit=1 \
-    --kiosk \
-    --window-size=${SCREEN_WIDTH},${SCREEN_HEIGHT} \
-    --window-position=0,0 \
-    --display=:99 \
-    --disable-background-timer-throttling \
-    --disable-backgrounding-occluded-windows \
-    --disable-renderer-backgrounding \
-    "http://localhost:8080/" &
+echo "Starting Chromium with flags:"
+echo "  $CHROME_FLAGS"
+google-chrome-stable $CHROME_FLAGS "http://localhost:8080/" &
 CHROME_PID=$!
 
 # Wait for Chrome CDP to be available

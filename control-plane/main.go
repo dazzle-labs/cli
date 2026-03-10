@@ -345,10 +345,7 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 				{
 					Name:  "streamer",
 					Image: m.streamerImage,
-					Env: []corev1.EnvVar{
-						{Name: "STAGE_ID", Value: id},
-						{Name: "USER_ID", Value: userID},
-					},
+					Env: streamerEnvVars(id, userID),
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
 							corev1.ResourceCPU:    resource.MustParse("500m"),
@@ -365,6 +362,7 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 						{Name: "hls-data", MountPath: "/tmp/hls"},
 						{Name: "x11-socket", MountPath: "/tmp/.X11-unix"},
 						{Name: "pulse-socket", MountPath: "/tmp/pulse"},
+						{Name: "swiftshader-ini", MountPath: "/data/chrome/SwiftShader.ini", SubPath: "SwiftShader.ini"},
 					},
 					Lifecycle: &corev1.Lifecycle{
 						PreStop: &corev1.LifecycleHandler{
@@ -466,6 +464,14 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 						EmptyDir: &corev1.EmptyDirVolumeSource{},
 					},
 				},
+				{
+					Name: "swiftshader-ini",
+					VolumeSource: corev1.VolumeSource{
+						ConfigMap: &corev1.ConfigMapVolumeSource{
+							LocalObjectReference: corev1.LocalObjectReference{Name: "swiftshader-ini"},
+						},
+					},
+				},
 			},
 		},
 	}
@@ -505,6 +511,31 @@ func boolPtr(b bool) *bool {
 }
 
 // sidecarEnvVars returns the env vars needed by the sidecar/init containers.
+// streamerEnvVars returns env vars for the streamer container.
+// All STREAMER_* env vars on the control-plane are passed through (with the
+// prefix stripped) so the streamer image can be tuned without rebuilding.
+// Key vars: CHROME_FLAGS (full Chrome arg string), SWIFTSHADER_THREAD_COUNT,
+// SCREEN_WIDTH, SCREEN_HEIGHT, DISABLE_WEBGL.
+func streamerEnvVars(stageID, userID string) []corev1.EnvVar {
+	vars := []corev1.EnvVar{
+		{Name: "STAGE_ID", Value: stageID},
+		{Name: "USER_ID", Value: userID},
+	}
+	// Pass through all STREAMER_* env vars with prefix stripped
+	for _, env := range os.Environ() {
+		if !strings.HasPrefix(env, "STREAMER_") {
+			continue
+		}
+		parts := strings.SplitN(env, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		name := strings.TrimPrefix(parts[0], "STREAMER_")
+		vars = append(vars, corev1.EnvVar{Name: name, Value: parts[1]})
+	}
+	return vars
+}
+
 func sidecarEnvVars(userID, stageID, bucket string) []corev1.EnvVar {
 	optional := boolPtr(true)
 	return []corev1.EnvVar{

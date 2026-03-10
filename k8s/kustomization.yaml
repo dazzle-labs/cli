@@ -7,6 +7,7 @@ resources:
   - infrastructure/pdb.yaml
   - control-plane/rbac.yaml
   - control-plane/deployment.yaml
+  - control-plane/swiftshader-configmap.yaml
   - control-plane/service.yaml
   - control-plane/pdb.yaml
   - networking/ingress.yaml
