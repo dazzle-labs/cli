@@ -5,9 +5,10 @@ import { springs } from "@/lib/motion";
 interface StepIndicatorProps {
   steps: string[];
   current: number;
+  onStepClick?: (step: number) => void;
 }
 
-export function StepIndicator({ steps, current }: StepIndicatorProps) {
+export function StepIndicator({ steps, current, onStepClick }: StepIndicatorProps) {
   return (
     <div className="flex items-center gap-2">
       {steps.map((label, i) => (
@@ -18,11 +19,13 @@ export function StepIndicator({ steps, current }: StepIndicatorProps) {
                 className={cn(
                   "h-7 w-7 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-300",
                   i < current
-                    ? "bg-primary text-primary-foreground"
+                    ? "bg-primary text-primary-foreground cursor-pointer hover:bg-primary/80"
                     : i === current
                       ? "bg-primary/20 text-primary"
                       : "bg-muted text-muted-foreground"
                 )}
+                onClick={i < current && onStepClick ? () => onStepClick(i) : undefined}
+                role={i < current && onStepClick ? "button" : undefined}
               >
                 {i < current ? (
                   <motion.svg

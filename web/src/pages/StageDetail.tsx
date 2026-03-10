@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import { stageClient, streamClient } from "../client.js";
 import type { Stage } from "../gen/api/v1/stage_pb.js";
 import type { StreamDestination } from "../gen/api/v1/stream_pb.js";
@@ -92,29 +93,9 @@ export function StageDetail() {
     setEditingName(false);
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center gap-2 text-muted-foreground text-base pt-12">
-        <Spinner className="text-primary" />
-        Loading stage...
-      </div>
-    );
-  }
-
-  if (!stage) {
-    return (
-      <div className="pt-12 text-center">
-        <p className="text-muted-foreground text-base mb-4">Stage not found.</p>
-        <Link to="/" className="text-primary hover:text-primary/80 text-base">
-          Back to stages
-        </Link>
-      </div>
-    );
-  }
-
-  const displayName = stage.name && stage.name !== "default" ? stage.name : "Untitled Stage";
-  const isRunning = stage.status === "running";
-  const isStarting = stage.status === "starting";
+  const displayName = stage?.name && stage.name !== "default" ? stage.name : loading ? "Loading\u2026" : "Untitled Stage";
+  const isRunning = stage?.status === "running";
+  const isStarting = stage?.status === "starting";
   const allCmds = cliCommands.map(c => c.cmd(stage?.name || stageId!)).join("\n");
 
   return (
@@ -128,6 +109,19 @@ export function StageDetail() {
         </BreadcrumbList>
       </Breadcrumb>
 
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Spinner className="text-primary" />
+        </div>
+      ) : !stage ? (
+        <div className="pt-12 text-center">
+          <p className="text-muted-foreground text-base mb-4">Stage not found.</p>
+          <Link to="/" className="text-primary hover:text-primary/80 text-base">
+            Back to stages
+          </Link>
+        </div>
+      ) : (
+      <>
       {/* Stage name + status */}
       <div className="flex items-center gap-3 mb-8">
         {editingName ? (
@@ -167,8 +161,8 @@ export function StageDetail() {
         <div className="flex items-center gap-2">
           {(isRunning || isStarting) && (
             <span className="relative flex h-2.5 w-2.5">
-              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isRunning ? "bg-emerald-400" : "bg-amber-400"}`} />
-              <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${isRunning ? "bg-emerald-500" : "bg-amber-500"}`} />
+              <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", isRunning ? "bg-emerald-400" : "bg-amber-400")} />
+              <span className={cn("relative inline-flex rounded-full h-2.5 w-2.5", isRunning ? "bg-emerald-500" : "bg-amber-500")} />
             </span>
           )}
           <Badge variant={isRunning ? "success" : isStarting ? "warning" : "secondary"}>
@@ -372,7 +366,7 @@ export function StageDetail() {
             {cliCommands.map((cmd, i) => {
               const cmdText = cmd.cmd(stage?.name || stageId!);
               return (
-                <div key={i} className={`group/cmd${i > 0 ? " mt-2.5" : ""}`}>
+                <div key={i} className={cn("group/cmd", i > 0 && "mt-2.5")}>
                   <div className="px-5">
                     <span className="text-xs font-mono text-zinc-500 select-none">
                       {"# "}{cmd.label}
@@ -422,6 +416,8 @@ export function StageDetail() {
           </AlertDialog>
         </CardContent>
       </Card>
+      </>
+      )}
     </AnimatedPage>
   );
 }

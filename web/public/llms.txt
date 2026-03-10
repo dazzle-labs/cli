@@ -122,6 +122,8 @@ Flags:
 Commands:
   version                          Print version information.
   update                           Update dazzle to the latest release.
+  guide                            Show content authoring guide (rendering tips,
+                                   performance, best practices).
   login                            Authenticate with your API key.
   logout                           Clear stored credentials.
   whoami                           Show current user.
@@ -131,6 +133,7 @@ Commands:
   stage (s) up                     Activate a stage.
   stage (s) down                   Deactivate a stage.
   stage (s) status (st)            Show stage status.
+  stage (s) stats                  Show live pipeline stats.
   stage (s) preview                Show the shareable preview URL for a running
                                    stage.
   stage (s) sync (sy)              Sync a local directory to the stage. This is

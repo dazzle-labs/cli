@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import { SignIn } from "@clerk/react";
 import { motion } from "motion/react";
 import { Check, Copy, Sparkles } from "lucide-react";
@@ -86,9 +87,9 @@ export function PublicDocs() {
         <nav className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 md:px-10 backdrop-blur-xl bg-zinc-950/60 border-b border-white/[0.04]">
           <Link
             to="/"
-            className="text-base font-semibold tracking-tight text-white hover:text-white"
+            className="text-base font-semibold tracking-tight text-white hover:text-white font-display"
           >
-            dazzle
+            Dazzle
           </Link>
           <div className="flex items-center gap-5">
             <Link
@@ -149,11 +150,12 @@ export function PublicDocs() {
                   <button
                     key={tab.id}
                     onClick={() => setInstallTab(tab.id)}
-                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors cursor-pointer ${
+                    className={cn(
+                      "px-3 py-1.5 text-sm font-medium rounded-md transition-colors cursor-pointer",
                       installTab === tab.id
                         ? "bg-emerald-500/15 text-emerald-400"
                         : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]"
-                    }`}
+                    )}
                   >
                     {tab.label}
                   </button>

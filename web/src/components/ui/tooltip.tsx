@@ -52,4 +52,56 @@ function TooltipContent({
   )
 }
 
-export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger }
+function TouchTooltip({
+  children,
+  content,
+  side,
+  contentClassName,
+}: {
+  children: React.ReactNode
+  content: React.ReactNode
+  side?: React.ComponentProps<typeof TooltipPrimitive.Content>["side"]
+  contentClassName?: string
+}) {
+  const [open, setOpen] = React.useState(false)
+  const timerRef = React.useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  function handleTouchStart() {
+    timerRef.current = setTimeout(() => setOpen(true), 500)
+  }
+
+  function clearTimer() {
+    clearTimeout(timerRef.current)
+  }
+
+  React.useEffect(() => {
+    if (!open) return
+    const close = () => setOpen(false)
+    const id = setTimeout(() => {
+      document.addEventListener("touchstart", close, { once: true })
+      document.addEventListener("scroll", close, { once: true, capture: true })
+    }, 10)
+    return () => {
+      clearTimeout(id)
+      document.removeEventListener("touchstart", close)
+      document.removeEventListener("scroll", close, { capture: true })
+    }
+  }, [open])
+
+  return (
+    <Tooltip open={open} onOpenChange={setOpen}>
+      <TooltipTrigger
+        asChild
+        onTouchStart={handleTouchStart}
+        onTouchEnd={clearTimer}
+        onTouchMove={clearTimer}
+        onTouchCancel={clearTimer}
+      >
+        {children}
+      </TooltipTrigger>
+      <TooltipContent side={side} className={contentClassName}>{content}</TooltipContent>
+    </Tooltip>
+  )
+}
+
+export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, TouchTooltip }

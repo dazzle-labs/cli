@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ExternalLink } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { CommandLine, TerminalBlock } from "@/components/CommandLine";
 import { AnimatedPage } from "@/components/AnimatedPage";
@@ -65,11 +66,12 @@ export function Docs() {
             <button
               key={tab.id}
               onClick={() => setInstallTab(tab.id)}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors cursor-pointer ${
+              className={cn(
+                "px-3 py-1.5 text-sm font-medium rounded-md transition-colors cursor-pointer",
                 installTab === tab.id
                   ? "bg-primary/15 text-primary"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
-              }`}
+              )}
             >
               {tab.label}
             </button>

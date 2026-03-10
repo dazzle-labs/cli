@@ -170,16 +170,10 @@ export function LandingPage() {
 
       {/* ── Nav ── */}
       <nav className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 md:px-10 backdrop-blur-xl bg-zinc-950/60 border-b border-white/[0.04]">
-        <span className="text-base font-semibold tracking-tight text-white">
-          dazzle
+        <span className="text-base font-semibold tracking-tight text-white font-display">
+          Dazzle
         </span>
         <div className="flex items-center gap-5">
-          <Link
-            to="/docs"
-            className="text-zinc-400 hover:text-white text-sm transition-colors"
-          >
-            Docs
-          </Link>
           <a
             href="/llms.txt"
             target="_blank"
@@ -188,6 +182,12 @@ export function LandingPage() {
           >
             llms.txt
           </a>
+          <Link
+            to="/docs"
+            className="text-zinc-400 hover:text-white text-sm transition-colors"
+          >
+            Docs
+          </Link>
           <Button
             size="sm"
             variant="outline"
@@ -338,10 +338,10 @@ export function LandingPage() {
         <div className="mx-auto max-w-5xl">
           <motion.div
             className="text-center mb-16"
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
             viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.7 }}
+            transition={{ duration: 0.4 }}
           >
             <h2 className="font-display text-3xl md:text-4xl text-white tracking-[-0.01em]">
               Three commands to live
@@ -356,10 +356,10 @@ export function LandingPage() {
               <motion.div
                 key={step.num}
                 className="group relative rounded-2xl border border-white/[0.06] bg-white/[0.015] p-8 transition-all duration-300 hover:border-emerald-500/20 hover:bg-emerald-500/[0.02]"
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
                 viewport={{ once: true, margin: "-60px" }}
-                transition={{ duration: 0.6, delay: i * 0.12 }}
+                transition={{ duration: 0.4, delay: i * 0.08 }}
               >
                 <span className="font-display text-5xl text-emerald-500/[0.12] block mb-5 leading-none">
                   {step.num}
@@ -389,10 +389,10 @@ export function LandingPage() {
         <div className="mx-auto max-w-5xl">
           <motion.div
             className="text-center mb-16"
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
             viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.7 }}
+            transition={{ duration: 0.4 }}
           >
             <h2 className="font-display text-3xl md:text-4xl text-white tracking-[-0.01em]">
               Everything you need
@@ -407,10 +407,10 @@ export function LandingPage() {
               <motion.div
                 key={feat.title}
                 className="group rounded-2xl border border-white/[0.06] bg-white/[0.015] p-8 transition-all duration-300 hover:border-white/[0.1]"
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
                 viewport={{ once: true, margin: "-60px" }}
-                transition={{ duration: 0.6, delay: i * 0.08 }}
+                transition={{ duration: 0.4, delay: i * 0.06 }}
               >
                 <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-lg bg-white/[0.04] text-zinc-400 transition-colors group-hover:text-emerald-400 group-hover:bg-emerald-500/10">
                   <feat.icon className="h-5 w-5" />
@@ -431,10 +431,10 @@ export function LandingPage() {
       <section className="relative z-10 px-6 py-20 md:py-28">
         <motion.div
           className="mx-auto max-w-3xl text-center"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
           viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.7 }}
+          transition={{ duration: 0.4 }}
         >
           <h3 className="font-display text-2xl md:text-3xl text-white mb-3">
             Works with your stack
@@ -447,10 +447,10 @@ export function LandingPage() {
               <motion.span
                 key={name}
                 className="rounded-full border border-white/[0.08] bg-white/[0.02] px-5 py-2 text-sm text-zinc-400 transition-colors hover:border-emerald-500/20 hover:text-zinc-300"
-                initial={{ opacity: 0, scale: 0.9 }}
+                initial={{ opacity: 0, scale: 0.95 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: i * 0.06 }}
+                transition={{ duration: 0.3, delay: i * 0.04 }}
               >
                 {name}
               </motion.span>
@@ -462,10 +462,10 @@ export function LandingPage() {
       {/* ── Final CTA ── */}
       <section className="relative z-10 px-6 py-28 md:py-36 text-center">
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
           viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.7 }}
+          transition={{ duration: 0.4 }}
         >
           <h2 className="font-display text-[clamp(1.8rem,4vw,3rem)] leading-[1.1] tracking-[-0.02em] text-white max-w-2xl mx-auto">
             Ready to go <span className="text-emerald-400">live?</span>

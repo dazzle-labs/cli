@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,7 +43,7 @@ export function StreamDestinationForm({
   }
 
   return (
-    <div className={compact ? "flex flex-col" : "flex flex-col items-center"}>
+    <div className={cn("flex flex-col", !compact && "items-center")}>
       {!compact && (
         <>
           <h2 className="text-2xl tracking-[-0.02em] text-foreground mb-2 font-display">
@@ -77,8 +78,8 @@ export function StreamDestinationForm({
         </>
       )}
 
-      <form onSubmit={handleSubmit} className={compact ? "w-full" : "w-full max-w-md mt-4"}>
-        <div className="rounded-xl border border-border bg-card p-6 flex flex-col gap-5">
+      <form onSubmit={handleSubmit} className={cn("w-full", !compact && "max-w-md mt-4")}>
+        <div className={cn("flex flex-col gap-5", !compact && "rounded-xl border border-border bg-card p-6")}>
           <div>
             <Label className="text-xs font-medium text-muted-foreground mb-1.5">
               Name

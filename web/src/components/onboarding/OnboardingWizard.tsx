@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import { useAuth } from "@clerk/react";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeft, ArrowRight, Plus } from "lucide-react";
@@ -218,11 +219,12 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setSelectedDestId(d.id)}
-                  className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-colors cursor-pointer ${
+                  className={cn(
+                    "flex items-center gap-3 rounded-xl border p-3 text-left transition-colors cursor-pointer",
                     selectedDestId === d.id
                       ? "border-primary/30 bg-primary/[0.06]"
                       : "border-border bg-card hover:border-border/80"
-                  }`}
+                  )}
                 >
                   <PlatformIcon platform={d.platform} size="sm" />
                   <div className="flex-1 min-w-0">
@@ -285,7 +287,7 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
                   <Button
                     variant="outline"
                     onClick={() => handleOAuthConnect(platform)}
-                    className={`rounded-xl h-auto px-4 py-3 ${hoverColor}`}
+                    className={cn("rounded-xl h-auto px-4 py-3", hoverColor)}
                   >
                     <PlatformIcon platform={platform} size="sm" />
                     <span className="text-sm">{label}</span>
@@ -313,7 +315,7 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
             <Button
               variant="outline"
               onClick={() => setShowCustomForm(!showCustomForm)}
-              className={`rounded-xl h-auto px-4 py-3 ${PLATFORM_HOVER_COLORS.custom} ${showCustomForm ? "border-primary/30 bg-primary/[0.06]" : ""}`}
+              className={cn("rounded-xl h-auto px-4 py-3", PLATFORM_HOVER_COLORS.custom, showCustomForm && "border-primary/30 bg-primary/[0.06]")}
             >
               <PlatformIcon platform="custom" size="sm" />
               <span className="text-sm">Custom RTMP</span>
@@ -402,7 +404,7 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
                 <ArrowLeft className="h-3.5 w-3.5" />
               </Button>
             )}
-            <StepIndicator steps={WIZARD_STEPS} current={step} />
+            <StepIndicator steps={WIZARD_STEPS} current={step} onStepClick={setStep} />
           </div>
         )}
 
