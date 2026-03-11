@@ -11,9 +11,12 @@ import (
 
 // StreamCmd groups broadcast subcommands.
 type StreamCmd struct {
-	On     StreamStartCmd  `cmd:"" aliases:"start" help:"Start broadcasting to the configured destination."`
-	Off    StreamStopCmd   `cmd:"" aliases:"stop" help:"Stop the broadcast."`
-	Status StreamStatusCmd `cmd:"" aliases:"st" help:"Check broadcast status."`
+	On       StreamStartCmd    `cmd:"" aliases:"start" help:"Start broadcasting to the configured destination."`
+	Off      StreamStopCmd     `cmd:"" aliases:"stop" help:"Stop the broadcast."`
+	Status   StreamStatusCmd   `cmd:"" aliases:"st" help:"Check broadcast status."`
+	Info     StreamInfoCmd     `cmd:"" help:"Get current stream title and category."`
+	Title    StreamTitleCmd    `cmd:"" help:"Set the stream title."`
+	Category StreamCategoryCmd `cmd:"" help:"Set the stream category or game."`
 }
 
 // StreamStartCmd starts broadcasting on the active stage.

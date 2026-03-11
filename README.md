@@ -125,6 +125,13 @@ Commands:
                                    Stop the broadcast.
   stage (s) broadcast (bc) status (st)
                                    Check broadcast status.
+  stage (s) broadcast (bc) info    Get current stream title and category.
+  stage (s) broadcast (bc) title
+                                   Set the stream title.
+  stage (s) broadcast (bc) category
+                                   Set the stream category or game.
+  stage (s) chat send              Send a message to live chat.
+  stage (s) chat read              Read recent chat messages.
   destination (dest) list (ls)     List broadcast destinations.
   destination (dest) add (create,new)
                                    Add a broadcast destination.
@@ -179,6 +186,13 @@ Commands:
                                    Stop the broadcast.
   stage (s) broadcast (bc) status (st)
                                    Check broadcast status.
+  stage (s) broadcast (bc) info    Get current stream title and category.
+  stage (s) broadcast (bc) title
+                                   Set the stream title.
+  stage (s) broadcast (bc) category
+                                   Set the stream category or game.
+  stage (s) chat send              Send a message to live chat.
+  stage (s) chat read              Read recent chat messages.
 ```
 
 #### `stage sync` flags
@@ -233,11 +247,17 @@ Flags:
 
 Commands:
   stage (s) broadcast (bc) on (start)
-      Start broadcasting to the configured destination.
+                                   Start broadcasting to the configured
+                                   destination.
   stage (s) broadcast (bc) off (stop)
-      Stop the broadcast.
+                                   Stop the broadcast.
   stage (s) broadcast (bc) status (st)
-      Check broadcast status.
+                                   Check broadcast status.
+  stage (s) broadcast (bc) info    Get current stream title and category.
+  stage (s) broadcast (bc) title
+                                   Set the stream title.
+  stage (s) broadcast (bc) category
+                                   Set the stream category or game.
 ```
 
 #### `stage event` subcommands

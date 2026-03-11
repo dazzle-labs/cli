@@ -29,6 +29,7 @@ type StageCmd struct {
 	Logs       LogsCmd       `cmd:"" name:"logs" aliases:"l" help:"Retrieve stage console logs."`
 	Screenshot ScreenshotCmd `cmd:"" name:"screenshot" aliases:"ss" help:"Capture a screenshot of the stage."`
 	Broadcast  StreamCmd     `cmd:"" aliases:"bc" help:"Broadcast to a streaming destination."`
+	Chat       ChatCmd       `cmd:"" help:"Read and send live chat messages."`
 }
 
 // resolveStageByNameOrID tries to resolve a stage name or ID to its ID.
