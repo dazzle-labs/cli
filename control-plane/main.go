@@ -879,8 +879,23 @@ func (m *Manager) handleHLSProxy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// No preview token or non-dpt_ token: fall through to normal auth
-	m.auth.authMiddlewareHTTP(http.HandlerFunc(m.handleStageProxy)).ServeHTTP(w, r)
+	// No preview token: authenticate via Clerk JWT and proxy HLS directly.
+	m.auth.authMiddlewareHTTP(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		stage, ok := m.getStage(stageID)
+		if !ok || stage.Status != StatusRunning || stage.PodIP == "" {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "stage not active"})
+			return
+		}
+
+		target, _ := url.Parse(fmt.Sprintf("http://%s:8080", stage.PodIP))
+		proxy := httputil.NewSingleHostReverseProxy(target)
+		r.URL.Path = "/_dz_9f7a3b1c/hls/" + filename
+		r.URL.RawQuery = ""
+		r.Host = target.Host
+		r.Header.Del("Authorization")
+
+		proxy.ServeHTTP(w, r)
+	})).ServeHTTP(w, r)
 }
 
 

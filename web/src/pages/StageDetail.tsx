@@ -257,7 +257,7 @@ export function StageDetail() {
             <CardContent>
               <div className="flex flex-col gap-2.5">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span className="text-muted-foreground w-[52px]">ID</span>
+                  <span className="text-muted-foreground">ID</span>
                   <code className="font-mono text-muted-foreground">{stage.id}</code>
                 </div>
                 {stage.podName && (
@@ -273,7 +273,7 @@ export function StageDetail() {
                   </div>
                 )}
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span className="text-muted-foreground w-[52px]">Created</span>
+                  <span className="text-muted-foreground">Created</span>
                   <span>{stage.createdAt ? timestampDate(stage.createdAt).toLocaleDateString() : "\u2014"}</span>
                 </div>
               </div>
