@@ -87,9 +87,9 @@ Do NOT hardcode 1920x1080 — the viewport is 1280x720.
     - requestAnimationFrame-driven layouts work well
 
   WebGL geometry
-    - Meshes up to ~40K triangles with per-pixel Phong lighting — 30+ fps
-    - Flat-shaded or vertex-colored geometry is even cheaper
+    - 500K+ triangles with per-pixel Phong lighting — still 60 fps
     - Three.js, p5.js, custom WebGL — all perform well
+    - Use mesh complexity (more triangles) instead of shader complexity
 
   Web Audio API
     - Oscillators, gain nodes, audio buffers — captured by PulseAudio
@@ -101,19 +101,19 @@ Do NOT hardcode 1920x1080 — the viewport is 1280x720.
 
 ## Performance Tiers
 
-  Smooth (60 fps):   HTML/CSS animations, Canvas 2D, DOM animation
-  Good (30+ fps):    WebGL geometry up to ~40K tris with Phong lighting
-  Marginal (20-30):  500K+ tris (many draw calls), very high poly meshes
-  Too heavy (<20):   Full-screen fragment shaders, backdrop-filter, multi-pass
+  Smooth (60 fps):   HTML/CSS, Canvas 2D, DOM, WebGL geometry (even 500K+ tris)
+  Good (30+ fps):    Simple SDF raymarcher (48 steps, no noise), backdrop-filter
+  Too heavy (<15):   Fragment shaders with noise, multi-pass rendering
 
-  Geometry-based WebGL is the sweet spot. Full-screen fragment shaders
-  (even a simple SDF raymarcher) drop below 30 fps. Adding noise drops
-  to single digits. Use "dazzle s stats" to monitor.
+  Geometry-based WebGL is the sweet spot — even 100 draw calls with 512K
+  total triangles runs at 60 fps. The bottleneck is per-pixel fragment work.
+  Use "dazzle s stats" to monitor.
 
   Avoid:
-    - Full-screen fragment shaders (raymarching, SDF, noise) — per-pixel, expensive
-    - backdrop-filter — drops to ~18 fps with overlapping panels
-    - Multi-pass rendering — render-to-texture + post-process doubles cost
+    - Fragment shaders with noise — even 2-octave noise drops to ~11 fps
+    - Multi-pass rendering — render-to-texture + post-process costs ~11 fps
+    - Complex raymarching — multi-octave FBM terrain drops to ~1 fps
+    - backdrop-filter — borderline (~30 fps), avoid stacking panels
     - Monitor with "dazzle s stats" — if Stage FPS < 30, simplify
 
 ## What to Avoid
