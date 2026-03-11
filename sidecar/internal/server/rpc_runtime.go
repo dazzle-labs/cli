@@ -58,8 +58,9 @@ func (h *runtimeServer) GetLogs(ctx context.Context, req *connect.Request[sideca
 }
 
 func (h *runtimeServer) GetStats(ctx context.Context, req *connect.Request[sidecarv1.GetStatsRequest]) (*connect.Response[sidecarv1.GetStatsResponse], error) {
+	ps := h.s.pipeline.GetStats()
+
 	h.s.statsMu.Lock()
-	ps := h.s.pipelineStats
 	bFPS := h.s.browserFPS
 	pStart := h.s.pipelineStart
 	h.s.statsMu.Unlock()
@@ -74,7 +75,7 @@ func (h *runtimeServer) GetStats(ctx context.Context, req *connect.Request[sidec
 		StageFps:               bFPS,
 		BroadcastFps:           ps.FPS,
 		DroppedFrames:          ps.DroppedFrames,
-		DroppedFramesRecent:    0, // TODO: implement windowed counter
+		DroppedFramesRecent:    ps.DroppedFramesRecent,
 		TotalBytes:             ps.TotalBytes,
 		Broadcasting:           ps.Broadcasting,
 		BroadcastUptimeSeconds: broadcastUptime,

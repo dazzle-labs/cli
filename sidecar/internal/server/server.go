@@ -60,7 +60,6 @@ type Server struct {
 
 	// Live stats (updated by pipeline callback and browser FPS poller)
 	statsMu       sync.Mutex
-	pipelineStats pipeline.Stats
 	pipelineStart time.Time
 	browserFPS    float64
 }
@@ -232,9 +231,6 @@ func (s *Server) startPipeline() {
 
 	s.pipeline.SetStatsCallback(func(stats pipeline.Stats) {
 		UpdatePipelineStats(stats)
-		s.statsMu.Lock()
-		s.pipelineStats = stats
-		s.statsMu.Unlock()
 	})
 
 	s.statsMu.Lock()
@@ -293,13 +289,18 @@ func (s *Server) pollBrowserFPS() {
 			continue
 		}
 
-		// Read the current FPS
-		val, err := s.cdpClient.Evaluate("window.__dzFPS ? window.__dzFPS.current : 0")
+		// Read the current FPS; -1 means window.__dzFPS was lost (page navigated)
+		val, err := s.cdpClient.Evaluate("window.__dzFPS ? window.__dzFPS.current : -1")
 		if err != nil {
 			injected = false
 			continue
 		}
 		fps, _ := strconv.ParseFloat(val, 64)
+		if fps < 0 {
+			// Page navigated — re-inject on next tick
+			injected = false
+			continue
+		}
 		s.statsMu.Lock()
 		s.browserFPS = fps
 		s.statsMu.Unlock()
