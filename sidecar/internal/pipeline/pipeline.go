@@ -262,7 +262,7 @@ func (p *Pipeline) buildArgs() []string {
 		// internal clock from drifting when input threads stall.
 		"-use_wallclock_as_timestamps", "1",
 		// Video input: X11 grab
-		// Large thread queue absorbs Chrome's bursty SwiftShader rendering
+		// Large thread queue absorbs Chrome's bursty software rendering
 		// without blocking the input thread (default 8 is ~250ms at 30fps).
 		"-thread_queue_size", "512",
 		"-f", "x11grab",

@@ -12,14 +12,9 @@ kubectl set env deployment/streamer-<stage-id> DISABLE_WEBGL=true
 Chrome will revert to `--disable-gpu`.
 
 ### 2. Full rollback (all stages)
-Revert Dockerfile and entrypoint.sh changes.
 
-```bash
-# Replace --use-gl=swiftshader with --disable-gpu in entrypoint.sh
-# Remove Mesa library packages from Dockerfile
-# Rebuild and redeploy:
-make build-streamer && make deploy
-```
+Change `STREAMER_CHROME_FLAGS` in `k8s/control-plane/deployment.yaml`:
+replace `--use-gl=desktop` with `--disable-gpu`, then redeploy.
 
 ### 3. Testing rollback
 
@@ -29,6 +24,6 @@ Verify Chrome args:
 kubectl exec <pod> -- ps aux | grep chrome
 ```
 
-Should show `--disable-gpu` instead of `--use-gl=swiftshader`.
+Should show `--disable-gpu` instead of `--use-gl=desktop`.
 
 Create test stage without WebGL and verify it still works.

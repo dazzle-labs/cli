@@ -514,8 +514,8 @@ func boolPtr(b bool) *bool {
 // streamerEnvVars returns env vars for the streamer container.
 // All STREAMER_* env vars on the control-plane are passed through (with the
 // prefix stripped) so the streamer image can be tuned without rebuilding.
-// Key vars: CHROME_FLAGS (full Chrome arg string), SWIFTSHADER_THREAD_COUNT,
-// SCREEN_WIDTH, SCREEN_HEIGHT, DISABLE_WEBGL.
+// Key vars: CHROME_FLAGS (full Chrome arg string), SCREEN_WIDTH, SCREEN_HEIGHT,
+// DISABLE_WEBGL.
 func streamerEnvVars(stageID, userID string) []corev1.EnvVar {
 	vars := []corev1.EnvVar{
 		{Name: "STAGE_ID", Value: stageID},

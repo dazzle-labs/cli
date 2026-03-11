@@ -20,7 +20,7 @@ SCENE=${3:-"shader_simple"}
 DURATION=${4:-15}
 
 # Standard Chrome flags — same as production deployment.yaml
-DEFAULT_CHROME_FLAGS="--no-sandbox --use-gl=angle --use-angle=swiftshader-webgl --enable-unsafe-swiftshader --disable-gpu-compositing --disable-gpu-watchdog --no-first-run --no-default-browser-check --disable-infobars --autoplay-policy=no-user-gesture-required --remote-debugging-port=9222 --remote-debugging-address=0.0.0.0 --user-data-dir=/data/chrome --renderer-process-limit=1 --kiosk --window-size=1280,720 --window-position=0,0 --display=:99 --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding"
+DEFAULT_CHROME_FLAGS="--no-sandbox --use-gl=desktop --disable-gpu-compositing --disable-gpu-watchdog --no-first-run --no-default-browser-check --disable-infobars --autoplay-policy=no-user-gesture-required --remote-debugging-port=9222 --remote-debugging-address=0.0.0.0 --user-data-dir=/data/chrome --renderer-process-limit=1 --kiosk --window-size=1280,720 --window-position=0,0 --display=:99 --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding"
 CHROME_FLAGS=${5:-"$DEFAULT_CHROME_FLAGS"}
 
 echo "=== Experiment: $NAME ==="

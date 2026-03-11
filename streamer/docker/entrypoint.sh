@@ -22,11 +22,11 @@ if [ -z "${CHROME_FLAGS:-}" ]; then
     exit 1
 fi
 
-# SwiftShader.ini is mounted from the swiftshader-ini ConfigMap.
-# The control-plane adds the volume mount; entrypoint just ensures the dir exists.
+# Renderer config (SwiftShader.ini) is mounted from the swiftshader-ini ConfigMap.
+# Controls thread count for software rendering. Entrypoint ensures the dir exists.
 mkdir -p /data/chrome
-echo "SwiftShader.ini:"
-cat /data/chrome/SwiftShader.ini 2>/dev/null || echo "  (not mounted — using Chrome defaults)"
+echo "Renderer config:"
+cat /data/chrome/SwiftShader.ini 2>/dev/null || echo "  (not mounted — using defaults)"
 
 # 1. Start Xvfb
 echo "Starting Xvfb (${SCREEN_WIDTH}x${SCREEN_HEIGHT})..."

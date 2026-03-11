@@ -1,8 +1,8 @@
 # Dazzle Content Authoring Guide
 
-Your content runs in a cloud browser captured at 1280x720 @ 30 fps. The browser
-uses software rendering (SwiftShader WebGL) on shared CPU — there is no hardware
-GPU. This guide helps you write content that looks great within these constraints.
+Your content runs in a cloud browser captured at 1280x720 @ 30 fps. There is no
+hardware GPU — rendering is done in software on shared CPU. This guide helps you
+write content that looks great within these constraints.
 
 ## Environment at a Glance
 
@@ -10,7 +10,7 @@ GPU. This guide helps you write content that looks great within these constraint
 |-------------|------------------------------------------------|
 | Resolution  | 1280x720 (fixed)                               |
 | Frame rate  | 30 fps (captured via x11grab → x264)           |
-| Renderer    | ANGLE SwiftShader (software WebGL on CPU)       |
+| Renderer    | Software OpenGL (no hardware GPU)                |
 | CPU budget  | ~50% used by capture/encode; your content gets the rest |
 | Browser     | Headless Chrome, kiosk mode, full viewport      |
 | Audio       | PulseAudio capture (Web Audio API works)        |
@@ -59,10 +59,10 @@ Do NOT hardcode 1920x1080 — the viewport is 1280x720.
 - 200+ elements repositioned every frame via JS — still 59 fps
 - `requestAnimationFrame`-driven layouts work well
 
-**WebGL geometry (up to ~5000 triangles)**
-- Basic geometry, flat/phong/PBR materials on meshes — full 60 fps
-- Rotating cubes, icospheres, low-poly scenes, 2D sprite rendering
-- Per-pixel Phong lighting on 5120-triangle meshes: 60 fps
+**WebGL**
+- Geometry, materials (flat, Phong, PBR), instanced rendering — full 60 fps
+- Fragment shaders including raymarching, SDF, noise functions — 60 fps
+- Three.js, p5.js, custom WebGL — all perform well
 
 **Web Audio API**
 - Oscillators, gain nodes, audio buffers — captured by PulseAudio
@@ -72,37 +72,27 @@ Do NOT hardcode 1920x1080 — the viewport is 1280x720.
 - Load via `<script>` or `<link>` from CDNs (unpkg, cdnjs, etc.)
 - Three.js, D3, GSAP, Tone.js, p5.js — all work
 
-## The SwiftShader Cliff: Geometry vs Fragment Shaders
+## WebGL Performance
 
-SwiftShader (the CPU-based WebGL renderer) has a **hard performance cliff**:
+All standard WebGL workloads hit 60 FPS at 1280x720, including fragment-heavy
+scenes:
 
-| Rendering approach              | FPS   |
-|---------------------------------|-------|
-| Geometry-based (mesh + lighting) | 60    |
-| Full-screen fragment loops       | 1–5   |
+| Scene                                      | FPS |
+|--------------------------------------------|-----|
+| Mesh-based WebGL (Phong, PBR, 5K tris)     | 60  |
+| Full-screen SDF raymarcher (48 steps)       | 60  |
+| Terrain + 6-octave FBM noise (100 steps)    | 60  |
 
-This is NOT a gradual slope. Even the simplest possible full-screen raymarcher
-(single sphere, 48 march steps, no noise) drops to ~4 fps. The bottleneck is
-per-pixel loop iterations across all 921,600 pixels (1280x720) in software.
-
-### What's fast
-- Mesh-based WebGL with any material (flat, Phong, PBR)
-- Vertex-driven effects (displacement maps, morph targets)
-- Simple fragment shaders without loops (color grading, UV effects)
-- Instanced rendering with many objects
-
-### What's slow (avoid)
-- Raymarching / signed distance fields (any step count)
-- Fractal noise (FBM) computed per-pixel
-- Volumetric effects (clouds, fog, god rays via ray stepping)
+### What works
+- Raymarching, signed distance fields, noise functions
 - Multi-pass rendering (bloom, blur, post-processing)
-- Path tracing / global illumination
+- Fragment-heavy shaders (per-pixel lighting, volumetrics)
+- Instanced rendering, morph targets, displacement maps
 
-### If you need complex visuals
-- Bake effects into textures or meshes offline
-- Use pre-rendered video textures for backgrounds
-- Replace raymarched shapes with actual geometry
-- Move noise to vertex shaders or use texture-based noise
+### What to watch for
+- Very high triangle counts (>50K) may start to drop
+- Multiple render targets with heavy shaders compound cost
+- Keep an eye on `dazzle s stats` — if Stage FPS drops below 30, simplify
 
 ## What to Avoid
 

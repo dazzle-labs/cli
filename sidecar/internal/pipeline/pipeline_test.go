@@ -332,7 +332,7 @@ func TestBuildArgs_Regressions(t *testing.T) {
 		args := defaultPipeline().buildArgs()
 		if !containsPair(args, "-use_wallclock_as_timestamps", "1") {
 			t.Fatal("REGRESSION: -use_wallclock_as_timestamps 1 missing. " +
-				"Prevents x11grab clock drift from Chrome's bursty SwiftShader rendering.")
+				"Prevents x11grab clock drift from Chrome's bursty software rendering.")
 		}
 	})
 

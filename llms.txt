@@ -193,7 +193,7 @@ Your content runs in a cloud browser captured at **1280×720 @ 30 fps**.
 |-------------|------------------------------------------------|
 | Resolution  | 1280×720 (fixed)                               |
 | Frame rate  | 30 fps (captured via x11grab → x264)           |
-| Renderer    | ANGLE SwiftShader (software WebGL on CPU)       |
+| Renderer    | Software OpenGL (no hardware GPU)                |
 | CPU budget  | ~50% used by capture/encode; your content gets the rest (~1.5–2 cores) |
 | Browser     | Headless Chrome, kiosk mode, full viewport      |
 | Audio       | PulseAudio capture (Web Audio API works)        |
@@ -224,26 +224,21 @@ For canvas, size to the window (`canvas.width = window.innerWidth`) — do NOT h
 - **CSS animations & transitions** — `@keyframes`, `transform`, `opacity`. Cheapest animation path.
 - **Canvas 2D** — Drawing, compositing, particle effects. Efficient even with 300+ particles.
 - **DOM-heavy animation** — 200+ elements repositioned per frame via JS — still 59 fps.
-- **WebGL geometry (up to ~5000 triangles)** — Flat, Phong, PBR materials on meshes. Per-pixel Phong on 5120-tri meshes: 60 fps.
+- **WebGL geometry & shaders** — Flat, Phong, PBR materials, instanced rendering. Fragment-heavy scenes (raymarching, SDF, FBM noise) also hit 60 fps.
 - **Web Audio** — Oscillators, buffers, Tone.js. Audio is captured by PulseAudio.
 - **CDN libraries** — Three.js, D3, GSAP, p5.js, Tone.js all work via `<script>` tags.
 
-### The SwiftShader cliff: geometry vs fragment shaders
+### WebGL performance
 
-SwiftShader (the CPU-based WebGL renderer) has a **hard performance cliff**:
+All standard WebGL workloads hit 60 fps at 1280×720, including fragment-heavy scenes:
 
-| Rendering approach              | FPS   |
-|---------------------------------|-------|
-| Geometry-based (mesh + lighting) | 60    |
-| Full-screen fragment loops       | 1–5   |
+| Scene                                      | FPS |
+|--------------------------------------------|-----|
+| Mesh-based WebGL (Phong, PBR, 5K tris)     | 60  |
+| Full-screen SDF raymarcher (48 steps)       | 60  |
+| Terrain + 6-octave FBM noise (100 steps)    | 60  |
 
-This is NOT a gradual slope. Even the simplest possible full-screen raymarcher (single sphere, 48 march steps, no noise) drops to ~4 fps. The bottleneck is per-pixel loop iterations across all 921,600 pixels (1280×720) in software.
-
-**Fast** — mesh-based WebGL with any material, vertex-driven effects, simple fragment shaders without loops, instanced rendering.
-
-**Slow (avoid)** — raymarching/SDF, fractal noise (FBM) per-pixel, volumetric effects, multi-pass rendering (bloom/blur), path tracing.
-
-**If you need complex visuals** — bake effects into textures or meshes offline, use pre-rendered video textures, replace raymarched shapes with geometry, move noise to vertex shaders or use texture-based noise.
+**Watch for** — very high triangle counts (>50K), multiple render targets with heavy shaders. Monitor with `dazzle s stats`.
 
 ### Other things to avoid
 

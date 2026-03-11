@@ -28,6 +28,8 @@ github.com/dazzle-labs/cli v0.1.0-beta.31.0.20260310191143-a980373d551a h1:YdUQz
 github.com/dazzle-labs/cli v0.1.0-beta.31.0.20260310191143-a980373d551a/go.mod h1:AuphucsmRXt72WkppSaTGPmLaD+F1fJkCwkhEEsX+Hc=
 github.com/dazzle-labs/cli v0.1.0-beta.32 h1:8wqyeMC88HSGIpgnOfnkRjum1OWBWl0FUsS0VZu+mvY=
 github.com/dazzle-labs/cli v0.1.0-beta.32/go.mod h1:AuphucsmRXt72WkppSaTGPmLaD+F1fJkCwkhEEsX+Hc=
+github.com/dazzle-labs/cli v0.1.0-beta.32.0.20260311010024-d1ac15234b82 h1:9frYIusiPBVDvSJGjxQ4OG0px0Uts4bDp5KX0vSPRnE=
+github.com/dazzle-labs/cli v0.1.0-beta.32.0.20260311010024-d1ac15234b82/go.mod h1:AuphucsmRXt72WkppSaTGPmLaD+F1fJkCwkhEEsX+Hc=
 github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
 github.com/emicklei/go-restful/v3 v3.11.0 h1:rAQeMHw1c7zTmncogyy8VvRZwtkmkZ4FxERmMY4rD+g=

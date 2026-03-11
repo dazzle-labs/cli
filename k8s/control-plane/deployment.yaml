@@ -153,8 +153,7 @@ spec:
             - name: STREAMER_CHROME_FLAGS
               value: >-
                 --no-sandbox
-                --use-gl=angle --use-angle=swiftshader-webgl
-                --enable-unsafe-swiftshader
+                --use-gl=desktop
                 --disable-gpu-compositing --disable-gpu-watchdog
                 --no-first-run --no-default-browser-check --disable-infobars
                 --autoplay-policy=no-user-gesture-required
