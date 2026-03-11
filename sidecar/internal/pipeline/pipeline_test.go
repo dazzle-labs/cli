@@ -181,13 +181,13 @@ func TestBuildArgs_HLSOnly(t *testing.T) {
 		{"has ultrafast preset", func() bool { return containsPair(args, "-preset", "ultrafast") }},
 		{"has zerolatency", func() bool { return containsPair(args, "-tune", "zerolatency") }},
 		{"has crf 28", func() bool { return containsPair(args, "-crf", "28") }},
-		{"has gop = framerate*2", func() bool { return containsPair(args, "-g", "60") }},
+		{"has gop = framerate", func() bool { return containsPair(args, "-g", "30") }},
 		{"has threads 2", func() bool { return containsPair(args, "-threads", "2") }},
 		{"has aac audio", func() bool { return containsPair(args, "-c:a", "aac") }},
 		{"has audio bitrate 96k", func() bool { return containsPair(args, "-b:a", "96k") }},
 		{"has hls format", func() bool { return containsPair(args, "-f", "hls") }},
-		{"has hls_time 2", func() bool { return containsPair(args, "-hls_time", "2") }},
-		{"has hls_list_size 3", func() bool { return containsPair(args, "-hls_list_size", "3") }},
+		{"has hls_time 1", func() bool { return containsPair(args, "-hls_time", "1") }},
+		{"has hls_list_size 5", func() bool { return containsPair(args, "-hls_list_size", "5") }},
 		{"has hls_flags", func() bool {
 			return containsPair(args, "-hls_flags", "delete_segments+append_list")
 		}},
@@ -264,7 +264,7 @@ func TestBuildArgs_Options(t *testing.T) {
 			opts: []Option{WithFramerate(60)},
 			wantPairs: [][2]string{
 				{"-framerate", "60"},
-				{"-g", "120"}, // GOP = framerate * 2
+				{"-g", "60"}, // GOP = framerate
 			},
 		},
 		{
@@ -293,7 +293,7 @@ func TestBuildArgs_Options(t *testing.T) {
 			opts: []Option{WithFramerate(15)},
 			wantPairs: [][2]string{
 				{"-framerate", "15"},
-				{"-g", "30"},
+				{"-g", "15"},
 			},
 			rejectPairs: [][2]string{
 				{"-f", "flv"},

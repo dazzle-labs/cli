@@ -50,10 +50,11 @@ export function StreamPreview({ stageId, status }: StreamPreviewProps) {
       if (!videoRef.current) return;
 
       const hls = new Hls({
-        liveSyncDurationCount: 3,
-        liveMaxLatencyDurationCount: 10,
-        maxBufferLength: 10,
-        lowLatencyMode: false,
+        liveSyncDurationCount: 1,
+        liveMaxLatencyDurationCount: 3,
+        maxBufferLength: 3,
+        backBufferLength: 3,
+        lowLatencyMode: true,
         xhrSetup: (xhr) => {
           if (authToken) {
             xhr.setRequestHeader("Authorization", `Bearer ${authToken}`);
@@ -69,8 +70,7 @@ export function StreamPreview({ stageId, status }: StreamPreviewProps) {
 
       hls.on(Hls.Events.ERROR, (_event, data) => {
         if (data.fatal) {
-          hls.destroy();
-          hlsRef.current = null;
+          destroyHls();
           // Retry after 3s — but don't loop via state/effect
           retryTimerRef.current = setTimeout(() => {
             initHls();

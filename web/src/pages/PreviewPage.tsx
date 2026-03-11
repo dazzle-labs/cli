@@ -39,9 +39,10 @@ export function PreviewPage() {
       if (!videoRef.current) return;
 
       const hls = new Hls({
-        liveSyncDurationCount: 3,
-        liveMaxLatencyDurationCount: 6,
-        maxBufferLength: 5,
+        liveSyncDurationCount: 1,
+        liveMaxLatencyDurationCount: 3,
+        maxBufferLength: 3,
+        backBufferLength: 3,
         lowLatencyMode: true,
       });
 
@@ -53,8 +54,7 @@ export function PreviewPage() {
 
       hls.on(Hls.Events.ERROR, (_event, data) => {
         if (data.fatal) {
-          hls.destroy();
-          hlsRef.current = null;
+          destroyHls();
           retryTimerRef.current = setTimeout(() => {
             initHls();
           }, 3000);

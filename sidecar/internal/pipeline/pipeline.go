@@ -250,7 +250,7 @@ func (p *Pipeline) monitor(cmd *exec.Cmd) {
 }
 
 func (p *Pipeline) buildArgs() []string {
-	gop := fmt.Sprintf("%d", p.framerate*2) // keyframe every 2 seconds
+	gop := fmt.Sprintf("%d", p.framerate) // keyframe every 1 second
 	segPattern := fmt.Sprintf("%s/seg%%03d.ts", p.hlsDir)
 	hlsOut := fmt.Sprintf("%s/stream.m3u8", p.hlsDir)
 	fpsStr := fmt.Sprintf("%d", p.framerate)
@@ -286,8 +286,8 @@ func (p *Pipeline) buildArgs() []string {
 			"-g", gop,
 			"-c:a", "aac", "-b:a", "96k",
 			"-f", "hls",
-			"-hls_time", "2",
-			"-hls_list_size", "3",
+			"-hls_time", "1",
+			"-hls_list_size", "5",
 			"-hls_flags", "delete_segments+append_list",
 			"-hls_segment_filename", segPattern,
 			hlsOut,
@@ -299,7 +299,7 @@ func (p *Pipeline) buildArgs() []string {
 			"-b:v", fmt.Sprintf("%dk", p.rtmpBitrate),
 			"-maxrate", fmt.Sprintf("%dk", p.rtmpBitrate),
 			"-bufsize", fmt.Sprintf("%dk", p.rtmpBitrate*2),
-			"-g", fmt.Sprintf("%d", p.framerate*2), // 2-second GOP for RTMP
+			"-g", fmt.Sprintf("%d", p.framerate*2), // 2-second GOP for RTMP (longer for CDN efficiency)
 			"-c:a", "aac", "-b:a", "128k",
 			"-f", "flv",
 			p.rtmpURL,
@@ -312,8 +312,8 @@ func (p *Pipeline) buildArgs() []string {
 			"-g", gop,
 			"-c:a", "aac", "-b:a", "96k",
 			"-f", "hls",
-			"-hls_time", "2",
-			"-hls_list_size", "3",
+			"-hls_time", "1",
+			"-hls_list_size", "5",
 			"-hls_flags", "delete_segments+append_list",
 			"-hls_segment_filename", segPattern,
 			hlsOut,
