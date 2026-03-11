@@ -58,6 +58,48 @@ func (c *YouTubeClient) GetStreamKey(ctx context.Context, token string, platform
 	return info.IngestionAddress, info.StreamName, nil
 }
 
+func (c *YouTubeClient) GetStreamInfo(ctx context.Context, token string, platformUserID string) (string, string, error) {
+	resp, err := youtubeRequest(ctx, "GET",
+		"https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet&broadcastStatus=active&mine=true",
+		token, nil)
+	if err != nil {
+		return "", "", err
+	}
+	defer resp.Body.Close()
+
+	var broadcasts struct {
+		Items []struct {
+			Snippet struct {
+				Title string `json:"title"`
+			} `json:"snippet"`
+		} `json:"items"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&broadcasts); err != nil {
+		return "", "", err
+	}
+
+	// Try upcoming if no active broadcast
+	if len(broadcasts.Items) == 0 {
+		resp2, err := youtubeRequest(ctx, "GET",
+			"https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet&broadcastStatus=upcoming&mine=true",
+			token, nil)
+		if err != nil {
+			return "", "", err
+		}
+		defer resp2.Body.Close()
+		if err := json.NewDecoder(resp2.Body).Decode(&broadcasts); err != nil {
+			return "", "", err
+		}
+	}
+
+	if len(broadcasts.Items) == 0 {
+		return "", "", nil
+	}
+
+	// category not available from liveBroadcasts resource
+	return broadcasts.Items[0].Snippet.Title, "", nil
+}
+
 func (c *YouTubeClient) SetStreamInfo(ctx context.Context, token string, platformUserID string, title, category string) error {
 	// Get active broadcast
 	resp, err := youtubeRequest(ctx, "GET",

@@ -55,6 +55,30 @@ func (c *TwitchClient) GetStreamKey(ctx context.Context, token string, platformU
 	return "rtmp://live.twitch.tv/app", result.Data[0].StreamKey, nil
 }
 
+func (c *TwitchClient) GetStreamInfo(ctx context.Context, token string, platformUserID string) (string, string, error) {
+	resp, err := c.twitchRequest(ctx, "GET",
+		"https://api.twitch.tv/helix/channels?broadcaster_id="+platformUserID,
+		token, nil)
+	if err != nil {
+		return "", "", err
+	}
+	defer resp.Body.Close()
+
+	var result struct {
+		Data []struct {
+			Title    string `json:"title"`
+			GameName string `json:"game_name"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", "", err
+	}
+	if len(result.Data) == 0 {
+		return "", "", nil
+	}
+	return result.Data[0].Title, result.Data[0].GameName, nil
+}
+
 func (c *TwitchClient) SetStreamInfo(ctx context.Context, token string, platformUserID string, title, category string) error {
 	body := map[string]any{}
 	if title != "" {

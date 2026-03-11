@@ -12,6 +12,17 @@ import (
 // KickClient implements PlatformClient for Kick Public API.
 type KickClient struct{}
 
+// kickChannelData is the normalized channel data from GET /public/v1/channels.
+type kickChannelData struct {
+	Stream struct {
+		Key string `json:"key"`
+	} `json:"stream"`
+	StreamTitle string `json:"stream_title"`
+	Category    struct {
+		Name string `json:"name"`
+	} `json:"category"`
+}
+
 func kickRequest(ctx context.Context, method, url string, token string, body any) (*http.Response, error) {
 	var bodyReader io.Reader
 	if body != nil {
@@ -29,32 +40,51 @@ func kickRequest(ctx context.Context, method, url string, token string, body any
 	return http.DefaultClient.Do(req)
 }
 
-func (c *KickClient) GetStreamKey(ctx context.Context, token string, platformUserID string) (string, string, error) {
+// fetchKickChannelData calls GET /public/v1/channels and returns the first channel's data.
+func (c *KickClient) fetchKickChannelData(ctx context.Context, token string) (*kickChannelData, error) {
 	resp, err := kickRequest(ctx, "GET", "https://api.kick.com/public/v1/channels", token, nil)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read kick channels response: %w", err)
+	}
 	var result struct {
-		Data []struct {
-			Stream struct {
-				Key string `json:"key"`
-			} `json:"stream"`
-		} `json:"data"`
+		Data []kickChannelData `json:"data"`
 	}
 	if err := json.Unmarshal(body, &result); err != nil {
-		return "", "", fmt.Errorf("failed to parse kick channels response: %w (%s)", err, string(body))
+		return nil, fmt.Errorf("failed to parse kick channels response: %w (%s)", err, string(body))
 	}
 	if len(result.Data) == 0 {
-		return "", "", fmt.Errorf("no channel data returned from Kick")
+		return nil, fmt.Errorf("no channel data returned from Kick")
 	}
-	streamKey := result.Data[0].Stream.Key
+	return &result.Data[0], nil
+}
+
+func (c *KickClient) GetStreamKey(ctx context.Context, token string, platformUserID string) (string, string, error) {
+	data, err := c.fetchKickChannelData(ctx, token)
+	if err != nil {
+		return "", "", err
+	}
+	streamKey := data.Stream.Key
 	if streamKey == "" {
 		return "", "", fmt.Errorf("no stream key found in Kick channel data")
 	}
 	return "rtmps://fa723fc1b171.global-contribute.live-video.net:443/app", streamKey, nil
+}
+
+func (c *KickClient) GetStreamInfo(ctx context.Context, token string, platformUserID string) (string, string, error) {
+	data, err := c.fetchKickChannelData(ctx, token)
+	if err != nil {
+		return "", "", err
+	}
+	if data.StreamTitle == "" && data.Category.Name == "" {
+		return "", "", fmt.Errorf("GetStreamInfo not supported for Kick")
+	}
+	return data.StreamTitle, data.Category.Name, nil
 }
 
 func (c *KickClient) SetStreamInfo(ctx context.Context, token string, platformUserID string, title, category string) error {

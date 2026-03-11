@@ -1342,6 +1342,13 @@ func main() {
 	)
 	mux.Handle(runtimePath, corsMiddleware(runtimeHandler))
 
+	// BroadcastService — Clerk JWT or API key
+	broadcastPath, broadcastHandler := apiv1connect.NewBroadcastServiceHandler(
+		&broadcastServer{mgr: mgr},
+		connect.WithInterceptors(authInterceptor),
+	)
+	mux.Handle(broadcastPath, corsMiddleware(broadcastHandler))
+
 	// CLI session routes (Go 1.22+ pattern matching)
 	cliSessionCORS := func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {

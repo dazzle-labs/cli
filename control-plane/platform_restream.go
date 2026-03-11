@@ -41,6 +41,10 @@ func (c *RestreamClient) GetStreamKey(ctx context.Context, token string, platfor
 	return "rtmp://live.restream.io/live", result.StreamKey, nil
 }
 
+func (c *RestreamClient) GetStreamInfo(ctx context.Context, token string, platformUserID string) (string, string, error) {
+	return "", "", fmt.Errorf("GetStreamInfo not supported for Restream")
+}
+
 func (c *RestreamClient) SetStreamInfo(ctx context.Context, token string, platformUserID string, title, category string) error {
 	return fmt.Errorf("Restream does not support setting stream info directly — set title/category on the underlying platforms instead")
 }

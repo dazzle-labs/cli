@@ -8,6 +8,7 @@ import (
 // PlatformClient provides platform-specific API operations.
 type PlatformClient interface {
 	GetStreamKey(ctx context.Context, token string, platformUserID string) (rtmpURL, streamKey string, err error)
+	GetStreamInfo(ctx context.Context, token string, platformUserID string) (title, category string, err error)
 	SetStreamInfo(ctx context.Context, token string, platformUserID string, title, category string) error
 	GetChatMessages(ctx context.Context, token string, platformUserID string, limit int) ([]ChatMessage, error)
 	SendChatMessage(ctx context.Context, token string, platformUserID string, message string) error
