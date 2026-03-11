@@ -103,19 +103,20 @@ check-cli:
 		echo ""; \
 	fi
 
-pull-cli: ## Pull latest cli, update go.mod, and commit
+pull-cli: ## Pull latest cli release tag, update go.mod, and commit
 	@if ! git -C cli diff --quiet || ! git -C cli diff --cached --quiet; then \
 		printf "$(_yellow)ERROR: cli/ has uncommitted changes. Commit or stash them first.$(_reset)\n"; \
 		git -C cli status --short; \
 		exit 1; \
 	fi
-	$(STEP) "Pulling latest cli"
-	git -C cli checkout main
-	git -C cli pull
-	$(STEP) "Updating control-plane go.mod"
-	cd control-plane && go get github.com/dazzle-labs/cli@$$(git -C ../cli rev-parse HEAD)
+	$(STEP) "Fetching latest cli release tag"
+	git -C cli fetch --tags origin
+	$(eval CLI_TAG := $(shell git -C cli tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+' | head -1))
+	git -C cli checkout $(CLI_TAG)
+	$(STEP) "Updating control-plane go.mod → $(CLI_TAG)"
+	cd control-plane && go get github.com/dazzle-labs/cli@$(CLI_TAG)
 	cd control-plane && go build ./...
-	$(OK) "cli bumped to $$(git -C cli rev-parse --short HEAD)"
+	$(OK) "cli bumped to $(CLI_TAG)"
 
 proto: check-cli ## Generate protobuf code (Go + TypeScript)
 	$(MAKE) -C cli proto

@@ -77,7 +77,7 @@ jobs:
             echo "  Current commit: $SUBMODULE_COMMIT"
             echo "  Latest release: $LATEST_TAG ($LATEST_RELEASE_COMMIT)"
             echo ""
-            echo "Update with: cd cli && git fetch --tags && git checkout $LATEST_TAG && cd .. && git add cli && git commit"
+            echo "Update with:  make pull-cli"
             exit 1
           fi
 
