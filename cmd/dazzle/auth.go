@@ -68,9 +68,10 @@ func (c *LoginCmd) Run(ctx *Context) error {
 		}
 		sanitized := strings.Trim(sb.String(), "-")
 		if sanitized == "" {
-			sanitized = "unknown"
+			c.KeyName = "CLI"
+		} else {
+			c.KeyName = "CLI-" + sanitized
 		}
-		c.KeyName = "CLI-" + sanitized
 	}
 
 	// Interactive: browser-based OAuth login
