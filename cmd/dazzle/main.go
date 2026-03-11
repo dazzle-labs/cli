@@ -19,7 +19,7 @@ var cli struct {
 	Guide   GuideCmd   `cmd:"" help:"Show content authoring guide (rendering tips, performance, best practices)."`
 
 	// Auth commands
-	Login  LoginCmd  `cmd:"" help:"Authenticate with your API key."`
+	Login  LoginCmd  `cmd:"" help:"Authenticate with Dazzle (opens browser)."`
 	Logout LogoutCmd `cmd:"" help:"Clear stored credentials."`
 	Whoami WhoamiCmd `cmd:"" help:"Show current user."`
 

@@ -2,11 +2,15 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"connectrpc.com/connect"
 	apiv1 "github.com/dazzle-labs/cli/gen/api/v1"
@@ -16,46 +20,119 @@ import (
 
 // LoginCmd handles `dazzle login`.
 type LoginCmd struct {
-	APIKey string `help:"API key to store (skips interactive prompt)." name:"api-key"`
+	APIKey  string `help:"API key to store (skips interactive prompt)." name:"api-key"`
+	KeyName string `help:"Name for the API key." name:"key-name" default:"CLI"`
 }
 
 func (c *LoginCmd) Run(ctx *Context) error {
 	apiKey := c.APIKey
 
-	if apiKey == "" {
-		// Check if stdin is a TTY — if not, read from stdin (CI/pipe mode)
-		if !term.IsTerminal(int(os.Stdin.Fd())) {
+	// Non-interactive: read from stdin pipe or --api-key flag
+	if apiKey != "" || !term.IsTerminal(int(os.Stdin.Fd())) {
+		if apiKey == "" {
 			scanner := bufio.NewScanner(os.Stdin)
 			if scanner.Scan() {
 				apiKey = strings.TrimSpace(scanner.Text())
 			}
+		}
+		if apiKey == "" {
+			return errors.New("api key cannot be empty")
+		}
+		if !strings.HasPrefix(apiKey, "dzl_") && !strings.HasPrefix(apiKey, "bstr_") {
+			return errors.New("invalid api key format -- must start with dzl_ (or legacy bstr_)")
+		}
+		if err := saveCredentials(&Credentials{APIKey: apiKey}); err != nil {
+			return fmt.Errorf("save credentials: %w", err)
+		}
+		if ctx.JSON {
+			printJSON(map[string]string{"status": "ok"})
 		} else {
-			// Interactive: hide input so it doesn't appear in terminal history
-			fmt.Print("Enter your API key (from stream.dazzle.fm/settings): ")
-			keyBytes, err := term.ReadPassword(int(os.Stdin.Fd()))
-			fmt.Println() // newline after hidden input
-			if err != nil {
-				return fmt.Errorf("read api key: %w", err)
-			}
-			apiKey = strings.TrimSpace(string(keyBytes))
+			printText("\u2713 Logged in")
+		}
+		return nil
+	}
+
+	// Interactive: browser-based OAuth login
+	creds, _ := loadCredentials()
+	if creds != nil && creds.APIKey != "" {
+		if creds.Email != "" {
+			fmt.Fprintf(os.Stderr, "Already logged in as %s. Re-authenticating...\n", creds.Email)
+		} else {
+			fmt.Fprintf(os.Stderr, "Already logged in. Re-authenticating...\n")
 		}
 	}
 
-	if apiKey == "" {
-		return errors.New("api key cannot be empty")
+	verifyCode := generateVerifyCode()
+
+	// Create CLI session
+	body, _ := json.Marshal(map[string]string{
+		"type":        "login",
+		"key_name":    c.KeyName,
+		"verify_code": verifyCode,
+	})
+	resp, err := http.Post(ctx.APIURL+"/auth/cli/session", "application/json", bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("create session: %w", err)
 	}
-	if !strings.HasPrefix(apiKey, "dzl_") && !strings.HasPrefix(apiKey, "bstr_") {
-		return errors.New("invalid api key format -- must start with dzl_")
+	defer resp.Body.Close()
+
+	var session struct {
+		SessionID  string `json:"session_id"`
+		BrowserURL string `json:"browser_url"`
+		Error      string `json:"error"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&session); err != nil {
+		return fmt.Errorf("parse session response: %w", err)
+	}
+	if session.Error != "" {
+		return fmt.Errorf("create session: %s", session.Error)
 	}
 
-	if err := saveCredentials(&Credentials{APIKey: apiKey}); err != nil {
+	if !ctx.JSON {
+		printText("Opening browser to sign in to Dazzle...")
+		printText("  \u2192 If the browser didn't open, visit: %s", session.BrowserURL)
+		printText("")
+		printText("Verification code: %s", verifyCode)
+		printText("")
+	}
+
+	openBrowser(session.BrowserURL)
+
+	// Poll for completion
+	var stop func()
+	if !ctx.JSON {
+		stop = startSpinner("Waiting for authentication...")
+	}
+
+	result, err := pollCliSession(ctx.APIURL, session.SessionID, 10*time.Minute)
+	if stop != nil {
+		stop()
+	}
+	if err != nil {
+		if ctx.JSON {
+			printJSON(map[string]string{"error": err.Error()})
+		} else {
+			printText("\u2717 Timed out waiting for authentication. Run 'dazzle login' to try again.")
+		}
+		os.Exit(1)
+	}
+
+	if err := saveCredentials(&Credentials{
+		APIKey:  result.Token,
+		Email:   result.Email,
+		KeyName: result.KeyName,
+	}); err != nil {
 		return fmt.Errorf("save credentials: %w", err)
 	}
 
 	if ctx.JSON {
-		printJSON(map[string]string{"status": "logged in"})
+		printJSON(map[string]string{"email": result.Email, "key_name": result.KeyName})
 	} else {
-		printText("Logged in. Run 'dazzle whoami' to verify.")
+		if result.Email != "" {
+			printText("\u2713 Logged in as %s (API key: %q)", result.Email, result.KeyName)
+		} else {
+			printText("\u2713 Logged in (API key: %q)", result.KeyName)
+		}
 	}
 	return nil
 }
