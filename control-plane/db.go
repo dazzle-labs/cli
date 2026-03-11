@@ -141,6 +141,33 @@ func dbCreateAPIKey(db *sql.DB, userID, name string) (id, secret, prefix string,
 	return
 }
 
+func dbRotateAPIKey(db *sql.DB, userID, name string) (id, secret, prefix string, err error) {
+	tx, err := db.Begin()
+	if err != nil {
+		return "", "", "", fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback()
+
+	// Delete existing key with this name (if any)
+	if _, err := tx.Exec(`DELETE FROM api_keys WHERE user_id=$1 AND name=$2`, userID, name); err != nil {
+		return "", "", "", fmt.Errorf("delete existing key: %w", err)
+	}
+
+	// Create new key
+	secret, prefix = generateAPIKey()
+	hash := hashAPIKey(secret)
+	err = tx.QueryRow(`INSERT INTO api_keys (user_id, name, prefix, key_hash) VALUES ($1, $2, $3, $4) RETURNING id`,
+		userID, name, prefix, hash).Scan(&id)
+	if err != nil {
+		return "", "", "", fmt.Errorf("insert api key: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return "", "", "", fmt.Errorf("commit tx: %w", err)
+	}
+	return id, secret, prefix, nil
+}
+
 type apiKeyRow struct {
 	ID         string
 	Name       string

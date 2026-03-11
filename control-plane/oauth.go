@@ -6,9 +6,11 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/base64"
+	_ "embed"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io"
 	"log"
 	"net/http"
@@ -34,6 +36,7 @@ type oauthState struct {
 	UserID       string
 	CodeVerifier string
 	Onboarding   bool
+	CliSessionID string
 	CreatedAt    time.Time
 }
 
@@ -121,7 +124,7 @@ func (h *oauthHandler) availablePlatforms() []string {
 }
 
 func (h *oauthHandler) handleCheck(w http.ResponseWriter, r *http.Request) {
-	platform := extractPlatformFromPath(r.URL.Path, "check")
+	platform := r.PathValue("platform")
 	if _, ok := h.configs[platform]; !ok {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": platform + " OAuth is not configured on this server",
@@ -132,22 +135,35 @@ func (h *oauthHandler) handleCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *oauthHandler) handleAuthorize(w http.ResponseWriter, r *http.Request) {
-	platform := extractPlatformFromPath(r.URL.Path, "authorize")
+	platform := r.PathValue("platform")
 	cfg, ok := h.configs[platform]
 	if !ok {
 		http.Redirect(w, r, "/destinations?error="+url.QueryEscape(platform+" OAuth is not configured on this server"), http.StatusFound)
 		return
 	}
 
-	// Auth via query param token
-	token := r.URL.Query().Get("token")
-	if token == "" {
-		token = extractBearerToken(r)
-	}
-	info, err := h.mgr.auth.authenticate(r.Context(), token)
-	if err != nil || info == nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
-		return
+	// Auth via short-lived auth_token (CLI destination flow) or query param token
+	var userID string
+	cliSessionID := r.URL.Query().Get("cli_session")
+
+	if authToken := r.URL.Query().Get("auth_token"); authToken != "" {
+		resolvedUserID, ok := h.mgr.cliSessions.consumeAuthToken(authToken)
+		if !ok {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid or expired auth token"})
+			return
+		}
+		userID = resolvedUserID
+	} else {
+		token := r.URL.Query().Get("token")
+		if token == "" {
+			token = extractBearerToken(r)
+		}
+		info, err := h.mgr.auth.authenticate(r.Context(), token)
+		if err != nil || info == nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+			return
+		}
+		userID = info.UserID
 	}
 
 	onboarding := r.URL.Query().Get("onboarding") == "true"
@@ -171,9 +187,10 @@ func (h *oauthHandler) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 	state := hex.EncodeToString(stateBytes)
 
 	h.states.Store(state, &oauthState{
-		UserID:       info.UserID,
+		UserID:       userID,
 		CodeVerifier: codeVerifier,
 		Onboarding:   onboarding,
+		CliSessionID: cliSessionID,
 		CreatedAt:    time.Now(),
 	})
 
@@ -203,7 +220,7 @@ func (h *oauthHandler) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *oauthHandler) handleCallback(w http.ResponseWriter, r *http.Request) {
-	platform := extractPlatformFromPath(r.URL.Path, "callback")
+	platform := r.PathValue("platform")
 	cfg, ok := h.configs[platform]
 	if !ok {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "unsupported platform"})
@@ -304,6 +321,26 @@ func (h *oauthHandler) handleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("OAuth stream destination upserted for %s/%s (user=%s)", platform, username, oauthSt.UserID)
+
+	// CLI destination flow: set pending result and show verification page
+	if oauthSt.CliSessionID != "" {
+		cliSession := h.mgr.cliSessions.get(oauthSt.CliSessionID)
+		if cliSession != nil {
+			h.mgr.cliSessions.setPending(oauthSt.CliSessionID, &cliSessionResult{
+				Platform:         platform,
+				PlatformUsername: username,
+			})
+
+			cliSession.mu.Lock()
+			verifyCode := cliSession.VerifyCode
+			cliSession.mu.Unlock()
+
+			// Render inline verification page — strip CORS header for security
+			w.Header().Del("Access-Control-Allow-Origin")
+			renderCliVerifyPage(w, platform, username, oauthSt.CliSessionID, verifyCode)
+			return
+		}
+	}
 
 	if oauthSt.Onboarding {
 		http.Redirect(w, r, "/?connected="+platform+"&onboarding=true", http.StatusFound)
@@ -478,14 +515,18 @@ func refreshPlatformToken(db *sql.DB, encKey []byte, dest *streamDestRow, config
 	return tok.AccessToken, nil
 }
 
-func extractPlatformFromPath(path, suffix string) string {
-	// path: /oauth/{platform}/authorize or /oauth/{platform}/callback
-	path = strings.TrimPrefix(path, "/oauth/")
-	parts := strings.SplitN(path, "/", 2)
-	if len(parts) == 0 {
-		return ""
-	}
-	return parts[0]
+//go:embed templates/cli_verify.html
+var cliVerifyHTML string
+var cliVerifyTmpl = template.Must(template.New("cli_verify").Parse(cliVerifyHTML))
+
+func renderCliVerifyPage(w http.ResponseWriter, platform, username, sessionID, verifyCode string) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	cliVerifyTmpl.Execute(w, struct {
+		Platform   string
+		Username   string
+		SessionID  string
+		VerifyCode string
+	}{platform, username, sessionID, verifyCode})
 }
 
 // fetchTwitchUserInfo gets the Twitch user ID and username from the Helix API.

@@ -88,6 +88,8 @@ type Manager struct {
 	encryptionKey []byte
 	pc            *podClient
 	oauth         *oauthHandler
+	cliSessions   *cliSessionManager
+	cliSessionRL  *rateLimiter
 	publicBaseURL string
 }
 
@@ -205,6 +207,8 @@ func NewManager() (*Manager, error) {
 		m.imagePullSecrets = []corev1.LocalObjectReference{{Name: secret}}
 	}
 
+	m.cliSessions = newCliSessionManager()
+	m.cliSessionRL = newRateLimiter()
 	m.oauth = newOAuthHandler(m)
 	if platforms := m.oauth.availablePlatforms(); len(platforms) > 0 {
 		log.Printf("OAuth configured for: %v", platforms)
@@ -1323,26 +1327,53 @@ func main() {
 	)
 	mux.Handle(runtimePath, corsMiddleware(runtimeHandler))
 
-	// OAuth routes
-	mux.HandleFunc("/oauth/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Authorization")
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
-			return
+	// CLI session routes (Go 1.22+ pattern matching)
+	cliSessionCORS := func(next http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+			if r.Method == http.MethodOptions {
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+			next(w, r)
 		}
-		if strings.Contains(r.URL.Path, "/callback") {
-			mgr.oauth.handleCallback(w, r)
-		} else if strings.Contains(r.URL.Path, "/check") {
-			mgr.oauth.handleCheck(w, r)
-		} else if strings.Contains(r.URL.Path, "/authorize") {
-			mgr.oauth.handleAuthorize(w, r)
-		} else {
+	}
+	mux.HandleFunc("POST /auth/cli/session", cliSessionCORS(mgr.handleCreateCliSession))
+	mux.HandleFunc("GET /auth/cli/session/{id}/poll", cliSessionCORS(mgr.handlePollCliSession))
+	mux.HandleFunc("POST /auth/cli/session/{id}/confirm", cliSessionCORS(mgr.handleConfirmCliSession))
+	mux.HandleFunc("GET /auth/cli/session/{id}/info", cliSessionCORS(mgr.handleCliSessionInfo))
+	// Handle OPTIONS preflight for all CLI session routes
+	mux.HandleFunc("/auth/cli/session/", cliSessionCORS(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodOptions {
 			http.NotFound(w, r)
 		}
-	})
+	}))
 
+	// OAuth routes (Go 1.22+ pattern matching)
+	oauthCORS := func(next http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Authorization")
+			if r.Method == http.MethodOptions {
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+			next(w, r)
+		}
+	}
+	mux.HandleFunc("GET /oauth/{platform}/authorize", oauthCORS(mgr.oauth.handleAuthorize))
+	mux.HandleFunc("GET /oauth/{platform}/callback", oauthCORS(mgr.oauth.handleCallback))
+	mux.HandleFunc("GET /oauth/{platform}/check", oauthCORS(mgr.oauth.handleCheck))
+	mux.HandleFunc("/oauth/", oauthCORS(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodOptions {
+			http.NotFound(w, r)
+		}
+	}))
+
+	// TODO: convert /stage/ handler to Go 1.22+ path patterns (like /oauth/ and /auth/cli/session/ above)
 	// Stage handler: all stage-specific routes under /stage/<uuid>/
 	//   /stage/<uuid>/cdp           — CDP WebSocket proxy and HTTP discovery
 	//   /stage/<uuid>/cdp/json/*    — CDP discovery (URL-rewritten)
