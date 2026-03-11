@@ -149,21 +149,21 @@ For canvas, size to the window (`canvas.width = window.innerWidth`) — do NOT h
 - **CSS animations & transitions** — `@keyframes`, `transform`, `opacity`. Cheapest animation path.
 - **Canvas 2D** — Drawing, compositing, particle effects. Efficient even with 300+ particles.
 - **DOM-heavy animation** — 200+ elements repositioned per frame via JS — still 59 fps.
-- **WebGL geometry & shaders** — Flat, Phong, PBR materials, instanced rendering. Fragment-heavy scenes (raymarching, SDF, FBM noise) also hit 60 fps.
+- **WebGL geometry & shaders** — Flat, Phong, PBR materials, instanced rendering at 60 fps. Moderate fragment shaders (simple raymarching, SDF) stay above 30 fps. Heavy multi-octave noise shaders are too expensive — keep shaders simple.
 - **Web Audio** — Oscillators, buffers, Tone.js. Audio is captured by PulseAudio.
 - **CDN libraries** — Three.js, D3, GSAP, p5.js, Tone.js all work via `<script>` tags.
 
 ### WebGL performance
 
-All standard WebGL workloads hit 60 fps at 1280×720, including fragment-heavy scenes:
+WebGL geometry and moderate shaders run well at 1280×720:
 
-| Scene                                      | FPS |
-|--------------------------------------------|-----|
-| Mesh-based WebGL (Phong, PBR, 5K tris)     | 60  |
-| Full-screen SDF raymarcher (48 steps)       | 60  |
-| Terrain + 6-octave FBM noise (100 steps)    | 60  |
+| Scene                                      | FPS  |
+|--------------------------------------------|------|
+| Mesh-based WebGL (Phong, PBR, 5K tris)     | 60   |
+| Full-screen SDF raymarcher (48 steps)       | ~37  |
+| Terrain + 6-octave FBM noise (100 steps)    | <5   |
 
-**Watch for** — very high triangle counts (>50K), multiple render targets with heavy shaders. Monitor with `dazzle s stats`.
+Geometry-based scenes hit 60 fps easily. Moderate fragment shaders (simple noise, per-pixel lighting) stay above 30 fps. Heavy full-screen fragment work (multi-octave FBM, complex raymarching) drops fast — keep shaders simple or use geometry instead. Monitor with `dazzle s stats`.
 
 ### Other things to avoid
 
