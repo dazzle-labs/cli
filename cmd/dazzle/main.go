@@ -19,13 +19,13 @@ var cli struct {
 	Guide   GuideCmd   `cmd:"" help:"Show content authoring guide (rendering tips, performance, best practices)."`
 
 	// Auth commands
-	Login  LoginCmd  `cmd:"" help:"Authenticate with your API key."`
+	Login  LoginCmd  `cmd:"" help:"Authenticate with Dazzle (opens browser)."`
 	Logout LogoutCmd `cmd:"" help:"Clear stored credentials."`
 	Whoami WhoamiCmd `cmd:"" help:"Show current user."`
 
 	// Resource commands
 	Stage_      StageCmd       `cmd:"" name:"stage" aliases:"s" help:"Manage stages — create, sync content, screenshot, stream."`
-	Destination DestinationCmd `cmd:"" name:"destination" aliases:"dest" help:"Manage stream destinations (Twitch, YouTube, etc)."`
+	Destination DestinationCmd `cmd:"" name:"destination" aliases:"dest" help:"Manage broadcast destinations (Twitch, YouTube, etc)."`
 	Obs         ObsCmd         `cmd:"" name:"obs" aliases:"o" help:"Advanced OBS control (scenes, recording, etc)."`
 }
 

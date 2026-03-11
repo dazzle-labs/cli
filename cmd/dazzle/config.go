@@ -21,7 +21,9 @@ type Config struct {
 
 // Credentials holds sensitive auth data stored in ~/.config/dazzle/credentials.json.
 type Credentials struct {
-	APIKey string `json:"api_key"`
+	APIKey  string `json:"api_key"`
+	Email   string `json:"email,omitempty"`
+	KeyName string `json:"key_name,omitempty"`
 }
 
 func dazzleConfigDir() (string, error) {
