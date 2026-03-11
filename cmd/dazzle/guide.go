@@ -57,7 +57,7 @@ Always start with a full-viewport, no-scroll layout:
     <meta charset="UTF-8">
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
-      html, body { width: 100%%; height: 100%%; overflow: hidden; background: #000; }
+      html, body { width: 100vw; height: 100vh; overflow: hidden; background: #000; }
     </style>
   </head>
   <body>
@@ -71,6 +71,25 @@ For canvas-based content, size to the window:
   const H = canvas.height = window.innerHeight;  // 720
 
 Do NOT hardcode 1920x1080 — the viewport is 1280x720.
+
+## Use Viewport-Relative Units
+
+Always size and position elements with vw/vh (viewport-width / viewport-height)
+instead of fixed px values. The stage viewport is 1280x720 today but may change,
+and hardcoded pixel values will clip or misalign if the resolution shifts.
+
+  Good:  font-size: 2vw;   padding: 1.5vh 2vw;   gap: 0.8vw;
+  Bad:   font-size: 28px;  padding: 16px 24px;    gap: 12px;
+
+Rules of thumb:
+  - 1vw ≈ 12.8px at 1280 wide  — use vw for horizontal sizing, font sizes, gaps
+  - 1vh ≈ 7.2px at 720 tall    — use vh for vertical spacing and padding
+  - Use %% inside flex/grid children when sizing relative to a parent container
+  - Never set body/html to a fixed pixel width — use 100vw / 100vh
+  - For canvas elements, read window.innerWidth / innerHeight at runtime
+
+This ensures your layout fills the viewport correctly regardless of the exact
+resolution the stage is running at.
 
 ## What Works Well (60 FPS)
 
@@ -151,7 +170,8 @@ Do NOT hardcode 1920x1080 — the viewport is 1280x720.
 
   Layout
     - Design for 16:9 (1280x720) — no scrolling, no overflow
-    - Keep important content away from edges (safe area: ~40px inset)
+    - Use vw/vh units everywhere — never hardcode pixel dimensions
+    - Keep important content away from edges (safe area: ~2vw / ~2vh inset)
     - Larger UI elements read better on stream than small detailed ones
 
   Animation
