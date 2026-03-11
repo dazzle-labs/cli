@@ -88,8 +88,9 @@ Do NOT hardcode 1920x1080 — the viewport is 1280x720.
 
   WebGL
     - Geometry, materials (flat, Phong, PBR), instanced rendering — 60 fps
-    - Fragment shaders including raymarching, SDF, noise — 60 fps
+    - Moderate fragment shaders (simple raymarching, SDF) — 30+ fps
     - Three.js, p5.js, custom WebGL — all perform well
+    - Heavy full-screen shaders (multi-octave noise) are expensive — keep shaders simple
 
   Web Audio API
     - Oscillators, gain nodes, audio buffers — captured by PulseAudio
@@ -101,20 +102,20 @@ Do NOT hardcode 1920x1080 — the viewport is 1280x720.
 
 ## WebGL Performance
 
-All standard WebGL workloads hit 60 FPS at 1280x720, including fragment-heavy
-scenes:
+WebGL geometry and moderate shaders run well at 1280x720:
 
   Mesh-based WebGL (Phong, PBR, 5K tris)     ->  60 fps
-  Full-screen SDF raymarcher (48 steps)       ->  60 fps
-  Terrain + 6-octave FBM noise (100 steps)    ->  60 fps
+  Full-screen SDF raymarcher (48 steps)       -> ~37 fps
+  Terrain + 6-octave FBM noise (100 steps)    ->  <5 fps
 
   What works:
-    - Raymarching, signed distance fields, noise functions
-    - Multi-pass rendering (bloom, blur, post-processing)
-    - Fragment-heavy shaders (per-pixel lighting, volumetrics)
+    - Geometry, materials, instanced rendering — 60 fps
+    - Moderate fragment shaders (per-pixel lighting, simple noise) — 30+ fps
+    - Multi-pass rendering with lightweight passes (bloom, simple blur)
     - Instanced rendering, morph targets, displacement maps
 
   What to watch for:
+    - Heavy full-screen fragment shaders (multi-octave noise, complex raymarching) drop fast
     - Very high triangle counts (>50K) may start to drop
     - Multiple render targets with heavy shaders compound cost
     - Monitor with "dazzle s stats" — if Stage FPS < 30, simplify
