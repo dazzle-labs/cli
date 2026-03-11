@@ -147,28 +147,28 @@ For canvas, size to the window (`canvas.width = window.innerWidth`) — do NOT h
 ### What works well (60 fps)
 
 - **CSS animations & transitions** — `@keyframes`, `transform`, `opacity`. Cheapest animation path.
-- **Canvas 2D** — Drawing, compositing, particle effects. Efficient even with 1000+ particles.
+- **Canvas 2D** — Drawing, compositing, particle effects. Efficient even with 1000+ particles (55+ fps).
 - **DOM-heavy animation** — 200+ elements repositioned per frame via JS — still 59 fps.
-- **WebGL geometry** — Meshes up to ~40K triangles with per-pixel Phong lighting run at 30+ fps. Flat-shaded or vertex-colored geometry is cheaper.
+- **WebGL geometry** — 500K+ triangles with per-pixel Phong lighting at 60 fps. Use mesh complexity instead of shader complexity.
 - **Web Audio** — Oscillators, buffers, Tone.js. Audio is captured by PulseAudio.
 - **CDN libraries** — Three.js, D3, GSAP, p5.js, Tone.js all work via `<script>` tags.
 
 ### Performance tiers
 
-| Tier | What | FPS range |
-|------|-------|-----------|
-| Smooth (60 fps) | HTML/CSS animations, Canvas 2D, DOM animation | 58–60 |
-| Good (30+ fps) | WebGL geometry up to ~40K tris with Phong lighting | 30–45 |
-| Marginal (20–30) | 500K+ tris (many draw calls), very high poly meshes | 20–30 |
-| Too heavy (<20) | Full-screen fragment shaders (raymarching), `backdrop-filter`, multi-pass rendering | <20 |
+| Tier | What | FPS |
+|------|-------|-----|
+| Smooth (60 fps) | HTML/CSS animations, Canvas 2D, DOM, WebGL geometry (even 500K+ tris) | 55–60 |
+| Good (30+ fps) | Simple full-screen SDF raymarcher (48 steps, no noise), `backdrop-filter` | 30–36 |
+| Too heavy (<15) | Fragment shaders with noise, multi-pass rendering, complex raymarching | 1–11 |
 
-Geometry-based WebGL is the sweet spot. Full-screen fragment shaders (even a simple SDF raymarcher) drop below 30 fps. Adding noise to shaders drops to single digits. Use `dazzle s stats` to monitor.
+Geometry-based WebGL is the sweet spot — even 100 separate draw calls with 512K total triangles runs at 60 fps. The bottleneck is per-pixel fragment work: noise functions, raymarching, and post-processing. Use `dazzle s stats` to monitor.
 
 ### What to avoid
 
-- **Full-screen fragment shaders** — raymarching, SDF, noise functions are per-pixel and expensive. Use geometry instead.
-- **`backdrop-filter`** (blur, brightness) — drops to ~18 fps with overlapping panels. Use pre-blurred images instead.
-- **Multi-pass rendering** — render-to-texture + post-process doubles the fragment cost.
+- **Fragment shaders with noise** — even 2-octave noise in a raymarcher drops to ~11 fps. Per-pixel noise is expensive.
+- **Multi-pass rendering** — render-to-texture + post-process (bloom, blur) costs ~11 fps.
+- **Complex raymarching** — multi-octave FBM terrain drops to ~1 fps.
+- **`backdrop-filter`** — borderline (~30 fps). Usable for 1–2 small panels, avoid stacking.
 - **Large assets** — keep images under 2 MB. Use WebP/AVIF. No video files (you ARE the video).
 - **Heavy `box-shadow`** — multiple stacked shadows are expensive. Use 1–2 subtle shadows max.
 - **Main thread blocking** — long synchronous JS (large JSON parse, crypto) causes visible dropped frames.

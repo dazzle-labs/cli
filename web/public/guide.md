@@ -60,9 +60,9 @@ Do NOT hardcode 1920x1080 — the viewport is 1280x720.
 - `requestAnimationFrame`-driven layouts work well
 
 **WebGL geometry**
-- Meshes up to ~40K triangles with per-pixel Phong lighting — 30+ fps
-- Flat-shaded or vertex-colored geometry is even cheaper
+- 500K+ triangles with per-pixel Phong lighting — still 60 fps
 - Three.js, p5.js, custom WebGL — all perform well
+- Use mesh complexity (more triangles) instead of shader complexity (noise, raymarching)
 
 **Web Audio API**
 - Oscillators, gain nodes, audio buffers — captured by PulseAudio
@@ -76,23 +76,23 @@ Do NOT hardcode 1920x1080 — the viewport is 1280x720.
 
 Results from our benchmark suite at 1280x720. Use these to calibrate your content:
 
-| Tier | What | FPS range |
-|------|-------|-----------|
-| Smooth (60 fps) | Static/animated HTML, CSS animations, Canvas 2D (even 1000 particles), DOM animation | 58–60 |
-| Good (30+ fps) | WebGL geometry up to ~40K tris with Phong lighting | 30–45 |
-| Marginal (20–30) | WebGL 500K+ tris (100 draw calls), very high poly meshes | 20–30 |
-| Too heavy (<20) | Full-screen fragment shaders (raymarching), `backdrop-filter`, multi-pass rendering with heavy shaders | <20 |
+| Tier | What | FPS |
+|------|-------|-----|
+| Smooth (60 fps) | HTML/CSS animations, Canvas 2D (1000 particles), DOM animation, WebGL geometry (even 500K+ tris) | 55–60 |
+| Good (30+ fps) | Simple full-screen SDF raymarcher (48 steps, no noise), `backdrop-filter` with few panels | 30–36 |
+| Too heavy (<15) | Fragment shaders with noise, multi-pass rendering, complex raymarching | 1–11 |
 
 ### What works
-- Geometry-based WebGL is the sweet spot — meshes, materials, instanced rendering
-- Canvas 2D scales well (1000 particles with connection lines still hits 60 fps)
+- **Geometry-based WebGL is the sweet spot** — 500K+ triangles with per-pixel Phong lighting still hits 60 fps. Use mesh complexity instead of shader complexity.
+- Canvas 2D scales well (1000 particles with connection lines at 55+ fps)
 - CSS animations are essentially free
-- Simple vertex shaders with per-pixel Phong lighting
+- Simple vertex shaders with per-pixel lighting — no problem
 
 ### What to avoid
-- **Full-screen fragment shaders** — even a simple SDF raymarcher (48 steps, no noise) drops below 30 fps. Add noise and it drops to single digits.
-- **Multi-pass rendering** — render-to-texture + post-process doubles the cost
-- **High triangle counts** — stay under ~40K tris for 30+ fps
+- **Fragment shaders with noise** — even 2-octave noise in a raymarcher drops to ~11 fps. Any per-pixel noise function is expensive.
+- **Multi-pass rendering** — render-to-texture + post-process (bloom, blur) costs ~11 fps
+- **Complex raymarching** — multi-octave FBM terrain drops to ~1 fps
+- **`backdrop-filter`** is borderline (~30 fps) — usable for 1–2 small panels, avoid stacking
 - Monitor with `dazzle s stats` — if Stage FPS drops below 30, simplify
 
 ## What to Avoid

@@ -6,6 +6,8 @@ metadata:
 spec:
   restartPolicy: Never
   terminationGracePeriodSeconds: 10
+  imagePullSecrets:
+    - name: dazzlefm-dockerhub-secret
   containers:
     # Streamer: Xvfb + Chrome + PulseAudio
     - name: streamer
