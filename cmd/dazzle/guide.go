@@ -79,18 +79,17 @@ Do NOT hardcode 1920x1080 — the viewport is 1280x720.
     - CSS is the cheapest way to animate; prefer it over JS when possible
 
   Canvas 2D
-    - Drawing, compositing, particle effects — efficient even with 300+ particles
+    - Drawing, compositing, particle effects — efficient even with 1000+ particles
     - Good for dashboards, visualizations, generative art, text rendering
 
   DOM-heavy animation
     - 200+ elements repositioned every frame via JS — still 59 fps
     - requestAnimationFrame-driven layouts work well
 
-  WebGL
-    - Geometry, materials (flat, Phong, PBR), instanced rendering — 60 fps
-    - Moderate fragment shaders (simple raymarching, SDF) — 30+ fps
+  WebGL geometry
+    - Meshes up to ~40K triangles with per-pixel Phong lighting — 30+ fps
+    - Flat-shaded or vertex-colored geometry is even cheaper
     - Three.js, p5.js, custom WebGL — all perform well
-    - Heavy full-screen shaders (multi-octave noise) are expensive — keep shaders simple
 
   Web Audio API
     - Oscillators, gain nodes, audio buffers — captured by PulseAudio
@@ -100,24 +99,21 @@ Do NOT hardcode 1920x1080 — the viewport is 1280x720.
     - Load via <script> or <link> from CDNs (unpkg, cdnjs, etc.)
     - Three.js, D3, GSAP, Tone.js, p5.js — all work
 
-## WebGL Performance
+## Performance Tiers
 
-WebGL geometry and moderate shaders run well at 1280x720:
+  Smooth (60 fps):   HTML/CSS animations, Canvas 2D, DOM animation
+  Good (30+ fps):    WebGL geometry up to ~40K tris with Phong lighting
+  Marginal (20-30):  500K+ tris (many draw calls), very high poly meshes
+  Too heavy (<20):   Full-screen fragment shaders, backdrop-filter, multi-pass
 
-  Mesh-based WebGL (Phong, PBR, 5K tris)     ->  60 fps
-  Full-screen SDF raymarcher (48 steps)       -> ~37 fps
-  Terrain + 6-octave FBM noise (100 steps)    ->  <5 fps
+  Geometry-based WebGL is the sweet spot. Full-screen fragment shaders
+  (even a simple SDF raymarcher) drop below 30 fps. Adding noise drops
+  to single digits. Use "dazzle s stats" to monitor.
 
-  What works:
-    - Geometry, materials, instanced rendering — 60 fps
-    - Moderate fragment shaders (per-pixel lighting, simple noise) — 30+ fps
-    - Multi-pass rendering with lightweight passes (bloom, simple blur)
-    - Instanced rendering, morph targets, displacement maps
-
-  What to watch for:
-    - Heavy full-screen fragment shaders (multi-octave noise, complex raymarching) drop fast
-    - Very high triangle counts (>50K) may start to drop
-    - Multiple render targets with heavy shaders compound cost
+  Avoid:
+    - Full-screen fragment shaders (raymarching, SDF, noise) — per-pixel, expensive
+    - backdrop-filter — drops to ~18 fps with overlapping panels
+    - Multi-pass rendering — render-to-texture + post-process doubles cost
     - Monitor with "dazzle s stats" — if Stage FPS < 30, simplify
 
 ## What to Avoid
