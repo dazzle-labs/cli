@@ -234,6 +234,7 @@ func TestBuildArgs_Broadcasting(t *testing.T) {
 		{"has rtmp gop 60", func() bool { return containsPair(args, "-g", "60") }},
 		{"has 128k audio for rtmp", func() bool { return containsPair(args, "-b:a", "128k") }},
 		{"has 96k audio for hls", func() bool { return containsPair(args, "-b:a", "96k") }},
+		{"has yuv420p pix_fmt for rtmp", func() bool { return containsPair(args, "-pix_fmt", "yuv420p") }},
 	}
 
 	for _, c := range checks {

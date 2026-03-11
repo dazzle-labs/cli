@@ -295,6 +295,7 @@ func (p *Pipeline) buildArgs() []string {
 			// RTMP output (broadcast quality — keeps zerolatency for live delivery)
 			"-map", "0:v", "-map", "1:a",
 			"-c:v", "libx264", "-preset", p.rtmpPreset, "-tune", "zerolatency", "-threads", "2",
+			"-pix_fmt", "yuv420p",
 			"-b:v", fmt.Sprintf("%dk", p.rtmpBitrate),
 			"-maxrate", fmt.Sprintf("%dk", p.rtmpBitrate),
 			"-bufsize", fmt.Sprintf("%dk", p.rtmpBitrate*2),
