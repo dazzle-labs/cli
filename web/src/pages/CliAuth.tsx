@@ -86,7 +86,6 @@ export function CliAuth() {
       }
 
       setStatus("done");
-      try { window.close(); } catch {}
     } catch (e) {
       setStatus("error");
       setErrorMsg(e instanceof Error ? e.message : "Something went wrong");
@@ -137,10 +136,10 @@ export function CliAuth() {
               {verifyCode}
             </div>
             {user?.primaryEmailAddress && (
-              <p className="text-sm text-zinc-500 mb-4">
-                Signing in as {user.primaryEmailAddress.emailAddress}
-                {keyName && <> (API key: "{keyName}")</>}
-              </p>
+              <div className="text-sm text-zinc-500 mb-4">
+                <p>Signing in as {user.primaryEmailAddress.emailAddress}</p>
+                {keyName && <p>API key: {keyName}</p>}
+              </div>
             )}
             <button
               onClick={handleConfirm}
@@ -155,15 +154,11 @@ export function CliAuth() {
           <div className="text-center text-zinc-500">Loading session info...</div>
         )}
 
-        {status === "confirming" && (
-          <div className="text-center text-zinc-400">Creating API key...</div>
-        )}
-
-        {status === "done" && (
+        {(status === "confirming" || status === "done") && (
           <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-8 text-center">
             <div className="text-4xl mb-4">&#10003;</div>
             <h2 className="text-lg font-semibold text-white mb-2">You're all set!</h2>
-            <p className="text-sm text-zinc-400">Return to your terminal.</p>
+            <p className="text-sm text-zinc-400">You can return to your terminal.</p>
           </div>
         )}
 

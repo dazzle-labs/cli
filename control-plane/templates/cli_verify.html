@@ -32,7 +32,7 @@
     <div class="success">
       <div style="font-size:3rem;margin-bottom:1rem">&#10003;</div>
       <h2>You're all set!</h2>
-      <p class="sub">Return to your terminal.</p>
+      <p class="sub">You can return to your terminal.</p>
     </div>
   </div>
   <script>
@@ -40,8 +40,8 @@
       var btn = this;
       var data = document.getElementById('cli-data').dataset;
       btn.disabled = true;
-      btn.textContent = 'Confirming...';
-      document.getElementById('error').style.display = 'none';
+      document.querySelector('.verify').style.display = 'none';
+      document.querySelector('.success').style.display = 'block';
       try {
         var r = await fetch('/auth/cli/session/' + data.sessionId + '/confirm', {
           method: 'POST',
@@ -52,12 +52,10 @@
           var d = await r.json().catch(function() { return null; });
           throw new Error(d && d.error ? d.error : 'Confirmation failed');
         }
-        document.querySelector('.verify').style.display = 'none';
-        document.querySelector('.success').style.display = 'block';
-        try { window.close(); } catch (e) {}
       } catch (e) {
+        document.querySelector('.success').style.display = 'none';
+        document.querySelector('.verify').style.display = 'block';
         btn.disabled = false;
-        btn.textContent = 'Continue';
         var el = document.getElementById('error');
         el.textContent = e.message;
         el.style.display = 'block';
