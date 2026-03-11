@@ -95,7 +95,7 @@ Commands:
   update                           Update dazzle to the latest release.
   guide                            Show content authoring guide (rendering tips,
                                    performance, best practices).
-  login                            Authenticate with your API key.
+  login                            Authenticate with Dazzle (opens browser).
   logout                           Clear stored credentials.
   whoami                           Show current user.
   stage (s) list (ls)              List stages.
@@ -126,8 +126,8 @@ Commands:
   stage (s) broadcast (bc) status (st)
                                    Check broadcast status.
   destination (dest) list (ls)     List stream destinations.
-  destination (dest) create (new)
-                                   Add a stream destination (interactive).
+  destination (dest) add (create,new)
+                                   Add a streaming destination.
   destination (dest) delete (rm)
                                    Remove a stream destination.
   destination (dest) set           Assign a destination to the active stage.
@@ -277,8 +277,8 @@ Flags:
 
 Commands:
   destination (dest) list (ls)    List stream destinations.
-  destination (dest) create (new)
-                                  Add a stream destination (interactive).
+  destination (dest) add (create,new)
+                                  Add a streaming destination.
   destination (dest) delete (rm)
                                   Remove a stream destination.
   destination (dest) set          Assign a destination to the active stage.
