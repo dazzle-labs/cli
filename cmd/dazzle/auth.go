@@ -21,7 +21,7 @@ import (
 // LoginCmd handles `dazzle login`.
 type LoginCmd struct {
 	APIKey  string `help:"API key to store (skips interactive prompt)." name:"api-key"`
-	KeyName string `help:"Name for the API key." name:"key-name" default:"CLI"`
+	KeyName string `help:"Name for the API key." name:"key-name"`
 }
 
 func (c *LoginCmd) Run(ctx *Context) error {
@@ -50,6 +50,27 @@ func (c *LoginCmd) Run(ctx *Context) error {
 			printText("\u2713 Logged in")
 		}
 		return nil
+	}
+
+	// Default key name: CLI-<hostname> (non-alphanumeric chars → dashes)
+	if c.KeyName == "" {
+		hostname, _ := os.Hostname()
+		if hostname == "" {
+			hostname = "unknown"
+		}
+		var sb strings.Builder
+		for _, ch := range hostname {
+			if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') {
+				sb.WriteRune(ch)
+			} else {
+				sb.WriteByte('-')
+			}
+		}
+		sanitized := strings.Trim(sb.String(), "-")
+		if sanitized == "" {
+			sanitized = "unknown"
+		}
+		c.KeyName = "CLI-" + sanitized
 	}
 
 	// Interactive: browser-based OAuth login
