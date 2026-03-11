@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
+import { useAuth } from "@clerk/react";
 import { stageClient, streamClient } from "../client.js";
 import type { Stage } from "../gen/api/v1/stage_pb.js";
 import type { StreamDestination } from "../gen/api/v1/stream_pb.js";
@@ -18,6 +19,41 @@ import { AnimatedPage } from "@/components/AnimatedPage";
 import { AnimatedList, AnimatedListItem } from "@/components/AnimatedList";
 import { springs, fadeInUp } from "@/lib/motion";
 
+function StageThumbnail({ stageId, tick, getToken }: { stageId: string; tick: number; getToken: () => Promise<string | null> }) {
+  const [src, setSrc] = useState<string | null>(null);
+  const prevUrl = useRef<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const token = await getToken();
+      if (!token || cancelled) return;
+      try {
+        const resp = await fetch(`/stage/${stageId}/thumbnail`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!resp.ok || cancelled) return;
+        const blob = await resp.blob();
+        if (cancelled) return;
+        const url = URL.createObjectURL(blob);
+        if (prevUrl.current) URL.revokeObjectURL(prevUrl.current);
+        prevUrl.current = url;
+        setSrc(url);
+      } catch {
+        // ignore fetch errors
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [stageId, tick, getToken]);
+
+  useEffect(() => {
+    return () => { if (prevUrl.current) URL.revokeObjectURL(prevUrl.current); };
+  }, []);
+
+  if (!src) return <div className="w-full h-full bg-black/50" />;
+  return <img src={src} className="w-full h-full object-cover" alt="" />;
+}
+
 export function Dashboard() {
   const [stages, setStages] = useState<Stage[]>([]);
   const [destinations, setDestinations] = useState<StreamDestination[]>([]);
@@ -26,6 +62,15 @@ export function Dashboard() {
   const [creatingStage, setCreatingStage] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardSkipIntro, setWizardSkipIntro] = useState(false);
+
+  // Thumbnail refresh tick (every 30s)
+  const [thumbTick, setThumbTick] = useState(0);
+  const { getToken } = useAuth();
+  const stableGetToken = useCallback(() => getToken(), [getToken]);
+  useEffect(() => {
+    const id = setInterval(() => setThumbTick((t) => t + 1), 30_000);
+    return () => clearInterval(id);
+  }, []);
 
   // Streaming banner
   const [bannerDismissed, setBannerDismissed] = useState(
@@ -207,7 +252,12 @@ export function Dashboard() {
                     whileTap={{ scale: 0.98 }}
                     transition={springs.quick}
                   >
-                    <Card className={cn("transition-colors duration-200 hover:border-primary/15 hover:bg-primary/[0.02]", isRunning && "border-l-2 border-l-emerald-500/40")}>
+                    <Card className={cn("transition-colors duration-200 hover:border-primary/15 hover:bg-primary/[0.02] overflow-hidden", isRunning && "border-l-2 border-l-emerald-500/40")}>
+                      {isRunning && (
+                        <div className="aspect-video bg-black">
+                          <StageThumbnail stageId={stage.id} tick={thumbTick} getToken={stableGetToken} />
+                        </div>
+                      )}
                       <CardContent className="p-5">
                         <div className="flex items-center justify-between mb-3">
                           <span className="text-base font-medium text-foreground">

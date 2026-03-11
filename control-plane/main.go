@@ -93,6 +93,7 @@ type Manager struct {
 	publicBaseURL string
 }
 
+
 // validatePreviewToken checks the LRU cache first, then falls back to the DB.
 // Returns the stage ID if the token is valid, or empty string if not.
 func (m *Manager) validatePreviewToken(token string) string {
@@ -644,6 +645,7 @@ func (m *Manager) doDeactivateStage(id string) error {
 	delete(m.stages, id)
 	m.mu.Unlock()
 
+
 	if m.db != nil {
 		dbUpdateStageStatus(m.db, id, "inactive", "", "")
 	}
@@ -898,6 +900,38 @@ func (m *Manager) handleHLSProxy(w http.ResponseWriter, r *http.Request) {
 	})).ServeHTTP(w, r)
 }
 
+func (m *Manager) handleThumbnail(w http.ResponseWriter, r *http.Request) {
+	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+	if len(parts) < 3 {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	stageID := parts[1]
+
+	info, ok := authInfoFromCtx(r.Context())
+	if !ok {
+		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+
+	stage, ok := m.getStage(stageID)
+	if !ok || stage.Status != StatusRunning || stage.PodIP == "" {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	if stage.OwnerUserID != info.UserID {
+		http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
+		return
+	}
+
+	target, _ := url.Parse(fmt.Sprintf("http://%s:8080", stage.PodIP))
+	proxy := httputil.NewSingleHostReverseProxy(target)
+	r.URL.Path = "/_dz_9f7a3b1c/thumbnail.png"
+	r.URL.RawQuery = ""
+	r.Host = target.Host
+	r.Header.Del("Authorization")
+	proxy.ServeHTTP(w, r)
+}
 
 func (m *Manager) handleHealth(w http.ResponseWriter, r *http.Request) {
 	resp := map[string]any{"status": "ok"}
@@ -1432,6 +1466,8 @@ func main() {
 			mcpHandler.ServeHTTP(w, r)
 		case "hls":
 			mgr.handleHLSProxy(w, r)
+		case "thumbnail":
+			mgr.auth.authMiddlewareHTTP(http.HandlerFunc(mgr.handleThumbnail)).ServeHTTP(w, r)
 		case "preview":
 			spaHandler.ServeHTTP(w, r)
 		default:

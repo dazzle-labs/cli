@@ -58,6 +58,11 @@ type Server struct {
 	lastActivity time.Time
 	stageStart   time.Time
 
+	// Thumbnail cache
+	thumbMu         sync.Mutex
+	thumbData       []byte
+	thumbCapturedAt time.Time
+
 	// Live stats (updated by pipeline callback and browser FPS poller)
 	statsMu       sync.Mutex
 	pipelineStart time.Time
@@ -143,6 +148,7 @@ func (s *Server) routes() {
 	subMux.HandleFunc("/health", s.handleHealth)
 	subMux.HandleFunc("/metrics", s.handleMetrics)
 	subMux.HandleFunc("/hls/", s.handleHLS)
+	subMux.HandleFunc("/thumbnail.png", s.handleThumbnail)
 	subMux.HandleFunc("/cdp/", s.authWrap(s.handleCDPProxy))
 
 	// Mount everything behind the prefix
