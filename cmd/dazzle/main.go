@@ -25,7 +25,7 @@ var cli struct {
 
 	// Resource commands
 	Stage_      StageCmd       `cmd:"" name:"stage" aliases:"s" help:"Manage stages — create, sync content, screenshot, stream."`
-	Destination DestinationCmd `cmd:"" name:"destination" aliases:"dest" help:"Manage stream destinations (Twitch, YouTube, etc)."`
+	Destination DestinationCmd `cmd:"" name:"destination" aliases:"dest" help:"Manage broadcast destinations (Twitch, YouTube, etc)."`
 	Obs         ObsCmd         `cmd:"" name:"obs" aliases:"o" help:"Advanced OBS control (scenes, recording, etc)."`
 }
 

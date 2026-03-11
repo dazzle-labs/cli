@@ -19,10 +19,10 @@ import (
 
 // DestinationCmd groups destination subcommands.
 type DestinationCmd struct {
-	List   DestinationListCmd   `cmd:"" aliases:"ls" help:"List stream destinations."`
-	Add    DestinationAddCmd    `cmd:"" aliases:"create,new" help:"Add a streaming destination."`
-	Delete DestinationDeleteCmd `cmd:"" aliases:"rm" help:"Remove a stream destination."`
-	Set    DestinationSetCmd    `cmd:"" help:"Assign a destination to the active stage."`
+	List   DestinationListCmd   `cmd:"" aliases:"ls" help:"List broadcast destinations."`
+	Add    DestinationAddCmd    `cmd:"" aliases:"create,new" help:"Add a broadcast destination."`
+	Delete DestinationDeleteCmd `cmd:"" aliases:"rm" help:"Remove a broadcast destination."`
+	Set    DestinationSetCmd    `cmd:"" help:"Assign a broadcast destination to the active stage."`
 }
 
 var oauthPlatforms = []struct {

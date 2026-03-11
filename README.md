@@ -50,7 +50,7 @@ dazzle stage sync ./my-app --watch
 # Take a screenshot to verify
 dazzle stage screenshot -o preview.png
 
-# Add a stream destination and go live
+# Add a broadcast destination and go live
 dazzle destination create
 dazzle destination set my-destination
 dazzle stage broadcast on
@@ -125,12 +125,13 @@ Commands:
                                    Stop the broadcast.
   stage (s) broadcast (bc) status (st)
                                    Check broadcast status.
-  destination (dest) list (ls)     List stream destinations.
+  destination (dest) list (ls)     List broadcast destinations.
   destination (dest) add (create,new)
-                                   Add a streaming destination.
+                                   Add a broadcast destination.
   destination (dest) delete (rm)
-                                   Remove a stream destination.
-  destination (dest) set           Assign a destination to the active stage.
+                                   Remove a broadcast destination.
+  destination (dest) set           Assign a broadcast destination to the active
+                                   stage.
   obs (o)                          Advanced OBS control (scenes, recording,
                                    etc).
 
@@ -267,7 +268,7 @@ Commands:
 ```
 Usage: dazzle destination (dest) <command> [flags]
 
-Manage stream destinations (Twitch, YouTube, etc).
+Manage broadcast destinations (Twitch, YouTube, etc).
 
 Flags:
   -h, --help              Show context-sensitive help.
@@ -276,12 +277,13 @@ Flags:
       --api-url=STRING    API URL ($DAZZLE_API_URL).
 
 Commands:
-  destination (dest) list (ls)    List stream destinations.
+  destination (dest) list (ls)    List broadcast destinations.
   destination (dest) add (create,new)
-                                  Add a streaming destination.
+                                  Add a broadcast destination.
   destination (dest) delete (rm)
-                                  Remove a stream destination.
-  destination (dest) set          Assign a destination to the active stage.
+                                  Remove a broadcast destination.
+  destination (dest) set          Assign a broadcast destination to the active
+                                  stage.
 ```
 
 ## Stage Resolution
