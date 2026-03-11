@@ -6,11 +6,9 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/base64"
-	_ "embed"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"io"
 	"log"
 	"net/http"
@@ -322,7 +320,7 @@ func (h *oauthHandler) handleCallback(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("OAuth stream destination upserted for %s/%s (user=%s)", platform, username, oauthSt.UserID)
 
-	// CLI destination flow: set pending result and show verification page
+	// CLI destination flow: set pending result and redirect to SPA verify page
 	if oauthSt.CliSessionID != "" {
 		cliSession := h.mgr.cliSessions.get(oauthSt.CliSessionID)
 		if cliSession != nil {
@@ -331,13 +329,8 @@ func (h *oauthHandler) handleCallback(w http.ResponseWriter, r *http.Request) {
 				PlatformUsername: username,
 			})
 
-			cliSession.mu.Lock()
-			verifyCode := cliSession.VerifyCode
-			cliSession.mu.Unlock()
-
-			// Render inline verification page — strip CORS header for security
-			w.Header().Del("Access-Control-Allow-Origin")
-			renderCliVerifyPage(w, platform, username, oauthSt.CliSessionID, verifyCode)
+			http.Redirect(w, r, fmt.Sprintf("/auth/cli/%s?platform=%s&username=%s",
+				oauthSt.CliSessionID, url.QueryEscape(platform), url.QueryEscape(username)), http.StatusFound)
 			return
 		}
 	}
@@ -513,20 +506,6 @@ func refreshPlatformToken(db *sql.DB, encKey []byte, dest *streamDestRow, config
 	}
 
 	return tok.AccessToken, nil
-}
-
-//go:embed templates/cli_verify.html
-var cliVerifyHTML string
-var cliVerifyTmpl = template.Must(template.New("cli_verify").Parse(cliVerifyHTML))
-
-func renderCliVerifyPage(w http.ResponseWriter, platform, username, sessionID, verifyCode string) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	cliVerifyTmpl.Execute(w, struct {
-		Platform   string
-		Username   string
-		SessionID  string
-		VerifyCode string
-	}{platform, username, sessionID, verifyCode})
 }
 
 // fetchTwitchUserInfo gets the Twitch user ID and username from the Helix API.
