@@ -222,27 +222,28 @@ For canvas, size to the window (`canvas.width = window.innerWidth`) — do NOT h
 ### What works well (60 fps)
 
 - **CSS animations & transitions** — `@keyframes`, `transform`, `opacity`. Cheapest animation path.
-- **Canvas 2D** — Drawing, compositing, particle effects. Efficient even with 300+ particles.
+- **Canvas 2D** — Drawing, compositing, particle effects. Efficient even with 1000+ particles.
 - **DOM-heavy animation** — 200+ elements repositioned per frame via JS — still 59 fps.
-- **WebGL geometry & shaders** — Flat, Phong, PBR materials, instanced rendering at 60 fps. Moderate fragment shaders (simple raymarching, SDF) stay above 30 fps. Heavy multi-octave noise shaders are too expensive — keep shaders simple.
+- **WebGL geometry** — Meshes up to ~40K triangles with per-pixel Phong lighting run at 30+ fps. Flat-shaded or vertex-colored geometry is cheaper.
 - **Web Audio** — Oscillators, buffers, Tone.js. Audio is captured by PulseAudio.
 - **CDN libraries** — Three.js, D3, GSAP, p5.js, Tone.js all work via `<script>` tags.
 
-### WebGL performance
+### Performance tiers
 
-WebGL geometry and moderate shaders run well at 1280×720:
+| Tier | What | FPS range |
+|------|-------|-----------|
+| Smooth (60 fps) | HTML/CSS animations, Canvas 2D, DOM animation | 58–60 |
+| Good (30+ fps) | WebGL geometry up to ~40K tris with Phong lighting | 30–45 |
+| Marginal (20–30) | 500K+ tris (many draw calls), very high poly meshes | 20–30 |
+| Too heavy (<20) | Full-screen fragment shaders (raymarching), `backdrop-filter`, multi-pass rendering | <20 |
 
-| Scene                                      | FPS  |
-|--------------------------------------------|------|
-| Mesh-based WebGL (Phong, PBR, 5K tris)     | 60   |
-| Full-screen SDF raymarcher (48 steps)       | ~37  |
-| Terrain + 6-octave FBM noise (100 steps)    | <5   |
+Geometry-based WebGL is the sweet spot. Full-screen fragment shaders (even a simple SDF raymarcher) drop below 30 fps. Adding noise to shaders drops to single digits. Use `dazzle s stats` to monitor.
 
-Geometry-based scenes hit 60 fps easily. Moderate fragment shaders (simple noise, per-pixel lighting) stay above 30 fps. Heavy full-screen fragment work (multi-octave FBM, complex raymarching) drops fast — keep shaders simple or use geometry instead. Monitor with `dazzle s stats`.
+### What to avoid
 
-### Other things to avoid
-
-- **`backdrop-filter`** (blur, brightness) — extremely expensive in software rendering. Use pre-blurred images instead.
+- **Full-screen fragment shaders** — raymarching, SDF, noise functions are per-pixel and expensive. Use geometry instead.
+- **`backdrop-filter`** (blur, brightness) — drops to ~18 fps with overlapping panels. Use pre-blurred images instead.
+- **Multi-pass rendering** — render-to-texture + post-process doubles the fragment cost.
 - **Large assets** — keep images under 2 MB. Use WebP/AVIF. No video files (you ARE the video).
 - **Heavy `box-shadow`** — multiple stacked shadows are expensive. Use 1–2 subtle shadows max.
 - **Main thread blocking** — long synchronous JS (large JSON parse, crypto) causes visible dropped frames.

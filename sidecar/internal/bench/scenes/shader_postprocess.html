@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html><head><style>
+* { margin: 0; padding: 0; } body { width: 100vw; height: 100vh; overflow: hidden; background: #000; }
+canvas { width: 100%; height: 100%; }
+</style></head><body>
+<canvas id="c"></canvas>
+<script>
+// Two-pass rendering: scene to FBO + gaussian blur post-process
+// Tests: framebuffer objects, render-to-texture, multi-pass overhead
+const canvas = document.getElementById('c');
+const W = canvas.width = window.innerWidth;
+const H = canvas.height = window.innerHeight;
+const gl = canvas.getContext('webgl');
+if (!gl) { document.body.innerHTML = '<h1 style="color:red;padding:40px">WebGL not available</h1>'; throw 'no webgl'; }
+
+function mkShader(type, src) {
+  const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(s));
+  return s;
+}
+function mkProgram(vs, fs) {
+  const p = gl.createProgram();
+  gl.attachShader(p, mkShader(gl.VERTEX_SHADER, vs));
+  gl.attachShader(p, mkShader(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(p);
+  return p;
+}
+
+// --- Pass 1: Scene shader (SDF with a few glowing spheres) ---
+const sceneVS = `attribute vec2 a_pos; void main() { gl_Position = vec4(a_pos, 0, 1); }`;
+const sceneFS = `
+precision mediump float;
+uniform float u_time;
+uniform vec2 u_res;
+
+float sdSphere(vec3 p, float r) { return length(p) - r; }
+
+float scene(vec3 p) {
+  float d = 1e10;
+  // 5 orbiting spheres
+  for (int i = 0; i < 5; i++) {
+    float a = u_time * 0.5 + float(i) * 1.2566;
+    float r = 2.0 + float(i) * 0.3;
+    vec3 c = vec3(r * cos(a), sin(a * 0.7 + float(i)) * 1.5, r * sin(a));
+    d = min(d, sdSphere(p - c, 0.4 + 0.1 * sin(float(i) * 2.0)));
+  }
+  // Ground
+  d = min(d, p.y + 2.0);
+  return d;
+}
+
+vec3 normal(vec3 p) {
+  float e = 0.002;
+  return normalize(vec3(
+    scene(p+vec3(e,0,0)) - scene(p-vec3(e,0,0)),
+    scene(p+vec3(0,e,0)) - scene(p-vec3(0,e,0)),
+    scene(p+vec3(0,0,e)) - scene(p-vec3(0,0,e))));
+}
+
+void main() {
+  vec2 uv = (gl_FragCoord.xy - u_res * 0.5) / u_res.y;
+  vec3 ro = vec3(0, 2, -6);
+  vec3 rd = normalize(vec3(uv, 1.2));
+
+  float t = 0.0;
+  vec3 col = vec3(0.02, 0.02, 0.05);
+  for (int i = 0; i < 48; i++) {
+    vec3 p = ro + rd * t;
+    float d = scene(p);
+    if (d < 0.005) {
+      vec3 n = normal(p);
+      vec3 l = normalize(vec3(2, 4, -2));
+      float diff = max(dot(n, l), 0.0);
+      float spec = pow(max(dot(reflect(-l, n), -rd), 0.0), 64.0);
+
+      // Emissive glow for spheres (not ground)
+      if (p.y > -1.9) {
+        col = vec3(0.2, 0.5, 1.0) * (diff * 0.5 + 0.3) + vec3(0.5, 0.8, 1.0) * spec * 2.0;
+        col += vec3(0.1, 0.3, 0.8) * 0.5; // bloom source
+      } else {
+        float check = mod(floor(p.x * 0.5) + floor(p.z * 0.5), 2.0);
+        vec3 mat = mix(vec3(0.15), vec3(0.35), check);
+        col = mat * (diff * 0.6 + 0.15) + vec3(1) * spec * 0.3;
+      }
+      break;
+    }
+    t += d;
+    if (t > 30.0) break;
+  }
+  gl_FragColor = vec4(col, 1.0);
+}`;
+
+// --- Pass 2: Bloom/blur post-process ---
+const postVS = `attribute vec2 a_pos; varying vec2 v_uv; void main() { v_uv = a_pos * 0.5 + 0.5; gl_Position = vec4(a_pos, 0, 1); }`;
+const postFS = `
+precision mediump float;
+uniform sampler2D u_tex;
+uniform vec2 u_texelSize;
+varying vec2 v_uv;
+
+void main() {
+  vec3 col = vec3(0.0);
+  // 9-tap gaussian blur (horizontal + vertical combined)
+  float weights[5];
+  weights[0] = 0.227027;
+  weights[1] = 0.194596;
+  weights[2] = 0.121622;
+  weights[3] = 0.054054;
+  weights[4] = 0.016216;
+
+  // Sample center
+  vec3 center = texture2D(u_tex, v_uv).rgb;
+  col += center * weights[0];
+
+  // Horizontal samples
+  for (int i = 1; i < 5; i++) {
+    vec2 off = vec2(float(i) * u_texelSize.x * 2.0, 0.0);
+    col += texture2D(u_tex, v_uv + off).rgb * weights[i];
+    col += texture2D(u_tex, v_uv - off).rgb * weights[i];
+  }
+  // Vertical samples
+  for (int i = 1; i < 5; i++) {
+    vec2 off = vec2(0.0, float(i) * u_texelSize.y * 2.0);
+    col += texture2D(u_tex, v_uv + off).rgb * weights[i];
+    col += texture2D(u_tex, v_uv - off).rgb * weights[i];
+  }
+
+  // Additive bloom: original + blurred bright areas
+  vec3 bloom = max(col - 0.5, 0.0) * 1.5;
+  vec3 final = center + bloom;
+  // Tone mapping
+  final = final / (final + 1.0);
+  final = pow(final, vec3(0.4545));
+  gl_FragColor = vec4(final, 1.0);
+}`;
+
+const sceneProg = mkProgram(sceneVS, sceneFS);
+const postProg = mkProgram(postVS, postFS);
+
+// Full-screen quad buffer
+const quadBuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW);
+
+// Create framebuffer for render-to-texture
+const fboTex = gl.createTexture();
+gl.bindTexture(gl.TEXTURE_2D, fboTex);
+gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, W, H, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+const fbo = gl.createFramebuffer();
+gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, fboTex, 0);
+gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+function draw(t) {
+  const time = t * 0.001;
+
+  // Pass 1: Render scene to FBO
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+  gl.viewport(0, 0, W, H);
+  gl.useProgram(sceneProg);
+  const aPos1 = gl.getAttribLocation(sceneProg, 'a_pos');
+  gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+  gl.enableVertexAttribArray(aPos1);
+  gl.vertexAttribPointer(aPos1, 2, gl.FLOAT, false, 0, 0);
+  gl.uniform1f(gl.getUniformLocation(sceneProg, 'u_time'), time);
+  gl.uniform2f(gl.getUniformLocation(sceneProg, 'u_res'), W, H);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+  // Pass 2: Post-process (bloom blur) to screen
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.viewport(0, 0, W, H);
+  gl.useProgram(postProg);
+  const aPos2 = gl.getAttribLocation(postProg, 'a_pos');
+  gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+  gl.enableVertexAttribArray(aPos2);
+  gl.vertexAttribPointer(aPos2, 2, gl.FLOAT, false, 0, 0);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, fboTex);
+  gl.uniform1i(gl.getUniformLocation(postProg, 'u_tex'), 0);
+  gl.uniform2f(gl.getUniformLocation(postProg, 'u_texelSize'), 1.0/W, 1.0/H);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+  requestAnimationFrame(draw);
+}
+draw(0);
+</script>
+</body></html>

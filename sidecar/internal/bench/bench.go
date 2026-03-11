@@ -43,11 +43,17 @@ type Scene struct {
 var Scenes = []Scene{
 	{Name: "static", File: "scenes/static.html", Description: "Static HTML — no animations, baseline"},
 	{Name: "css_animation", File: "scenes/css_animation.html", Description: "CSS transforms + keyframe animations"},
+	{Name: "css_backdrop", File: "scenes/css_backdrop.html", Description: "backdrop-filter blur on 4 overlapping panels"},
 	{Name: "dom_heavy", File: "scenes/dom_heavy.html", Description: "200 DOM elements repositioned every frame"},
 	{Name: "canvas2d", File: "scenes/canvas2d.html", Description: "Canvas 2D — 300 particles with connections"},
+	{Name: "canvas_heavy", File: "scenes/canvas_heavy.html", Description: "Canvas 2D — 1000 particles with connections"},
 	{Name: "webgl_basic", File: "scenes/webgl_basic.html", Description: "WebGL rotating cube"},
 	{Name: "webgl_phong", File: "scenes/webgl_phong.html", Description: "Phong-lit icosphere (5120 tris)"},
+	{Name: "webgl_50k", File: "scenes/webgl_50k.html", Description: "Phong-lit icosphere (40960 tris)"},
+	{Name: "webgl_instanced", File: "scenes/webgl_instanced.html", Description: "100 Phong-lit spheres (512K tris total)"},
 	{Name: "shader_simple", File: "scenes/shader_simple.html", Description: "Single sphere SDF — 48 steps, no noise"},
+	{Name: "shader_noise2", File: "scenes/shader_noise2.html", Description: "SDF + 2-octave noise — 64 steps"},
+	{Name: "shader_postprocess", File: "scenes/shader_postprocess.html", Description: "SDF scene + gaussian blur post-process (2 passes)"},
 	{Name: "shader_medium", File: "scenes/shader_medium.html", Description: "Terrain + 6-octave FBM + shadows (100 steps)"},
 }
 

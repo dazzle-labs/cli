@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html><head><style>
+* { margin: 0; padding: 0; } body { width: 100vw; height: 100vh; overflow: hidden; background: #000; }
+canvas { width: 100%; height: 100%; }
+</style></head><body>
+<canvas id="c"></canvas>
+<script>
+// SDF raymarcher with 2-octave noise displacement — between shader_simple and shader_medium
+// Tests: per-pixel noise evaluation at moderate cost (2 octaves vs 6)
+// 64 march steps, noise-displaced sphere + ground plane, single light
+const canvas = document.getElementById('c');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+const gl = canvas.getContext('webgl');
+if (!gl) { document.body.innerHTML = '<h1 style="color:red;padding:40px">WebGL not available</h1>'; throw 'no webgl'; }
+
+const vsrc = `attribute vec2 a_pos; void main() { gl_Position = vec4(a_pos, 0, 1); }`;
+const fsrc = `
+precision mediump float;
+uniform float u_time;
+uniform vec2 u_res;
+
+float hash(vec3 p) {
+  p = fract(p * vec3(443.897, 441.423, 437.195));
+  p += dot(p, p.yzx + 19.19);
+  return fract((p.x + p.y) * p.z);
+}
+
+float noise(vec3 p) {
+  vec3 i = floor(p), f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(mix(hash(i), hash(i+vec3(1,0,0)), f.x),
+        mix(hash(i+vec3(0,1,0)), hash(i+vec3(1,1,0)), f.x), f.y),
+    mix(mix(hash(i+vec3(0,0,1)), hash(i+vec3(1,0,1)), f.x),
+        mix(hash(i+vec3(0,1,1)), hash(i+vec3(1,1,1)), f.x), f.y), f.z);
+}
+
+float fbm2(vec3 p) {
+  float v = 0.0;
+  v += 0.5 * noise(p); p *= 2.01;
+  v += 0.25 * noise(p);
+  return v;
+}
+
+float sdSphere(vec3 p, float r) { return length(p) - r; }
+float sdPlane(vec3 p) { return p.y + 1.0; }
+
+float scene(vec3 p) {
+  // Noise-displaced sphere
+  float disp = fbm2(p * 2.0 + u_time * 0.3) * 0.5;
+  float s = sdSphere(p - vec3(0, 0.5, 0), 1.0) + disp;
+  float g = sdPlane(p);
+  return min(s, g);
+}
+
+vec3 normal(vec3 p) {
+  float e = 0.002;
+  return normalize(vec3(
+    scene(p+vec3(e,0,0)) - scene(p-vec3(e,0,0)),
+    scene(p+vec3(0,e,0)) - scene(p-vec3(0,e,0)),
+    scene(p+vec3(0,0,e)) - scene(p-vec3(0,0,e))));
+}
+
+void main() {
+  vec2 uv = (gl_FragCoord.xy - u_res * 0.5) / u_res.y;
+  vec3 ro = vec3(3.0 * sin(u_time * 0.2), 2.0, -3.0 * cos(u_time * 0.2));
+  vec3 target = vec3(0, 0.5, 0);
+  vec3 fwd = normalize(target - ro);
+  vec3 right = normalize(cross(fwd, vec3(0,1,0)));
+  vec3 up = cross(right, fwd);
+  vec3 rd = normalize(uv.x * right + uv.y * up + 1.2 * fwd);
+
+  float t = 0.0;
+  vec3 col = vec3(0.08, 0.08, 0.12);
+  for (int i = 0; i < 64; i++) {
+    vec3 p = ro + rd * t;
+    float d = scene(p);
+    if (d < 0.005) {
+      vec3 n = normal(p);
+      vec3 l = normalize(vec3(2, 3, -1));
+      float diff = max(dot(n, l), 0.0);
+      float spec = pow(max(dot(reflect(-l, n), -rd), 0.0), 32.0);
+      float ao = 0.5 + 0.5 * n.y;
+
+      vec3 mat;
+      if (p.y < -0.95) {
+        float check = mod(floor(p.x) + floor(p.z), 2.0);
+        mat = mix(vec3(0.25), vec3(0.6), check);
+      } else {
+        float nz = fbm2(p * 3.0);
+        mat = mix(vec3(0.3, 0.5, 0.8), vec3(0.8, 0.4, 0.2), nz);
+      }
+      col = mat * (diff * 0.7 + 0.15) * ao + vec3(1) * spec * 0.4;
+      // Fog
+      col = mix(col, vec3(0.08, 0.08, 0.12), 1.0 - exp(-t * 0.08));
+      break;
+    }
+    t += d;
+    if (t > 25.0) break;
+  }
+  gl_FragColor = vec4(pow(col, vec3(0.4545)), 1.0);
+}`;
+
+function mkShader(type, src) {
+  const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(s));
+  return s;
+}
+const prog = gl.createProgram();
+gl.attachShader(prog, mkShader(gl.VERTEX_SHADER, vsrc));
+gl.attachShader(prog, mkShader(gl.FRAGMENT_SHADER, fsrc));
+gl.linkProgram(prog); gl.useProgram(prog);
+const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW);
+const aPos = gl.getAttribLocation(prog, 'a_pos'); gl.enableVertexAttribArray(aPos);
+gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+const uTime = gl.getUniformLocation(prog, 'u_time');
+gl.uniform2f(gl.getUniformLocation(prog, 'u_res'), canvas.width, canvas.height);
+function draw(t) { gl.uniform1f(uTime, t*0.001); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); requestAnimationFrame(draw); }
+draw(0);
+</script>
+</body></html>
