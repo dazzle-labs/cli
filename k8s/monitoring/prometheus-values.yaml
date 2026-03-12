@@ -24,6 +24,12 @@ prometheus:
           password:
             name: grafana-cloud
             key: api-key
+        writeRelabelConfigs:
+          # Only forward metrics we actually use in Grafana dashboards.
+          # Drop everything else to stay within free-tier series limits.
+          - sourceLabels: [__name__]
+            regex: "pipeline_.*|container_cpu_usage_seconds_total|container_memory_working_set_bytes|kube_pod_status_phase|kube_pod_container_status_restarts_total|node_cpu_seconds_total|node_memory_MemAvailable_bytes|up"
+            action: keep
     # Retain locally for 2h only — Grafana Cloud is the durable store
     retention: 2h
     storageSpec: {}

@@ -13,4 +13,4 @@ spec:
   podMetricsEndpoints:
     - targetPort: 8080
       path: /metrics
-      interval: 15s
+      interval: 30s
