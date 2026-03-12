@@ -131,7 +131,6 @@ Commands:
   stage (s) broadcast (bc) category
                                    Set the stream category or game.
   stage (s) chat send              Send a message to live chat.
-  stage (s) chat read              Read recent chat messages.
   destination (dest) list (ls)     List broadcast destinations.
   destination (dest) add (create,new)
                                    Add a broadcast destination.
@@ -192,7 +191,6 @@ Commands:
   stage (s) broadcast (bc) category
                                    Set the stream category or game.
   stage (s) chat send              Send a message to live chat.
-  stage (s) chat read              Read recent chat messages.
 ```
 
 #### `stage sync` flags
