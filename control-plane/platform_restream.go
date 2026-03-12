@@ -38,7 +38,7 @@ func (c *RestreamClient) GetStreamKey(ctx context.Context, token string, platfor
 	if result.StreamKey == "" {
 		return "", "", fmt.Errorf("no stream key returned from Restream")
 	}
-	return "rtmps://live.restream.io:443/live", result.StreamKey, nil
+	return "rtmp://live.restream.io/live", result.StreamKey, nil
 }
 
 func (c *RestreamClient) GetStreamInfo(ctx context.Context, token string, platformUserID string) (string, string, error) {

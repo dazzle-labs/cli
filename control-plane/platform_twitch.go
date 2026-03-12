@@ -52,7 +52,7 @@ func (c *TwitchClient) GetStreamKey(ctx context.Context, token string, platformU
 	if len(result.Data) == 0 {
 		return "", "", fmt.Errorf("no stream key returned")
 	}
-	return "rtmps://ingest.global-contribute.live-video.net:443/app", result.Data[0].StreamKey, nil
+	return "rtmp://live.twitch.tv/app", result.Data[0].StreamKey, nil
 }
 
 func (c *TwitchClient) GetStreamInfo(ctx context.Context, token string, platformUserID string) (string, string, error) {

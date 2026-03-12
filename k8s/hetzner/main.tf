@@ -112,6 +112,17 @@ module "kube-hetzner" {
   firewall_ssh_source      = var.firewall_ssh_source
   firewall_kube_api_source = var.firewall_kube_api_source
 
+  extra_firewall_rules = [
+    {
+      description     = "Allow outbound RTMP streaming"
+      direction       = "out"
+      protocol        = "tcp"
+      port            = "1935"
+      source_ips      = []
+      destination_ips = ["0.0.0.0/0", "::/0"]
+    },
+  ]
+
   # --- Misc ---
   allow_scheduling_on_control_plane = false
   automatically_upgrade_k3s         = false
