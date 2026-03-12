@@ -130,7 +130,7 @@ up: check-deps check-cli ## Create Kind cluster, build images, deploy full stack
 	$(STEP) "Building sidecar image"
 	$(SIDECAR_BUILD)
 	$(STEP) "Regenerating llms.txt"
-	./scripts/generate-llms-txt.sh > llms.txt
+	go run ./control-plane/cmd/gen-llms-txt
 	$(STEP) "Creating Kind cluster"
 	@if kind get clusters 2>/dev/null | grep -q '^browser-streamer$$'; then \
 		echo "  cluster already exists, reusing"; \
