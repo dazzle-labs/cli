@@ -1,5 +1,5 @@
 import { Toaster as Sonner, type ToasterProps } from "sonner"
-import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
+import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, CircleAlertIcon, Loader2Icon } from "lucide-react"
 
 const Toaster = ({ ...props }: ToasterProps) => {
   return (
@@ -17,7 +17,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           <TriangleAlertIcon className="size-4" />
         ),
         error: (
-          <OctagonXIcon className="size-4" />
+          <CircleAlertIcon className="size-4" />
         ),
         loading: (
           <Loader2Icon className="size-4 animate-spin" />

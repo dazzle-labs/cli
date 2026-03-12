@@ -3,6 +3,7 @@ import { useAuth } from "@clerk/react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
+import { showErrorToast } from "@/components/ui/toast-with-progress";
 import { streamClient } from "../client.js";
 import type { StreamDestination } from "../gen/api/v1/stream_pb.js";
 import { StreamDestinationForm } from "@/components/onboarding/StreamDestinationForm.js";
@@ -110,7 +111,6 @@ export function StreamConfig() {
   const [showCustomModal, setShowCustomModal] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardSkipIntro, setWizardSkipIntro] = useState(false);
-
   async function refresh() {
     const resp = await streamClient.listStreamDestinations({});
     setDestinations(resp.destinations);
@@ -132,7 +132,7 @@ export function StreamConfig() {
       window.history.replaceState(null, "", cleanUrl);
     }
     if (error) {
-      toast.error(error);
+      showErrorToast(error);
       window.history.replaceState(null, "", "/destinations");
     }
     if (onboarding === "true") {

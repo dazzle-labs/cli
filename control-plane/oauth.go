@@ -264,18 +264,27 @@ func (h *oauthHandler) handleCallback(w http.ResponseWriter, r *http.Request) {
 	platformUserID, username, err := cfg.UserInfoFunc(tokenResp.AccessToken, cfg.ClientID)
 	if err != nil {
 		log.Printf("OAuth user info fetch failed for %s: %v", platform, err)
-		http.Redirect(w, r, "/destinations?error="+url.QueryEscape("failed to fetch user info"), http.StatusFound)
+		errMsg := "failed to fetch user info"
+		if platform == "youtube" && strings.Contains(err.Error(), "no YouTube channel") {
+			errMsg = "No channel found for that YouTube account. Please log in to YouTube on that account and create a channel, then come back here and try again."
+		}
+		http.Redirect(w, r, "/destinations?error="+url.QueryEscape(errMsg), http.StatusFound)
 		return
 	}
 
-	// Fetch stream key synchronously
+	// Fetch stream key synchronously — required for the destination to be usable
 	client, clientErr := GetPlatformClient(platform)
 	var rtmpURL, streamKey string
 	if clientErr == nil {
 		rtmpURL, streamKey, err = client.GetStreamKey(context.Background(), tokenResp.AccessToken, platformUserID)
 		if err != nil {
 			log.Printf("Failed to get stream key for %s: %v", platform, err)
-			// Continue without stream key — destination will still be created
+			errMsg := fmt.Sprintf("Failed to get stream key for %s: %v", platform, err)
+			if platform == "youtube" {
+				errMsg = "Your YouTube channel is not configured for live streaming. Please go to YouTube Studio, enable live streaming, and wait for it to be activated (up to 24 hours), then come back here and try again."
+			}
+			http.Redirect(w, r, "/destinations?error="+url.QueryEscape(errMsg), http.StatusFound)
+			return
 		}
 	}
 
@@ -546,6 +555,12 @@ func fetchYouTubeUserInfo(accessToken, clientID string) (string, string, error) 
 	}
 	defer resp.Body.Close()
 
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("YouTube channels API returned %d: %s", resp.StatusCode, string(body))
+		return "", "", fmt.Errorf("YouTube API error (%d): %s", resp.StatusCode, string(body))
+	}
+
 	var result struct {
 		Items []struct {
 			ID      string `json:"id"`
@@ -554,11 +569,11 @@ func fetchYouTubeUserInfo(accessToken, clientID string) (string, string, error) 
 			} `json:"snippet"`
 		} `json:"items"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	if err := json.Unmarshal(body, &result); err != nil {
 		return "", "", err
 	}
 	if len(result.Items) == 0 {
-		return "", "", fmt.Errorf("no channel data returned")
+		return "", "", fmt.Errorf("no YouTube channel found for this account")
 	}
 	return result.Items[0].ID, result.Items[0].Snippet.Title, nil
 }

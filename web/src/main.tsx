@@ -16,7 +16,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <ClerkProvider publishableKey={clerkPubKey} appearance={{ theme: dark }}>
       <App />
-      <Toaster richColors />
+      <Toaster richColors closeButton />
     </ClerkProvider>
   </React.StrictMode>
 );
