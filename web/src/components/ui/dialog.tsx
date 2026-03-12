@@ -49,9 +49,11 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  mobileSheet = false,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
+  mobileSheet?: boolean
 }) {
   return (
     <DialogPortal>
@@ -59,11 +61,17 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-6 rounded-xl bg-background p-6 text-sm ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-md data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          "fixed z-50 grid w-full bg-background text-sm ring-1 ring-foreground/10 duration-100 outline-none data-open:animate-in data-closed:animate-out",
+          mobileSheet
+            ? "bottom-0 left-0 max-h-[92dvh] overflow-y-auto rounded-t-2xl p-5 pb-8 gap-4 data-open:slide-in-from-bottom data-open:fade-in-0 data-closed:slide-out-to-bottom data-closed:fade-out-0 sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:max-h-none sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:p-6 sm:pb-6 sm:gap-6 sm:max-w-[calc(100%-2rem)] sm:data-open:slide-in-from-bottom-0 sm:data-open:zoom-in-95 sm:data-closed:slide-out-to-bottom-0 sm:data-closed:zoom-out-95"
+            : "top-1/2 left-1/2 max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-6 rounded-xl p-6 sm:max-w-md data-open:fade-in-0 data-open:zoom-in-95 data-closed:fade-out-0 data-closed:zoom-out-95",
           className
         )}
         {...props}
       >
+        {mobileSheet && (
+          <div className="mx-auto w-10 h-1 rounded-full bg-foreground/10 shrink-0 sm:hidden" />
+        )}
         {children}
         {showCloseButton && (
           <DialogPrimitive.Close data-slot="dialog-close" asChild>

@@ -59,6 +59,10 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
 
   useEffect(() => {
     if (open) {
+      setShowInfoScreen(!skipIntro);
+      setStep(0);
+      setSelectedDestId(null);
+      setShowCustomForm(false);
       refreshDestinations();
     }
   }, [open]);
@@ -114,22 +118,22 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
   function renderInfoScreen() {
     return (
       <div className="flex flex-col items-center">
-        <h2 className="text-2xl tracking-[-0.02em] text-foreground mb-3 font-display">
+        <h2 className="text-2xl tracking-[-0.02em] text-foreground mb-2 sm:mb-3 font-display text-center">
           How Dazzle works
         </h2>
-        <p className="text-base text-muted-foreground mb-10 text-center max-w-md">
+        <p className="text-sm sm:text-base text-muted-foreground mb-6 sm:mb-10 text-center max-w-md">
           Your AI agent connects to a Stage — a cloud environment it can control.
           The stage streams everything to your chosen platform.
         </p>
 
         {/* Animated flow diagram */}
-        <div className="mb-10">
+        <div className="mb-6 sm:mb-10">
           <FlowDiagram />
         </div>
 
         <Button
           onClick={() => setShowInfoScreen(false)}
-          className="font-semibold"
+          className="font-semibold w-full sm:w-auto"
         >
           Continue
           <ArrowRight className="h-4 w-4 ml-1" />
@@ -144,10 +148,10 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
     if (hasDestinations) {
       return (
         <div className="flex flex-col items-center">
-          <h2 className="text-2xl tracking-[-0.02em] text-foreground mb-2 font-display">
+          <h2 className="text-2xl tracking-[-0.02em] text-foreground mb-2 font-display text-center">
             Where do you want to stream?
           </h2>
-          <p className="text-base text-muted-foreground mb-6 text-center max-w-md">
+          <p className="text-sm sm:text-base text-muted-foreground mb-5 sm:mb-6 text-center max-w-md">
             Pick a connected platform, or add a new one.
           </p>
 
@@ -240,11 +244,11 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
           </div>
 
           {/* Footer actions */}
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-col items-center gap-2 w-full">
             <Button
               disabled={!selectedDestId}
               onClick={() => setStep(1)}
-              className="font-semibold disabled:opacity-30"
+              className="font-semibold disabled:opacity-30 w-full sm:w-auto"
             >
               Continue
               <ArrowRight className="h-4 w-4 ml-1" />
@@ -252,7 +256,7 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
             <button
               type="button"
               onClick={() => setStep(1)}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
             >
               Skip for now
             </button>
@@ -264,16 +268,16 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
     // No destinations — full discovery layout
     return (
       <div className="flex flex-col items-center">
-        <h2 className="text-2xl tracking-[-0.02em] text-foreground mb-2 font-display">
+        <h2 className="text-2xl tracking-[-0.02em] text-foreground mb-2 font-display text-center">
           Where do you want to stream?
         </h2>
-        <p className="text-base text-muted-foreground mb-6 text-center max-w-md">
+        <p className="text-sm sm:text-base text-muted-foreground mb-5 sm:mb-6 text-center max-w-md">
           Connect a platform to get started.
         </p>
 
         {/* Platform OAuth buttons */}
-        <div className="mb-6">
-          <div className="flex flex-wrap gap-3 justify-center">
+        <div className="w-full max-w-md mb-5 sm:mb-6">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3 sm:justify-center">
             {OAUTH_PLATFORMS.filter(p => availablePlatforms.includes(p)).map((platform) => {
               const label = PLATFORM_LIST.find((p) => p.value === platform)?.label ?? platform;
               const hoverColor = PLATFORM_HOVER_COLORS[platform] ?? "";
@@ -287,7 +291,7 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
                   <Button
                     variant="outline"
                     onClick={() => handleOAuthConnect(platform)}
-                    className={cn("rounded-xl h-auto px-4 py-3", hoverColor)}
+                    className={cn("rounded-xl h-auto px-4 py-3 w-full sm:w-auto", hoverColor)}
                   >
                     <PlatformIcon platform={platform} size="sm" />
                     <span className="text-sm">{label}</span>
@@ -299,14 +303,14 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
         </div>
 
         {/* "or" divider */}
-        <div className="w-full max-w-md mb-6 flex items-center gap-3">
+        <div className="w-full max-w-md mb-5 sm:mb-6 flex items-center gap-3">
           <Separator className="flex-1" />
           <span className="text-xs text-muted-foreground">or</span>
           <Separator className="flex-1" />
         </div>
 
         {/* Custom RTMP button */}
-        <div className="mb-6">
+        <div className="w-full max-w-md mb-5 sm:mb-6">
           <motion.div
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.97 }}
@@ -315,7 +319,7 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
             <Button
               variant="outline"
               onClick={() => setShowCustomForm(!showCustomForm)}
-              className={cn("rounded-xl h-auto px-4 py-3", PLATFORM_HOVER_COLORS.custom, showCustomForm && "border-primary/30 bg-primary/[0.06]")}
+              className={cn("rounded-xl h-auto px-4 py-3 w-full sm:w-auto", PLATFORM_HOVER_COLORS.custom, showCustomForm && "border-primary/30 bg-primary/[0.06]")}
             >
               <PlatformIcon platform="custom" size="sm" />
               <span className="text-sm">Custom RTMP</span>
@@ -327,7 +331,7 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
         <AnimatePresence>
           {showCustomForm && (
             <motion.div
-              className="w-full max-w-md mb-6 overflow-hidden"
+              className="w-full max-w-md mb-5 sm:mb-6 overflow-hidden"
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ height: 0, opacity: 0 }}
@@ -346,11 +350,11 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
         </AnimatePresence>
 
         {/* Footer actions */}
-        <div className="mt-6 flex flex-col items-center gap-2">
+        <div className="mt-2 sm:mt-6 flex flex-col items-center gap-2 w-full">
           <button
             type="button"
             onClick={() => setStep(1)}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
           >
             Skip for now
           </button>
@@ -390,10 +394,10 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) handleClose(); }}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent mobileSheet className="sm:max-w-2xl sm:max-h-[90vh] sm:overflow-y-auto">
         {/* Back button + Step indicator */}
         {!showInfoScreen && (
-          <div className="mb-2 flex justify-center relative">
+          <div className="mb-1 sm:mb-2 flex justify-center relative">
             {canGoBack && (
               <Button
                 variant="ghost"

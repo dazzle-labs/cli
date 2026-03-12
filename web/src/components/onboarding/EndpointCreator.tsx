@@ -39,10 +39,10 @@ export function EndpointCreator({ onCreated, onNavigate }: EndpointCreatorProps)
 
   return (
     <div className="flex flex-col items-center">
-      <h2 className="text-2xl tracking-[-0.02em] text-foreground mb-2 font-display">
+      <h2 className="text-2xl tracking-[-0.02em] text-foreground mb-2 font-display text-center">
         Set up your stage
       </h2>
-      <p className="text-sm text-muted-foreground mb-6 max-w-md text-center">
+      <p className="text-sm text-muted-foreground mb-5 sm:mb-6 max-w-md text-center">
         A cloud environment your agent can control.
       </p>
 
@@ -70,7 +70,7 @@ export function EndpointCreator({ onCreated, onNavigate }: EndpointCreatorProps)
             <div className="flex justify-center">
               <Button
                 onClick={handleCreate}
-                className="font-semibold"
+                className="font-semibold w-full sm:w-auto"
               >
                 Create Stage
                 <ArrowRight className="h-4 w-4 ml-1" />
