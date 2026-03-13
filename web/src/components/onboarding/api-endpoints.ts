@@ -1,3 +1,5 @@
+import { cli } from "@/lib/cli-commands";
+
 export interface EndpointParam {
   name: string;
   type: string;
@@ -51,7 +53,7 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
           2,
         ),
         notes:
-          "Stage is inactive until activated via the CLI with 'dazzle stage activate'.",
+          `Stage is inactive until started via the CLI with '${cli.stageUp.full}'.`,
       },
       {
         id: "list-stages",

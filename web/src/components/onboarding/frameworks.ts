@@ -1,3 +1,5 @@
+import { cli } from "@/lib/cli-commands";
+
 export interface Framework {
   id: string;
   name: string;
@@ -17,20 +19,20 @@ export const FRAMEWORKS: Framework[] = [
 curl -sSL https://stream.dazzle.fm/install.sh | sh
 
 # Authenticate
-dazzle login
+${cli.login.full}
 
-# Create and activate a stage
-dazzle stage create my-stage
-dazzle stage activate
+# Create and start a stage
+${cli.stageCreate.full}
+${cli.stageUp.full}
 
-# Push content (JS or JSX, hot-swapped via HMR)
-dazzle stage script set ./my-overlay.jsx
+# Push content (sync your app directory, hot-reloads via HMR)
+${cli.stageSync.full}
 
 # Take a screenshot to verify
-dazzle stage screenshot -o preview.png
+${cli.stageScreenshotOut.full}
 
 # Go live
-dazzle stage broadcast on`,
+${cli.stageBroadcastOn.full}`,
   },
   {
     id: "openai-agents",
@@ -42,13 +44,13 @@ dazzle stage broadcast on`,
 curl -sSL https://stream.dazzle.fm/install.sh | sh
 
 # Authenticate and create a stage
-dazzle login
-dazzle stage create my-stage
-dazzle stage activate
+${cli.login.full}
+${cli.stageCreate.full}
+${cli.stageUp.full}
 
 # Push content and stream
-dazzle stage script set app.jsx
-dazzle stage broadcast on`,
+${cli.stageSync.full}
+${cli.stageBroadcastOn.full}`,
   },
   {
     id: "crewai",
@@ -60,13 +62,13 @@ dazzle stage broadcast on`,
 curl -sSL https://stream.dazzle.fm/install.sh | sh
 
 # Authenticate and create a stage
-dazzle login
-dazzle stage create my-stage
-dazzle stage activate
+${cli.login.full}
+${cli.stageCreate.full}
+${cli.stageUp.full}
 
 # Push content and stream
-dazzle stage script set app.jsx
-dazzle stage broadcast on`,
+${cli.stageSync.full}
+${cli.stageBroadcastOn.full}`,
   },
   {
     id: "langgraph",
@@ -78,13 +80,13 @@ dazzle stage broadcast on`,
 curl -sSL https://stream.dazzle.fm/install.sh | sh
 
 # Authenticate and create a stage
-dazzle login
-dazzle stage create my-stage
-dazzle stage activate
+${cli.login.full}
+${cli.stageCreate.full}
+${cli.stageUp.full}
 
 # Push content and stream
-dazzle stage script set app.jsx
-dazzle stage broadcast on`,
+${cli.stageSync.full}
+${cli.stageBroadcastOn.full}`,
   },
   {
     id: "autogen",
@@ -96,12 +98,12 @@ dazzle stage broadcast on`,
 curl -sSL https://stream.dazzle.fm/install.sh | sh
 
 # Authenticate and create a stage
-dazzle login
-dazzle stage create my-stage
-dazzle stage activate
+${cli.login.full}
+${cli.stageCreate.full}
+${cli.stageUp.full}
 
 # Push content and stream
-dazzle stage script set app.jsx
-dazzle stage broadcast on`,
+${cli.stageSync.full}
+${cli.stageBroadcastOn.full}`,
   },
 ];

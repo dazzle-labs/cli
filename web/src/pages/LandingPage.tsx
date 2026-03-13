@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { cli } from "@/lib/cli-commands";
 
 const STEPS = [
   {
@@ -73,15 +74,15 @@ const FRAMEWORKS = [
 ];
 
 const TERMINAL_LINES = [
-  { text: "$ dazzle stage create", cls: "text-zinc-300" },
+  { text: `$ ${cli.stageCreate.base}`, cls: "text-zinc-300" },
   { text: '✓ Stage "vivid-aurora" created', cls: "text-zinc-500" },
   { text: "", cls: "" },
-  { text: "$ dazzle stage activate", cls: "text-zinc-300" },
+  { text: `$ ${cli.stageUp.full}`, cls: "text-zinc-300" },
   { text: "✓ Chrome environment ready", cls: "text-zinc-500" },
   { text: "  stream.dazzle.fm/preview/a8f2k", cls: "text-emerald-400/60" },
   { text: "", cls: "" },
   {
-    text: "$ dazzle broadcast start --to twitch,youtube",
+    text: `$ ${cli.stageBroadcastOn.full}`,
     cls: "text-zinc-300",
   },
   { text: "✓ Live on 2 platforms", cls: "text-emerald-400" },

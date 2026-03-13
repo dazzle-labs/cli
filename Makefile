@@ -103,6 +103,9 @@ check-cli:
 		echo ""; \
 	fi
 
+check-cli-commands: check-cli ## Validate all frontend CLI commands against the CLI binary
+	bash scripts/smoke-test-cli.sh
+
 pull-cli: ## Pull latest cli release tag, update go.mod, and commit
 	@if ! git -C cli diff --quiet || ! git -C cli diff --cached --quiet; then \
 		printf "$(_yellow)ERROR: cli/ has uncommitted changes. Commit or stash them first.$(_reset)\n"; \

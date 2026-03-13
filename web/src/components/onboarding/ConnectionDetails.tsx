@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Copy, Check, PartyPopper, Plus, Loader2 } from "lucide-react";
 import { springs, scaleIn } from "@/lib/motion";
+import { cli } from "@/lib/cli-commands";
 
 interface ConnectionDetailsProps {
   framework: Framework;
@@ -131,7 +132,7 @@ export function ConnectionDetails({ framework, endpointId: _endpointId, apiKey: 
         <div className="mt-4 rounded-xl border border-border bg-card p-4">
           <div className="mb-3">
             <p className="text-sm font-medium text-muted-foreground mb-1">
-              Authenticate with <code className="text-primary bg-muted px-1 py-0.5 rounded">dazzle login</code>
+              Authenticate with <code className="text-primary bg-muted px-1 py-0.5 rounded">{cli.login.full}</code>
             </p>
             <p className="text-sm text-muted-foreground">
               Or set <code className="text-muted-foreground">export DAZZLE_API_KEY=&lt;key&gt;</code> in your shell profile.

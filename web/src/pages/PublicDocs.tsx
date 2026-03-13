@@ -15,6 +15,7 @@ import {
   MULTI_STAGE_SNIPPET,
 } from "./docs-content";
 import type { InstallTab } from "./docs-content";
+import { cli } from "@/lib/cli-commands";
 
 const ease = [0.25, 0.1, 0.25, 1] as const;
 
@@ -200,7 +201,7 @@ export function PublicDocs() {
 
             {/* CLI reference — collapsible */}
             <CollapsibleSection title="Full CLI reference">
-              <TerminalBlock code={`# All top-level commands\ndazzle --help\n\n# Stage commands\ndazzle stage --help\n\n# Script commands\ndazzle stage script --help`} />
+              <TerminalBlock code={`# All top-level commands\n${cli.help.full}\n\n# Stage commands\n${cli.stageHelp.full}\n\n# Sync commands\n${cli.stageSyncHelp.full}`} />
             </CollapsibleSection>
           </motion.div>
         </TooltipProvider>

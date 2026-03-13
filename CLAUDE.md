@@ -65,6 +65,10 @@ When making changes to the CLI (`cli/` submodule) as part of feature work:
 5. Commit the submodule bump + go.mod update along with any related root-repo changes (docs, k8s manifests, etc.)
 6. Push the root repo
 
+## CLI commands in the frontend
+
+All `dazzle` commands shown in the web UI come from `web/src/lib/cli-commands.ts`. Never hardcode a CLI command string in a component — add or reuse an entry in the `cli` object and reference it. CI runs `make check-cli-commands` to validate every registered command against the real binary.
+
 ## llms.txt
 
 `llms.txt` is a static heredoc in `scripts/generate-llms-txt.sh`. Run `make llms-txt` to regenerate. Edit the shell script directly to update content.

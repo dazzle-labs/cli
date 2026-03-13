@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { SignIn, useAuth, useUser } from "@clerk/react";
 import { setTokenGetter } from "../client.js";
+import { cli } from "@/lib/cli-commands";
 
 type SessionStatus = "loading" | "not_found" | "expired" | "sign_in" | "verify" | "confirming" | "done" | "error";
 
@@ -157,7 +158,7 @@ export function CliAuth() {
             <p className="text-sm text-zinc-400">
               This session may have expired or already been used.
               <br />
-              Run <code className="text-zinc-300">dazzle login</code> to try again.
+              Run <code className="text-zinc-300">{cli.login.full}</code> to try again.
             </p>
           </div>
         )}
@@ -166,7 +167,7 @@ export function CliAuth() {
           <div className="text-center">
             <h2 className="text-lg font-semibold text-white mb-2">Session Expired</h2>
             <p className="text-sm text-zinc-400">
-              Run <code className="text-zinc-300">dazzle login</code> to try again.
+              Run <code className="text-zinc-300">{cli.login.full}</code> to try again.
             </p>
           </div>
         )}

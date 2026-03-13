@@ -1,3 +1,5 @@
+import { cli } from "@/lib/cli-commands";
+
 export const INSTALL_SNIPPET_UNIX =
   "curl -sSL https://stream.dazzle.fm/install.sh | sh";
 
@@ -16,19 +18,16 @@ export const INSTALL_TABS: { id: InstallTab; label: string; cmd: string }[] = [
 ];
 
 export const QUICK_START_STEPS = [
-  { n: 1, label: "Authenticate", cmd: "dazzle login" },
-  { n: 2, label: "Create a stage", cmd: "dazzle stage create my-stage" },
-  { n: 3, label: "Push content", cmd: "dazzle stage script set ./app.jsx" },
-  { n: 4, label: "Screenshot to verify", cmd: "dazzle stage screenshot" },
-  { n: 5, label: "Go live", cmd: "dazzle stage broadcast on" },
+  { n: 1, label: "Authenticate", cmd: cli.login.full },
+  { n: 2, label: "Create a stage", cmd: cli.stageCreate.full },
+  { n: 3, label: "Push content", cmd: cli.stageSync.full },
+  { n: 4, label: "Screenshot to verify", cmd: cli.stageScreenshot.full },
+  { n: 5, label: "Go live", cmd: cli.stageBroadcastOn.full },
 ];
 
 export const MULTI_STAGE_SNIPPET = `# List all stages
-dazzle stage list
+${cli.stageList.full}
 
 # Target a specific stage
-dazzle stage activate -s my-stage
-dazzle stage script set app.jsx -s my-stage
-
-# Set a default stage for all commands
-dazzle stage default my-stage`;
+${cli.stageUp.base} -s my-stage
+${cli.stageSync.base} ./my-app -s my-stage`;

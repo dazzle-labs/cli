@@ -18,13 +18,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { AnimatedPage } from "@/components/AnimatedPage";
 import { CopyButton } from "@/components/CopyButton";
 import { Spinner } from "@/components/ui/spinner";
+import { cli } from "@/lib/cli-commands";
 
 const cliCommands = [
-  { label: "Set as default stage", cmd: (name: string) => `dazzle stage default "${name}"` },
-  { label: "Activate this stage", cmd: () => `dazzle stage activate` },
-  { label: "Push content", cmd: () => `dazzle stage script set app.jsx` },
-  { label: "Screenshot to verify", cmd: () => `dazzle stage screenshot` },
-  { label: "Go live", cmd: () => `dazzle stage broadcast on` },
+  { label: "Start this stage", cmd: (name: string) => `${cli.stageUp.base} -s "${name}"` },
+  { label: "Push content", cmd: (name: string) => `${cli.stageSync.base} ./my-app -s "${name}"` },
+  { label: "Screenshot to verify", cmd: (name: string) => `${cli.stageScreenshot.base} -s "${name}"` },
+  { label: "Go live", cmd: (name: string) => `${cli.stageBroadcastOn.base} -s "${name}"` },
 ];
 
 export function StageDetail() {
