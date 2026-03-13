@@ -33,6 +33,7 @@ message Stage {
   string destination_id = 10;
   StagePreview preview = 11;
   StreamDestination destination = 12;
+  repeated string capabilities = 13; // e.g., ["gpu"]
 }
 
 message StagePreview {
@@ -42,6 +43,7 @@ message StagePreview {
 
 message CreateStageRequest {
   string name = 1;
+  repeated string capabilities = 2; // e.g., ["gpu"]
 }
 
 message CreateStageResponse {

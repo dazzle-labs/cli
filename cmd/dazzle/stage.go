@@ -138,6 +138,7 @@ func (c *StageListCmd) Run(ctx *Context) error {
 // StageCreateCmd creates a new stage.
 type StageCreateCmd struct {
 	Name string `arg:"" help:"Stage name."`
+	GPU  bool   `help:"Create a GPU-accelerated stage." default:"false"`
 }
 
 func (c *StageCreateCmd) Run(ctx *Context) error {
@@ -145,8 +146,13 @@ func (c *StageCreateCmd) Run(ctx *Context) error {
 		return err
 	}
 
+	var caps []string
+	if c.GPU {
+		caps = append(caps, "gpu")
+	}
+
 	client := apiv1connect.NewStageServiceClient(ctx.HTTPClient, ctx.APIURL)
-	req := connect.NewRequest(&apiv1.CreateStageRequest{Name: c.Name})
+	req := connect.NewRequest(&apiv1.CreateStageRequest{Name: c.Name, Capabilities: caps})
 	req.Header().Set("Authorization", ctx.authHeader())
 	resp, err := client.CreateStage(context.Background(), req)
 	if err != nil {
