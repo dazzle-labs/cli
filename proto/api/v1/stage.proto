@@ -30,9 +30,11 @@ message Stage {
   string status = 7; // inactive | starting | running | stopping
   string owner_user_id = 8;
   string name = 9;
-  string destination_id = 10;
+  string destination_id = 10 [deprecated = true];
   StagePreview preview = 11;
-  StreamDestination destination = 12;
+  StreamDestination destination = 12 [deprecated = true];
+  repeated string destination_ids = 13;
+  repeated StreamDestination destinations = 14;
 }
 
 message StagePreview {
@@ -70,7 +72,8 @@ message DeleteStageResponse {}
 
 message SetStageDestinationRequest {
   string stage_id = 1;
-  string destination_id = 2; // empty string to clear
+  string destination_id = 2 [deprecated = true]; // single dest (backward compat)
+  repeated string destination_ids = 3; // set multiple (max 4)
 }
 
 message SetStageDestinationResponse {

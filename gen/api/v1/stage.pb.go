@@ -24,21 +24,25 @@ const (
 )
 
 type Stage struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	PodName       string                 `protobuf:"bytes,2,opt,name=pod_name,json=podName,proto3" json:"pod_name,omitempty"`
-	PodIp         string                 `protobuf:"bytes,3,opt,name=pod_ip,json=podIp,proto3" json:"pod_ip,omitempty"`
-	DirectPort    int32                  `protobuf:"varint,4,opt,name=direct_port,json=directPort,proto3" json:"direct_port,omitempty"`
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	LastActivity  *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=last_activity,json=lastActivity,proto3" json:"last_activity,omitempty"`
-	Status        string                 `protobuf:"bytes,7,opt,name=status,proto3" json:"status,omitempty"` // inactive | starting | running | stopping
-	OwnerUserId   string                 `protobuf:"bytes,8,opt,name=owner_user_id,json=ownerUserId,proto3" json:"owner_user_id,omitempty"`
-	Name          string                 `protobuf:"bytes,9,opt,name=name,proto3" json:"name,omitempty"`
-	DestinationId string                 `protobuf:"bytes,10,opt,name=destination_id,json=destinationId,proto3" json:"destination_id,omitempty"`
-	Preview       *StagePreview          `protobuf:"bytes,11,opt,name=preview,proto3" json:"preview,omitempty"`
-	Destination   *StreamDestination     `protobuf:"bytes,12,opt,name=destination,proto3" json:"destination,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	Id           string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	PodName      string                 `protobuf:"bytes,2,opt,name=pod_name,json=podName,proto3" json:"pod_name,omitempty"`
+	PodIp        string                 `protobuf:"bytes,3,opt,name=pod_ip,json=podIp,proto3" json:"pod_ip,omitempty"`
+	DirectPort   int32                  `protobuf:"varint,4,opt,name=direct_port,json=directPort,proto3" json:"direct_port,omitempty"`
+	CreatedAt    *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	LastActivity *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=last_activity,json=lastActivity,proto3" json:"last_activity,omitempty"`
+	Status       string                 `protobuf:"bytes,7,opt,name=status,proto3" json:"status,omitempty"` // inactive | starting | running | stopping
+	OwnerUserId  string                 `protobuf:"bytes,8,opt,name=owner_user_id,json=ownerUserId,proto3" json:"owner_user_id,omitempty"`
+	Name         string                 `protobuf:"bytes,9,opt,name=name,proto3" json:"name,omitempty"`
+	// Deprecated: Marked as deprecated in api/v1/stage.proto.
+	DestinationId string        `protobuf:"bytes,10,opt,name=destination_id,json=destinationId,proto3" json:"destination_id,omitempty"`
+	Preview       *StagePreview `protobuf:"bytes,11,opt,name=preview,proto3" json:"preview,omitempty"`
+	// Deprecated: Marked as deprecated in api/v1/stage.proto.
+	Destination    *StreamDestination   `protobuf:"bytes,12,opt,name=destination,proto3" json:"destination,omitempty"`
+	DestinationIds []string             `protobuf:"bytes,13,rep,name=destination_ids,json=destinationIds,proto3" json:"destination_ids,omitempty"`
+	Destinations   []*StreamDestination `protobuf:"bytes,14,rep,name=destinations,proto3" json:"destinations,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *Stage) Reset() {
@@ -134,6 +138,7 @@ func (x *Stage) GetName() string {
 	return ""
 }
 
+// Deprecated: Marked as deprecated in api/v1/stage.proto.
 func (x *Stage) GetDestinationId() string {
 	if x != nil {
 		return x.DestinationId
@@ -148,9 +153,24 @@ func (x *Stage) GetPreview() *StagePreview {
 	return nil
 }
 
+// Deprecated: Marked as deprecated in api/v1/stage.proto.
 func (x *Stage) GetDestination() *StreamDestination {
 	if x != nil {
 		return x.Destination
+	}
+	return nil
+}
+
+func (x *Stage) GetDestinationIds() []string {
+	if x != nil {
+		return x.DestinationIds
+	}
+	return nil
+}
+
+func (x *Stage) GetDestinations() []*StreamDestination {
+	if x != nil {
+		return x.Destinations
 	}
 	return nil
 }
@@ -544,11 +564,13 @@ func (*DeleteStageResponse) Descriptor() ([]byte, []int) {
 }
 
 type SetStageDestinationRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"`
-	DestinationId string                 `protobuf:"bytes,2,opt,name=destination_id,json=destinationId,proto3" json:"destination_id,omitempty"` // empty string to clear
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	StageId string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"`
+	// Deprecated: Marked as deprecated in api/v1/stage.proto.
+	DestinationId  string   `protobuf:"bytes,2,opt,name=destination_id,json=destinationId,proto3" json:"destination_id,omitempty"`    // single dest (backward compat)
+	DestinationIds []string `protobuf:"bytes,3,rep,name=destination_ids,json=destinationIds,proto3" json:"destination_ids,omitempty"` // set multiple (max 4)
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *SetStageDestinationRequest) Reset() {
@@ -588,11 +610,19 @@ func (x *SetStageDestinationRequest) GetStageId() string {
 	return ""
 }
 
+// Deprecated: Marked as deprecated in api/v1/stage.proto.
 func (x *SetStageDestinationRequest) GetDestinationId() string {
 	if x != nil {
 		return x.DestinationId
 	}
 	return ""
+}
+
+func (x *SetStageDestinationRequest) GetDestinationIds() []string {
+	if x != nil {
+		return x.DestinationIds
+	}
+	return nil
 }
 
 type SetStageDestinationResponse struct {
@@ -1003,7 +1033,7 @@ var File_api_v1_stage_proto protoreflect.FileDescriptor
 
 const file_api_v1_stage_proto_rawDesc = "" +
 	"\n" +
-	"\x12api/v1/stage.proto\x12\tdazzle.v1\x1a\x13api/v1/stream.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xd0\x03\n" +
+	"\x12api/v1/stage.proto\x12\tdazzle.v1\x1a\x13api/v1/stream.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xc3\x04\n" +
 	"\x05Stage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
 	"\bpod_name\x18\x02 \x01(\tR\apodName\x12\x15\n" +
@@ -1015,11 +1045,13 @@ const file_api_v1_stage_proto_rawDesc = "" +
 	"\rlast_activity\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\flastActivity\x12\x16\n" +
 	"\x06status\x18\a \x01(\tR\x06status\x12\"\n" +
 	"\rowner_user_id\x18\b \x01(\tR\vownerUserId\x12\x12\n" +
-	"\x04name\x18\t \x01(\tR\x04name\x12%\n" +
+	"\x04name\x18\t \x01(\tR\x04name\x12)\n" +
 	"\x0edestination_id\x18\n" +
-	" \x01(\tR\rdestinationId\x121\n" +
-	"\apreview\x18\v \x01(\v2\x17.dazzle.v1.StagePreviewR\apreview\x12>\n" +
-	"\vdestination\x18\f \x01(\v2\x1c.dazzle.v1.StreamDestinationR\vdestination\"D\n" +
+	" \x01(\tB\x02\x18\x01R\rdestinationId\x121\n" +
+	"\apreview\x18\v \x01(\v2\x17.dazzle.v1.StagePreviewR\apreview\x12B\n" +
+	"\vdestination\x18\f \x01(\v2\x1c.dazzle.v1.StreamDestinationB\x02\x18\x01R\vdestination\x12'\n" +
+	"\x0fdestination_ids\x18\r \x03(\tR\x0edestinationIds\x12@\n" +
+	"\fdestinations\x18\x0e \x03(\v2\x1c.dazzle.v1.StreamDestinationR\fdestinations\"D\n" +
 	"\fStagePreview\x12\x1b\n" +
 	"\twatch_url\x18\x01 \x01(\tR\bwatchUrl\x12\x17\n" +
 	"\ahls_url\x18\x02 \x01(\tR\x06hlsUrl\"(\n" +
@@ -1036,10 +1068,11 @@ const file_api_v1_stage_proto_rawDesc = "" +
 	"\x05stage\x18\x01 \x01(\v2\x10.dazzle.v1.StageR\x05stage\"$\n" +
 	"\x12DeleteStageRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x15\n" +
-	"\x13DeleteStageResponse\"^\n" +
+	"\x13DeleteStageResponse\"\x8b\x01\n" +
 	"\x1aSetStageDestinationRequest\x12\x19\n" +
-	"\bstage_id\x18\x01 \x01(\tR\astageId\x12%\n" +
-	"\x0edestination_id\x18\x02 \x01(\tR\rdestinationId\"E\n" +
+	"\bstage_id\x18\x01 \x01(\tR\astageId\x12)\n" +
+	"\x0edestination_id\x18\x02 \x01(\tB\x02\x18\x01R\rdestinationId\x12'\n" +
+	"\x0fdestination_ids\x18\x03 \x03(\tR\x0edestinationIds\"E\n" +
 	"\x1bSetStageDestinationResponse\x12&\n" +
 	"\x05stage\x18\x01 \x01(\v2\x10.dazzle.v1.StageR\x05stage\"&\n" +
 	"\x14ActivateStageRequest\x12\x0e\n" +
@@ -1115,39 +1148,40 @@ var file_api_v1_stage_proto_depIdxs = []int32{
 	20, // 1: dazzle.v1.Stage.last_activity:type_name -> google.protobuf.Timestamp
 	1,  // 2: dazzle.v1.Stage.preview:type_name -> dazzle.v1.StagePreview
 	21, // 3: dazzle.v1.Stage.destination:type_name -> dazzle.v1.StreamDestination
-	0,  // 4: dazzle.v1.CreateStageResponse.stage:type_name -> dazzle.v1.Stage
-	0,  // 5: dazzle.v1.ListStagesResponse.stages:type_name -> dazzle.v1.Stage
-	0,  // 6: dazzle.v1.GetStageResponse.stage:type_name -> dazzle.v1.Stage
-	0,  // 7: dazzle.v1.SetStageDestinationResponse.stage:type_name -> dazzle.v1.Stage
-	0,  // 8: dazzle.v1.ActivateStageResponse.stage:type_name -> dazzle.v1.Stage
-	0,  // 9: dazzle.v1.DeactivateStageResponse.stage:type_name -> dazzle.v1.Stage
-	0,  // 10: dazzle.v1.UpdateStageRequest.stage:type_name -> dazzle.v1.Stage
-	22, // 11: dazzle.v1.UpdateStageRequest.update_mask:type_name -> google.protobuf.FieldMask
-	0,  // 12: dazzle.v1.UpdateStageResponse.stage:type_name -> dazzle.v1.Stage
-	0,  // 13: dazzle.v1.RegeneratePreviewTokenResponse.stage:type_name -> dazzle.v1.Stage
-	2,  // 14: dazzle.v1.StageService.CreateStage:input_type -> dazzle.v1.CreateStageRequest
-	4,  // 15: dazzle.v1.StageService.ListStages:input_type -> dazzle.v1.ListStagesRequest
-	6,  // 16: dazzle.v1.StageService.GetStage:input_type -> dazzle.v1.GetStageRequest
-	8,  // 17: dazzle.v1.StageService.DeleteStage:input_type -> dazzle.v1.DeleteStageRequest
-	10, // 18: dazzle.v1.StageService.SetStageDestination:input_type -> dazzle.v1.SetStageDestinationRequest
-	12, // 19: dazzle.v1.StageService.ActivateStage:input_type -> dazzle.v1.ActivateStageRequest
-	14, // 20: dazzle.v1.StageService.DeactivateStage:input_type -> dazzle.v1.DeactivateStageRequest
-	16, // 21: dazzle.v1.StageService.UpdateStage:input_type -> dazzle.v1.UpdateStageRequest
-	18, // 22: dazzle.v1.StageService.RegeneratePreviewToken:input_type -> dazzle.v1.RegeneratePreviewTokenRequest
-	3,  // 23: dazzle.v1.StageService.CreateStage:output_type -> dazzle.v1.CreateStageResponse
-	5,  // 24: dazzle.v1.StageService.ListStages:output_type -> dazzle.v1.ListStagesResponse
-	7,  // 25: dazzle.v1.StageService.GetStage:output_type -> dazzle.v1.GetStageResponse
-	9,  // 26: dazzle.v1.StageService.DeleteStage:output_type -> dazzle.v1.DeleteStageResponse
-	11, // 27: dazzle.v1.StageService.SetStageDestination:output_type -> dazzle.v1.SetStageDestinationResponse
-	13, // 28: dazzle.v1.StageService.ActivateStage:output_type -> dazzle.v1.ActivateStageResponse
-	15, // 29: dazzle.v1.StageService.DeactivateStage:output_type -> dazzle.v1.DeactivateStageResponse
-	17, // 30: dazzle.v1.StageService.UpdateStage:output_type -> dazzle.v1.UpdateStageResponse
-	19, // 31: dazzle.v1.StageService.RegeneratePreviewToken:output_type -> dazzle.v1.RegeneratePreviewTokenResponse
-	23, // [23:32] is the sub-list for method output_type
-	14, // [14:23] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	21, // 4: dazzle.v1.Stage.destinations:type_name -> dazzle.v1.StreamDestination
+	0,  // 5: dazzle.v1.CreateStageResponse.stage:type_name -> dazzle.v1.Stage
+	0,  // 6: dazzle.v1.ListStagesResponse.stages:type_name -> dazzle.v1.Stage
+	0,  // 7: dazzle.v1.GetStageResponse.stage:type_name -> dazzle.v1.Stage
+	0,  // 8: dazzle.v1.SetStageDestinationResponse.stage:type_name -> dazzle.v1.Stage
+	0,  // 9: dazzle.v1.ActivateStageResponse.stage:type_name -> dazzle.v1.Stage
+	0,  // 10: dazzle.v1.DeactivateStageResponse.stage:type_name -> dazzle.v1.Stage
+	0,  // 11: dazzle.v1.UpdateStageRequest.stage:type_name -> dazzle.v1.Stage
+	22, // 12: dazzle.v1.UpdateStageRequest.update_mask:type_name -> google.protobuf.FieldMask
+	0,  // 13: dazzle.v1.UpdateStageResponse.stage:type_name -> dazzle.v1.Stage
+	0,  // 14: dazzle.v1.RegeneratePreviewTokenResponse.stage:type_name -> dazzle.v1.Stage
+	2,  // 15: dazzle.v1.StageService.CreateStage:input_type -> dazzle.v1.CreateStageRequest
+	4,  // 16: dazzle.v1.StageService.ListStages:input_type -> dazzle.v1.ListStagesRequest
+	6,  // 17: dazzle.v1.StageService.GetStage:input_type -> dazzle.v1.GetStageRequest
+	8,  // 18: dazzle.v1.StageService.DeleteStage:input_type -> dazzle.v1.DeleteStageRequest
+	10, // 19: dazzle.v1.StageService.SetStageDestination:input_type -> dazzle.v1.SetStageDestinationRequest
+	12, // 20: dazzle.v1.StageService.ActivateStage:input_type -> dazzle.v1.ActivateStageRequest
+	14, // 21: dazzle.v1.StageService.DeactivateStage:input_type -> dazzle.v1.DeactivateStageRequest
+	16, // 22: dazzle.v1.StageService.UpdateStage:input_type -> dazzle.v1.UpdateStageRequest
+	18, // 23: dazzle.v1.StageService.RegeneratePreviewToken:input_type -> dazzle.v1.RegeneratePreviewTokenRequest
+	3,  // 24: dazzle.v1.StageService.CreateStage:output_type -> dazzle.v1.CreateStageResponse
+	5,  // 25: dazzle.v1.StageService.ListStages:output_type -> dazzle.v1.ListStagesResponse
+	7,  // 26: dazzle.v1.StageService.GetStage:output_type -> dazzle.v1.GetStageResponse
+	9,  // 27: dazzle.v1.StageService.DeleteStage:output_type -> dazzle.v1.DeleteStageResponse
+	11, // 28: dazzle.v1.StageService.SetStageDestination:output_type -> dazzle.v1.SetStageDestinationResponse
+	13, // 29: dazzle.v1.StageService.ActivateStage:output_type -> dazzle.v1.ActivateStageResponse
+	15, // 30: dazzle.v1.StageService.DeactivateStage:output_type -> dazzle.v1.DeactivateStageResponse
+	17, // 31: dazzle.v1.StageService.UpdateStage:output_type -> dazzle.v1.UpdateStageResponse
+	19, // 32: dazzle.v1.StageService.RegeneratePreviewToken:output_type -> dazzle.v1.RegeneratePreviewTokenResponse
+	24, // [24:33] is the sub-list for method output_type
+	15, // [15:24] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_api_v1_stage_proto_init() }
