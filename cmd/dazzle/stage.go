@@ -32,6 +32,19 @@ type StageCmd struct {
 	Chat       ChatCmd       `cmd:"" help:"Read and send live chat messages."`
 }
 
+// stageDestinations returns the effective destinations for a stage, falling
+// back to the deprecated singular Destination field if the server hasn't been
+// updated to populate the plural field yet.
+func stageDestinations(s *apiv1.Stage) []*apiv1.StreamDestination {
+	if len(s.Destinations) > 0 {
+		return s.Destinations
+	}
+	if s.Destination != nil && s.Destination.Platform != "" {
+		return []*apiv1.StreamDestination{s.Destination}
+	}
+	return nil
+}
+
 // resolveStageByNameOrID tries to resolve a stage name or ID to its ID.
 // It first tries GetStage (treating the input as an ID), then falls back to
 // listing stages and matching by name.
@@ -67,7 +80,7 @@ func resolveStageByNameOrID(ctx *Context, nameOrID string) (string, error) {
 	if len(matches) > 1 {
 		var platforms []string
 		for _, s := range matches {
-			for _, d := range s.Destinations {
+			for _, d := range stageDestinations(s) {
 				if d.Platform != "" {
 					platforms = append(platforms, fmt.Sprintf("%q", d.Platform+":"+s.Name))
 				}
@@ -80,7 +93,7 @@ func resolveStageByNameOrID(ctx *Context, nameOrID string) (string, error) {
 	if parts := strings.SplitN(nameOrID, ":", 2); len(parts) == 2 {
 		platform, name := parts[0], parts[1]
 		for _, s := range listResp.Msg.Stages {
-			for _, d := range s.Destinations {
+			for _, d := range stageDestinations(s) {
 				if d.Platform == platform && s.Name == name {
 					return s.Id, nil
 				}
@@ -115,7 +128,7 @@ func (c *StageListCmd) Run(ctx *Context) error {
 	// Show PLATFORM column only if any stage has destinations set.
 	hasPlatform := false
 	for _, s := range resp.Msg.Stages {
-		if len(s.Destinations) > 0 {
+		if len(stageDestinations(s)) > 0 {
 			hasPlatform = true
 			break
 		}
@@ -125,7 +138,7 @@ func (c *StageListCmd) Run(ctx *Context) error {
 		tableHeader("NAME", "PLATFORM", "STATUS")
 		for _, s := range resp.Msg.Stages {
 			var platforms []string
-			for _, d := range s.Destinations {
+			for _, d := range stageDestinations(s) {
 				platforms = append(platforms, d.Platform)
 			}
 			printText("%s", tableRow(s.Name, strings.Join(platforms, ", "), s.Status))
