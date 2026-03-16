@@ -132,12 +132,12 @@ Commands:
                                    Set the stream category or game.
   stage (s) chat send              Send a message to live chat.
   destination (dest) list (ls)     List broadcast destinations.
-  destination (dest) add (create,new)
-                                   Add a broadcast destination.
+  destination (dest) create (new)
+                                   Create a broadcast destination.
   destination (dest) delete (rm)
                                    Remove a broadcast destination.
-  destination (dest) set           Assign a broadcast destination to the active
-                                   stage.
+  destination (dest) add           Add destinations to the active stage.
+  destination (dest) remove        Remove destinations from the active stage.
   obs (o)                          Advanced OBS control (scenes, recording,
                                    etc).
 
@@ -296,12 +296,12 @@ Flags:
 
 Commands:
   destination (dest) list (ls)    List broadcast destinations.
-  destination (dest) add (create,new)
-                                  Add a broadcast destination.
+  destination (dest) create (new)
+                                  Create a broadcast destination.
   destination (dest) delete (rm)
                                   Remove a broadcast destination.
-  destination (dest) set          Assign a broadcast destination to the active
-                                  stage.
+  destination (dest) add          Add destinations to the active stage.
+  destination (dest) remove       Remove destinations from the active stage.
 ```
 
 ## Stage Resolution

@@ -20,9 +20,10 @@ import (
 // DestinationCmd groups destination subcommands.
 type DestinationCmd struct {
 	List   DestinationListCmd   `cmd:"" aliases:"ls" help:"List broadcast destinations."`
-	Add    DestinationAddCmd    `cmd:"" aliases:"create,new" help:"Add a broadcast destination."`
+	Create DestinationCreateCmd `cmd:"" aliases:"new" help:"Create a broadcast destination."`
 	Delete DestinationDeleteCmd `cmd:"" aliases:"rm" help:"Remove a broadcast destination."`
-	Set    DestinationSetCmd    `cmd:"" help:"Assign a broadcast destination to the active stage."`
+	Add    DestinationAddCmd    `cmd:"" help:"Add destinations to the active stage."`
+	Remove DestinationRemoveCmd `cmd:"" help:"Remove destinations from the active stage."`
 }
 
 var oauthPlatforms = []struct {
@@ -66,6 +67,26 @@ func resolveDestinationByNameOrID(ctx *Context, nameOrID string) (string, error)
 	return "", fmt.Errorf("destination %q not found", nameOrID)
 }
 
+// resolveDestinationByPlatformName resolves a "platform:name" string to a destination ID.
+func resolveDestinationByPlatformName(ctx *Context, platformName string) (string, error) {
+	if !strings.Contains(platformName, ":") {
+		return "", fmt.Errorf("invalid format %q — use platform:name (e.g., \"twitch:MrBeast\")", platformName)
+	}
+	parts := strings.SplitN(platformName, ":", 2)
+	platform, name := parts[0], parts[1]
+
+	destinations, err := listStreamDestinations(ctx)
+	if err != nil {
+		return "", err
+	}
+	for _, d := range destinations {
+		if d.Platform == platform && (d.Name == name || d.PlatformUsername == name) {
+			return d.Id, nil
+		}
+	}
+	return "", fmt.Errorf("destination %q not found", platformName)
+}
+
 // DestinationListCmd lists all RTMP destinations.
 type DestinationListCmd struct{}
 
@@ -95,15 +116,15 @@ func (c *DestinationListCmd) Run(ctx *Context) error {
 	return nil
 }
 
-// DestinationAddCmd adds a new streaming destination.
-type DestinationAddCmd struct {
+// DestinationCreateCmd creates a new streaming destination.
+type DestinationCreateCmd struct {
 	Platform  string `help:"Platform (twitch, youtube, kick, restream, custom)." name:"platform"`
 	Name      string `help:"Destination name (custom platform only)." name:"name"`
 	RtmpURL   string `help:"RTMP URL (custom platform only)." name:"rtmp-url"`
 	StreamKey string `help:"Stream key (custom platform only)." name:"stream-key"`
 }
 
-func (c *DestinationAddCmd) Run(ctx *Context) error {
+func (c *DestinationCreateCmd) Run(ctx *Context) error {
 	if err := ctx.requireAuth(); err != nil {
 		return err
 	}
@@ -147,7 +168,7 @@ func (c *DestinationAddCmd) Run(ctx *Context) error {
 	return c.runOAuthFlow(ctx, platform)
 }
 
-func (c *DestinationAddCmd) runCustomFlow(ctx *Context) error {
+func (c *DestinationCreateCmd) runCustomFlow(ctx *Context) error {
 	name := c.Name
 	rtmpURL := c.RtmpURL
 	streamKey := c.StreamKey
@@ -190,12 +211,12 @@ func (c *DestinationAddCmd) runCustomFlow(ctx *Context) error {
 	if ctx.JSON {
 		printJSON(resp.Msg.Destination)
 	} else {
-		printText("\u2713 Destination added: %s", resp.Msg.Destination.Name)
+		printText("\u2713 Destination created: %s", resp.Msg.Destination.Name)
 	}
 	return nil
 }
 
-func (c *DestinationAddCmd) runOAuthFlow(ctx *Context, platform string) error {
+func (c *DestinationCreateCmd) runOAuthFlow(ctx *Context, platform string) error {
 	// Find display name
 	displayName := platform
 	for _, p := range oauthPlatforms {
@@ -268,7 +289,7 @@ func (c *DestinationAddCmd) runOAuthFlow(ctx *Context, platform string) error {
 			"platform_username": result.PlatformUsername,
 		})
 	} else {
-		printText("\u2713 Destination added: %s \u2014 %s", displayName, result.PlatformUsername)
+		printText("\u2713 Destination created: %s \u2014 %s", displayName, result.PlatformUsername)
 	}
 	return nil
 }
@@ -304,12 +325,12 @@ func (c *DestinationDeleteCmd) Run(ctx *Context) error {
 	return nil
 }
 
-// DestinationSetCmd assigns a destination to the resolved stage.
-type DestinationSetCmd struct {
-	Name string `arg:"" help:"Destination name or ID."`
+// DestinationAddCmd adds destinations to the active stage.
+type DestinationAddCmd struct {
+	Names []string `arg:"" required:"" help:"Destinations as platform:name (e.g., twitch:MrBeast)."`
 }
 
-func (c *DestinationSetCmd) Run(ctx *Context) error {
+func (c *DestinationAddCmd) Run(ctx *Context) error {
 	if err := ctx.requireAuth(); err != nil {
 		return err
 	}
@@ -317,15 +338,133 @@ func (c *DestinationSetCmd) Run(ctx *Context) error {
 		return err
 	}
 
-	destID, err := resolveDestinationByNameOrID(ctx, c.Name)
+	// Fetch current stage to get existing destination IDs
+	stageClient := apiv1connect.NewStageServiceClient(ctx.HTTPClient, ctx.APIURL)
+	getReq := connect.NewRequest(&apiv1.GetStageRequest{Id: ctx.StageID})
+	getReq.Header().Set("Authorization", ctx.authHeader())
+	getResp, err := stageClient.GetStage(context.Background(), getReq)
 	if err != nil {
+		return err
+	}
+	existing := getResp.Msg.Stage.DestinationIds
+
+	// Resolve each arg to a destination ID
+	var newIDs []string
+	for _, name := range c.Names {
+		id, err := resolveDestinationByPlatformName(ctx, name)
+		if err != nil {
+			return err
+		}
+		newIDs = append(newIDs, id)
+	}
+
+	// Merge with existing, skip duplicates
+	seen := make(map[string]bool)
+	var merged []string
+	for _, id := range existing {
+		seen[id] = true
+		merged = append(merged, id)
+	}
+	for _, id := range newIDs {
+		if !seen[id] {
+			seen[id] = true
+			merged = append(merged, id)
+		}
+	}
+
+	if len(merged) > 4 {
+		return fmt.Errorf("cannot exceed 4 destinations per stage (would have %d)", len(merged))
+	}
+
+	setReq := connect.NewRequest(&apiv1.SetStageDestinationRequest{
+		StageId:        ctx.StageID,
+		DestinationIds: merged,
+	})
+	setReq.Header().Set("Authorization", ctx.authHeader())
+	if _, err := stageClient.SetStageDestination(context.Background(), setReq); err != nil {
+		return err
+	}
+
+	if ctx.JSON {
+		printJSON(map[string]any{"stage_id": ctx.StageID, "destination_ids": merged})
+		return nil
+	}
+
+	if len(c.Names) == 1 {
+		printText("Destination added to stage: %s", c.Names[0])
+	} else {
+		printText("Destinations added to stage: %s", strings.Join(c.Names, ", "))
+	}
+	return nil
+}
+
+// DestinationRemoveCmd removes destinations from the active stage.
+type DestinationRemoveCmd struct {
+	Names []string `arg:"" optional:"" help:"Destinations to remove as platform:name."`
+	All   bool     `help:"Remove all destinations from the stage." name:"all"`
+}
+
+func (c *DestinationRemoveCmd) Run(ctx *Context) error {
+	if err := ctx.requireAuth(); err != nil {
+		return err
+	}
+	if err := ctx.resolveStage(); err != nil {
 		return err
 	}
 
 	stageClient := apiv1connect.NewStageServiceClient(ctx.HTTPClient, ctx.APIURL)
+
+	if c.All {
+		req := connect.NewRequest(&apiv1.SetStageDestinationRequest{
+			StageId:        ctx.StageID,
+			DestinationIds: []string{},
+		})
+		req.Header().Set("Authorization", ctx.authHeader())
+		if _, err := stageClient.SetStageDestination(context.Background(), req); err != nil {
+			return err
+		}
+		if ctx.JSON {
+			printJSON(map[string]any{"stage_id": ctx.StageID, "destination_ids": []string{}})
+		} else {
+			printText("All destinations removed from stage.")
+		}
+		return nil
+	}
+
+	if len(c.Names) == 0 {
+		return fmt.Errorf("specify destinations to remove or use --all")
+	}
+
+	// Fetch current stage
+	getReq := connect.NewRequest(&apiv1.GetStageRequest{Id: ctx.StageID})
+	getReq.Header().Set("Authorization", ctx.authHeader())
+	getResp, err := stageClient.GetStage(context.Background(), getReq)
+	if err != nil {
+		return err
+	}
+	existing := getResp.Msg.Stage.DestinationIds
+
+	// Resolve args to IDs to remove
+	removeSet := make(map[string]bool)
+	for _, name := range c.Names {
+		id, err := resolveDestinationByPlatformName(ctx, name)
+		if err != nil {
+			return err
+		}
+		removeSet[id] = true
+	}
+
+	// Filter out removed IDs
+	var remaining []string
+	for _, id := range existing {
+		if !removeSet[id] {
+			remaining = append(remaining, id)
+		}
+	}
+
 	req := connect.NewRequest(&apiv1.SetStageDestinationRequest{
-		StageId:       ctx.StageID,
-		DestinationId: destID,
+		StageId:        ctx.StageID,
+		DestinationIds: remaining,
 	})
 	req.Header().Set("Authorization", ctx.authHeader())
 	if _, err := stageClient.SetStageDestination(context.Background(), req); err != nil {
@@ -333,10 +472,14 @@ func (c *DestinationSetCmd) Run(ctx *Context) error {
 	}
 
 	if ctx.JSON {
-		printJSON(map[string]string{"stage_id": ctx.StageID, "destination_id": destID})
+		printJSON(map[string]any{"stage_id": ctx.StageID, "destination_ids": remaining})
 		return nil
 	}
 
-	printText("Destination %q assigned to stage.", c.Name)
+	if len(c.Names) == 1 {
+		printText("Destination removed from stage: %s", c.Names[0])
+	} else {
+		printText("Destinations removed from stage: %s", strings.Join(c.Names, ", "))
+	}
 	return nil
 }

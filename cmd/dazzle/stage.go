@@ -67,8 +67,10 @@ func resolveStageByNameOrID(ctx *Context, nameOrID string) (string, error) {
 	if len(matches) > 1 {
 		var platforms []string
 		for _, s := range matches {
-			if s.Destination != nil && s.Destination.Platform != "" {
-				platforms = append(platforms, fmt.Sprintf("%q", s.Destination.Platform+":"+s.Name))
+			for _, d := range s.Destinations {
+				if d.Platform != "" {
+					platforms = append(platforms, fmt.Sprintf("%q", d.Platform+":"+s.Name))
+				}
 			}
 		}
 		return "", fmt.Errorf("multiple stages named %q — use platform:name to disambiguate (e.g., %s)", nameOrID, strings.Join(platforms, ", "))
@@ -78,8 +80,10 @@ func resolveStageByNameOrID(ctx *Context, nameOrID string) (string, error) {
 	if parts := strings.SplitN(nameOrID, ":", 2); len(parts) == 2 {
 		platform, name := parts[0], parts[1]
 		for _, s := range listResp.Msg.Stages {
-			if s.Destination != nil && s.Destination.Platform == platform && s.Name == name {
-				return s.Id, nil
+			for _, d := range s.Destinations {
+				if d.Platform == platform && s.Name == name {
+					return s.Id, nil
+				}
 			}
 		}
 	}
@@ -108,10 +112,10 @@ func (c *StageListCmd) Run(ctx *Context) error {
 		return nil
 	}
 
-	// Show PLATFORM column only if any stage has a destination set.
+	// Show PLATFORM column only if any stage has destinations set.
 	hasPlatform := false
 	for _, s := range resp.Msg.Stages {
-		if s.Destination != nil && s.Destination.Platform != "" {
+		if len(s.Destinations) > 0 {
 			hasPlatform = true
 			break
 		}
@@ -120,11 +124,11 @@ func (c *StageListCmd) Run(ctx *Context) error {
 	if hasPlatform {
 		tableHeader("NAME", "PLATFORM", "STATUS")
 		for _, s := range resp.Msg.Stages {
-			platform := ""
-			if s.Destination != nil {
-				platform = s.Destination.Platform
+			var platforms []string
+			for _, d := range s.Destinations {
+				platforms = append(platforms, d.Platform)
 			}
-			printText("%s", tableRow(s.Name, platform, s.Status))
+			printText("%s", tableRow(s.Name, strings.Join(platforms, ", "), s.Status))
 		}
 	} else {
 		tableHeader("NAME", "STATUS")
