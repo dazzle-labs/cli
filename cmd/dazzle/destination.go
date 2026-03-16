@@ -226,12 +226,9 @@ func (c *DestinationCreateCmd) runOAuthFlow(ctx *Context, platform string) error
 		}
 	}
 
-	verifyCode := generateVerifyCode()
-
 	body, _ := json.Marshal(map[string]string{
-		"type":        "destination",
-		"platform":    platform,
-		"verify_code": verifyCode,
+		"type":     "destination",
+		"platform": platform,
 	})
 	req, _ := http.NewRequest("POST", ctx.APIURL+"/auth/cli/session", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -258,8 +255,6 @@ func (c *DestinationCreateCmd) runOAuthFlow(ctx *Context, platform string) error
 	if !ctx.JSON {
 		printText("Opening browser to connect your %s account...", displayName)
 		printText("  \u2192 If the browser didn't open, visit: %s", session.BrowserURL)
-		printText("")
-		printText("Verification code: %s", verifyCode)
 		printText("")
 	}
 
