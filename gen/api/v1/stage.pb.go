@@ -24,21 +24,23 @@ const (
 )
 
 type Stage struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	PodName        string                 `protobuf:"bytes,2,opt,name=pod_name,json=podName,proto3" json:"pod_name,omitempty"`
-	PodIp          string                 `protobuf:"bytes,3,opt,name=pod_ip,json=podIp,proto3" json:"pod_ip,omitempty"`
-	DirectPort     int32                  `protobuf:"varint,4,opt,name=direct_port,json=directPort,proto3" json:"direct_port,omitempty"`
-	CreatedAt      *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	LastActivity   *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=last_activity,json=lastActivity,proto3" json:"last_activity,omitempty"`
-	Status         string                 `protobuf:"bytes,7,opt,name=status,proto3" json:"status,omitempty"` // inactive | starting | running | stopping
-	OwnerUserId    string                 `protobuf:"bytes,8,opt,name=owner_user_id,json=ownerUserId,proto3" json:"owner_user_id,omitempty"`
-	Name           string                 `protobuf:"bytes,9,opt,name=name,proto3" json:"name,omitempty"`
-	DestinationId  string                 `protobuf:"bytes,10,opt,name=destination_id,json=destinationId,proto3" json:"destination_id,omitempty"` // deprecated — use destination_ids
-	Preview        *StagePreview          `protobuf:"bytes,11,opt,name=preview,proto3" json:"preview,omitempty"`
-	Destination    *StreamDestination     `protobuf:"bytes,12,opt,name=destination,proto3" json:"destination,omitempty"` // deprecated — use destinations
-	DestinationIds []string               `protobuf:"bytes,13,rep,name=destination_ids,json=destinationIds,proto3" json:"destination_ids,omitempty"`
-	Destinations   []*StreamDestination   `protobuf:"bytes,14,rep,name=destinations,proto3" json:"destinations,omitempty"`
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	Id           string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	PodName      string                 `protobuf:"bytes,2,opt,name=pod_name,json=podName,proto3" json:"pod_name,omitempty"`
+	PodIp        string                 `protobuf:"bytes,3,opt,name=pod_ip,json=podIp,proto3" json:"pod_ip,omitempty"`
+	DirectPort   int32                  `protobuf:"varint,4,opt,name=direct_port,json=directPort,proto3" json:"direct_port,omitempty"`
+	CreatedAt    *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	LastActivity *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=last_activity,json=lastActivity,proto3" json:"last_activity,omitempty"`
+	Status       string                 `protobuf:"bytes,7,opt,name=status,proto3" json:"status,omitempty"` // inactive | starting | running | stopping
+	OwnerUserId  string                 `protobuf:"bytes,8,opt,name=owner_user_id,json=ownerUserId,proto3" json:"owner_user_id,omitempty"`
+	Name         string                 `protobuf:"bytes,9,opt,name=name,proto3" json:"name,omitempty"`
+	// Deprecated: Marked as deprecated in api/v1/stage.proto.
+	DestinationId string        `protobuf:"bytes,10,opt,name=destination_id,json=destinationId,proto3" json:"destination_id,omitempty"`
+	Preview       *StagePreview `protobuf:"bytes,11,opt,name=preview,proto3" json:"preview,omitempty"`
+	// Deprecated: Marked as deprecated in api/v1/stage.proto.
+	Destination    *StreamDestination   `protobuf:"bytes,12,opt,name=destination,proto3" json:"destination,omitempty"`
+	DestinationIds []string             `protobuf:"bytes,13,rep,name=destination_ids,json=destinationIds,proto3" json:"destination_ids,omitempty"`
+	Destinations   []*StreamDestination `protobuf:"bytes,14,rep,name=destinations,proto3" json:"destinations,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -136,6 +138,7 @@ func (x *Stage) GetName() string {
 	return ""
 }
 
+// Deprecated: Marked as deprecated in api/v1/stage.proto.
 func (x *Stage) GetDestinationId() string {
 	if x != nil {
 		return x.DestinationId
@@ -150,6 +153,7 @@ func (x *Stage) GetPreview() *StagePreview {
 	return nil
 }
 
+// Deprecated: Marked as deprecated in api/v1/stage.proto.
 func (x *Stage) GetDestination() *StreamDestination {
 	if x != nil {
 		return x.Destination
@@ -560,10 +564,11 @@ func (*DeleteStageResponse) Descriptor() ([]byte, []int) {
 }
 
 type SetStageDestinationRequest struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	StageId        string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"`
-	DestinationId  string                 `protobuf:"bytes,2,opt,name=destination_id,json=destinationId,proto3" json:"destination_id,omitempty"` // deprecated — use destination_ids
-	DestinationIds []string               `protobuf:"bytes,3,rep,name=destination_ids,json=destinationIds,proto3" json:"destination_ids,omitempty"`
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	StageId string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"`
+	// Deprecated: Marked as deprecated in api/v1/stage.proto.
+	DestinationId  string   `protobuf:"bytes,2,opt,name=destination_id,json=destinationId,proto3" json:"destination_id,omitempty"`    // single dest (backward compat)
+	DestinationIds []string `protobuf:"bytes,3,rep,name=destination_ids,json=destinationIds,proto3" json:"destination_ids,omitempty"` // set multiple (max 4)
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -605,6 +610,7 @@ func (x *SetStageDestinationRequest) GetStageId() string {
 	return ""
 }
 
+// Deprecated: Marked as deprecated in api/v1/stage.proto.
 func (x *SetStageDestinationRequest) GetDestinationId() string {
 	if x != nil {
 		return x.DestinationId
@@ -1027,7 +1033,7 @@ var File_api_v1_stage_proto protoreflect.FileDescriptor
 
 const file_api_v1_stage_proto_rawDesc = "" +
 	"\n" +
-	"\x12api/v1/stage.proto\x12\tdazzle.v1\x1a\x13api/v1/stream.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xbb\x04\n" +
+	"\x12api/v1/stage.proto\x12\tdazzle.v1\x1a\x13api/v1/stream.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xc3\x04\n" +
 	"\x05Stage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
 	"\bpod_name\x18\x02 \x01(\tR\apodName\x12\x15\n" +
@@ -1039,11 +1045,11 @@ const file_api_v1_stage_proto_rawDesc = "" +
 	"\rlast_activity\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\flastActivity\x12\x16\n" +
 	"\x06status\x18\a \x01(\tR\x06status\x12\"\n" +
 	"\rowner_user_id\x18\b \x01(\tR\vownerUserId\x12\x12\n" +
-	"\x04name\x18\t \x01(\tR\x04name\x12%\n" +
+	"\x04name\x18\t \x01(\tR\x04name\x12)\n" +
 	"\x0edestination_id\x18\n" +
-	" \x01(\tR\rdestinationId\x121\n" +
-	"\apreview\x18\v \x01(\v2\x17.dazzle.v1.StagePreviewR\apreview\x12>\n" +
-	"\vdestination\x18\f \x01(\v2\x1c.dazzle.v1.StreamDestinationR\vdestination\x12'\n" +
+	" \x01(\tB\x02\x18\x01R\rdestinationId\x121\n" +
+	"\apreview\x18\v \x01(\v2\x17.dazzle.v1.StagePreviewR\apreview\x12B\n" +
+	"\vdestination\x18\f \x01(\v2\x1c.dazzle.v1.StreamDestinationB\x02\x18\x01R\vdestination\x12'\n" +
 	"\x0fdestination_ids\x18\r \x03(\tR\x0edestinationIds\x12@\n" +
 	"\fdestinations\x18\x0e \x03(\v2\x1c.dazzle.v1.StreamDestinationR\fdestinations\"D\n" +
 	"\fStagePreview\x12\x1b\n" +
@@ -1062,10 +1068,10 @@ const file_api_v1_stage_proto_rawDesc = "" +
 	"\x05stage\x18\x01 \x01(\v2\x10.dazzle.v1.StageR\x05stage\"$\n" +
 	"\x12DeleteStageRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x15\n" +
-	"\x13DeleteStageResponse\"\x87\x01\n" +
+	"\x13DeleteStageResponse\"\x8b\x01\n" +
 	"\x1aSetStageDestinationRequest\x12\x19\n" +
-	"\bstage_id\x18\x01 \x01(\tR\astageId\x12%\n" +
-	"\x0edestination_id\x18\x02 \x01(\tR\rdestinationId\x12'\n" +
+	"\bstage_id\x18\x01 \x01(\tR\astageId\x12)\n" +
+	"\x0edestination_id\x18\x02 \x01(\tB\x02\x18\x01R\rdestinationId\x12'\n" +
 	"\x0fdestination_ids\x18\x03 \x03(\tR\x0edestinationIds\"E\n" +
 	"\x1bSetStageDestinationResponse\x12&\n" +
 	"\x05stage\x18\x01 \x01(\v2\x10.dazzle.v1.StageR\x05stage\"&\n" +
