@@ -26,6 +26,61 @@ func checkYouTubeResponse(resp *http.Response) ([]byte, error) {
 	return nil, fmt.Errorf("YouTube API returned %d: %s", resp.StatusCode, string(body))
 }
 
+// ytBroadcast holds fields needed across broadcast queries.
+type ytBroadcast struct {
+	ID      string `json:"id"`
+	Snippet struct {
+		Title       string `json:"title"`
+		Description string `json:"description"`
+		ChannelID   string `json:"channelId"`
+		LiveChatID  string `json:"liveChatId"`
+	} `json:"snippet"`
+	Status struct {
+		LifeCycleStatus string `json:"lifeCycleStatus"`
+	} `json:"status"`
+}
+
+// getMyBroadcasts fetches all broadcasts for the authenticated user and returns
+// those matching the given lifecycle statuses. YouTube's API does not allow
+// mine=true with broadcastStatus, so we filter client-side.
+func getMyBroadcasts(ctx context.Context, token string, statuses ...string) ([]ytBroadcast, error) {
+	resp, err := youtubeRequest(ctx, "GET",
+		"https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet,status&mine=true&maxResults=50",
+		token, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := checkYouTubeResponse(resp)
+	if err != nil {
+		return nil, err
+	}
+
+	var result struct {
+		Items []ytBroadcast `json:"items"`
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, err
+	}
+
+	if len(statuses) == 0 {
+		return result.Items, nil
+	}
+
+	allowed := make(map[string]bool, len(statuses))
+	for _, s := range statuses {
+		allowed[s] = true
+	}
+	var filtered []ytBroadcast
+	for _, bc := range result.Items {
+		if allowed[bc.Status.LifeCycleStatus] {
+			filtered = append(filtered, bc)
+		}
+	}
+	return filtered, nil
+}
+
 func youtubeRequest(ctx context.Context, method, url string, token string, body any) (*http.Response, error) {
 	var bodyReader io.Reader
 	if body != nil {
@@ -78,111 +133,43 @@ func (c *YouTubeClient) GetStreamKey(ctx context.Context, token string, platform
 }
 
 func (c *YouTubeClient) GetStreamInfo(ctx context.Context, token string, platformUserID string) (string, string, error) {
-	resp, err := youtubeRequest(ctx, "GET",
-		"https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet&broadcastStatus=active&mine=true",
-		token, nil)
+	// Try active first, then upcoming
+	bcs, err := getMyBroadcasts(ctx, token, "live", "liveStarting")
 	if err != nil {
 		return "", "", err
 	}
-	defer resp.Body.Close()
-
-	body, err := checkYouTubeResponse(resp)
-	if err != nil {
-		return "", "", err
-	}
-
-	var broadcasts struct {
-		Items []struct {
-			Snippet struct {
-				Title string `json:"title"`
-			} `json:"snippet"`
-		} `json:"items"`
-	}
-	if err := json.Unmarshal(body, &broadcasts); err != nil {
-		return "", "", err
-	}
-
-	// Try upcoming if no active broadcast
-	if len(broadcasts.Items) == 0 {
-		resp2, err := youtubeRequest(ctx, "GET",
-			"https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet&broadcastStatus=upcoming&mine=true",
-			token, nil)
+	if len(bcs) == 0 {
+		bcs, err = getMyBroadcasts(ctx, token, "ready", "created")
 		if err != nil {
 			return "", "", err
 		}
-		defer resp2.Body.Close()
-		body2, err := checkYouTubeResponse(resp2)
-		if err != nil {
-			return "", "", err
-		}
-		if err := json.Unmarshal(body2, &broadcasts); err != nil {
-			return "", "", err
-		}
 	}
-
-	if len(broadcasts.Items) == 0 {
+	if len(bcs) == 0 {
 		return "", "", nil
 	}
-
-	// category not available from liveBroadcasts resource
-	return broadcasts.Items[0].Snippet.Title, "", nil
+	return bcs[0].Snippet.Title, "", nil
 }
 
 func (c *YouTubeClient) SetStreamInfo(ctx context.Context, token string, platformUserID string, title, category string) error {
-	// Get active broadcast
-	resp, err := youtubeRequest(ctx, "GET",
-		"https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet&broadcastStatus=active&mine=true",
-		token, nil)
+	// Try active first, then upcoming
+	bcs, err := getMyBroadcasts(ctx, token, "live", "liveStarting")
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
-
-	body, err := checkYouTubeResponse(resp)
-	if err != nil {
-		return err
-	}
-
-	var broadcasts struct {
-		Items []struct {
-			ID      string `json:"id"`
-			Snippet struct {
-				Title       string `json:"title"`
-				Description string `json:"description"`
-				ChannelID   string `json:"channelId"`
-			} `json:"snippet"`
-		} `json:"items"`
-	}
-	if err := json.Unmarshal(body, &broadcasts); err != nil {
-		return err
-	}
-
-	// Try upcoming if no active broadcast
-	if len(broadcasts.Items) == 0 {
-		resp2, err := youtubeRequest(ctx, "GET",
-			"https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet&broadcastStatus=upcoming&mine=true",
-			token, nil)
+	if len(bcs) == 0 {
+		bcs, err = getMyBroadcasts(ctx, token, "ready", "created")
 		if err != nil {
 			return err
 		}
-		defer resp2.Body.Close()
-		body2, err := checkYouTubeResponse(resp2)
-		if err != nil {
-			return err
-		}
-		if err := json.Unmarshal(body2, &broadcasts); err != nil {
-			return err
-		}
 	}
-
-	if len(broadcasts.Items) == 0 {
+	if len(bcs) == 0 {
 		return fmt.Errorf("no active or upcoming broadcast found")
 	}
 
-	bc := broadcasts.Items[0]
+	bc := bcs[0]
 	snippet := map[string]any{
-		"title":       bc.Snippet.Title,
-		"description": bc.Snippet.Description,
+		"title":              bc.Snippet.Title,
+		"description":        bc.Snippet.Description,
 		"scheduledStartTime": "2025-01-01T00:00:00Z",
 	}
 	if title != "" {
@@ -194,20 +181,19 @@ func (c *YouTubeClient) SetStreamInfo(ctx context.Context, token string, platfor
 		"snippet": snippet,
 	}
 
-	resp3, err := youtubeRequest(ctx, "PUT",
+	resp, err := youtubeRequest(ctx, "PUT",
 		"https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet",
 		token, updateBody)
 	if err != nil {
 		return err
 	}
-	defer resp3.Body.Close()
+	defer resp.Body.Close()
 
-	if resp3.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp3.Body)
-		return fmt.Errorf("youtube broadcast update returned %d: %s", resp3.StatusCode, string(body))
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("youtube broadcast update returned %d: %s", resp.StatusCode, string(body))
 	}
 
-	// Update video category if specified
 	if category != "" {
 		if err := c.updateVideoCategory(ctx, token, bc.ID, category); err != nil {
 			return fmt.Errorf("failed to update category: %w", err)
@@ -242,35 +228,15 @@ func (c *YouTubeClient) updateVideoCategory(ctx context.Context, token, videoID,
 }
 
 func (c *YouTubeClient) GetChatMessages(ctx context.Context, token string, platformUserID string, limit int) ([]ChatMessage, error) {
-	// Get active broadcast to find liveChatId
-	resp, err := youtubeRequest(ctx, "GET",
-		"https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet&broadcastStatus=active&mine=true",
-		token, nil)
+	bcs, err := getMyBroadcasts(ctx, token, "live", "liveStarting")
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-
-	body, err := checkYouTubeResponse(resp)
-	if err != nil {
-		return nil, err
-	}
-
-	var broadcasts struct {
-		Items []struct {
-			Snippet struct {
-				LiveChatID string `json:"liveChatId"`
-			} `json:"snippet"`
-		} `json:"items"`
-	}
-	if err := json.Unmarshal(body, &broadcasts); err != nil {
-		return nil, err
-	}
-	if len(broadcasts.Items) == 0 {
+	if len(bcs) == 0 {
 		return nil, fmt.Errorf("no active broadcast found")
 	}
 
-	chatID := broadcasts.Items[0].Snippet.LiveChatID
+	chatID := bcs[0].Snippet.LiveChatID
 	if chatID == "" {
 		return nil, fmt.Errorf("no live chat ID found for active broadcast")
 	}
@@ -326,35 +292,15 @@ func (c *YouTubeClient) GetChatMessages(ctx context.Context, token string, platf
 }
 
 func (c *YouTubeClient) SendChatMessage(ctx context.Context, token string, platformUserID string, message string) error {
-	// Get active broadcast liveChatId
-	resp, err := youtubeRequest(ctx, "GET",
-		"https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet&broadcastStatus=active&mine=true",
-		token, nil)
+	bcs, err := getMyBroadcasts(ctx, token, "live", "liveStarting")
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
-
-	body, err := checkYouTubeResponse(resp)
-	if err != nil {
-		return err
-	}
-
-	var broadcasts struct {
-		Items []struct {
-			Snippet struct {
-				LiveChatID string `json:"liveChatId"`
-			} `json:"snippet"`
-		} `json:"items"`
-	}
-	if err := json.Unmarshal(body, &broadcasts); err != nil {
-		return err
-	}
-	if len(broadcasts.Items) == 0 {
+	if len(bcs) == 0 {
 		return fmt.Errorf("no active broadcast found")
 	}
 
-	chatID := broadcasts.Items[0].Snippet.LiveChatID
+	chatID := bcs[0].Snippet.LiveChatID
 	reqBody := map[string]any{
 		"snippet": map[string]any{
 			"liveChatId": chatID,
