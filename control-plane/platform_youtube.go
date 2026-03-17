@@ -168,9 +168,8 @@ func (c *YouTubeClient) SetStreamInfo(ctx context.Context, token string, platfor
 
 	bc := bcs[0]
 	snippet := map[string]any{
-		"title":              bc.Snippet.Title,
-		"description":        bc.Snippet.Description,
-		"scheduledStartTime": "2025-01-01T00:00:00Z",
+		"title":       bc.Snippet.Title,
+		"description": bc.Snippet.Description,
 	}
 	if title != "" {
 		snippet["title"] = title
