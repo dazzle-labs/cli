@@ -15,8 +15,8 @@ type StreamCmd struct {
 	Off      StreamStopCmd     `cmd:"" aliases:"stop" help:"Stop the broadcast."`
 	Status   StreamStatusCmd   `cmd:"" aliases:"st" help:"Check broadcast status."`
 	Info     StreamInfoCmd     `cmd:"" help:"Get current stream title and category."`
-	Title    StreamTitleCmd    `cmd:"" help:"Set the stream title."`
-	Category StreamCategoryCmd `cmd:"" help:"Set the stream category or game."`
+	Title    StreamTitleCmd    `cmd:"" help:"Set the stream title (not supported for Restream)."`
+	Category StreamCategoryCmd `cmd:"" help:"Set the stream category or game (not supported for Restream)."`
 }
 
 // StreamStartCmd starts broadcasting on the active stage.

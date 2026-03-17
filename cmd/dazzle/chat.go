@@ -12,7 +12,7 @@ import (
 
 // ChatCmd groups chat subcommands.
 type ChatCmd struct {
-	Send ChatSendCmd `cmd:"" help:"Send a message to live chat."`
+	Send ChatSendCmd `cmd:"" help:"Send a message to live chat (not supported for Restream)."`
 }
 
 // ChatSendCmd sends a message to the live chat.
