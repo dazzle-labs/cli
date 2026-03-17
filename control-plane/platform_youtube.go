@@ -12,6 +12,20 @@ import (
 // YouTubeClient implements PlatformClient for YouTube Data API v3.
 type YouTubeClient struct{}
 
+// checkYouTubeResponse reads the response body and returns an error if the
+// status code is not 2xx. This prevents auth failures (401/403) from being
+// silently swallowed and misreported as "no broadcast found".
+func checkYouTubeResponse(resp *http.Response) ([]byte, error) {
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read YouTube response: %w", err)
+	}
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		return body, nil
+	}
+	return nil, fmt.Errorf("YouTube API returned %d: %s", resp.StatusCode, string(body))
+}
+
 func youtubeRequest(ctx context.Context, method, url string, token string, body any) (*http.Response, error) {
 	var bodyReader io.Reader
 	if body != nil {
@@ -38,6 +52,11 @@ func (c *YouTubeClient) GetStreamKey(ctx context.Context, token string, platform
 	}
 	defer resp.Body.Close()
 
+	body, err := checkYouTubeResponse(resp)
+	if err != nil {
+		return "", "", err
+	}
+
 	var result struct {
 		Items []struct {
 			CDN struct {
@@ -48,7 +67,7 @@ func (c *YouTubeClient) GetStreamKey(ctx context.Context, token string, platform
 			} `json:"cdn"`
 		} `json:"items"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	if err := json.Unmarshal(body, &result); err != nil {
 		return "", "", err
 	}
 	if len(result.Items) == 0 {
@@ -67,6 +86,11 @@ func (c *YouTubeClient) GetStreamInfo(ctx context.Context, token string, platfor
 	}
 	defer resp.Body.Close()
 
+	body, err := checkYouTubeResponse(resp)
+	if err != nil {
+		return "", "", err
+	}
+
 	var broadcasts struct {
 		Items []struct {
 			Snippet struct {
@@ -74,7 +98,7 @@ func (c *YouTubeClient) GetStreamInfo(ctx context.Context, token string, platfor
 			} `json:"snippet"`
 		} `json:"items"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&broadcasts); err != nil {
+	if err := json.Unmarshal(body, &broadcasts); err != nil {
 		return "", "", err
 	}
 
@@ -87,7 +111,11 @@ func (c *YouTubeClient) GetStreamInfo(ctx context.Context, token string, platfor
 			return "", "", err
 		}
 		defer resp2.Body.Close()
-		if err := json.NewDecoder(resp2.Body).Decode(&broadcasts); err != nil {
+		body2, err := checkYouTubeResponse(resp2)
+		if err != nil {
+			return "", "", err
+		}
+		if err := json.Unmarshal(body2, &broadcasts); err != nil {
 			return "", "", err
 		}
 	}
@@ -110,6 +138,11 @@ func (c *YouTubeClient) SetStreamInfo(ctx context.Context, token string, platfor
 	}
 	defer resp.Body.Close()
 
+	body, err := checkYouTubeResponse(resp)
+	if err != nil {
+		return err
+	}
+
 	var broadcasts struct {
 		Items []struct {
 			ID      string `json:"id"`
@@ -120,7 +153,7 @@ func (c *YouTubeClient) SetStreamInfo(ctx context.Context, token string, platfor
 			} `json:"snippet"`
 		} `json:"items"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&broadcasts); err != nil {
+	if err := json.Unmarshal(body, &broadcasts); err != nil {
 		return err
 	}
 
@@ -133,7 +166,11 @@ func (c *YouTubeClient) SetStreamInfo(ctx context.Context, token string, platfor
 			return err
 		}
 		defer resp2.Body.Close()
-		if err := json.NewDecoder(resp2.Body).Decode(&broadcasts); err != nil {
+		body2, err := checkYouTubeResponse(resp2)
+		if err != nil {
+			return err
+		}
+		if err := json.Unmarshal(body2, &broadcasts); err != nil {
 			return err
 		}
 	}
@@ -214,6 +251,11 @@ func (c *YouTubeClient) GetChatMessages(ctx context.Context, token string, platf
 	}
 	defer resp.Body.Close()
 
+	body, err := checkYouTubeResponse(resp)
+	if err != nil {
+		return nil, err
+	}
+
 	var broadcasts struct {
 		Items []struct {
 			Snippet struct {
@@ -221,7 +263,7 @@ func (c *YouTubeClient) GetChatMessages(ctx context.Context, token string, platf
 			} `json:"snippet"`
 		} `json:"items"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&broadcasts); err != nil {
+	if err := json.Unmarshal(body, &broadcasts); err != nil {
 		return nil, err
 	}
 	if len(broadcasts.Items) == 0 {
@@ -249,6 +291,11 @@ func (c *YouTubeClient) GetChatMessages(ctx context.Context, token string, platf
 	}
 	defer chatResp.Body.Close()
 
+	chatBody, err := checkYouTubeResponse(chatResp)
+	if err != nil {
+		return nil, err
+	}
+
 	var chatResult struct {
 		Items []struct {
 			ID            string `json:"id"`
@@ -261,7 +308,7 @@ func (c *YouTubeClient) GetChatMessages(ctx context.Context, token string, platf
 			} `json:"snippet"`
 		} `json:"items"`
 	}
-	if err := json.NewDecoder(chatResp.Body).Decode(&chatResult); err != nil {
+	if err := json.Unmarshal(chatBody, &chatResult); err != nil {
 		return nil, err
 	}
 
@@ -288,6 +335,11 @@ func (c *YouTubeClient) SendChatMessage(ctx context.Context, token string, platf
 	}
 	defer resp.Body.Close()
 
+	body, err := checkYouTubeResponse(resp)
+	if err != nil {
+		return err
+	}
+
 	var broadcasts struct {
 		Items []struct {
 			Snippet struct {
@@ -295,7 +347,7 @@ func (c *YouTubeClient) SendChatMessage(ctx context.Context, token string, platf
 			} `json:"snippet"`
 		} `json:"items"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&broadcasts); err != nil {
+	if err := json.Unmarshal(body, &broadcasts); err != nil {
 		return err
 	}
 	if len(broadcasts.Items) == 0 {
@@ -303,7 +355,7 @@ func (c *YouTubeClient) SendChatMessage(ctx context.Context, token string, platf
 	}
 
 	chatID := broadcasts.Items[0].Snippet.LiveChatID
-	body := map[string]any{
+	reqBody := map[string]any{
 		"snippet": map[string]any{
 			"liveChatId": chatID,
 			"type":       "textMessageEvent",
@@ -315,7 +367,7 @@ func (c *YouTubeClient) SendChatMessage(ctx context.Context, token string, platf
 
 	chatResp, err := youtubeRequest(ctx, "POST",
 		"https://www.googleapis.com/youtube/v3/liveChat/messages?part=snippet",
-		token, body)
+		token, reqBody)
 	if err != nil {
 		return err
 	}
