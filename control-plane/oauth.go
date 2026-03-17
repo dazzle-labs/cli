@@ -391,7 +391,7 @@ func exchangeCode(cfg *oauthPlatformConfig, code, redirectURI, codeVerifier, pla
 
 	body, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("token endpoint returned %d: %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("token endpoint returned %d", resp.StatusCode)
 	}
 
 	var tok tokenResponse
@@ -468,7 +468,7 @@ func refreshPlatformToken(db *sql.DB, encKey []byte, dest *streamDestRow, config
 
 	body, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
-		return accessToken, fmt.Errorf("refresh endpoint returned %d: %s", resp.StatusCode, string(body))
+		return accessToken, fmt.Errorf("refresh endpoint returned %d", resp.StatusCode)
 	}
 
 	var tok tokenResponse
@@ -557,8 +557,8 @@ func fetchYouTubeUserInfo(accessToken, clientID string) (string, string, error) 
 
 	body, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("YouTube channels API returned %d: %s", resp.StatusCode, string(body))
-		return "", "", fmt.Errorf("YouTube API error (%d): %s", resp.StatusCode, string(body))
+		log.Printf("YouTube channels API returned %d", resp.StatusCode)
+		return "", "", fmt.Errorf("YouTube API error (%d)", resp.StatusCode)
 	}
 
 	var result struct {
@@ -591,7 +591,6 @@ func fetchKickUserInfo(accessToken, clientID string) (string, string, error) {
 	defer resp.Body.Close()
 
 	body, _ := io.ReadAll(resp.Body)
-	log.Printf("Kick channels response: %s", string(body))
 
 	// Try parsing as array first (list response), then as single object
 	var listResult struct {
@@ -631,7 +630,7 @@ func fetchKickUserInfo(accessToken, clientID string) (string, string, error) {
 		return "", "", fmt.Errorf("kick API error: %s", objResult.Message)
 	}
 
-	return "", "", fmt.Errorf("failed to get user info from Kick (%s)", string(body))
+	return "", "", fmt.Errorf("failed to get user info from Kick (unexpected response format)")
 }
 
 // fetchRestreamUserInfo gets the Restream user ID and display name.
@@ -647,7 +646,7 @@ func fetchRestreamUserInfo(accessToken, clientID string) (string, string, error)
 
 	body, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
-		return "", "", fmt.Errorf("restream user profile returned %d: %s", resp.StatusCode, string(body))
+		return "", "", fmt.Errorf("restream user profile returned %d", resp.StatusCode)
 	}
 
 	// id may be int or string depending on the API version

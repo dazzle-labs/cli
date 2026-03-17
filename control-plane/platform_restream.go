@@ -26,7 +26,7 @@ func (c *RestreamClient) GetStreamKey(ctx context.Context, token string, platfor
 
 	body, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
-		return "", "", fmt.Errorf("restream streamKey endpoint returned %d: %s", resp.StatusCode, string(body))
+		return "", "", fmt.Errorf("restream streamKey endpoint returned %d", resp.StatusCode)
 	}
 
 	var result struct {

@@ -56,7 +56,7 @@ func (c *KickClient) fetchKickChannelData(ctx context.Context, token string) (*k
 		Data []kickChannelData `json:"data"`
 	}
 	if err := json.Unmarshal(body, &result); err != nil {
-		return nil, fmt.Errorf("failed to parse kick channels response: %w (%s)", err, string(body))
+		return nil, fmt.Errorf("failed to parse kick channels response: %w", err)
 	}
 	if len(result.Data) == 0 {
 		return nil, fmt.Errorf("no channel data returned from Kick")
