@@ -15,7 +15,7 @@ Before taking any k8s action, load the relevant context by reading these files:
    - `k8s/kustomization.yaml` — root Kustomization listing all resources + Helm charts
    - `k8s/control-plane/` — deployment, service, rbac, oauth secrets
    - `k8s/infrastructure/` — postgres StatefulSet, encrypted secrets
-   - `k8s/networking/` — ingress (stream.dazzle.fm), TLS, traefik config
+   - `k8s/networking/` — ingress (dazzle.fm), TLS, traefik config
    - `k8s/monitoring/` — prometheus values, streamer PodMonitor
    - `k8s/scheduling/` — priority classes, placeholder pod, trimaran values
 

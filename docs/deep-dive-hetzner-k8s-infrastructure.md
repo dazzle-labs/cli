@@ -218,7 +218,7 @@ This deep-dive covers the Hetzner Cloud k3s cluster provisioning (via the kube-h
 - ImagePullSecrets: `dazzlefm-dockerhub-secret`
 - Resources: 100m–500m CPU, 128Mi–256Mi RAM
 - Health checks: `/health` endpoint (readiness: 2s init, liveness: 5s init)
-- `OAUTH_REDIRECT_BASE_URL`: `https://stream.dazzle.fm`
+- `OAUTH_REDIRECT_BASE_URL`: `https://dazzle.fm`
 - `MAX_SESSIONS`: 3
 
 **Environment Variables from Secrets:**
@@ -298,11 +298,11 @@ This deep-dive covers the Hetzner Cloud k3s cluster provisioning (via the kube-h
 
 ### k8s/networking/ingress.yaml
 
-**Purpose:** Traefik Ingress routing `stream.dazzle.fm` to the control-plane service.
+**Purpose:** Traefik Ingress routing `dazzle.fm` to the control-plane service.
 **Lines of Code:** 25
 **File Type:** Kubernetes manifest
 
-**What Future Contributors Must Know:** Uses `cert-manager.io/cluster-issuer: letsencrypt-prod` annotation for automatic TLS. The TLS secret is `stream-dazzle-fm-tls`. All paths (`/`) route to `control-plane:8080`. Adding new hosts or path-based routing happens here.
+**What Future Contributors Must Know:** Uses `cert-manager.io/cluster-issuer: letsencrypt-prod` annotation for automatic TLS. The TLS secret is `dazzle-fm-tls`. All paths (`/`) route to `control-plane:8080`. Adding new hosts or path-based routing happens here.
 
 ---
 
@@ -658,7 +658,7 @@ These docs should be updated to reflect the new architecture.
 - [ ] `kubectl apply --dry-run=client` passes for all changed manifests
 - [ ] `make prod/status` shows all pods Running after deployment
 - [ ] TLS certificate is valid (`kubectl get certificate -n browser-streamer`)
-- [ ] Control-plane health endpoint responds (`curl https://stream.dazzle.fm/health`)
+- [ ] Control-plane health endpoint responds (`curl https://dazzle.fm/health`)
 - [ ] Streamer pod creation still works (create a stage via API)
 
 ---

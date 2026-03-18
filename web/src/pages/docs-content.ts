@@ -1,10 +1,10 @@
 import { cli } from "@/lib/cli-commands";
 
 export const INSTALL_SNIPPET_UNIX =
-  "curl -sSL https://stream.dazzle.fm/install.sh | sh";
+  "curl -sSL https://dazzle.fm/install.sh | sh";
 
 export const INSTALL_SNIPPET_WINDOWS =
-  "irm https://stream.dazzle.fm/install.ps1 | iex";
+  "irm https://dazzle.fm/install.ps1 | iex";
 
 export const INSTALL_SNIPPET_GO =
   "go install github.com/dazzle-labs/cli/cmd/dazzle@latest";

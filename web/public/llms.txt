@@ -1,7 +1,7 @@
 # Dazzle
 
 > Cloud stages for AI agents and live streaming.
-> https://stream.dazzle.fm
+> https://dazzle.fm
 
 ## Overview
 
@@ -14,7 +14,7 @@ Primary use cases: AI agents that need a persistent visual environment, live str
 ### 1. Install the CLI
 
 ```bash
-curl -sSL https://stream.dazzle.fm/install.sh | sh
+curl -sSL https://dazzle.fm/install.sh | sh
 ```
 
 Or `go install github.com/dazzle-labs/cli/cmd/dazzle@latest`, or download a binary from the [releases page](https://github.com/dazzle-labs/cli/releases). Source: https://github.com/dazzle-labs/cli
@@ -128,7 +128,7 @@ Workflow:
 
 Stage selection: use -s <name>, DAZZLE_STAGE env, or auto-selected if only one.
 
-https://stream.dazzle.fm
+https://dazzle.fm
 
 Flags:
   -h, --help              Show context-sensitive help.
@@ -202,7 +202,7 @@ export DAZZLE_API_KEY=dzl_your_key_here
 
 ## Content Guide
 
-Also available at https://stream.dazzle.fm/guide.md and via `dazzle guide`.
+Also available at https://dazzle.fm/guide.md and via `dazzle guide`.
 
 ### Authoring basics
 

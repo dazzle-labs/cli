@@ -11,7 +11,7 @@ resources:
   - control-plane/service.yaml
   - control-plane/pdb.yaml
   - networking/ingress.yaml
-  - networking/cluster-issuer.yaml
+  - networking/cloudflare-middleware.yaml
   - networking/traefik-config.yaml
   - networking/network-policies.yaml
   - monitoring/streamer-podmonitor.yaml

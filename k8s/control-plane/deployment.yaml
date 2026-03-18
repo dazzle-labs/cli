@@ -120,7 +120,7 @@ spec:
                   key: restream-client-secret
                   optional: true
             - name: OAUTH_REDIRECT_BASE_URL
-              value: "https://stream.dazzle.fm"
+              value: "https://dazzle.fm"
             - name: SIDECAR_IMAGE
               value: dazzlefm/agent-streamer-sidecar:main
             - name: R2_ENDPOINT

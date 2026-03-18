@@ -4,7 +4,7 @@ On-demand cloud browser environments for AI-driven live streaming and automation
 
 **Primary consumers: the [Dazzle CLI](https://github.com/dazzle-labs/cli) (`dazzle`) and the Web UI.** The CLI is the main interface for developers and AI agents — full stage lifecycle, content sync, screenshots, streaming, and broadcast control via ConnectRPC. The Web UI is the dashboard for account management, stage monitoring, and configuration.
 
-**Production:** https://stream.dazzle.fm
+**Production:** https://dazzle.fm
 
 ---
 

@@ -4,15 +4,15 @@ metadata:
   name: control-plane
   namespace: browser-streamer
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/router.middlewares: browser-streamer-cloudflare-only@kubernetescrd
 spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - stream.dazzle.fm
-      secretName: stream-dazzle-fm-tls
+        - dazzle.fm
+      secretName: dazzle-fm-tls
   rules:
-    - host: stream.dazzle.fm
+    - host: dazzle.fm
       http:
         paths:
           - path: /

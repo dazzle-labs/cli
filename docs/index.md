@@ -10,7 +10,7 @@
 |-|-|
 | **Product** | Dazzle — on-demand cloud browser environments for AI-driven live streaming and automation |
 | **Primary Consumers** | Dazzle CLI (`dazzle`) and Web UI |
-| **Production URL** | https://stream.dazzle.fm |
+| **Production URL** | https://dazzle.fm |
 | **Repo Type** | Monorepo (6 parts) |
 | **Infrastructure** | Hetzner Cloud k3s HA cluster (3 CP + 2 workers + autoscaler 0–3), provisioned via OpenTofu + kube-hetzner |
 | **Auth** | Clerk (JWT) + internal API keys (`dzl_*`) |

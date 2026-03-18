@@ -209,7 +209,7 @@ export function PublicDocs() {
         {/* ── Footer ── */}
         <footer className="relative z-10 border-t border-white/[0.04] py-8">
           <div className="flex items-center justify-center gap-4 text-xs text-zinc-600">
-            <span>stream.dazzle.fm &middot; &copy; 2026 Dazzle</span>
+            <span>dazzle.fm &middot; &copy; 2026 Dazzle</span>
             <span className="text-zinc-800">&middot;</span>
             <Link to="/docs" className="hover:text-zinc-400 transition-colors">
               Docs

@@ -79,7 +79,7 @@ const TERMINAL_LINES = [
   { text: "", cls: "" },
   { text: `$ ${cli.stageUp.full}`, cls: "text-zinc-300" },
   { text: "✓ Chrome environment ready", cls: "text-zinc-500" },
-  { text: "  stream.dazzle.fm/preview/a8f2k", cls: "text-emerald-400/60" },
+  { text: "  dazzle.fm/preview/a8f2k", cls: "text-emerald-400/60" },
   { text: "", cls: "" },
   {
     text: `$ ${cli.stageBroadcastOn.full}`,
@@ -488,7 +488,7 @@ export function LandingPage() {
       {/* ── Footer ── */}
       <footer className="relative z-10 border-t border-white/[0.04] py-8">
         <div className="flex items-center justify-center gap-4 text-xs text-zinc-600">
-          <span>stream.dazzle.fm &middot; &copy; 2026 Dazzle</span>
+          <span>dazzle.fm &middot; &copy; 2026 Dazzle</span>
           <span className="text-zinc-800">&middot;</span>
           <Link to="/docs" className="hover:text-zinc-400 transition-colors">
             Docs

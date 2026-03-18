@@ -16,7 +16,7 @@ Agent Streamer (Dazzle) is a monorepo with 5 parts. The **control plane** is the
 │   CLI (dazzle) ─── ConnectRPC ──┐                            │
 │   Web UI ──────── ConnectRPC ───┘                            │
 └─────────────────────┬────────────────────────────────────────┘
-                      │ HTTPS (stream.dazzle.fm)
+                      │ HTTPS (dazzle.fm)
                       ▼
 ┌──────────────────────────────────────────────────────────────┐
 │               Traefik Ingress (TLS termination)              │

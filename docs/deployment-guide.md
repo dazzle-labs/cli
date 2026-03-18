@@ -7,7 +7,7 @@
 ## Infrastructure Overview
 
 - **Platform:** Hetzner Cloud k3s HA cluster (provisioned via OpenTofu + kube-hetzner)
-- **Domain:** `stream.dazzle.fm`
+- **Domain:** `dazzle.fm`
 - **Ingress:** Traefik (bundled with k3s)
 - **TLS:** Let's Encrypt via cert-manager (HTTP01 challenge)
 - **CI/CD:** GitHub Actions (build, push to Docker Hub, deploy)
@@ -32,7 +32,7 @@ Traefik Ingress (HTTPS :443)
     │  HTTP → HTTPS redirect
     │  TLS terminated (cert-manager + Let's Encrypt)
     │
-    └── stream.dazzle.fm → control-plane:8080
+    └── dazzle.fm → control-plane:8080
                                 │
                                 ├── Web SPA (static files)
                                 ├── ConnectRPC API (/api.v1.*)
@@ -180,7 +180,7 @@ Issuer: letsencrypt-prod (ClusterIssuer)
 ACME: https://acme-v02.api.letsencrypt.org/directory
 Email: admin@dazzle.fm
 Challenge: HTTP01 via Traefik
-Certificate Secret: stream-dazzle-fm-tls
+Certificate Secret: dazzle-fm-tls
 ```
 
 Traefik is configured with HTTP → HTTPS redirect via `HelmChartConfig`.

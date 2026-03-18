@@ -226,4 +226,4 @@ See `data-models.md` for full schema. Key tables:
 | `R2_SECRET_ACCESS_KEY` | No | — | R2 secret access key |
 | `R2_BUCKET` | No | — | R2 bucket name for stage storage |
 | `OAUTH_REDIRECT_BASE_URL` | No | — | Base URL for OAuth redirect callbacks |
-| `PUBLIC_BASE_URL` | No | — | Base URL for preview URLs (e.g., `https://stream.dazzle.fm`) |
+| `PUBLIC_BASE_URL` | No | — | Base URL for preview URLs (e.g., `https://dazzle.fm`) |

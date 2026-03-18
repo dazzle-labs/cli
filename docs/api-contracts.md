@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-03-09
 
-All control plane RPC services use **ConnectRPC** (protobuf over HTTP/2, also compatible with HTTP/1.1 JSON). Base URL: `https://stream.dazzle.fm`
+All control plane RPC services use **ConnectRPC** (protobuf over HTTP/2, also compatible with HTTP/1.1 JSON). Base URL: `https://dazzle.fm`
 
 ---
 
