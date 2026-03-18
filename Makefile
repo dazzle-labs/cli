@@ -201,18 +201,18 @@ build-sidecar: check-deps check-cluster ## Build sidecar image and load into Kin
 	$(STEP) "Loading into Kind"
 	kind load docker-image $(SIDECAR_IMG) --name $(NS)
 
-GPU_AGENT_IMG := dazzlefm/agent-streamer-stage:main-gpu-agent
-GPU_AGENT_BUILD := docker build --platform linux/amd64 -f streamer/docker/Dockerfile --build-arg VARIANT=gpu --build-arg SIDECAR_IMAGE=$(SIDECAR_IMG) --target agent -t $(GPU_AGENT_IMG) streamer/
+GPU_NODE_IMG := dazzlefm/agent-streamer-gpu-node:main
+GPU_NODE_BUILD := docker build --platform linux/amd64 -f streamer/docker/Dockerfile --build-arg VARIANT=gpu --build-arg SIDECAR_IMAGE=$(SIDECAR_IMG) --target agent -t $(GPU_NODE_IMG) streamer/
 
-build-gpu-agent: check-deps ## Build GPU agent image (streamer + sidecar agent)
+build-gpu-node: check-deps ## Build GPU node image (streamer + sidecar)
 	$(STEP) "Building sidecar image (dependency)"
 	$(SIDECAR_BUILD)
-	$(STEP) "Building GPU agent image"
-	$(GPU_AGENT_BUILD)
+	$(STEP) "Building GPU node image"
+	$(GPU_NODE_BUILD)
 
-push-gpu-agent: build-gpu-agent ## Build and push GPU agent image to Docker Hub
-	$(STEP) "Pushing GPU agent image"
-	docker push $(GPU_AGENT_IMG)
+push-gpu-node: build-gpu-node ## Build and push GPU node image to Docker Hub
+	$(STEP) "Pushing GPU node image"
+	docker push $(GPU_NODE_IMG)
 
 # ══════════════════════════════════════════════════════
 # GPU node testing (RunPod)
@@ -221,27 +221,27 @@ push-gpu-agent: build-gpu-agent ## Build and push GPU agent image to Docker Hub
 # Local CLI alias — builds the CLI and runs it against the local control-plane
 CLI := DAZZLE_API_URL=http://localhost:8080 go run ./cli/cmd/dazzle
 
-gpu/rebuild: check-deps ## Rebuild sidecar + GPU agent images for amd64 and push to Docker Hub
+gpu/rebuild: check-deps ## Rebuild sidecar + GPU node images for amd64 and push to Docker Hub
 	$(STEP) "Building sidecar (amd64)"
 	docker build --platform linux/amd64 -f sidecar/Dockerfile -t dazzlefm/agent-streamer-sidecar:$(GIT_SHA)-amd64 sidecar/
-	$(STEP) "Building GPU agent (amd64)"
+	$(STEP) "Building GPU node (amd64)"
 	docker build --platform linux/amd64 -f streamer/docker/Dockerfile \
 		--build-arg VARIANT=gpu \
 		--build-arg SIDECAR_IMAGE=dazzlefm/agent-streamer-sidecar:$(GIT_SHA)-amd64 \
-		--target agent -t dazzlefm/agent-streamer-stage:$(GIT_SHA)-gpu-agent streamer/
+		--target agent -t dazzlefm/agent-streamer-gpu-node:$(GIT_SHA) streamer/
 	$(STEP) "Pushing sidecar"
 	docker push dazzlefm/agent-streamer-sidecar:$(GIT_SHA)-amd64
-	$(STEP) "Pushing GPU agent"
-	docker push dazzlefm/agent-streamer-stage:$(GIT_SHA)-gpu-agent
-	$(OK) "GPU images pushed: $(GIT_SHA)-gpu-agent"
+	$(STEP) "Pushing GPU node"
+	docker push dazzlefm/agent-streamer-gpu-node:$(GIT_SHA)
+	$(OK) "GPU images pushed: gpu-node:$(GIT_SHA)"
 
-gpu/deploy: check-cluster ## Deploy control-plane with current GPU agent image tag
+gpu/deploy: check-cluster ## Deploy control-plane with current GPU node image tag
 	$(MAKE) build-cp deploy
 	$(STEP) "Applying GPU node classes"
 	$(KCTL) apply -f k8s/gpu/
-	$(KCTL) set env deployment/control-plane STREAMER_IMAGE=dazzlefm/agent-streamer-stage:$(GIT_SHA)
+	$(KCTL) set env deployment/control-plane GPU_NODE_IMAGE=dazzlefm/agent-streamer-gpu-node:$(GIT_SHA)
 	$(KCTL) rollout status deployment/control-plane --timeout=120s
-	$(OK) "Control-plane deployed with GPU image $(GIT_SHA)-gpu-agent"
+	$(OK) "Control-plane deployed with GPU node image gpu-node:$(GIT_SHA)"
 
 GPU_CLASS ?= l40s
 gpu/node-create: check-cluster ## Create a GPU node (GPU_CLASS=l40s|a40)

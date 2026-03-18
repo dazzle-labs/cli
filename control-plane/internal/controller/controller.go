@@ -171,15 +171,14 @@ func (c *GPUNodeController) handleNew(ctx context.Context, node *unstructured.Un
 		containerDisk = 20
 	}
 
-	// Derive GPU image from STREAMER_IMAGE or use GPUNodeClass override
-	streamerImage := getNestedString(classSpec, "streamerImage")
-	if streamerImage == "" {
-		streamerImage = os.Getenv("STREAMER_IMAGE")
+	// Resolve GPU agent image: GPUNodeClass override > GPU_NODE_IMAGE env
+	gpuImage := getNestedString(classSpec, "gpuNodeImage")
+	if gpuImage == "" {
+		gpuImage = os.Getenv("GPU_NODE_IMAGE")
 	}
-	if streamerImage == "" {
-		return fmt.Errorf("STREAMER_IMAGE env not set and no streamerImage in GPUNodeClass")
+	if gpuImage == "" {
+		return fmt.Errorf("GPU_NODE_IMAGE env not set and no gpuNodeImage in GPUNodeClass")
 	}
-	gpuImage := deriveGPUImage(streamerImage)
 
 	// Read maxStages from GPUNodeClass (defaults to 3)
 	maxStages := getNestedInt(classSpec, "maxStages")
@@ -650,15 +649,6 @@ func setNestedField(node *unstructured.Unstructured, section, key string, value 
 	mm[key] = value
 }
 
-// deriveGPUImage appends "-gpu-agent" to the tag of a container image.
-// The unified GPU agent image includes both streamer infrastructure and embedded sidecar binary.
-// e.g. "dazzlefm/agent-streamer-stage:abc1234" -> "dazzlefm/agent-streamer-stage:abc1234-gpu-agent"
-func deriveGPUImage(image string) string {
-	if idx := strings.LastIndex(image, ":"); idx != -1 {
-		return image + "-gpu-agent"
-	}
-	return image + ":latest-gpu-agent"
-}
 
 // ensurePEM returns the PEM data as a string, decoding from base64 if needed.
 // The agent/sidecar accept both raw PEM and base64-encoded PEM, but raw PEM

@@ -12,6 +12,7 @@ env:
   CP_REPO: dazzlefm/agent-streamer-control-plane
   STREAMER_REPO: dazzlefm/agent-streamer-stage
   SIDECAR_REPO: dazzlefm/agent-streamer-sidecar
+  GPU_NODE_REPO: dazzlefm/agent-streamer-gpu-node
 
 jobs:
   buf:
@@ -283,6 +284,7 @@ jobs:
           SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
           BRANCH=$(echo "${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" | sed 's/[^a-zA-Z0-9._-]/-/g')
           echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "branch=${BRANCH}" >> $GITHUB_OUTPUT
           echo "image_tag=${{ env.SIDECAR_REPO }}:${SHORT_SHA}" >> $GITHUB_OUTPUT
           echo "branch_tag=${{ env.SIDECAR_REPO }}:${BRANCH}" >> $GITHUB_OUTPUT
 
@@ -300,17 +302,19 @@ jobs:
           cache-from: type=registry,ref=${{ env.SIDECAR_REPO }}:buildcache
           cache-to: ${{ github.ref == 'refs/heads/main' && format('type=registry,ref={0}:buildcache,mode=max', env.SIDECAR_REPO) || '' }}
 
-      - name: Build GPU Agent Image
+      - name: Build GPU Node Image
         run: |
           docker build \
             --build-arg VARIANT=gpu \
             --build-arg SIDECAR_IMAGE=${{ env.SIDECAR_REPO }}:${{ steps.tags.outputs.short_sha }} \
             --target agent \
-            --tag ${{ env.STREAMER_REPO }}:${{ steps.tags.outputs.short_sha }}-gpu-agent \
+            --tag ${{ env.GPU_NODE_REPO }}:${{ steps.tags.outputs.short_sha }} \
+            --tag ${{ env.GPU_NODE_REPO }}:${{ steps.tags.outputs.branch }} \
             -f streamer/docker/Dockerfile \
             streamer/
           if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            docker push ${{ env.STREAMER_REPO }}:${{ steps.tags.outputs.short_sha }}-gpu-agent
+            docker push ${{ env.GPU_NODE_REPO }}:${{ steps.tags.outputs.short_sha }}
+            docker push ${{ env.GPU_NODE_REPO }}:${{ steps.tags.outputs.branch }}
           fi
 
     outputs:
@@ -426,12 +430,13 @@ jobs:
           cd ..
           make prod/k8s/deploy
 
-      - name: Update STREAMER_IMAGE and SIDECAR_IMAGE env vars
+      - name: Update image env vars on control-plane
         run: |
           make prod/k8s/set-streamer-env \
             STREAMER_IMAGE=${{ env.STREAMER_REPO }}:${{ needs.streamer.outputs.image_tag }}
           make prod/kubectl ARGS="set env deployment/control-plane -n browser-streamer \
-            SIDECAR_IMAGE=${{ env.SIDECAR_REPO }}:${{ needs.sidecar.outputs.image_tag }}"
+            SIDECAR_IMAGE=${{ env.SIDECAR_REPO }}:${{ needs.sidecar.outputs.image_tag }} \
+            GPU_NODE_IMAGE=${{ env.GPU_NODE_REPO }}:${{ needs.sidecar.outputs.image_tag }}"
 
       - name: Verify Deployment
         if: steps.compare.outputs.changed == 'true'
