@@ -7,12 +7,20 @@ option go_package = "github.com/dazzle-labs/cli/gen/api/v1;apiv1";
 import "google/protobuf/timestamp.proto";
 
 service BroadcastService {
+  rpc StartBroadcast(StartBroadcastRequest)       returns (StartBroadcastResponse);
+  rpc StopBroadcast(StopBroadcastRequest)         returns (StopBroadcastResponse);
   rpc GetStreamInfo(GetStreamInfoRequest)         returns (GetStreamInfoResponse);
   rpc SetStreamTitle(SetStreamTitleRequest)       returns (SetStreamTitleResponse);
   rpc SetStreamCategory(SetStreamCategoryRequest) returns (SetStreamCategoryResponse);
   rpc GetChat(GetChatRequest)                     returns (GetChatResponse);
   rpc SendChat(SendChatRequest)                   returns (SendChatResponse);
 }
+
+message StartBroadcastRequest   { string stage_id = 1; }
+message StartBroadcastResponse  {}
+
+message StopBroadcastRequest    { string stage_id = 1; }
+message StopBroadcastResponse   {}
 
 message GetStreamInfoRequest    { string stage_id = 1; }
 message GetStreamInfoResponse   { string title = 1; string category = 2; string platform = 3; }

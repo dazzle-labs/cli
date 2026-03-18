@@ -141,8 +141,6 @@ Commands:
                                    Remove a broadcast destination.
   destination (dest) set           Assign a broadcast destination to the active
                                    stage.
-  obs (o)                          Advanced OBS control (scenes, recording,
-                                   etc).
 
 Run "dazzle <command> --help" for more information on a command.
 ```

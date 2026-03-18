@@ -44,9 +44,6 @@ const (
 	// RuntimeServiceScreenshotProcedure is the fully-qualified name of the RuntimeService's Screenshot
 	// RPC.
 	RuntimeServiceScreenshotProcedure = "/dazzle.v1.RuntimeService/Screenshot"
-	// RuntimeServiceObsCommandProcedure is the fully-qualified name of the RuntimeService's ObsCommand
-	// RPC.
-	RuntimeServiceObsCommandProcedure = "/dazzle.v1.RuntimeService/ObsCommand"
 	// RuntimeServiceSyncDiffProcedure is the fully-qualified name of the RuntimeService's SyncDiff RPC.
 	RuntimeServiceSyncDiffProcedure = "/dazzle.v1.RuntimeService/SyncDiff"
 	// RuntimeServiceSyncPushProcedure is the fully-qualified name of the RuntimeService's SyncPush RPC.
@@ -61,7 +58,6 @@ type RuntimeServiceClient interface {
 	GetLogs(context.Context, *connect.Request[v1.GetLogsRequest]) (*connect.Response[v1.GetLogsResponse], error)
 	GetStageStats(context.Context, *connect.Request[v1.GetStageStatsRequest]) (*connect.Response[v1.GetStageStatsResponse], error)
 	Screenshot(context.Context, *connect.Request[v1.ScreenshotRequest]) (*connect.Response[v1.ScreenshotResponse], error)
-	ObsCommand(context.Context, *connect.Request[v1.ObsCommandRequest]) (*connect.Response[v1.ObsCommandResponse], error)
 	SyncDiff(context.Context, *connect.Request[v1.SyncDiffRequest]) (*connect.Response[v1.SyncDiffResponse], error)
 	SyncPush(context.Context) *connect.ClientStreamForClient[v1.SyncPushRequest, v1.SyncPushResponse]
 	Refresh(context.Context, *connect.Request[v1.RefreshRequest]) (*connect.Response[v1.RefreshResponse], error)
@@ -102,12 +98,6 @@ func NewRuntimeServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(runtimeServiceMethods.ByName("Screenshot")),
 			connect.WithClientOptions(opts...),
 		),
-		obsCommand: connect.NewClient[v1.ObsCommandRequest, v1.ObsCommandResponse](
-			httpClient,
-			baseURL+RuntimeServiceObsCommandProcedure,
-			connect.WithSchema(runtimeServiceMethods.ByName("ObsCommand")),
-			connect.WithClientOptions(opts...),
-		),
 		syncDiff: connect.NewClient[v1.SyncDiffRequest, v1.SyncDiffResponse](
 			httpClient,
 			baseURL+RuntimeServiceSyncDiffProcedure,
@@ -135,7 +125,6 @@ type runtimeServiceClient struct {
 	getLogs       *connect.Client[v1.GetLogsRequest, v1.GetLogsResponse]
 	getStageStats *connect.Client[v1.GetStageStatsRequest, v1.GetStageStatsResponse]
 	screenshot    *connect.Client[v1.ScreenshotRequest, v1.ScreenshotResponse]
-	obsCommand    *connect.Client[v1.ObsCommandRequest, v1.ObsCommandResponse]
 	syncDiff      *connect.Client[v1.SyncDiffRequest, v1.SyncDiffResponse]
 	syncPush      *connect.Client[v1.SyncPushRequest, v1.SyncPushResponse]
 	refresh       *connect.Client[v1.RefreshRequest, v1.RefreshResponse]
@@ -161,11 +150,6 @@ func (c *runtimeServiceClient) Screenshot(ctx context.Context, req *connect.Requ
 	return c.screenshot.CallUnary(ctx, req)
 }
 
-// ObsCommand calls dazzle.v1.RuntimeService.ObsCommand.
-func (c *runtimeServiceClient) ObsCommand(ctx context.Context, req *connect.Request[v1.ObsCommandRequest]) (*connect.Response[v1.ObsCommandResponse], error) {
-	return c.obsCommand.CallUnary(ctx, req)
-}
-
 // SyncDiff calls dazzle.v1.RuntimeService.SyncDiff.
 func (c *runtimeServiceClient) SyncDiff(ctx context.Context, req *connect.Request[v1.SyncDiffRequest]) (*connect.Response[v1.SyncDiffResponse], error) {
 	return c.syncDiff.CallUnary(ctx, req)
@@ -187,7 +171,6 @@ type RuntimeServiceHandler interface {
 	GetLogs(context.Context, *connect.Request[v1.GetLogsRequest]) (*connect.Response[v1.GetLogsResponse], error)
 	GetStageStats(context.Context, *connect.Request[v1.GetStageStatsRequest]) (*connect.Response[v1.GetStageStatsResponse], error)
 	Screenshot(context.Context, *connect.Request[v1.ScreenshotRequest]) (*connect.Response[v1.ScreenshotResponse], error)
-	ObsCommand(context.Context, *connect.Request[v1.ObsCommandRequest]) (*connect.Response[v1.ObsCommandResponse], error)
 	SyncDiff(context.Context, *connect.Request[v1.SyncDiffRequest]) (*connect.Response[v1.SyncDiffResponse], error)
 	SyncPush(context.Context, *connect.ClientStream[v1.SyncPushRequest]) (*connect.Response[v1.SyncPushResponse], error)
 	Refresh(context.Context, *connect.Request[v1.RefreshRequest]) (*connect.Response[v1.RefreshResponse], error)
@@ -224,12 +207,6 @@ func NewRuntimeServiceHandler(svc RuntimeServiceHandler, opts ...connect.Handler
 		connect.WithSchema(runtimeServiceMethods.ByName("Screenshot")),
 		connect.WithHandlerOptions(opts...),
 	)
-	runtimeServiceObsCommandHandler := connect.NewUnaryHandler(
-		RuntimeServiceObsCommandProcedure,
-		svc.ObsCommand,
-		connect.WithSchema(runtimeServiceMethods.ByName("ObsCommand")),
-		connect.WithHandlerOptions(opts...),
-	)
 	runtimeServiceSyncDiffHandler := connect.NewUnaryHandler(
 		RuntimeServiceSyncDiffProcedure,
 		svc.SyncDiff,
@@ -258,8 +235,6 @@ func NewRuntimeServiceHandler(svc RuntimeServiceHandler, opts ...connect.Handler
 			runtimeServiceGetStageStatsHandler.ServeHTTP(w, r)
 		case RuntimeServiceScreenshotProcedure:
 			runtimeServiceScreenshotHandler.ServeHTTP(w, r)
-		case RuntimeServiceObsCommandProcedure:
-			runtimeServiceObsCommandHandler.ServeHTTP(w, r)
 		case RuntimeServiceSyncDiffProcedure:
 			runtimeServiceSyncDiffHandler.ServeHTTP(w, r)
 		case RuntimeServiceSyncPushProcedure:
@@ -289,10 +264,6 @@ func (UnimplementedRuntimeServiceHandler) GetStageStats(context.Context, *connec
 
 func (UnimplementedRuntimeServiceHandler) Screenshot(context.Context, *connect.Request[v1.ScreenshotRequest]) (*connect.Response[v1.ScreenshotResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.RuntimeService.Screenshot is not implemented"))
-}
-
-func (UnimplementedRuntimeServiceHandler) ObsCommand(context.Context, *connect.Request[v1.ObsCommandRequest]) (*connect.Response[v1.ObsCommandResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.RuntimeService.ObsCommand is not implemented"))
 }
 
 func (UnimplementedRuntimeServiceHandler) SyncDiff(context.Context, *connect.Request[v1.SyncDiffRequest]) (*connect.Response[v1.SyncDiffResponse], error) {

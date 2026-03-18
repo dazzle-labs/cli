@@ -9,7 +9,6 @@ service RuntimeService {
   rpc GetLogs(GetLogsRequest) returns (GetLogsResponse);
   rpc GetStageStats(GetStageStatsRequest) returns (GetStageStatsResponse);
   rpc Screenshot(ScreenshotRequest) returns (ScreenshotResponse);
-  rpc ObsCommand(ObsCommandRequest) returns (ObsCommandResponse);
   rpc SyncDiff(SyncDiffRequest) returns (SyncDiffResponse);
   rpc SyncPush(stream SyncPushRequest) returns (SyncPushResponse);
   rpc Refresh(RefreshRequest) returns (RefreshResponse);
@@ -24,9 +23,6 @@ message GetLogsResponse { repeated LogEntry entries = 1; }
 
 message ScreenshotRequest { string stage_id = 1; }
 message ScreenshotResponse { bytes image = 1; }
-
-message ObsCommandRequest { string stage_id = 1; repeated string args = 2; }
-message ObsCommandResponse { string output = 1; }
 
 message SyncDiffRequest {
   string stage_id = 1;

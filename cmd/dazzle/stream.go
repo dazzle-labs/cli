@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 
 	"connectrpc.com/connect"
 	apiv1 "github.com/dazzle-labs/cli/gen/api/v1"
@@ -23,25 +22,50 @@ type StreamCmd struct {
 type StreamStartCmd struct{}
 
 func (c *StreamStartCmd) Run(ctx *Context) error {
-	return runObsArgs(ctx, []string{"st", "s"})
+	if err := ctx.requireAuth(); err != nil {
+		return err
+	}
+	if err := ctx.resolveStage(); err != nil {
+		return err
+	}
+
+	client := apiv1connect.NewBroadcastServiceClient(ctx.HTTPClient, ctx.APIURL)
+	req := connect.NewRequest(&apiv1.StartBroadcastRequest{StageId: ctx.StageID})
+	req.Header().Set("Authorization", ctx.authHeader())
+	if _, err := client.StartBroadcast(context.Background(), req); err != nil {
+		return err
+	}
+
+	printText("Broadcast started")
+	return nil
 }
 
 // StreamStopCmd stops broadcasting on the active stage.
 type StreamStopCmd struct{}
 
 func (c *StreamStopCmd) Run(ctx *Context) error {
-	return runObsArgs(ctx, []string{"st", "st"})
+	if err := ctx.requireAuth(); err != nil {
+		return err
+	}
+	if err := ctx.resolveStage(); err != nil {
+		return err
+	}
+
+	client := apiv1connect.NewBroadcastServiceClient(ctx.HTTPClient, ctx.APIURL)
+	req := connect.NewRequest(&apiv1.StopBroadcastRequest{StageId: ctx.StageID})
+	req.Header().Set("Authorization", ctx.authHeader())
+	if _, err := client.StopBroadcast(context.Background(), req); err != nil {
+		return err
+	}
+
+	printText("Broadcast stopped")
+	return nil
 }
 
 // StreamStatusCmd shows broadcast status on the active stage.
 type StreamStatusCmd struct{}
 
 func (c *StreamStatusCmd) Run(ctx *Context) error {
-	return runObsArgs(ctx, []string{"st", "ss"})
-}
-
-// runObsArgs is a helper that sends OBS command args to the active stage.
-func runObsArgs(ctx *Context, args []string) error {
 	if err := ctx.requireAuth(); err != nil {
 		return err
 	}
@@ -50,20 +74,26 @@ func runObsArgs(ctx *Context, args []string) error {
 	}
 
 	client := apiv1connect.NewRuntimeServiceClient(ctx.HTTPClient, ctx.APIURL)
-	req := connect.NewRequest(&apiv1.ObsCommandRequest{
-		StageId: ctx.StageID,
-		Args:    args,
-	})
+	req := connect.NewRequest(&apiv1.GetStageStatsRequest{StageId: ctx.StageID})
 	req.Header().Set("Authorization", ctx.authHeader())
-	resp, err := client.ObsCommand(context.Background(), req)
+	resp, err := client.GetStageStats(context.Background(), req)
 	if err != nil {
 		return err
 	}
 
+	s := resp.Msg
 	if ctx.JSON {
-		printJSON(map[string]string{"output": resp.Msg.Output})
+		printJSON(map[string]any{
+			"active": s.Broadcasting,
+			"fps":    s.BroadcastFps,
+		})
+		return nil
+	}
+
+	if s.Broadcasting {
+		printText("Broadcast: active (fps=%.1f)", s.BroadcastFps)
 	} else {
-		fmt.Print(resp.Msg.Output)
+		printText("Broadcast: inactive")
 	}
 	return nil
 }

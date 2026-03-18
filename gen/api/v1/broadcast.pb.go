@@ -22,6 +22,166 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type StartBroadcastRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StartBroadcastRequest) Reset() {
+	*x = StartBroadcastRequest{}
+	mi := &file_api_v1_broadcast_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StartBroadcastRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StartBroadcastRequest) ProtoMessage() {}
+
+func (x *StartBroadcastRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_broadcast_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StartBroadcastRequest.ProtoReflect.Descriptor instead.
+func (*StartBroadcastRequest) Descriptor() ([]byte, []int) {
+	return file_api_v1_broadcast_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *StartBroadcastRequest) GetStageId() string {
+	if x != nil {
+		return x.StageId
+	}
+	return ""
+}
+
+type StartBroadcastResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StartBroadcastResponse) Reset() {
+	*x = StartBroadcastResponse{}
+	mi := &file_api_v1_broadcast_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StartBroadcastResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StartBroadcastResponse) ProtoMessage() {}
+
+func (x *StartBroadcastResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_broadcast_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StartBroadcastResponse.ProtoReflect.Descriptor instead.
+func (*StartBroadcastResponse) Descriptor() ([]byte, []int) {
+	return file_api_v1_broadcast_proto_rawDescGZIP(), []int{1}
+}
+
+type StopBroadcastRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StopBroadcastRequest) Reset() {
+	*x = StopBroadcastRequest{}
+	mi := &file_api_v1_broadcast_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StopBroadcastRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StopBroadcastRequest) ProtoMessage() {}
+
+func (x *StopBroadcastRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_broadcast_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StopBroadcastRequest.ProtoReflect.Descriptor instead.
+func (*StopBroadcastRequest) Descriptor() ([]byte, []int) {
+	return file_api_v1_broadcast_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *StopBroadcastRequest) GetStageId() string {
+	if x != nil {
+		return x.StageId
+	}
+	return ""
+}
+
+type StopBroadcastResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StopBroadcastResponse) Reset() {
+	*x = StopBroadcastResponse{}
+	mi := &file_api_v1_broadcast_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StopBroadcastResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StopBroadcastResponse) ProtoMessage() {}
+
+func (x *StopBroadcastResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_broadcast_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StopBroadcastResponse.ProtoReflect.Descriptor instead.
+func (*StopBroadcastResponse) Descriptor() ([]byte, []int) {
+	return file_api_v1_broadcast_proto_rawDescGZIP(), []int{3}
+}
+
 type GetStreamInfoRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"`
@@ -31,7 +191,7 @@ type GetStreamInfoRequest struct {
 
 func (x *GetStreamInfoRequest) Reset() {
 	*x = GetStreamInfoRequest{}
-	mi := &file_api_v1_broadcast_proto_msgTypes[0]
+	mi := &file_api_v1_broadcast_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -43,7 +203,7 @@ func (x *GetStreamInfoRequest) String() string {
 func (*GetStreamInfoRequest) ProtoMessage() {}
 
 func (x *GetStreamInfoRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_broadcast_proto_msgTypes[0]
+	mi := &file_api_v1_broadcast_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -56,7 +216,7 @@ func (x *GetStreamInfoRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetStreamInfoRequest.ProtoReflect.Descriptor instead.
 func (*GetStreamInfoRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_broadcast_proto_rawDescGZIP(), []int{0}
+	return file_api_v1_broadcast_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *GetStreamInfoRequest) GetStageId() string {
@@ -77,7 +237,7 @@ type GetStreamInfoResponse struct {
 
 func (x *GetStreamInfoResponse) Reset() {
 	*x = GetStreamInfoResponse{}
-	mi := &file_api_v1_broadcast_proto_msgTypes[1]
+	mi := &file_api_v1_broadcast_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -89,7 +249,7 @@ func (x *GetStreamInfoResponse) String() string {
 func (*GetStreamInfoResponse) ProtoMessage() {}
 
 func (x *GetStreamInfoResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_broadcast_proto_msgTypes[1]
+	mi := &file_api_v1_broadcast_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -102,7 +262,7 @@ func (x *GetStreamInfoResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetStreamInfoResponse.ProtoReflect.Descriptor instead.
 func (*GetStreamInfoResponse) Descriptor() ([]byte, []int) {
-	return file_api_v1_broadcast_proto_rawDescGZIP(), []int{1}
+	return file_api_v1_broadcast_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GetStreamInfoResponse) GetTitle() string {
@@ -136,7 +296,7 @@ type SetStreamTitleRequest struct {
 
 func (x *SetStreamTitleRequest) Reset() {
 	*x = SetStreamTitleRequest{}
-	mi := &file_api_v1_broadcast_proto_msgTypes[2]
+	mi := &file_api_v1_broadcast_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -148,7 +308,7 @@ func (x *SetStreamTitleRequest) String() string {
 func (*SetStreamTitleRequest) ProtoMessage() {}
 
 func (x *SetStreamTitleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_broadcast_proto_msgTypes[2]
+	mi := &file_api_v1_broadcast_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -161,7 +321,7 @@ func (x *SetStreamTitleRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetStreamTitleRequest.ProtoReflect.Descriptor instead.
 func (*SetStreamTitleRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_broadcast_proto_rawDescGZIP(), []int{2}
+	return file_api_v1_broadcast_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *SetStreamTitleRequest) GetStageId() string {
@@ -187,7 +347,7 @@ type SetStreamTitleResponse struct {
 
 func (x *SetStreamTitleResponse) Reset() {
 	*x = SetStreamTitleResponse{}
-	mi := &file_api_v1_broadcast_proto_msgTypes[3]
+	mi := &file_api_v1_broadcast_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -199,7 +359,7 @@ func (x *SetStreamTitleResponse) String() string {
 func (*SetStreamTitleResponse) ProtoMessage() {}
 
 func (x *SetStreamTitleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_broadcast_proto_msgTypes[3]
+	mi := &file_api_v1_broadcast_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -212,7 +372,7 @@ func (x *SetStreamTitleResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetStreamTitleResponse.ProtoReflect.Descriptor instead.
 func (*SetStreamTitleResponse) Descriptor() ([]byte, []int) {
-	return file_api_v1_broadcast_proto_rawDescGZIP(), []int{3}
+	return file_api_v1_broadcast_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *SetStreamTitleResponse) GetTitle() string {
@@ -232,7 +392,7 @@ type SetStreamCategoryRequest struct {
 
 func (x *SetStreamCategoryRequest) Reset() {
 	*x = SetStreamCategoryRequest{}
-	mi := &file_api_v1_broadcast_proto_msgTypes[4]
+	mi := &file_api_v1_broadcast_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -244,7 +404,7 @@ func (x *SetStreamCategoryRequest) String() string {
 func (*SetStreamCategoryRequest) ProtoMessage() {}
 
 func (x *SetStreamCategoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_broadcast_proto_msgTypes[4]
+	mi := &file_api_v1_broadcast_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -257,7 +417,7 @@ func (x *SetStreamCategoryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetStreamCategoryRequest.ProtoReflect.Descriptor instead.
 func (*SetStreamCategoryRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_broadcast_proto_rawDescGZIP(), []int{4}
+	return file_api_v1_broadcast_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *SetStreamCategoryRequest) GetStageId() string {
@@ -283,7 +443,7 @@ type SetStreamCategoryResponse struct {
 
 func (x *SetStreamCategoryResponse) Reset() {
 	*x = SetStreamCategoryResponse{}
-	mi := &file_api_v1_broadcast_proto_msgTypes[5]
+	mi := &file_api_v1_broadcast_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -295,7 +455,7 @@ func (x *SetStreamCategoryResponse) String() string {
 func (*SetStreamCategoryResponse) ProtoMessage() {}
 
 func (x *SetStreamCategoryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_broadcast_proto_msgTypes[5]
+	mi := &file_api_v1_broadcast_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -308,7 +468,7 @@ func (x *SetStreamCategoryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetStreamCategoryResponse.ProtoReflect.Descriptor instead.
 func (*SetStreamCategoryResponse) Descriptor() ([]byte, []int) {
-	return file_api_v1_broadcast_proto_rawDescGZIP(), []int{5}
+	return file_api_v1_broadcast_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *SetStreamCategoryResponse) GetCategory() string {
@@ -328,7 +488,7 @@ type GetChatRequest struct {
 
 func (x *GetChatRequest) Reset() {
 	*x = GetChatRequest{}
-	mi := &file_api_v1_broadcast_proto_msgTypes[6]
+	mi := &file_api_v1_broadcast_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -340,7 +500,7 @@ func (x *GetChatRequest) String() string {
 func (*GetChatRequest) ProtoMessage() {}
 
 func (x *GetChatRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_broadcast_proto_msgTypes[6]
+	mi := &file_api_v1_broadcast_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -353,7 +513,7 @@ func (x *GetChatRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetChatRequest.ProtoReflect.Descriptor instead.
 func (*GetChatRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_broadcast_proto_rawDescGZIP(), []int{6}
+	return file_api_v1_broadcast_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *GetChatRequest) GetStageId() string {
@@ -383,7 +543,7 @@ type ChatMessage struct {
 
 func (x *ChatMessage) Reset() {
 	*x = ChatMessage{}
-	mi := &file_api_v1_broadcast_proto_msgTypes[7]
+	mi := &file_api_v1_broadcast_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -395,7 +555,7 @@ func (x *ChatMessage) String() string {
 func (*ChatMessage) ProtoMessage() {}
 
 func (x *ChatMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_broadcast_proto_msgTypes[7]
+	mi := &file_api_v1_broadcast_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -408,7 +568,7 @@ func (x *ChatMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChatMessage.ProtoReflect.Descriptor instead.
 func (*ChatMessage) Descriptor() ([]byte, []int) {
-	return file_api_v1_broadcast_proto_rawDescGZIP(), []int{7}
+	return file_api_v1_broadcast_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ChatMessage) GetId() string {
@@ -455,7 +615,7 @@ type GetChatResponse struct {
 
 func (x *GetChatResponse) Reset() {
 	*x = GetChatResponse{}
-	mi := &file_api_v1_broadcast_proto_msgTypes[8]
+	mi := &file_api_v1_broadcast_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -467,7 +627,7 @@ func (x *GetChatResponse) String() string {
 func (*GetChatResponse) ProtoMessage() {}
 
 func (x *GetChatResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_broadcast_proto_msgTypes[8]
+	mi := &file_api_v1_broadcast_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -480,7 +640,7 @@ func (x *GetChatResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetChatResponse.ProtoReflect.Descriptor instead.
 func (*GetChatResponse) Descriptor() ([]byte, []int) {
-	return file_api_v1_broadcast_proto_rawDescGZIP(), []int{8}
+	return file_api_v1_broadcast_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *GetChatResponse) GetMessages() []*ChatMessage {
@@ -500,7 +660,7 @@ type SendChatRequest struct {
 
 func (x *SendChatRequest) Reset() {
 	*x = SendChatRequest{}
-	mi := &file_api_v1_broadcast_proto_msgTypes[9]
+	mi := &file_api_v1_broadcast_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -512,7 +672,7 @@ func (x *SendChatRequest) String() string {
 func (*SendChatRequest) ProtoMessage() {}
 
 func (x *SendChatRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_broadcast_proto_msgTypes[9]
+	mi := &file_api_v1_broadcast_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -525,7 +685,7 @@ func (x *SendChatRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendChatRequest.ProtoReflect.Descriptor instead.
 func (*SendChatRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_broadcast_proto_rawDescGZIP(), []int{9}
+	return file_api_v1_broadcast_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *SendChatRequest) GetStageId() string {
@@ -551,7 +711,7 @@ type SendChatResponse struct {
 
 func (x *SendChatResponse) Reset() {
 	*x = SendChatResponse{}
-	mi := &file_api_v1_broadcast_proto_msgTypes[10]
+	mi := &file_api_v1_broadcast_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -563,7 +723,7 @@ func (x *SendChatResponse) String() string {
 func (*SendChatResponse) ProtoMessage() {}
 
 func (x *SendChatResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_broadcast_proto_msgTypes[10]
+	mi := &file_api_v1_broadcast_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -576,7 +736,7 @@ func (x *SendChatResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendChatResponse.ProtoReflect.Descriptor instead.
 func (*SendChatResponse) Descriptor() ([]byte, []int) {
-	return file_api_v1_broadcast_proto_rawDescGZIP(), []int{10}
+	return file_api_v1_broadcast_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *SendChatResponse) GetPlatform() string {
@@ -590,7 +750,13 @@ var File_api_v1_broadcast_proto protoreflect.FileDescriptor
 
 const file_api_v1_broadcast_proto_rawDesc = "" +
 	"\n" +
-	"\x16api/v1/broadcast.proto\x12\tdazzle.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"1\n" +
+	"\x16api/v1/broadcast.proto\x12\tdazzle.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"2\n" +
+	"\x15StartBroadcastRequest\x12\x19\n" +
+	"\bstage_id\x18\x01 \x01(\tR\astageId\"\x18\n" +
+	"\x16StartBroadcastResponse\"1\n" +
+	"\x14StopBroadcastRequest\x12\x19\n" +
+	"\bstage_id\x18\x01 \x01(\tR\astageId\"\x17\n" +
+	"\x15StopBroadcastResponse\"1\n" +
 	"\x14GetStreamInfoRequest\x12\x19\n" +
 	"\bstage_id\x18\x01 \x01(\tR\astageId\"e\n" +
 	"\x15GetStreamInfoResponse\x12\x14\n" +
@@ -622,8 +788,10 @@ const file_api_v1_broadcast_proto_rawDesc = "" +
 	"\bstage_id\x18\x01 \x01(\tR\astageId\x12\x12\n" +
 	"\x04text\x18\x02 \x01(\tR\x04text\".\n" +
 	"\x10SendChatResponse\x12\x1a\n" +
-	"\bplatform\x18\x01 \x01(\tR\bplatform2\xa4\x03\n" +
-	"\x10BroadcastService\x12R\n" +
+	"\bplatform\x18\x01 \x01(\tR\bplatform2\xcf\x04\n" +
+	"\x10BroadcastService\x12U\n" +
+	"\x0eStartBroadcast\x12 .dazzle.v1.StartBroadcastRequest\x1a!.dazzle.v1.StartBroadcastResponse\x12R\n" +
+	"\rStopBroadcast\x12\x1f.dazzle.v1.StopBroadcastRequest\x1a .dazzle.v1.StopBroadcastResponse\x12R\n" +
 	"\rGetStreamInfo\x12\x1f.dazzle.v1.GetStreamInfoRequest\x1a .dazzle.v1.GetStreamInfoResponse\x12U\n" +
 	"\x0eSetStreamTitle\x12 .dazzle.v1.SetStreamTitleRequest\x1a!.dazzle.v1.SetStreamTitleResponse\x12^\n" +
 	"\x11SetStreamCategory\x12#.dazzle.v1.SetStreamCategoryRequest\x1a$.dazzle.v1.SetStreamCategoryResponse\x12@\n" +
@@ -642,36 +810,44 @@ func file_api_v1_broadcast_proto_rawDescGZIP() []byte {
 	return file_api_v1_broadcast_proto_rawDescData
 }
 
-var file_api_v1_broadcast_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_api_v1_broadcast_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_api_v1_broadcast_proto_goTypes = []any{
-	(*GetStreamInfoRequest)(nil),      // 0: dazzle.v1.GetStreamInfoRequest
-	(*GetStreamInfoResponse)(nil),     // 1: dazzle.v1.GetStreamInfoResponse
-	(*SetStreamTitleRequest)(nil),     // 2: dazzle.v1.SetStreamTitleRequest
-	(*SetStreamTitleResponse)(nil),    // 3: dazzle.v1.SetStreamTitleResponse
-	(*SetStreamCategoryRequest)(nil),  // 4: dazzle.v1.SetStreamCategoryRequest
-	(*SetStreamCategoryResponse)(nil), // 5: dazzle.v1.SetStreamCategoryResponse
-	(*GetChatRequest)(nil),            // 6: dazzle.v1.GetChatRequest
-	(*ChatMessage)(nil),               // 7: dazzle.v1.ChatMessage
-	(*GetChatResponse)(nil),           // 8: dazzle.v1.GetChatResponse
-	(*SendChatRequest)(nil),           // 9: dazzle.v1.SendChatRequest
-	(*SendChatResponse)(nil),          // 10: dazzle.v1.SendChatResponse
-	(*timestamppb.Timestamp)(nil),     // 11: google.protobuf.Timestamp
+	(*StartBroadcastRequest)(nil),     // 0: dazzle.v1.StartBroadcastRequest
+	(*StartBroadcastResponse)(nil),    // 1: dazzle.v1.StartBroadcastResponse
+	(*StopBroadcastRequest)(nil),      // 2: dazzle.v1.StopBroadcastRequest
+	(*StopBroadcastResponse)(nil),     // 3: dazzle.v1.StopBroadcastResponse
+	(*GetStreamInfoRequest)(nil),      // 4: dazzle.v1.GetStreamInfoRequest
+	(*GetStreamInfoResponse)(nil),     // 5: dazzle.v1.GetStreamInfoResponse
+	(*SetStreamTitleRequest)(nil),     // 6: dazzle.v1.SetStreamTitleRequest
+	(*SetStreamTitleResponse)(nil),    // 7: dazzle.v1.SetStreamTitleResponse
+	(*SetStreamCategoryRequest)(nil),  // 8: dazzle.v1.SetStreamCategoryRequest
+	(*SetStreamCategoryResponse)(nil), // 9: dazzle.v1.SetStreamCategoryResponse
+	(*GetChatRequest)(nil),            // 10: dazzle.v1.GetChatRequest
+	(*ChatMessage)(nil),               // 11: dazzle.v1.ChatMessage
+	(*GetChatResponse)(nil),           // 12: dazzle.v1.GetChatResponse
+	(*SendChatRequest)(nil),           // 13: dazzle.v1.SendChatRequest
+	(*SendChatResponse)(nil),          // 14: dazzle.v1.SendChatResponse
+	(*timestamppb.Timestamp)(nil),     // 15: google.protobuf.Timestamp
 }
 var file_api_v1_broadcast_proto_depIdxs = []int32{
-	11, // 0: dazzle.v1.ChatMessage.timestamp:type_name -> google.protobuf.Timestamp
-	7,  // 1: dazzle.v1.GetChatResponse.messages:type_name -> dazzle.v1.ChatMessage
-	0,  // 2: dazzle.v1.BroadcastService.GetStreamInfo:input_type -> dazzle.v1.GetStreamInfoRequest
-	2,  // 3: dazzle.v1.BroadcastService.SetStreamTitle:input_type -> dazzle.v1.SetStreamTitleRequest
-	4,  // 4: dazzle.v1.BroadcastService.SetStreamCategory:input_type -> dazzle.v1.SetStreamCategoryRequest
-	6,  // 5: dazzle.v1.BroadcastService.GetChat:input_type -> dazzle.v1.GetChatRequest
-	9,  // 6: dazzle.v1.BroadcastService.SendChat:input_type -> dazzle.v1.SendChatRequest
-	1,  // 7: dazzle.v1.BroadcastService.GetStreamInfo:output_type -> dazzle.v1.GetStreamInfoResponse
-	3,  // 8: dazzle.v1.BroadcastService.SetStreamTitle:output_type -> dazzle.v1.SetStreamTitleResponse
-	5,  // 9: dazzle.v1.BroadcastService.SetStreamCategory:output_type -> dazzle.v1.SetStreamCategoryResponse
-	8,  // 10: dazzle.v1.BroadcastService.GetChat:output_type -> dazzle.v1.GetChatResponse
-	10, // 11: dazzle.v1.BroadcastService.SendChat:output_type -> dazzle.v1.SendChatResponse
-	7,  // [7:12] is the sub-list for method output_type
-	2,  // [2:7] is the sub-list for method input_type
+	15, // 0: dazzle.v1.ChatMessage.timestamp:type_name -> google.protobuf.Timestamp
+	11, // 1: dazzle.v1.GetChatResponse.messages:type_name -> dazzle.v1.ChatMessage
+	0,  // 2: dazzle.v1.BroadcastService.StartBroadcast:input_type -> dazzle.v1.StartBroadcastRequest
+	2,  // 3: dazzle.v1.BroadcastService.StopBroadcast:input_type -> dazzle.v1.StopBroadcastRequest
+	4,  // 4: dazzle.v1.BroadcastService.GetStreamInfo:input_type -> dazzle.v1.GetStreamInfoRequest
+	6,  // 5: dazzle.v1.BroadcastService.SetStreamTitle:input_type -> dazzle.v1.SetStreamTitleRequest
+	8,  // 6: dazzle.v1.BroadcastService.SetStreamCategory:input_type -> dazzle.v1.SetStreamCategoryRequest
+	10, // 7: dazzle.v1.BroadcastService.GetChat:input_type -> dazzle.v1.GetChatRequest
+	13, // 8: dazzle.v1.BroadcastService.SendChat:input_type -> dazzle.v1.SendChatRequest
+	1,  // 9: dazzle.v1.BroadcastService.StartBroadcast:output_type -> dazzle.v1.StartBroadcastResponse
+	3,  // 10: dazzle.v1.BroadcastService.StopBroadcast:output_type -> dazzle.v1.StopBroadcastResponse
+	5,  // 11: dazzle.v1.BroadcastService.GetStreamInfo:output_type -> dazzle.v1.GetStreamInfoResponse
+	7,  // 12: dazzle.v1.BroadcastService.SetStreamTitle:output_type -> dazzle.v1.SetStreamTitleResponse
+	9,  // 13: dazzle.v1.BroadcastService.SetStreamCategory:output_type -> dazzle.v1.SetStreamCategoryResponse
+	12, // 14: dazzle.v1.BroadcastService.GetChat:output_type -> dazzle.v1.GetChatResponse
+	14, // 15: dazzle.v1.BroadcastService.SendChat:output_type -> dazzle.v1.SendChatResponse
+	9,  // [9:16] is the sub-list for method output_type
+	2,  // [2:9] is the sub-list for method input_type
 	2,  // [2:2] is the sub-list for extension type_name
 	2,  // [2:2] is the sub-list for extension extendee
 	0,  // [0:2] is the sub-list for field type_name
@@ -688,7 +864,7 @@ func file_api_v1_broadcast_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_v1_broadcast_proto_rawDesc), len(file_api_v1_broadcast_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   11,
+			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

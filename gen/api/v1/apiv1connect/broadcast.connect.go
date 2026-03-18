@@ -33,6 +33,12 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
+	// BroadcastServiceStartBroadcastProcedure is the fully-qualified name of the BroadcastService's
+	// StartBroadcast RPC.
+	BroadcastServiceStartBroadcastProcedure = "/dazzle.v1.BroadcastService/StartBroadcast"
+	// BroadcastServiceStopBroadcastProcedure is the fully-qualified name of the BroadcastService's
+	// StopBroadcast RPC.
+	BroadcastServiceStopBroadcastProcedure = "/dazzle.v1.BroadcastService/StopBroadcast"
 	// BroadcastServiceGetStreamInfoProcedure is the fully-qualified name of the BroadcastService's
 	// GetStreamInfo RPC.
 	BroadcastServiceGetStreamInfoProcedure = "/dazzle.v1.BroadcastService/GetStreamInfo"
@@ -52,6 +58,8 @@ const (
 
 // BroadcastServiceClient is a client for the dazzle.v1.BroadcastService service.
 type BroadcastServiceClient interface {
+	StartBroadcast(context.Context, *connect.Request[v1.StartBroadcastRequest]) (*connect.Response[v1.StartBroadcastResponse], error)
+	StopBroadcast(context.Context, *connect.Request[v1.StopBroadcastRequest]) (*connect.Response[v1.StopBroadcastResponse], error)
 	GetStreamInfo(context.Context, *connect.Request[v1.GetStreamInfoRequest]) (*connect.Response[v1.GetStreamInfoResponse], error)
 	SetStreamTitle(context.Context, *connect.Request[v1.SetStreamTitleRequest]) (*connect.Response[v1.SetStreamTitleResponse], error)
 	SetStreamCategory(context.Context, *connect.Request[v1.SetStreamCategoryRequest]) (*connect.Response[v1.SetStreamCategoryResponse], error)
@@ -70,6 +78,18 @@ func NewBroadcastServiceClient(httpClient connect.HTTPClient, baseURL string, op
 	baseURL = strings.TrimRight(baseURL, "/")
 	broadcastServiceMethods := v1.File_api_v1_broadcast_proto.Services().ByName("BroadcastService").Methods()
 	return &broadcastServiceClient{
+		startBroadcast: connect.NewClient[v1.StartBroadcastRequest, v1.StartBroadcastResponse](
+			httpClient,
+			baseURL+BroadcastServiceStartBroadcastProcedure,
+			connect.WithSchema(broadcastServiceMethods.ByName("StartBroadcast")),
+			connect.WithClientOptions(opts...),
+		),
+		stopBroadcast: connect.NewClient[v1.StopBroadcastRequest, v1.StopBroadcastResponse](
+			httpClient,
+			baseURL+BroadcastServiceStopBroadcastProcedure,
+			connect.WithSchema(broadcastServiceMethods.ByName("StopBroadcast")),
+			connect.WithClientOptions(opts...),
+		),
 		getStreamInfo: connect.NewClient[v1.GetStreamInfoRequest, v1.GetStreamInfoResponse](
 			httpClient,
 			baseURL+BroadcastServiceGetStreamInfoProcedure,
@@ -105,11 +125,23 @@ func NewBroadcastServiceClient(httpClient connect.HTTPClient, baseURL string, op
 
 // broadcastServiceClient implements BroadcastServiceClient.
 type broadcastServiceClient struct {
+	startBroadcast    *connect.Client[v1.StartBroadcastRequest, v1.StartBroadcastResponse]
+	stopBroadcast     *connect.Client[v1.StopBroadcastRequest, v1.StopBroadcastResponse]
 	getStreamInfo     *connect.Client[v1.GetStreamInfoRequest, v1.GetStreamInfoResponse]
 	setStreamTitle    *connect.Client[v1.SetStreamTitleRequest, v1.SetStreamTitleResponse]
 	setStreamCategory *connect.Client[v1.SetStreamCategoryRequest, v1.SetStreamCategoryResponse]
 	getChat           *connect.Client[v1.GetChatRequest, v1.GetChatResponse]
 	sendChat          *connect.Client[v1.SendChatRequest, v1.SendChatResponse]
+}
+
+// StartBroadcast calls dazzle.v1.BroadcastService.StartBroadcast.
+func (c *broadcastServiceClient) StartBroadcast(ctx context.Context, req *connect.Request[v1.StartBroadcastRequest]) (*connect.Response[v1.StartBroadcastResponse], error) {
+	return c.startBroadcast.CallUnary(ctx, req)
+}
+
+// StopBroadcast calls dazzle.v1.BroadcastService.StopBroadcast.
+func (c *broadcastServiceClient) StopBroadcast(ctx context.Context, req *connect.Request[v1.StopBroadcastRequest]) (*connect.Response[v1.StopBroadcastResponse], error) {
+	return c.stopBroadcast.CallUnary(ctx, req)
 }
 
 // GetStreamInfo calls dazzle.v1.BroadcastService.GetStreamInfo.
@@ -139,6 +171,8 @@ func (c *broadcastServiceClient) SendChat(ctx context.Context, req *connect.Requ
 
 // BroadcastServiceHandler is an implementation of the dazzle.v1.BroadcastService service.
 type BroadcastServiceHandler interface {
+	StartBroadcast(context.Context, *connect.Request[v1.StartBroadcastRequest]) (*connect.Response[v1.StartBroadcastResponse], error)
+	StopBroadcast(context.Context, *connect.Request[v1.StopBroadcastRequest]) (*connect.Response[v1.StopBroadcastResponse], error)
 	GetStreamInfo(context.Context, *connect.Request[v1.GetStreamInfoRequest]) (*connect.Response[v1.GetStreamInfoResponse], error)
 	SetStreamTitle(context.Context, *connect.Request[v1.SetStreamTitleRequest]) (*connect.Response[v1.SetStreamTitleResponse], error)
 	SetStreamCategory(context.Context, *connect.Request[v1.SetStreamCategoryRequest]) (*connect.Response[v1.SetStreamCategoryResponse], error)
@@ -153,6 +187,18 @@ type BroadcastServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewBroadcastServiceHandler(svc BroadcastServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	broadcastServiceMethods := v1.File_api_v1_broadcast_proto.Services().ByName("BroadcastService").Methods()
+	broadcastServiceStartBroadcastHandler := connect.NewUnaryHandler(
+		BroadcastServiceStartBroadcastProcedure,
+		svc.StartBroadcast,
+		connect.WithSchema(broadcastServiceMethods.ByName("StartBroadcast")),
+		connect.WithHandlerOptions(opts...),
+	)
+	broadcastServiceStopBroadcastHandler := connect.NewUnaryHandler(
+		BroadcastServiceStopBroadcastProcedure,
+		svc.StopBroadcast,
+		connect.WithSchema(broadcastServiceMethods.ByName("StopBroadcast")),
+		connect.WithHandlerOptions(opts...),
+	)
 	broadcastServiceGetStreamInfoHandler := connect.NewUnaryHandler(
 		BroadcastServiceGetStreamInfoProcedure,
 		svc.GetStreamInfo,
@@ -185,6 +231,10 @@ func NewBroadcastServiceHandler(svc BroadcastServiceHandler, opts ...connect.Han
 	)
 	return "/dazzle.v1.BroadcastService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
+		case BroadcastServiceStartBroadcastProcedure:
+			broadcastServiceStartBroadcastHandler.ServeHTTP(w, r)
+		case BroadcastServiceStopBroadcastProcedure:
+			broadcastServiceStopBroadcastHandler.ServeHTTP(w, r)
 		case BroadcastServiceGetStreamInfoProcedure:
 			broadcastServiceGetStreamInfoHandler.ServeHTTP(w, r)
 		case BroadcastServiceSetStreamTitleProcedure:
@@ -203,6 +253,14 @@ func NewBroadcastServiceHandler(svc BroadcastServiceHandler, opts ...connect.Han
 
 // UnimplementedBroadcastServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedBroadcastServiceHandler struct{}
+
+func (UnimplementedBroadcastServiceHandler) StartBroadcast(context.Context, *connect.Request[v1.StartBroadcastRequest]) (*connect.Response[v1.StartBroadcastResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.BroadcastService.StartBroadcast is not implemented"))
+}
+
+func (UnimplementedBroadcastServiceHandler) StopBroadcast(context.Context, *connect.Request[v1.StopBroadcastRequest]) (*connect.Response[v1.StopBroadcastResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.BroadcastService.StopBroadcast is not implemented"))
+}
 
 func (UnimplementedBroadcastServiceHandler) GetStreamInfo(context.Context, *connect.Request[v1.GetStreamInfoRequest]) (*connect.Response[v1.GetStreamInfoResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.BroadcastService.GetStreamInfo is not implemented"))
