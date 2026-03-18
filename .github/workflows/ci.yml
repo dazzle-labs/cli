@@ -303,19 +303,22 @@ jobs:
           cache-to: ${{ github.ref == 'refs/heads/main' && format('type=registry,ref={0}:buildcache,mode=max', env.SIDECAR_REPO) || '' }}
 
       - name: Build GPU Node Image
-        run: |
-          docker build \
-            --build-arg VARIANT=gpu \
-            --build-arg SIDECAR_IMAGE=${{ env.SIDECAR_REPO }}:${{ steps.tags.outputs.short_sha }} \
-            --target agent \
-            --tag ${{ env.GPU_NODE_REPO }}:${{ steps.tags.outputs.short_sha }} \
-            --tag ${{ env.GPU_NODE_REPO }}:${{ steps.tags.outputs.branch }} \
-            -f streamer/docker/Dockerfile \
-            streamer/
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            docker push ${{ env.GPU_NODE_REPO }}:${{ steps.tags.outputs.short_sha }}
-            docker push ${{ env.GPU_NODE_REPO }}:${{ steps.tags.outputs.branch }}
-          fi
+        uses: docker/build-push-action@v5
+        with:
+          context: streamer/
+          file: streamer/docker/Dockerfile
+          target: agent
+          platforms: linux/amd64
+          push: ${{ github.ref == 'refs/heads/main' }}
+          load: ${{ github.event_name == 'pull_request' }}
+          tags: |
+            ${{ env.GPU_NODE_REPO }}:${{ steps.tags.outputs.short_sha }}
+            ${{ env.GPU_NODE_REPO }}:${{ steps.tags.outputs.branch }}
+          build-args: |
+            VARIANT=gpu
+            SIDECAR_IMAGE=${{ env.SIDECAR_REPO }}:${{ steps.tags.outputs.short_sha }}
+          cache-from: type=registry,ref=${{ env.GPU_NODE_REPO }}:buildcache
+          cache-to: ${{ github.ref == 'refs/heads/main' && format('type=registry,ref={0}:buildcache,mode=max', env.GPU_NODE_REPO) || '' }}
 
     outputs:
       image_tag: ${{ steps.tags.outputs.short_sha }}
