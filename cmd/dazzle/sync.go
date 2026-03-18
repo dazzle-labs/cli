@@ -168,7 +168,9 @@ func (c *SyncCmd) watchLoop(ctx *Context) error {
 		return fmt.Errorf("watching directory: %w", err)
 	}
 
-	printText("Watching %s for changes... (Ctrl-C to stop)", c.Dir)
+	if !ctx.JSON {
+		printText("Watching %s for changes... (Ctrl-C to stop)", c.Dir)
+	}
 
 	syncCount := 0
 	lastFullRewalk := time.Now()
@@ -179,7 +181,9 @@ func (c *SyncCmd) watchLoop(ctx *Context) error {
 	for {
 		select {
 		case <-sigCtx.Done():
-			printText("Stopped watching.")
+			if !ctx.JSON {
+				printText("Stopped watching.")
+			}
 			return nil
 
 		case event, ok := <-watcher.Events:

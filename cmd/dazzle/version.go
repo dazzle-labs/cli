@@ -31,7 +31,9 @@ func (c *VersionCmd) Run(ctx *Context) error {
 type UpdateCmd struct{}
 
 func (c *UpdateCmd) Run(ctx *Context) error {
-	printText("Checking for updates...")
+	if !ctx.JSON {
+		printText("Checking for updates...")
+	}
 
 	latest, err := fetchLatestTag()
 	if err != nil {
@@ -39,14 +41,25 @@ func (c *UpdateCmd) Run(ctx *Context) error {
 	}
 
 	if strings.TrimPrefix(latest, "v") == strings.TrimPrefix(version, "v") {
+		if ctx.JSON {
+			printJSON(map[string]any{"ok": true, "version": version, "updated": false})
+			return nil
+		}
 		printText("Already up to date (%s).", version)
 		return nil
 	}
 
-	printText("Updating %s → %s...", version, latest)
+	if !ctx.JSON {
+		printText("Updating %s → %s...", version, latest)
+	}
 
 	if err := downloadAndReplace(latest); err != nil {
 		return fmt.Errorf("update failed: %w", err)
+	}
+
+	if ctx.JSON {
+		printJSON(map[string]any{"ok": true, "version": latest, "updated": true, "previous": version})
+		return nil
 	}
 
 	printText("Updated to %s. Run 'dazzle version' to confirm.", latest)

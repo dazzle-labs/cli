@@ -127,6 +127,10 @@ func (c *BroadcastInfoCmd) Run(ctx *Context) error {
 	resp, err := client.GetStreamInfo(context.Background(), req)
 	if err != nil {
 		if connect.CodeOf(err) == connect.CodeUnimplemented {
+			if ctx.JSON {
+				printJSON(map[string]any{"ok": false, "error": "bc info is not supported for this platform"})
+				return nil
+			}
 			printText("Error: bc info is not supported for this platform.")
 			return nil
 		}
