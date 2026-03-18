@@ -434,6 +434,7 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 						append(mtlsEnvVars(),
 							corev1.EnvVar{Name: "DISPLAY", Value: ":99"},
 							corev1.EnvVar{Name: "PULSE_SERVER", Value: "unix:/tmp/pulse/native"},
+							corev1.EnvVar{Name: "LOCAL_HTTP_PORT", Value: "8081"},
 						)...,
 					),
 					VolumeMounts: []corev1.VolumeMount{
@@ -455,7 +456,7 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 					ReadinessProbe: &corev1.Probe{
 						ProbeHandler: corev1.ProbeHandler{
 							Exec: &corev1.ExecAction{
-								Command: []string{"wget", "-q", "--spider", "http://127.0.0.1:8080/_dz_9f7a3b1c/health"},
+								Command: []string{"wget", "-q", "--spider", "http://127.0.0.1:8081/_dz_9f7a3b1c/health"},
 							},
 						},
 						InitialDelaySeconds: 2,
@@ -559,6 +560,7 @@ func streamerEnvVars(stageID, userID string) []corev1.EnvVar {
 	vars := []corev1.EnvVar{
 		{Name: "STAGE_ID", Value: stageID},
 		{Name: "USER_ID", Value: userID},
+		{Name: "LOCAL_HTTP_PORT", Value: "8081"},
 	}
 	// Pass through all STREAMER_* env vars with prefix stripped
 	for _, env := range os.Environ() {

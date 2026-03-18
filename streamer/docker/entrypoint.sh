@@ -80,10 +80,11 @@ done
 unclutter -idle 0 -root &
 disown
 
-# 3. Wait for sidecar to be healthy (serves content on port 8080)
-echo "Waiting for sidecar..."
+# 3. Wait for sidecar to be healthy
+LOCAL_PORT="${LOCAL_HTTP_PORT:-8080}"
+echo "Waiting for sidecar on port $LOCAL_PORT..."
 for i in $(seq 1 120); do
-    if curl -s http://localhost:8080/_dz_9f7a3b1c/health > /dev/null 2>&1; then
+    if curl -s "http://localhost:$LOCAL_PORT/_dz_9f7a3b1c/health" > /dev/null 2>&1; then
         echo "Sidecar ready."
         break
     fi
@@ -93,7 +94,7 @@ done
 # 4. Start Chromium pointed at sidecar (serves user content at /)
 echo "Starting Chromium with flags:"
 echo "  $CHROME_FLAGS"
-google-chrome-stable $CHROME_FLAGS "http://localhost:8080/" &
+google-chrome-stable $CHROME_FLAGS "http://localhost:$LOCAL_PORT/" &
 CHROME_PID=$!
 
 # Wait for Chrome CDP to be available
