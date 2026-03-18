@@ -66,4 +66,4 @@ CI (`.github/workflows/ci.yml`) runs on every push to `main` and on PRs: golangc
 
 ## API URL
 
-Default: `https://stream.dazzle.fm`. Override with `--api-url` flag or `DAZZLE_API_URL` env var.
+Default: `https://dazzle.fm`. Override with `--api-url` flag or `DAZZLE_API_URL` env var.

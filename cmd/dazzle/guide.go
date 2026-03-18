@@ -10,7 +10,7 @@ import (
 // GuideCmd handles `dazzle guide`.
 type GuideCmd struct{}
 
-const guideURL = "https://stream.dazzle.fm/guide.md"
+const guideURL = "https://dazzle.fm/guide.md"
 
 func (c *GuideCmd) Run(ctx *Context) error {
 	// Try fetching the latest guide from the server
