@@ -7,13 +7,113 @@ import (
 
 	"connectrpc.com/connect"
 	apiv1 "github.com/dazzle-labs/cli/gen/api/v1"
-	apiv1connect "github.com/dazzle-labs/cli/gen/api/v1/apiv1connect"
+	"github.com/dazzle-labs/cli/gen/api/v1/apiv1connect"
 )
 
-// StreamInfoCmd gets the current stream title and category from the connected platform.
-type StreamInfoCmd struct{}
+// BroadcastCmd groups broadcast subcommands.
+type BroadcastCmd struct {
+	On       BroadcastStartCmd    `cmd:"" aliases:"start" help:"Start broadcasting to the configured destination."`
+	Off      BroadcastStopCmd     `cmd:"" aliases:"stop" help:"Stop the broadcast."`
+	Status   BroadcastStatusCmd   `cmd:"" aliases:"st" help:"Check broadcast status."`
+	Info     BroadcastInfoCmd     `cmd:"" help:"Get current stream title and category."`
+	Title    BroadcastTitleCmd    `cmd:"" help:"Set the stream title (not supported for Restream)."`
+	Category BroadcastCategoryCmd `cmd:"" help:"Set the stream category or game (not supported for Restream)."`
+}
 
-func (c *StreamInfoCmd) Run(ctx *Context) error {
+// BroadcastStartCmd starts broadcasting on the active stage.
+type BroadcastStartCmd struct{}
+
+func (c *BroadcastStartCmd) Run(ctx *Context) error {
+	if err := ctx.requireAuth(); err != nil {
+		return err
+	}
+	if err := ctx.resolveStage(); err != nil {
+		return err
+	}
+
+	client := apiv1connect.NewBroadcastServiceClient(ctx.HTTPClient, ctx.APIURL)
+	req := connect.NewRequest(&apiv1.StartBroadcastRequest{StageId: ctx.StageID})
+	req.Header().Set("Authorization", ctx.authHeader())
+	if _, err := client.StartBroadcast(context.Background(), req); err != nil {
+		return err
+	}
+
+	if ctx.JSON {
+		printJSON(map[string]bool{"ok": true})
+		return nil
+	}
+
+	printText("Broadcast started")
+	return nil
+}
+
+// BroadcastStopCmd stops broadcasting on the active stage.
+type BroadcastStopCmd struct{}
+
+func (c *BroadcastStopCmd) Run(ctx *Context) error {
+	if err := ctx.requireAuth(); err != nil {
+		return err
+	}
+	if err := ctx.resolveStage(); err != nil {
+		return err
+	}
+
+	client := apiv1connect.NewBroadcastServiceClient(ctx.HTTPClient, ctx.APIURL)
+	req := connect.NewRequest(&apiv1.StopBroadcastRequest{StageId: ctx.StageID})
+	req.Header().Set("Authorization", ctx.authHeader())
+	if _, err := client.StopBroadcast(context.Background(), req); err != nil {
+		return err
+	}
+
+	if ctx.JSON {
+		printJSON(map[string]bool{"ok": true})
+		return nil
+	}
+
+	printText("Broadcast stopped")
+	return nil
+}
+
+// BroadcastStatusCmd shows broadcast status on the active stage.
+type BroadcastStatusCmd struct{}
+
+func (c *BroadcastStatusCmd) Run(ctx *Context) error {
+	if err := ctx.requireAuth(); err != nil {
+		return err
+	}
+	if err := ctx.resolveStage(); err != nil {
+		return err
+	}
+
+	client := apiv1connect.NewRuntimeServiceClient(ctx.HTTPClient, ctx.APIURL)
+	req := connect.NewRequest(&apiv1.GetStageStatsRequest{StageId: ctx.StageID})
+	req.Header().Set("Authorization", ctx.authHeader())
+	resp, err := client.GetStageStats(context.Background(), req)
+	if err != nil {
+		return err
+	}
+
+	s := resp.Msg
+	if ctx.JSON {
+		printJSON(map[string]any{
+			"active": s.Broadcasting,
+			"fps":    s.BroadcastFps,
+		})
+		return nil
+	}
+
+	if s.Broadcasting {
+		printText("Broadcast: active (fps=%.1f)", s.BroadcastFps)
+	} else {
+		printText("Broadcast: inactive")
+	}
+	return nil
+}
+
+// BroadcastInfoCmd gets the current stream title and category from the connected platform.
+type BroadcastInfoCmd struct{}
+
+func (c *BroadcastInfoCmd) Run(ctx *Context) error {
 	if err := ctx.requireAuth(); err != nil {
 		return err
 	}
@@ -54,12 +154,12 @@ func (c *StreamInfoCmd) Run(ctx *Context) error {
 	return nil
 }
 
-// StreamTitleCmd sets the stream title on the connected platform.
-type StreamTitleCmd struct {
+// BroadcastTitleCmd sets the stream title on the connected platform.
+type BroadcastTitleCmd struct {
 	Title string `arg:"" help:"New stream title (quote multi-word titles)."`
 }
 
-func (c *StreamTitleCmd) Run(ctx *Context) error {
+func (c *BroadcastTitleCmd) Run(ctx *Context) error {
 	if strings.TrimSpace(c.Title) == "" {
 		return fmt.Errorf("title cannot be empty")
 	}
@@ -89,12 +189,12 @@ func (c *StreamTitleCmd) Run(ctx *Context) error {
 	return nil
 }
 
-// StreamCategoryCmd sets the stream category on the connected platform.
-type StreamCategoryCmd struct {
+// BroadcastCategoryCmd sets the stream category on the connected platform.
+type BroadcastCategoryCmd struct {
 	Category string `arg:"" help:"New stream category or game (quote multi-word values)."`
 }
 
-func (c *StreamCategoryCmd) Run(ctx *Context) error {
+func (c *BroadcastCategoryCmd) Run(ctx *Context) error {
 	if strings.TrimSpace(c.Category) == "" {
 		return fmt.Errorf("category cannot be empty")
 	}

@@ -43,8 +43,9 @@ func (c *ChatSendCmd) Run(ctx *Context) error {
 
 	if ctx.JSON {
 		printJSON(struct {
+			OK       bool   `json:"ok"`
 			Platform string `json:"platform"`
-		}{resp.Msg.Platform})
+		}{true, resp.Msg.Platform})
 		return nil
 	}
 

@@ -28,7 +28,7 @@ type StageCmd struct {
 	Event      EventCmd      `cmd:"" aliases:"ev" help:"Send real-time data to the running page without reloading. Events are dispatched as DOM CustomEvents — use this for async updates from subagents, APIs, or other processes."`
 	Logs       LogsCmd       `cmd:"" name:"logs" aliases:"l" help:"Retrieve stage console logs."`
 	Screenshot ScreenshotCmd `cmd:"" name:"screenshot" aliases:"ss" help:"Capture a screenshot of the stage."`
-	Broadcast  StreamCmd     `cmd:"" aliases:"bc" help:"Broadcast to a streaming destination."`
+	Broadcast  BroadcastCmd  `cmd:"" aliases:"bc" help:"Broadcast to a streaming destination."`
 	Chat       ChatCmd       `cmd:"" help:"Read and send live chat messages."`
 }
 

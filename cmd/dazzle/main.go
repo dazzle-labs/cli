@@ -45,7 +45,7 @@ Workflow:
   1. dazzle login                       # authenticate (one-time)
   2. dazzle s new my-stage              # create a stage
   3. dazzle s up                        # bring it up
-  4. dazzle s sync ./my-app -wr         # sync + watch + reload on changes
+  4. dazzle s sync ./my-app -w          # sync + auto-refresh on changes
   5. dazzle s ss -o preview.png         # take a screenshot to verify
   6. dazzle s bc on                     # go live on configured destination
   7. dazzle s bc off && dazzle s down   # stop streaming and shut down

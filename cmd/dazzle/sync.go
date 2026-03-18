@@ -134,6 +134,11 @@ func (c *SyncCmd) syncOnce(appCtx *Context, rpcCtx context.Context) error {
 		return fmt.Errorf("sync push: %w", err)
 	}
 
+	if appCtx.JSON {
+		printJSON(map[string]int32{"synced": resp.Msg.Synced, "deleted": resp.Msg.Deleted})
+		return nil
+	}
+
 	if resp.Msg.Synced == 0 && resp.Msg.Deleted == 0 {
 		printText("Already up to date.")
 	} else {
