@@ -212,7 +212,7 @@ export function PublicDocs() {
                     <StepBadge n={1} />
                     <span className="text-base text-white">Add event handling to your page</span>
                   </div>
-                  <CodeBlock code={EVENTS_HTML_SNIPPET} />
+                  <CodeBlock code={EVENTS_HTML_SNIPPET} language="html" />
                 </div>
 
                 <div>
@@ -229,9 +229,11 @@ export function PublicDocs() {
                     <span className="text-base text-white">State survives restarts</span>
                   </div>
                   <TerminalBlock code={PERSISTENCE_SNIPPET} />
-                  <p className="text-sm text-zinc-500 mt-2">
-                    localStorage and IndexedDB are backed up to cloud storage and restored automatically when a stage comes back up.
-                  </p>
+                  <div className="mt-3 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.04] px-4 py-3">
+                    <p className="text-sm text-zinc-200 leading-relaxed">
+                      <span className="font-mono text-emerald-400 text-xs">localStorage</span> and <span className="font-mono text-emerald-400 text-xs">IndexedDB</span> are automatically backed up to cloud storage and restored when a stage comes back up — your app state survives across restarts without any extra work.
+                    </p>
+                  </div>
                 </div>
               </div>
             </section>

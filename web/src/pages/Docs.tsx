@@ -10,6 +10,9 @@ import {
   INSTALL_TABS,
   QUICK_START_STEPS,
   MULTI_STAGE_SNIPPET,
+  EVENTS_HTML_SNIPPET,
+  EVENTS_CLI_SNIPPET,
+  PERSISTENCE_SNIPPET,
 } from "./docs-content";
 import type { InstallTab } from "./docs-content";
 import { cli } from "@/lib/cli-commands";
@@ -102,6 +105,47 @@ export function Docs() {
               )}
             </AnimatedListItem>
           ))}
+        </AnimatedList>
+      </section>
+
+      {/* Next Steps: Events + Persistence */}
+      <section className="mb-10">
+        <h2 className="text-xl tracking-[-0.02em] text-foreground font-display mb-3">
+          Next Steps: Live Events &amp; Persistence
+        </h2>
+        <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
+          Push real-time data to your stage without re-syncing, and persist state across restarts with localStorage.
+        </p>
+
+        <AnimatedList className="flex flex-col gap-5" delay={0.06}>
+          <AnimatedListItem>
+            <div className="flex items-center gap-2.5 mb-2">
+              <StepBadge n={1} />
+              <span className="text-base text-foreground">Add event handling to your page</span>
+            </div>
+            <CodeBlock code={EVENTS_HTML_SNIPPET} language="html" />
+          </AnimatedListItem>
+
+          <AnimatedListItem>
+            <div className="flex items-center gap-2.5 mb-2">
+              <StepBadge n={2} />
+              <span className="text-base text-foreground">Sync and send events</span>
+            </div>
+            <TerminalBlock code={EVENTS_CLI_SNIPPET} />
+          </AnimatedListItem>
+
+          <AnimatedListItem>
+            <div className="flex items-center gap-2.5 mb-2">
+              <StepBadge n={3} />
+              <span className="text-base text-foreground">State survives restarts</span>
+            </div>
+            <TerminalBlock code={PERSISTENCE_SNIPPET} />
+            <div className="mt-3 rounded-lg border border-primary/20 bg-primary/[0.04] px-4 py-3">
+              <p className="text-sm text-foreground leading-relaxed">
+                <span className="font-mono text-primary text-xs">localStorage</span> and <span className="font-mono text-primary text-xs">IndexedDB</span> are automatically backed up to cloud storage and restored when a stage comes back up — your app state survives across restarts without any extra work.
+              </p>
+            </div>
+          </AnimatedListItem>
         </AnimatedList>
       </section>
 

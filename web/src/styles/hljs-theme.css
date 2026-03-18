@@ -20,3 +20,22 @@
 .hljs-title {
   color: #e4e4e7; /* zinc-200 */
 }
+.hljs-number {
+  color: #c084fc; /* purple-400 */
+}
+.hljs-tag {
+  color: #f87171; /* red-400 */
+}
+.hljs-name {
+  color: #f87171; /* red-400 */
+}
+.hljs-attr {
+  color: #fbbf24; /* amber-400 */
+}
+.hljs-selector-tag,
+.hljs-selector-class {
+  color: #f87171; /* red-400 */
+}
+.hljs-attribute {
+  color: #38bdf8; /* sky-400 */
+}

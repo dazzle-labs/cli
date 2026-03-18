@@ -1,5 +1,16 @@
+import { useMemo } from "react";
+import hljs from "highlight.js/lib/core";
+import bash from "highlight.js/lib/languages/bash";
+import xml from "highlight.js/lib/languages/xml";
+import javascript from "highlight.js/lib/languages/javascript";
+import css from "highlight.js/lib/languages/css";
 import { CopyButton } from "@/components/CopyButton";
 import { cn } from "@/lib/utils";
+
+hljs.registerLanguage("bash", bash);
+hljs.registerLanguage("html", xml);
+hljs.registerLanguage("javascript", javascript);
+hljs.registerLanguage("css", css);
 
 /** Single-line command block with inline copy. */
 export function CommandLine({ cmd, className }: { cmd: string; className?: string }) {
@@ -19,8 +30,17 @@ export function CommandLine({ cmd, className }: { cmd: string; className?: strin
   );
 }
 
-/** Formatted code block with a single copy button. Use for multi-line content like heredocs. */
-export function CodeBlock({ code, className }: { code: string; className?: string }) {
+/** Formatted code block with a single copy button and optional syntax highlighting. */
+export function CodeBlock({ code, language, className }: { code: string; language?: string; className?: string }) {
+  const highlighted = useMemo(() => {
+    if (!language) return null;
+    try {
+      return hljs.highlight(code, { language }).value;
+    } catch {
+      return null;
+    }
+  }, [code, language]);
+
   return (
     <div className={cn("relative rounded-lg bg-zinc-900 overflow-x-auto py-3 px-5", className)}>
       <CopyButton
@@ -28,9 +48,16 @@ export function CodeBlock({ code, className }: { code: string; className?: strin
         tooltip="Copy"
         size="icon-xs"
         iconSize="h-3.5 w-3.5"
-        className="absolute top-2.5 right-2.5 text-zinc-500 hover:text-primary"
+        className="absolute top-2.5 right-2.5 text-zinc-500 hover:text-primary z-10"
       />
-      <pre className="text-sm font-mono text-zinc-200 whitespace-pre pr-8">{code}</pre>
+      {highlighted ? (
+        <pre
+          className="hljs text-sm font-mono whitespace-pre pr-8"
+          dangerouslySetInnerHTML={{ __html: highlighted }}
+        />
+      ) : (
+        <pre className="text-sm font-mono text-zinc-200 whitespace-pre pr-8">{code}</pre>
+      )}
     </div>
   );
 }
