@@ -41,6 +41,52 @@ export const QUICK_START_STEPS: { n: number; label: string; cmd?: string; code?:
   { n: 6, label: "Go live", cmd: cli.stageBroadcastOn.full },
 ];
 
+export const EVENTS_HTML_SNIPPET = `<!-- my-stage/index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    * { margin: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+    body { display: grid; place-items: center; }
+    .score { color: #fff; font: bold 8rem system-ui; transition: transform 0.2s; }
+    .score.bump { transform: scale(1.2); }
+  </style>
+</head>
+<body>
+  <div class="score" id="score">0</div>
+  <script>
+    // Restore state from localStorage on load
+    const saved = localStorage.getItem('score');
+    if (saved) document.getElementById('score').textContent = saved;
+
+    // Listen for live events from \`dazzle stage event emit\`
+    window.addEventListener('event', (e) => {
+      const { event, data } = e.detail;
+      if (event === 'score') {
+        const el = document.getElementById('score');
+        el.textContent = data.points;
+        localStorage.setItem('score', data.points);
+        el.classList.add('bump');
+        setTimeout(() => el.classList.remove('bump'), 200);
+      }
+    });
+  </script>
+</body>
+</html>`;
+
+export const EVENTS_CLI_SNIPPET = `# Push a live event — no re-sync needed
+${cli.stageEventEmit.full}
+
+# The score updates instantly in the browser
+# localStorage persists it across stage restarts`;
+
+export const PERSISTENCE_SNIPPET = `# Deactivate and reactivate — localStorage survives
+${cli.stageDown.full}
+${cli.stageUp.full}
+${cli.stageScreenshot.full}
+# Score is still there`;
+
 export const MULTI_STAGE_SNIPPET = `# List all stages
 ${cli.stageList.full}
 

@@ -13,6 +13,9 @@ import {
   INSTALL_TABS,
   QUICK_START_STEPS,
   MULTI_STAGE_SNIPPET,
+  EVENTS_HTML_SNIPPET,
+  EVENTS_CLI_SNIPPET,
+  PERSISTENCE_SNIPPET,
 } from "./docs-content";
 import type { InstallTab } from "./docs-content";
 import { cli } from "@/lib/cli-commands";
@@ -191,6 +194,45 @@ export function PublicDocs() {
                     )}
                   </motion.div>
                 ))}
+              </div>
+            </section>
+
+            {/* Next Steps: Events + Persistence */}
+            <section className="mb-10">
+              <h2 className="text-xl tracking-[-0.02em] text-white font-display mb-3">
+                Next Steps: Live Events &amp; Persistence
+              </h2>
+              <p className="text-sm text-zinc-400 mb-5 leading-relaxed">
+                Push real-time data to your stage without re-syncing, and persist state across restarts with localStorage.
+              </p>
+
+              <div className="flex flex-col gap-5">
+                <div>
+                  <div className="flex items-center gap-2.5 mb-2">
+                    <StepBadge n={1} />
+                    <span className="text-base text-white">Add event handling to your page</span>
+                  </div>
+                  <CodeBlock code={EVENTS_HTML_SNIPPET} />
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-2.5 mb-2">
+                    <StepBadge n={2} />
+                    <span className="text-base text-white">Sync and send events</span>
+                  </div>
+                  <TerminalBlock code={EVENTS_CLI_SNIPPET} />
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-2.5 mb-2">
+                    <StepBadge n={3} />
+                    <span className="text-base text-white">State survives restarts</span>
+                  </div>
+                  <TerminalBlock code={PERSISTENCE_SNIPPET} />
+                  <p className="text-sm text-zinc-500 mt-2">
+                    localStorage and IndexedDB are backed up to cloud storage and restored automatically when a stage comes back up.
+                  </p>
+                </div>
               </div>
             </section>
 
