@@ -98,6 +98,6 @@ ENTRYPOINT ["/entrypoint.sh"]
 
 # --- GPU Agent: streamer + sidecar in agent mode ---
 FROM ${SIDECAR_IMAGE} AS sidecar-src
-FROM streamer AS gpu-agent
+FROM streamer AS gpu-node
 COPY --from=sidecar-src /sidecar /sidecar
 ENTRYPOINT ["/sidecar", "agent"]

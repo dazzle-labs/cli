@@ -202,7 +202,7 @@ build-sidecar: check-deps check-cluster ## Build sidecar image and load into Kin
 	kind load docker-image $(SIDECAR_IMG) --name $(NS)
 
 GPU_NODE_IMG := dazzlefm/agent-streamer-gpu-node:main
-GPU_NODE_BUILD := docker build --platform linux/amd64 -f streamer/docker/Dockerfile --build-arg VARIANT=gpu --build-arg SIDECAR_IMAGE=$(SIDECAR_IMG) --target gpu-agent -t $(GPU_NODE_IMG) streamer/
+GPU_NODE_BUILD := docker build --platform linux/amd64 -f streamer/docker/Dockerfile --build-arg VARIANT=gpu --build-arg SIDECAR_IMAGE=$(SIDECAR_IMG) --target gpu-node -t $(GPU_NODE_IMG) streamer/
 
 build-gpu-node: check-deps ## Build GPU node image (streamer + sidecar)
 	$(STEP) "Building sidecar image (dependency)"
@@ -228,7 +228,7 @@ gpu/rebuild: check-deps ## Rebuild sidecar + GPU node images for amd64 and push 
 	docker build --platform linux/amd64 -f streamer/docker/Dockerfile \
 		--build-arg VARIANT=gpu \
 		--build-arg SIDECAR_IMAGE=dazzlefm/agent-streamer-sidecar:$(GIT_SHA)-amd64 \
-		--target gpu-agent -t dazzlefm/agent-streamer-gpu-node:$(GIT_SHA) streamer/
+		--target gpu-node -t dazzlefm/agent-streamer-gpu-node:$(GIT_SHA) streamer/
 	$(STEP) "Pushing sidecar"
 	docker push dazzlefm/agent-streamer-sidecar:$(GIT_SHA)-amd64
 	$(STEP) "Pushing GPU node"

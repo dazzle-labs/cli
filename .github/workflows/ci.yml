@@ -307,7 +307,7 @@ jobs:
         with:
           context: streamer/
           file: streamer/docker/Dockerfile
-          target: gpu-agent
+          target: gpu-node
           platforms: linux/amd64
           push: ${{ github.ref == 'refs/heads/main' }}
           load: ${{ github.event_name == 'pull_request' }}
