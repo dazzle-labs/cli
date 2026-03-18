@@ -17,8 +17,7 @@ export const INSTALL_TABS: { id: InstallTab; label: string; cmd: string }[] = [
   { id: "go", label: "Go", cmd: INSTALL_SNIPPET_GO },
 ];
 
-export const BOOTSTRAP_SNIPPET = `mkdir my-stage && cat > my-stage/index.html << 'EOF'
-<!DOCTYPE html>
+export const BOOTSTRAP_HTML = `<!DOCTYPE html>
 <html>
 <head>
   <style>
@@ -29,13 +28,21 @@ export const BOOTSTRAP_SNIPPET = `mkdir my-stage && cat > my-stage/index.html <<
   </style>
 </head>
 <body><h1>Hello, Dazzle</h1></body>
-</html>
-EOF`;
+</html>`;
 
-export const QUICK_START_STEPS: { n: number; label: string; cmd?: string; code?: string }[] = [
+export interface QuickStartStep {
+  n: number;
+  label: string;
+  cmd?: string;
+  code?: string;
+  language?: string;
+  note?: string;
+}
+
+export const QUICK_START_STEPS: QuickStartStep[] = [
   { n: 1, label: "Authenticate", cmd: cli.login.full },
   { n: 2, label: "Create a stage", cmd: cli.stageCreate.full },
-  { n: 3, label: "Create content", code: BOOTSTRAP_SNIPPET },
+  { n: 3, label: "Create content", cmd: "mkdir my-stage", code: BOOTSTRAP_HTML, language: "html", note: "Save as my-stage/index.html" },
   { n: 4, label: "Push content", cmd: cli.stageSync.full },
   { n: 5, label: "Screenshot to verify", cmd: cli.stageScreenshot.full },
   { n: 6, label: "Go live", cmd: cli.stageBroadcastOn.full },

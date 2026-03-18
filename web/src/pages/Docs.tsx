@@ -97,7 +97,9 @@ export function Docs() {
                 <StepBadge n={step.n} />
                 <span className="text-base text-foreground">{step.label}</span>
               </div>
-              {step.code ? <CodeBlock code={step.code} /> : <CommandLine cmd={step.cmd!} />}
+              {step.cmd && <CommandLine cmd={step.cmd} />}
+              {step.note && <p className="text-sm text-muted-foreground mt-2 mb-2">{step.note}</p>}
+              {step.code && <CodeBlock code={step.code} language={step.language} />}
               {step.n === 1 && (
                 <p className="text-sm text-muted-foreground mt-2">
                   Opens your browser to sign in with your Dazzle account.
