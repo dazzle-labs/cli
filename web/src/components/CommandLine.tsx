@@ -19,6 +19,22 @@ export function CommandLine({ cmd, className }: { cmd: string; className?: strin
   );
 }
 
+/** Formatted code block with a single copy button. Use for multi-line content like heredocs. */
+export function CodeBlock({ code, className }: { code: string; className?: string }) {
+  return (
+    <div className={cn("relative rounded-lg bg-zinc-900 overflow-x-auto py-3 px-5", className)}>
+      <CopyButton
+        text={code}
+        tooltip="Copy"
+        size="icon-xs"
+        iconSize="h-3.5 w-3.5"
+        className="absolute top-2.5 right-2.5 text-zinc-500 hover:text-primary"
+      />
+      <pre className="text-sm font-mono text-zinc-200 whitespace-pre pr-8">{code}</pre>
+    </div>
+  );
+}
+
 /** Multi-line block: comments rendered as labels, commands get per-line copy. */
 export function TerminalBlock({ code, className }: { code: string; className?: string }) {
   const lines = code.split("\n");

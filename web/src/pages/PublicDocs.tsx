@@ -6,7 +6,7 @@ import { motion } from "motion/react";
 import { Check, Copy, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { CommandLine, TerminalBlock } from "@/components/CommandLine";
+import { CommandLine, TerminalBlock, CodeBlock } from "@/components/CommandLine";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
@@ -183,7 +183,7 @@ export function PublicDocs() {
                       <StepBadge n={step.n} />
                       <span className="text-base text-white">{step.label}</span>
                     </div>
-                    {step.code ? <TerminalBlock code={step.code} /> : <CommandLine cmd={step.cmd!} />}
+                    {step.code ? <CodeBlock code={step.code} /> : <CommandLine cmd={step.cmd!} />}
                     {step.n === 1 && (
                       <p className="text-sm text-zinc-500 mt-2">
                         Opens your browser to sign in with your Dazzle account.

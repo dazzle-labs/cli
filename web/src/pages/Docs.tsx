@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { CommandLine, TerminalBlock } from "@/components/CommandLine";
+import { CommandLine, TerminalBlock, CodeBlock } from "@/components/CommandLine";
 import { AnimatedPage } from "@/components/AnimatedPage";
 import { AnimatedList, AnimatedListItem } from "@/components/AnimatedList";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
@@ -94,7 +94,7 @@ export function Docs() {
                 <StepBadge n={step.n} />
                 <span className="text-base text-foreground">{step.label}</span>
               </div>
-              {step.code ? <TerminalBlock code={step.code} /> : <CommandLine cmd={step.cmd!} />}
+              {step.code ? <CodeBlock code={step.code} /> : <CommandLine cmd={step.cmd!} />}
               {step.n === 1 && (
                 <p className="text-sm text-muted-foreground mt-2">
                   Opens your browser to sign in with your Dazzle account.
