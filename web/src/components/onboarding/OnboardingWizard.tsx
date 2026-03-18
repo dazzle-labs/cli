@@ -158,21 +158,24 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
           {/* Compact add-platform row */}
           <div className="flex items-center gap-1.5 mb-4">
             <Plus className="h-3.5 w-3.5 text-muted-foreground mr-0.5" />
-            {OAUTH_PLATFORMS.filter(p => availablePlatforms.includes(p)).map((platform) => {
-              const label = PLATFORM_LIST.find((p) => p.value === platform)?.label ?? platform;
+            {OAUTH_PLATFORMS.filter(p => availablePlatforms.includes(p) || PLATFORM_LIST.find(pl => pl.value === p)?.comingSoon).map((platform) => {
+              const info = PLATFORM_LIST.find((p) => p.value === platform);
+              const label = info?.label ?? platform;
+              const comingSoon = info?.comingSoon;
               return (
                 <Tooltip key={platform} delayDuration={500}>
                   <TooltipTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon-sm"
-                      onClick={() => handleOAuthConnect(platform)}
-                      className="text-muted-foreground hover:text-foreground"
+                      onClick={comingSoon ? undefined : () => handleOAuthConnect(platform)}
+                      disabled={comingSoon}
+                      className={cn("text-muted-foreground", comingSoon ? "opacity-50 cursor-default" : "hover:text-foreground")}
                     >
                       <PlatformIcon platform={platform} size="sm" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Connect {label}</TooltipContent>
+                  <TooltipContent>{comingSoon ? `${label} — Coming Soon` : `Connect ${label}`}</TooltipContent>
                 </Tooltip>
               );
             })}
@@ -278,23 +281,27 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
         {/* Platform OAuth buttons */}
         <div className="w-full max-w-md mb-5 sm:mb-6">
           <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3 sm:justify-center">
-            {OAUTH_PLATFORMS.filter(p => availablePlatforms.includes(p)).map((platform) => {
-              const label = PLATFORM_LIST.find((p) => p.value === platform)?.label ?? platform;
+            {OAUTH_PLATFORMS.filter(p => availablePlatforms.includes(p) || PLATFORM_LIST.find(pl => pl.value === p)?.comingSoon).map((platform) => {
+              const info = PLATFORM_LIST.find((p) => p.value === platform);
+              const label = info?.label ?? platform;
+              const comingSoon = info?.comingSoon;
               const hoverColor = PLATFORM_HOVER_COLORS[platform] ?? "";
               return (
                 <motion.div
                   key={platform}
-                  whileHover={{ scale: 1.04 }}
-                  whileTap={{ scale: 0.97 }}
+                  whileHover={comingSoon ? undefined : { scale: 1.04 }}
+                  whileTap={comingSoon ? undefined : { scale: 0.97 }}
                   transition={springs.quick}
                 >
                   <Button
                     variant="outline"
-                    onClick={() => handleOAuthConnect(platform)}
-                    className={cn("rounded-xl h-auto px-4 py-3 w-full sm:w-auto", hoverColor)}
+                    onClick={comingSoon ? undefined : () => handleOAuthConnect(platform)}
+                    disabled={comingSoon}
+                    className={cn("rounded-xl h-auto px-4 py-3 w-full sm:w-auto", comingSoon ? "opacity-50 cursor-default" : hoverColor)}
                   >
                     <PlatformIcon platform={platform} size="sm" />
                     <span className="text-sm">{label}</span>
+                    {comingSoon && <span className="text-xs text-muted-foreground ml-1">Soon</span>}
                   </Button>
                 </motion.div>
               );

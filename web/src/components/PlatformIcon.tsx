@@ -32,11 +32,12 @@ interface PlatformConfig {
   icon: LucideIcon | typeof KickIcon;
   bg: string;
   label: string;
+  comingSoon?: boolean;
 }
 
 const PLATFORMS: Record<string, PlatformConfig> = {
   twitch: { icon: Twitch, bg: "bg-purple-500/15 text-purple-400", label: "Twitch" },
-  youtube: { icon: Youtube, bg: "bg-red-500/15 text-red-400", label: "YouTube" },
+  youtube: { icon: Youtube, bg: "bg-red-500/15 text-red-400", label: "YouTube", comingSoon: true },
   kick: { icon: KickIcon, bg: "bg-green-500/15 text-green-400", label: "Kick" },
   restream: { icon: RestreamIcon, bg: "bg-blue-500/15 text-blue-400", label: "Restream" },
   custom: { icon: Settings, bg: "bg-zinc-500/15 text-zinc-400", label: "Custom" },

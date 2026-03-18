@@ -208,24 +208,28 @@ export function StreamConfig() {
       <div className="mb-8">
         <p className="text-sm font-medium text-muted-foreground mb-3">Platforms</p>
         <AnimatedList className="flex flex-wrap gap-3" delay={0.05}>
-          {OAUTH_PLATFORMS.filter(p => availablePlatforms.includes(p)).map((platform) => {
-            const label = PLATFORM_LIST.find((p) => p.value === platform)?.label ?? platform;
+          {OAUTH_PLATFORMS.filter(p => availablePlatforms.includes(p) || PLATFORM_LIST.find(pl => pl.value === p)?.comingSoon).map((platform) => {
+            const info = PLATFORM_LIST.find((p) => p.value === platform);
+            const label = info?.label ?? platform;
+            const comingSoon = info?.comingSoon;
             const hoverColor = PLATFORM_HOVER_COLORS[platform] ?? "";
             return (
               <AnimatedListItem key={platform}>
-                <TouchTooltip content={`Connect ${label}`} contentClassName="sm:hidden">
+                <TouchTooltip content={comingSoon ? `${label} — Coming Soon` : `Connect ${label}`} contentClassName="sm:hidden">
                   <motion.div
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
+                    whileHover={comingSoon ? undefined : { scale: 1.03 }}
+                    whileTap={comingSoon ? undefined : { scale: 0.97 }}
                     transition={springs.quick}
                   >
                     <Button
                       variant="outline"
-                      onClick={() => handleOAuthConnect(platform)}
-                      className={cn("rounded-xl h-auto px-2 py-2 sm:px-4 sm:py-3 max-sm:border-transparent max-sm:bg-transparent max-sm:shadow-none dark:max-sm:bg-transparent dark:max-sm:border-transparent", hoverColor)}
+                      onClick={comingSoon ? undefined : () => handleOAuthConnect(platform)}
+                      disabled={comingSoon}
+                      className={cn("rounded-xl h-auto px-2 py-2 sm:px-4 sm:py-3 max-sm:border-transparent max-sm:bg-transparent max-sm:shadow-none dark:max-sm:bg-transparent dark:max-sm:border-transparent", comingSoon ? "opacity-50 cursor-default" : hoverColor)}
                     >
                       <PlatformIcon platform={platform} size="sm" />
                       <span className="hidden sm:inline text-sm">{label}</span>
+                      {comingSoon && <span className="hidden sm:inline text-xs text-muted-foreground ml-1">Soon</span>}
                     </Button>
                   </motion.div>
                 </TouchTooltip>
