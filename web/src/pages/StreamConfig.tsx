@@ -28,13 +28,13 @@ const OAUTH_PLATFORMS = ["twitch", "youtube", "kick", "restream"] as const;
 
 function RtmpCell({ url }: { url: string }) {
   const [visible, setVisible] = useState(false);
-  if (!url) return <TableCell><span className="text-sm text-muted-foreground">{"\u2014"}</span></TableCell>;
+  if (!url) return <TableCell className="text-left"><span className="text-sm text-muted-foreground">{"\u2014"}</span></TableCell>;
   return (
-    <TableCell>
-      <div className="flex items-center gap-2">
+    <TableCell className="text-left">
+      <div className="flex items-center gap-2 min-w-0">
         {visible ? (
           <>
-            <code className="text-sm text-muted-foreground font-mono break-all">{url}</code>
+            <code className="text-sm text-muted-foreground font-mono truncate">{url}</code>
             <CopyButton text={url} tooltip="Copy RTMP URL" size="icon-xs" iconSize="h-3 w-3" className="shrink-0" />
           </>
         ) : (
@@ -325,13 +325,13 @@ export function StreamConfig() {
         <>
           {/* Desktop table */}
           <div className="rounded-xl border overflow-x-auto hidden sm:block">
-            <Table>
+            <Table className="table-fixed">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Account</TableHead>
-                  <TableHead>Platform</TableHead>
-                  <TableHead>RTMP URL</TableHead>
-                  <TableHead><span className="sr-only">Actions</span></TableHead>
+                  <TableHead className="text-left w-[25%]">Account</TableHead>
+                  <TableHead className="text-left w-[20%]">Platform</TableHead>
+                  <TableHead className="text-left w-[45%]">RTMP URL</TableHead>
+                  <TableHead className="text-right w-[10%]"><span className="sr-only">Actions</span></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -346,8 +346,8 @@ export function StreamConfig() {
                       transition={springs.snappy}
                       className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
                     >
-                      <TableCell className="text-foreground">{d.name || d.platformUsername || "\u2014"}</TableCell>
-                      <TableCell>
+                      <TableCell className="text-left text-foreground">{d.name || d.platformUsername || "\u2014"}</TableCell>
+                      <TableCell className="text-left">
                         <div className="flex items-center gap-2">
                           <PlatformIcon platform={d.platform} size="sm" />
                           <span className="text-sm text-muted-foreground">{d.platform}</span>
