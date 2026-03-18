@@ -52,7 +52,7 @@ Workflow:
 
 Stage selection: use -s <name>, DAZZLE_STAGE env, or auto-selected if only one.
 
-https://stream.dazzle.fm`),
+https://dazzle.fm`),
 		kong.UsageOnError(),
 		kong.ConfigureHelp(kong.HelpOptions{Compact: true}),
 	)

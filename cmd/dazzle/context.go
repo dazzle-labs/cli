@@ -34,7 +34,7 @@ func newContext(apiURL, stageFlag string, jsonOutput bool) (*Context, error) {
 		resolvedURL = cfg.APIURL
 	}
 	if resolvedURL == "" {
-		resolvedURL = "https://stream.dazzle.fm"
+		resolvedURL = "https://dazzle.fm"
 	}
 
 	return &Context{
