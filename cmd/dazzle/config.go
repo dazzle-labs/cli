@@ -50,7 +50,29 @@ func loadConfig() (*Config, error) {
 	if err := json.Unmarshal(data, &cfg); err != nil {
 		return nil, fmt.Errorf("parse config: %w", err)
 	}
+
+	// Migrate deprecated domain
+	if cfg.APIURL == "https://stream.dazzle.fm" {
+		cfg.APIURL = "https://dazzle.fm"
+		_ = saveConfig(&cfg)
+	}
+
 	return &cfg, nil
+}
+
+func saveConfig(cfg *Config) error {
+	dir, err := dazzleConfigDir()
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		return fmt.Errorf("create config dir: %w", err)
+	}
+	data, err := json.MarshalIndent(cfg, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(dir, configFileName), data, 0600)
 }
 
 func loadCredentials() (*Credentials, error) {
