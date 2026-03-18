@@ -50,7 +50,7 @@ func (c *EmitCmd) Run(ctx *Context) error {
 	}
 
 	if ctx.JSON {
-		printJSON(map[string]bool{"ok": true})
+		printJSON(OKResponse{OK: true})
 	} else {
 		printText("Event %q emitted.", c.Event)
 	}

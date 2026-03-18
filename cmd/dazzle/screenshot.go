@@ -51,10 +51,10 @@ func (c *ScreenshotCmd) Run(ctx *Context) error {
 	}
 
 	if ctx.JSON {
-		printJSON(map[string]any{
-			"path":  path,
-			"bytes": len(resp.Msg.Image),
-			"image": base64.StdEncoding.EncodeToString(resp.Msg.Image),
+		printJSON(ScreenshotResponse{
+			Path:  path,
+			Bytes: len(resp.Msg.Image),
+			Image: base64.StdEncoding.EncodeToString(resp.Msg.Image),
 		})
 	} else {
 		printText("%s", path)

@@ -39,7 +39,7 @@ func (c *BroadcastStartCmd) Run(ctx *Context) error {
 	}
 
 	if ctx.JSON {
-		printJSON(map[string]bool{"ok": true})
+		printJSON(OKResponse{OK: true})
 		return nil
 	}
 
@@ -66,7 +66,7 @@ func (c *BroadcastStopCmd) Run(ctx *Context) error {
 	}
 
 	if ctx.JSON {
-		printJSON(map[string]bool{"ok": true})
+		printJSON(OKResponse{OK: true})
 		return nil
 	}
 
@@ -95,9 +95,9 @@ func (c *BroadcastStatusCmd) Run(ctx *Context) error {
 
 	s := resp.Msg
 	if ctx.JSON {
-		printJSON(map[string]any{
-			"active": s.Broadcasting,
-			"fps":    s.BroadcastFps,
+		printJSON(BroadcastStatusResponse{
+			Active: s.Broadcasting,
+			FPS:    s.BroadcastFps,
 		})
 		return nil
 	}
@@ -128,7 +128,7 @@ func (c *BroadcastInfoCmd) Run(ctx *Context) error {
 	if err != nil {
 		if connect.CodeOf(err) == connect.CodeUnimplemented {
 			if ctx.JSON {
-				printJSON(map[string]any{"ok": false, "error": "bc info is not supported for this platform"})
+				printJSON(ErrorResponse{OK: false, Error: "bc info is not supported for this platform"})
 				return nil
 			}
 			printText("Error: bc info is not supported for this platform.")
@@ -138,11 +138,11 @@ func (c *BroadcastInfoCmd) Run(ctx *Context) error {
 	}
 
 	if ctx.JSON {
-		printJSON(struct {
-			Title    string `json:"title"`
-			Category string `json:"category"`
-			Platform string `json:"platform"`
-		}{resp.Msg.Title, resp.Msg.Category, resp.Msg.Platform})
+		printJSON(BroadcastInfoResponse{
+			Title:    resp.Msg.Title,
+			Category: resp.Msg.Category,
+			Platform: resp.Msg.Platform,
+		})
 		return nil
 	}
 
@@ -183,9 +183,7 @@ func (c *BroadcastTitleCmd) Run(ctx *Context) error {
 	}
 
 	if ctx.JSON {
-		printJSON(struct {
-			Title string `json:"title"`
-		}{c.Title})
+		printJSON(BroadcastTitleResponse{Title: c.Title})
 		return nil
 	}
 
@@ -218,9 +216,7 @@ func (c *BroadcastCategoryCmd) Run(ctx *Context) error {
 	}
 
 	if ctx.JSON {
-		printJSON(struct {
-			Category string `json:"category"`
-		}{c.Category})
+		printJSON(BroadcastCategoryResponse{Category: c.Category})
 		return nil
 	}
 

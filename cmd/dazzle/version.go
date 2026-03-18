@@ -20,7 +20,7 @@ type VersionCmd struct{}
 
 func (c *VersionCmd) Run(ctx *Context) error {
 	if ctx.JSON {
-		printJSON(map[string]string{"version": version, "os": runtime.GOOS, "arch": runtime.GOARCH})
+		printJSON(VersionResponse{Version: version, OS: runtime.GOOS, Arch: runtime.GOARCH})
 	} else {
 		printText("dazzle %s (%s/%s)", version, runtime.GOOS, runtime.GOARCH)
 	}
@@ -42,7 +42,7 @@ func (c *UpdateCmd) Run(ctx *Context) error {
 
 	if strings.TrimPrefix(latest, "v") == strings.TrimPrefix(version, "v") {
 		if ctx.JSON {
-			printJSON(map[string]any{"ok": true, "version": version, "updated": false})
+			printJSON(UpdateResponse{OK: true, Version: version, Updated: false})
 			return nil
 		}
 		printText("Already up to date (%s).", version)
@@ -58,7 +58,7 @@ func (c *UpdateCmd) Run(ctx *Context) error {
 	}
 
 	if ctx.JSON {
-		printJSON(map[string]any{"ok": true, "version": latest, "updated": true, "previous": version})
+		printJSON(UpdateResponse{OK: true, Version: latest, Updated: true, Previous: version})
 		return nil
 	}
 

@@ -42,10 +42,7 @@ func (c *ChatSendCmd) Run(ctx *Context) error {
 	}
 
 	if ctx.JSON {
-		printJSON(struct {
-			OK       bool   `json:"ok"`
-			Platform string `json:"platform"`
-		}{true, resp.Msg.Platform})
+		printJSON(ChatSendResponse{OK: true, Platform: resp.Msg.Platform})
 		return nil
 	}
 

@@ -135,7 +135,7 @@ func (c *SyncCmd) syncOnce(appCtx *Context, rpcCtx context.Context) error {
 	}
 
 	if appCtx.JSON {
-		printJSON(map[string]int32{"synced": resp.Msg.Synced, "deleted": resp.Msg.Deleted})
+		printJSON(SyncResponse{Synced: resp.Msg.Synced, Deleted: resp.Msg.Deleted})
 		return nil
 	}
 

@@ -31,7 +31,7 @@ func (c *RefreshCmd) Run(ctx *Context) error {
 	}
 
 	if ctx.JSON {
-		printJSON(map[string]bool{"ok": true})
+		printJSON(OKResponse{OK: true})
 	} else {
 		printText("Browser refreshed.")
 	}

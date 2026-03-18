@@ -192,7 +192,7 @@ func (c *StageDeleteCmd) Run(ctx *Context) error {
 	}
 
 	if ctx.JSON {
-		printJSON(map[string]string{"deleted": c.Stage})
+		printJSON(StageDeleteResponse{Deleted: c.Stage})
 		return nil
 	}
 
@@ -351,15 +351,15 @@ func (c *StageStatsCmd) Run(ctx *Context) error {
 
 	s := resp.Msg
 	if ctx.JSON {
-		printJSON(map[string]any{
-			"stage_fps":                s.StageFps,
-			"broadcast_fps":            s.BroadcastFps,
-			"dropped_frames":           s.DroppedFrames,
-			"dropped_frames_recent":    s.DroppedFramesRecent,
-			"total_bytes":              s.TotalBytes,
-			"broadcasting":             s.Broadcasting,
-			"broadcast_uptime_seconds": s.BroadcastUptimeSeconds,
-			"stage_uptime_seconds":     s.StageUptimeSeconds,
+		printJSON(StageStatsResponse{
+			StageFPS:               s.StageFps,
+			BroadcastFPS:           s.BroadcastFps,
+			DroppedFrames:          s.DroppedFrames,
+			DroppedFramesRecent:    s.DroppedFramesRecent,
+			TotalBytes:             s.TotalBytes,
+			Broadcasting:           s.Broadcasting,
+			BroadcastUptimeSeconds: s.BroadcastUptimeSeconds,
+			StageUptimeSeconds:     s.StageUptimeSeconds,
 		})
 		return nil
 	}

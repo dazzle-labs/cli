@@ -255,7 +255,7 @@ func (c *DestinationAddCmd) runOAuthFlow(ctx *Context, platform string) error {
 	}
 	if err != nil {
 		if ctx.JSON {
-			printJSON(map[string]string{"error": err.Error()})
+			printJSON(ErrorResponse{OK: false, Error: err.Error()})
 		} else {
 			printText("\u2717 Timed out waiting for %s authorization. Try again.", displayName)
 		}
@@ -263,9 +263,9 @@ func (c *DestinationAddCmd) runOAuthFlow(ctx *Context, platform string) error {
 	}
 
 	if ctx.JSON {
-		printJSON(map[string]string{
-			"platform":          result.Platform,
-			"platform_username": result.PlatformUsername,
+		printJSON(DestAddOAuthResponse{
+			Platform:         result.Platform,
+			PlatformUsername: result.PlatformUsername,
 		})
 	} else {
 		printText("\u2713 Destination added: %s \u2014 %s", displayName, result.PlatformUsername)
@@ -296,7 +296,7 @@ func (c *DestinationDeleteCmd) Run(ctx *Context) error {
 	}
 
 	if ctx.JSON {
-		printJSON(map[string]string{"deleted": c.Name})
+		printJSON(DestDeleteResponse{Deleted: c.Name})
 		return nil
 	}
 
@@ -333,7 +333,7 @@ func (c *DestinationSetCmd) Run(ctx *Context) error {
 	}
 
 	if ctx.JSON {
-		printJSON(map[string]string{"stage_id": ctx.StageID, "destination_id": destID})
+		printJSON(DestSetResponse{StageID: ctx.StageID, DestinationID: destID})
 		return nil
 	}
 

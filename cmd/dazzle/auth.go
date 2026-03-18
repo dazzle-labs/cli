@@ -45,7 +45,7 @@ func (c *LoginCmd) Run(ctx *Context) error {
 			return fmt.Errorf("save credentials: %w", err)
 		}
 		if ctx.JSON {
-			printJSON(map[string]string{"status": "ok"})
+			printJSON(OKResponse{OK: true})
 		} else {
 			printText("\u2713 Logged in")
 		}
@@ -132,7 +132,7 @@ func (c *LoginCmd) Run(ctx *Context) error {
 	}
 	if err != nil {
 		if ctx.JSON {
-			printJSON(map[string]string{"error": err.Error()})
+			printJSON(ErrorResponse{OK: false, Error: err.Error()})
 		} else {
 			printText("\u2717 Timed out waiting for authentication. Run 'dazzle login' to try again.")
 		}
@@ -148,7 +148,7 @@ func (c *LoginCmd) Run(ctx *Context) error {
 	}
 
 	if ctx.JSON {
-		printJSON(map[string]string{"email": result.Email, "key_name": result.KeyName})
+		printJSON(LoginResponse{Email: result.Email, KeyName: result.KeyName})
 	} else {
 		if result.Email != "" {
 			printText("\u2713 Logged in as %s (API key: %q)", result.Email, result.KeyName)
@@ -167,7 +167,7 @@ func (c *LogoutCmd) Run(ctx *Context) error {
 		return fmt.Errorf("delete credentials: %w", err)
 	}
 	if ctx.JSON {
-		printJSON(map[string]string{"status": "logged out"})
+		printJSON(LogoutResponse{Status: "logged out"})
 	} else {
 		printText("Logged out.")
 	}
