@@ -29,7 +29,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -455,9 +454,8 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 					},
 					ReadinessProbe: &corev1.Probe{
 						ProbeHandler: corev1.ProbeHandler{
-							HTTPGet: &corev1.HTTPGetAction{
-								Path: "/_dz_9f7a3b1c/health",
-								Port: intstr.FromInt(8080),
+							Exec: &corev1.ExecAction{
+								Command: []string{"wget", "-q", "--spider", "http://127.0.0.1:8080/_dz_9f7a3b1c/health"},
 							},
 						},
 						InitialDelaySeconds: 2,
