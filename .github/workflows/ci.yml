@@ -236,6 +236,7 @@ jobs:
         with:
           context: streamer/
           file: streamer/docker/Dockerfile
+          target: final
           platforms: linux/amd64
           push: ${{ github.ref == 'refs/heads/main' }}
           tags: |
