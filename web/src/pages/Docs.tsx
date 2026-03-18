@@ -97,7 +97,7 @@ export function Docs() {
               <CommandLine cmd={step.cmd} />
               {step.n === 1 && (
                 <p className="text-sm text-muted-foreground mt-2">
-                  Create an API key in <a href="/api-keys" className="text-primary hover:text-primary/80">API Keys</a>, then paste it when prompted.
+                  Opens your browser to sign in with your Dazzle account.
                 </p>
               )}
             </AnimatedListItem>

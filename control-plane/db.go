@@ -128,7 +128,7 @@ func generateAPIKey() (full string, prefix string) {
 		panic(err)
 	}
 	full = "dzl_" + hex.EncodeToString(b)
-	prefix = full[:13] + "..."
+	prefix = full[:7] + "..."
 	return
 }
 

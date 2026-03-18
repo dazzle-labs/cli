@@ -21,11 +21,9 @@ Or `go install github.com/dazzle-labs/cli/cmd/dazzle@latest`, or download a bina
 
 ### 2. Authenticate
 
-Sign up at https://stream.dazzle.fm, create an API key (Settings > API Keys), then:
-
 ```bash
 dazzle login
-# Paste your API key (dzl_...) when prompted
+# Opens your browser to sign in with your Dazzle account
 ```
 
 ### 3. Create a stage and bring it up
@@ -93,9 +91,9 @@ Destinations are linked to stages and configured automatically in OBS.
 
 ## Authentication
 
-All requests require an API key in `dzl_<secret>` format, created via the dashboard (Settings > API Keys).
+`dazzle login` opens your browser for OAuth sign-in — no API key needed. The CLI stores credentials locally after login.
 
-The CLI stores your key locally after `dazzle login`. For programmatic use, set:
+For programmatic/headless use (CI, automation), create an API key in the dashboard (Settings > API Keys) and set:
 ```bash
 export DAZZLE_API_KEY=dzl_your_key_here
 ```

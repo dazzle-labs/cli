@@ -14,8 +14,8 @@ Authorization: Bearer <token>
 ```
 
 Where `<token>` is either:
-- **Clerk JWT** — obtained from `clerk.session.getToken()` in the frontend
-- **API Key** — `dzl_<secret>` format; accepted by StageService only (not ApiKeyService, RtmpDestinationService, UserService)
+- **Clerk JWT** — obtained from `clerk.session.getToken()` in the frontend, or via OAuth device flow (`dazzle login`)
+- **API Key** — `dzl_<secret>` format, for programmatic/headless use; accepted by all services except ApiKeyService
 
 ---
 
@@ -168,7 +168,7 @@ interface ApiKey {
 
 ## RtmpDestinationService
 
-Accepts Clerk JWT **only**.
+Accepts Clerk JWT **or** API key.
 
 ### CreateStreamDestination
 ```
@@ -236,7 +236,7 @@ interface StreamDestination {
 
 ## UserService
 
-Accepts Clerk JWT **only**.
+Accepts Clerk JWT **or** API key.
 
 ### GetProfile
 ```

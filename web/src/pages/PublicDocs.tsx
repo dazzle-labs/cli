@@ -186,7 +186,7 @@ export function PublicDocs() {
                     <CommandLine cmd={step.cmd} />
                     {step.n === 1 && (
                       <p className="text-sm text-zinc-500 mt-2">
-                        Create an API key in Settings, then paste it when prompted.
+                        Opens your browser to sign in with your Dazzle account.
                       </p>
                     )}
                   </motion.div>

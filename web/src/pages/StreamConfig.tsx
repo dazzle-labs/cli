@@ -15,7 +15,7 @@ import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
-import { Trash2, Radio, ChevronDown } from "lucide-react";
+import { Trash2, Radio, ChevronDown, Eye } from "lucide-react";
 import { CopyButton } from "@/components/CopyButton";
 import { PlatformIcon, PLATFORM_LIST, PLATFORM_HOVER_COLORS } from "@/components/PlatformIcon";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
@@ -25,6 +25,32 @@ import { springs } from "@/lib/motion";
 import { TouchTooltip } from "@/components/ui/tooltip";
 
 const OAUTH_PLATFORMS = ["twitch", "youtube", "kick", "restream"] as const;
+
+function RtmpCell({ url }: { url: string }) {
+  const [visible, setVisible] = useState(false);
+  if (!url) return <TableCell><span className="text-sm text-muted-foreground">{"\u2014"}</span></TableCell>;
+  return (
+    <TableCell>
+      <div className="flex items-center gap-2">
+        {visible ? (
+          <>
+            <code className="text-sm text-muted-foreground font-mono break-all">{url}</code>
+            <CopyButton text={url} tooltip="Copy RTMP URL" size="icon-xs" iconSize="h-3 w-3" className="shrink-0" />
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setVisible(true)}
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          >
+            <Eye className="h-3.5 w-3.5" />
+            <span>Reveal</span>
+          </button>
+        )}
+      </div>
+    </TableCell>
+  );
+}
 
 function MobileDestinationCard({ d, onDelete }: { d: StreamDestination; onDelete: (id: string) => void }) {
   const [expanded, setExpanded] = useState(false);
@@ -327,9 +353,7 @@ export function StreamConfig() {
                           <span className="text-sm text-muted-foreground">{d.platform}</span>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <code className="text-sm text-muted-foreground font-mono">{d.rtmpUrl || "\u2014"}</code>
-                      </TableCell>
+                      <RtmpCell url={d.rtmpUrl} />
                       <TableCell className="text-right">
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
