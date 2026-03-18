@@ -1,0 +1,89 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: gpunodeclasses.dazzle.fm
+spec:
+  group: dazzle.fm
+  names:
+    kind: GPUNodeClass
+    listKind: GPUNodeClassList
+    plural: gpunodeclasses
+    singular: gpunodeclass
+    shortNames:
+      - gnc
+  scope: Namespaced
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - provider
+                - gpuTypeId
+              properties:
+                provider:
+                  type: string
+                  enum: ["runpod"]
+                  description: "Cloud provider for GPU provisioning"
+                gpuTypeId:
+                  type: string
+                  description: "GPU type identifier (e.g. 'NVIDIA RTX 4090')"
+                cloudType:
+                  type: string
+                  default: "SECURE"
+                  description: "RunPod cloud type (SECURE only — stable public IP)"
+                containerDiskInGb:
+                  type: integer
+                  default: 20
+                  description: "Container disk size in GB"
+                volumeInGb:
+                  type: integer
+                  default: 0
+                  description: "Persistent volume size in GB (0 = none)"
+                maxStages:
+                  type: integer
+                  default: 3
+                  description: "Maximum number of stages per GPU node"
+                maxPricePerHour:
+                  type: string
+                  description: "Maximum price per hour (optional)"
+                streamerImage:
+                  type: string
+                  description: "Override streamer image (defaults from control-plane env)"
+                sidecarImage:
+                  type: string
+                  description: "Override sidecar image (defaults from control-plane env)"
+                template:
+                  type: object
+                  description: "Pod template for RunPod provisioning. Controller-managed vars (TLS_*, AGENT_TOKEN, R2_*, MAX_STAGES) are injected automatically and cannot be overridden."
+                  properties:
+                    env:
+                      type: object
+                      description: "Environment variables for the container. Merged on top of defaults, then controller secrets are injected on top."
+                      x-kubernetes-preserve-unknown-fields: true
+                    ports:
+                      type: array
+                      description: "Additional TCP ports to expose (agent + stage ports are always included)"
+                      items:
+                        type: string
+                    dockerArgs:
+                      type: string
+                      description: "Docker args passed to RunPod (e.g. '--shm-size=1g')"
+      additionalPrinterColumns:
+        - name: Provider
+          type: string
+          jsonPath: .spec.provider
+        - name: GPU
+          type: string
+          jsonPath: .spec.gpuTypeId
+        - name: Cloud
+          type: string
+          jsonPath: .spec.cloudType
+        - name: MaxStages
+          type: integer
+          jsonPath: .spec.maxStages

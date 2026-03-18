@@ -179,8 +179,7 @@ func (h *syncServer) Push(ctx context.Context, stream *connect.ClientStream[side
 
 	// Auto-refresh Chrome after every successful sync
 	if entry != "" && synced > 0 {
-		url := fmt.Sprintf("http://localhost:%s/%s", h.s.cfg.Port, entry)
-		h.s.cdpClient.Navigate(url) // best-effort; don't fail the sync if refresh fails
+		h.s.cdpClient.Navigate(h.s.cfg.ContentURL(entry)) // best-effort; don't fail the sync if refresh fails
 	}
 
 	return connect.NewResponse(&sidecarv1.SyncPushResponse{
@@ -195,7 +194,7 @@ func (h *syncServer) Refresh(ctx context.Context, req *connect.Request[sidecarv1
 		return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("no entry point configured - run sync first"))
 	}
 
-	url := fmt.Sprintf("http://localhost:%s/%s", h.s.cfg.Port, entry)
+	url := h.s.cfg.ContentURL(entry)
 	if err := h.s.cdpClient.Navigate(url); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}

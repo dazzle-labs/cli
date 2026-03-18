@@ -36,6 +36,63 @@ func mapResolvePlatformError(err error) error {
 	}
 }
 
+func (s *broadcastServer) StartBroadcast(ctx context.Context, req *connect.Request[apiv1.StartBroadcastRequest]) (*connect.Response[apiv1.StartBroadcastResponse], error) {
+	info := mustAuth(ctx)
+
+	// Look up running stage
+	row, err := dbGetStage(s.mgr.db, req.Msg.StageId)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	if row == nil || row.UserID != info.UserID {
+		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("stage not found"))
+	}
+	stage, ok := s.mgr.getStage(req.Msg.StageId)
+	if !ok || stage.Status != StatusRunning || (stage.PodIP == "" && stage.SidecarURL == "") {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("stage is not active"))
+	}
+
+	// Resolve RTMP destination
+	dest, err := s.mgr.validateStreamDestination(req.Msg.StageId, info.UserID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, err)
+	}
+
+	// Build full RTMP URL with stream key
+	rtmpURL := dest.RtmpURL
+	if dest.StreamKey != "" {
+		rtmpURL = strings.TrimSuffix(rtmpURL, "/") + "/" + dest.StreamKey
+	}
+
+	if err := s.mgr.pc.BroadcastStart(stage, rtmpURL); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("start broadcast: %w", err))
+	}
+
+	return connect.NewResponse(&apiv1.StartBroadcastResponse{}), nil
+}
+
+func (s *broadcastServer) StopBroadcast(ctx context.Context, req *connect.Request[apiv1.StopBroadcastRequest]) (*connect.Response[apiv1.StopBroadcastResponse], error) {
+	info := mustAuth(ctx)
+
+	row, err := dbGetStage(s.mgr.db, req.Msg.StageId)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	if row == nil || row.UserID != info.UserID {
+		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("stage not found"))
+	}
+	stage, ok := s.mgr.getStage(req.Msg.StageId)
+	if !ok || stage.Status != StatusRunning || (stage.PodIP == "" && stage.SidecarURL == "") {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("stage is not active"))
+	}
+
+	if err := s.mgr.pc.BroadcastStop(stage); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("stop broadcast: %w", err))
+	}
+
+	return connect.NewResponse(&apiv1.StopBroadcastResponse{}), nil
+}
+
 func (s *broadcastServer) GetStreamInfo(ctx context.Context, req *connect.Request[apiv1.GetStreamInfoRequest]) (*connect.Response[apiv1.GetStreamInfoResponse], error) {
 	// 30s covers full method including DB lookup; increase if DB latency is a concern
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)

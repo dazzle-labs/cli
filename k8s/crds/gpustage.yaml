@@ -1,0 +1,83 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: gpustages.dazzle.fm
+spec:
+  group: dazzle.fm
+  names:
+    kind: GPUStage
+    listKind: GPUStageList
+    plural: gpustages
+    singular: gpustage
+    shortNames:
+      - gs
+  scope: Namespaced
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - stageId
+                - userId
+              properties:
+                stageId:
+                  type: string
+                  description: "Stage ID to provision"
+                userId:
+                  type: string
+                  description: "Owner user ID"
+                nodeClassRef:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      description: "Target GPUNodeClass name (optional)"
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  description: "Pending | Scheduling | Provisioning | Running | Terminating | Failed"
+                assignedNode:
+                  type: string
+                  description: "GPUNode CR name this stage is running on"
+                assignedPort:
+                  type: integer
+                  description: "Internal agent port (60444 + slotIndex)"
+                sidecarUrl:
+                  type: string
+                  description: "Fully-qualified sidecar base URL"
+                provisioningNode:
+                  type: string
+                  description: "GPUNode being waited on during Provisioning phase"
+                message:
+                  type: string
+                  description: "Human-readable error or progress message"
+                lastTransitionTime:
+                  type: string
+                  format: date-time
+                  description: "Last time the phase transitioned"
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+        - name: Node
+          type: string
+          jsonPath: .status.assignedNode
+        - name: SidecarURL
+          type: string
+          jsonPath: .status.sidecarUrl
+        - name: Message
+          type: string
+          jsonPath: .status.message
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp

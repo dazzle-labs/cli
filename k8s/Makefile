@@ -59,6 +59,8 @@ trimaran/uninstall: ## Remove Trimaran scheduler from the cluster
 	$(OK) "Trimaran removed"
 
 deploy: apply-secrets prometheus/install ## Apply secrets, install Helm charts, and deploy Kustomize manifests to the cluster
+	$(STEP) "Applying CRDs"
+	$(KUBECTL) apply -f crds/
 	$(STEP) "Applying Kustomize manifests"
 	kustomize build --enable-helm . | $(KUBECTL) apply -f -
 	$(OK) "Kustomize deploy complete"

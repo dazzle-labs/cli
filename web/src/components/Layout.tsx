@@ -1,4 +1,10 @@
-import { UserButton } from "@clerk/react";
+import { UserButton as ClerkUserButton } from "@clerk/react";
+
+const devToken = import.meta.env.VITE_DEV_TOKEN as string | undefined;
+function UserButton() {
+  if (devToken) return <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium">T</div>;
+  return <ClerkUserButton />;
+}
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Monitor, Radio, Key, Rocket, BookOpen } from "lucide-react";

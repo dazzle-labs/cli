@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/browser-streamer/sidecar/internal/agent"
 	"github.com/browser-streamer/sidecar/internal/bench"
 	"github.com/browser-streamer/sidecar/internal/r2"
 	"github.com/browser-streamer/sidecar/internal/server"
@@ -14,7 +15,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintf(os.Stderr, "usage: sidecar <serve|restore|bench>\n")
+		fmt.Fprintf(os.Stderr, "usage: sidecar <serve|restore|bench|agent>\n")
 		os.Exit(1)
 	}
 
@@ -25,6 +26,8 @@ func main() {
 		runRestore()
 	case "bench":
 		runBench()
+	case "agent":
+		runAgent()
 	default:
 		fmt.Fprintf(os.Stderr, "unknown command: %s\n", os.Args[1])
 		os.Exit(1)
@@ -34,22 +37,20 @@ func main() {
 func runServe() {
 	cfg := server.Config{
 		Port:         envOrDefault("PORT", "8080"),
-		Token:        os.Getenv("TOKEN"),
 		StageID:      envOrDefault("STAGE_ID", "unknown"),
 		UserID:       envOrDefault("USER_ID", "unknown"),
 		ScreenWidth:  envOrDefault("SCREEN_WIDTH", "1280"),
 		ScreenHeight: envOrDefault("SCREEN_HEIGHT", "720"),
-		ContentRoot:  "/data/content",
-		SyncDir:      "/data/content/sync",
-		HLSDir:       "/tmp/hls",
+		ContentRoot:  envOrDefault("CONTENT_ROOT", "/data/content"),
+		SyncDir:      envOrDefault("SYNC_DIR", "/data/content/sync"),
+		HLSDir:       envOrDefault("HLS_DIR", "/tmp/hls"),
 		CDPHost:      "localhost",
-		CDPPort:      "9222",
-		OBSHost:      "localhost",
-		OBSPort:      "4455",
+		CDPPort:      envOrDefault("CDP_PORT", "9222"),
 		R2Bucket:     os.Getenv("R2_BUCKET"),
 		R2Endpoint:   os.Getenv("R2_ENDPOINT"),
 		R2AccessKey:  os.Getenv("R2_ACCESS_KEY_ID"),
 		R2SecretKey:  os.Getenv("R2_SECRET_ACCESS_KEY"),
+		ContentNonce: os.Getenv("CONTENT_NONCE"),
 	}
 
 	srv, err := server.New(cfg)
@@ -128,6 +129,25 @@ func runBench() {
 
 	if !report.AllPass {
 		os.Exit(1)
+	}
+}
+
+func runAgent() {
+	maxStages := 5
+	if v := os.Getenv("MAX_STAGES"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			maxStages = n
+		}
+	}
+
+	a := agent.New(maxStages)
+
+	if err := a.ConfigureTLS(); err != nil {
+		log.Fatalf("agent TLS config: %v", err)
+	}
+
+	if err := a.Run(); err != nil {
+		log.Fatalf("agent: %v", err)
 	}
 }
 

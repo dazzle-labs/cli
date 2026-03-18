@@ -1,0 +1,107 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: gpunodes.dazzle.fm
+spec:
+  group: dazzle.fm
+  names:
+    kind: GPUNode
+    listKind: GPUNodeList
+    plural: gpunodes
+    singular: gpunode
+    shortNames:
+      - gn
+  scope: Namespaced
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - nodeClassRef
+              properties:
+                nodeClassRef:
+                  type: object
+                  required:
+                    - name
+                  properties:
+                    name:
+                      type: string
+                      description: "Name of the GPUNodeClass to use"
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  description: "Current phase: Pending, Provisioning, Initializing, Ready, Draining, Failed"
+                runpodPodId:
+                  type: string
+                  description: "RunPod pod ID"
+                publicIp:
+                  type: string
+                  description: "Public IP address of the RunPod pod"
+                agentPort:
+                  type: integer
+                  description: "External port mapped from 60443 (agent mTLS)"
+                lastTransitionTime:
+                  type: string
+                  format: date-time
+                  description: "Last time the phase transitioned"
+                healthFailures:
+                  type: integer
+                  description: "Consecutive health check failures"
+                portMappings:
+                  type: object
+                  description: "Internal port -> external port mappings from RunPod"
+                  x-kubernetes-preserve-unknown-fields: true
+                maxStages:
+                  type: integer
+                  description: "Maximum stages this node supports"
+                currentStages:
+                  type: integer
+                  description: "Number of stages currently running"
+                stages:
+                  type: array
+                  description: "Stages currently running on this node"
+                  items:
+                    type: object
+                    properties:
+                      stageId:
+                        type: string
+                      port:
+                        type: integer
+                      status:
+                        type: string
+                drainAfter:
+                  type: string
+                  format: date-time
+                  description: "Time after which an idle node should be deleted (RFC3339)"
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+        - name: IP
+          type: string
+          jsonPath: .status.publicIp
+        - name: AgentPort
+          type: integer
+          jsonPath: .status.agentPort
+        - name: Stages
+          type: string
+          jsonPath: .status.currentStages
+        - name: Max
+          type: string
+          jsonPath: .status.maxStages
+        - name: RunPod ID
+          type: string
+          jsonPath: .status.runpodPodId
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp

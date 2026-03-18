@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "@clerk/react";
+import { useGetToken } from "../useDevToken.js";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
@@ -104,7 +104,7 @@ function MobileDestinationCard({ d, onDelete }: { d: StreamDestination; onDelete
 }
 
 export function StreamConfig() {
-  const { getToken } = useAuth();
+  const getToken = useGetToken();
   const [destinations, setDestinations] = useState<StreamDestination[]>([]);
   const [availablePlatforms, setAvailablePlatforms] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);

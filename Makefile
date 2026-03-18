@@ -2,7 +2,8 @@ CLERK_PK ?= pk_test_cmFyZS13YWxsZXllLTQ4LmNsZXJrLmFjY291bnRzLmRldiQ
 NS       := browser-streamer
 KIND_CTX := kind-browser-streamer
 KCTL     := kubectl --context $(KIND_CTX) -n $(NS)
-CP_IMG   := dazzlefm/agent-streamer-control-plane:main
+GIT_SHA  := $(shell git rev-parse --short HEAD 2>/dev/null || echo latest)
+CP_IMG   := dazzlefm/agent-streamer-control-plane:$(GIT_SHA)
 STR_IMG  := dazzlefm/agent-streamer-stage:main
 CLI_COMMIT := $(shell git -C cli rev-parse HEAD 2>/dev/null || echo main)
 CP_BUILD := docker build -f control-plane/docker/Dockerfile --build-arg VITE_CLERK_PUBLISHABLE_KEY=$(CLERK_PK) --build-arg GIT_COMMIT=$(CLI_COMMIT) -t $(CP_IMG) .
@@ -33,6 +34,8 @@ TFSTATE_ENC := $(INFRA_DIR)/terraform.tfstate.enc
         install-hooks \
         kubectx prod/kubectl prod/status prod/nodes \
         prod/infra/init prod/infra/plan prod/infra/apply prod/infra/output \
+        gpu/rebuild gpu/deploy gpu/node-create gpu/node-delete gpu/node-recreate gpu/status gpu/logs gpu/port-forward \
+        cli/stages cli/up cli/down cli/sync cli/screenshot cli/logs \
         k8s/% prod/k8s/% \
         control-plane/% streamer/% web/%
 
@@ -51,6 +54,12 @@ help: ## Show this help
 	@echo ""
 	@echo "  Production infrastructure (OpenTofu — ⚠️  CAUTION):"
 	@grep -E '^prod/infra/[a-z]+:.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "    \033[36m%-28s\033[0m %s\n", $$1, $$2}'
+	@echo ""
+	@echo "  GPU development (RunPod):"
+	@grep -E '^gpu/[a-z-]+:.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "    \033[36m%-28s\033[0m %s\n", $$1, $$2}'
+	@echo ""
+	@echo "  CLI (local, requires make gpu/port-forward in another terminal):"
+	@grep -E '^cli/[a-z-]+:.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "    \033[36m%-28s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 	@echo "  Component targets: make <component>/<target>"
 	@echo "    make control-plane/proto   make web/dev"
@@ -147,11 +156,15 @@ up: check-deps check-cli ## Create Kind cluster, build images, deploy full stack
 	kind load docker-image $(SIDECAR_IMG) --name $(NS)
 	$(STEP) "Applying secrets"
 	sops -d k8s/local/local.secrets.yaml | $(KCTL) apply -f -
-	@if sops -d k8s/secrets/oauth.secrets.yaml 2>/dev/null | $(KCTL) apply -f - 2>/dev/null; then \
-		echo "  oauth secrets applied"; \
-	fi
-	@if sops -d k8s/secrets/r2-credentials.secrets.yaml 2>/dev/null | $(KCTL) apply -f - 2>/dev/null; then \
-		echo "  r2 credentials applied"; \
+	@for secret in k8s/secrets/*.secrets.yaml; do \
+		[ -f "$$secret" ] || continue; \
+		if sops -d "$$secret" 2>/dev/null | $(KCTL) apply -f - 2>/dev/null; then \
+			echo "  $$secret"; \
+		fi; \
+	done
+	$(STEP) "Applying CRDs"
+	@if [ -d k8s/crds ] && ls k8s/crds/*.yaml >/dev/null 2>&1; then \
+		$(KCTL) apply -f k8s/crds/; \
 	fi
 	$(STEP) "Deploying postgres"
 	$(KCTL) apply -f k8s/infrastructure/postgres.yaml
@@ -188,20 +201,113 @@ build-sidecar: check-deps check-cluster ## Build sidecar image and load into Kin
 	$(STEP) "Loading into Kind"
 	kind load docker-image $(SIDECAR_IMG) --name $(NS)
 
+GPU_AGENT_IMG := dazzlefm/agent-streamer-stage:main-gpu-agent
+GPU_AGENT_BUILD := docker build --platform linux/amd64 -f streamer/docker/Dockerfile --build-arg VARIANT=gpu --build-arg SIDECAR_IMAGE=$(SIDECAR_IMG) --target agent -t $(GPU_AGENT_IMG) streamer/
+
+build-gpu-agent: check-deps ## Build GPU agent image (streamer + sidecar agent)
+	$(STEP) "Building sidecar image (dependency)"
+	$(SIDECAR_BUILD)
+	$(STEP) "Building GPU agent image"
+	$(GPU_AGENT_BUILD)
+
+push-gpu-agent: build-gpu-agent ## Build and push GPU agent image to Docker Hub
+	$(STEP) "Pushing GPU agent image"
+	docker push $(GPU_AGENT_IMG)
+
+# ══════════════════════════════════════════════════════
+# GPU node testing (RunPod)
+# ══════════════════════════════════════════════════════
+
+# Local CLI alias — builds the CLI and runs it against the local control-plane
+CLI := DAZZLE_API_URL=http://localhost:8080 go run ./cli/cmd/dazzle
+
+gpu/rebuild: check-deps ## Rebuild sidecar + GPU agent images for amd64 and push to Docker Hub
+	$(STEP) "Building sidecar (amd64)"
+	docker build --platform linux/amd64 -f sidecar/Dockerfile -t dazzlefm/agent-streamer-sidecar:$(GIT_SHA)-amd64 sidecar/
+	$(STEP) "Building GPU agent (amd64)"
+	docker build --platform linux/amd64 -f streamer/docker/Dockerfile \
+		--build-arg VARIANT=gpu \
+		--build-arg SIDECAR_IMAGE=dazzlefm/agent-streamer-sidecar:$(GIT_SHA)-amd64 \
+		--target agent -t dazzlefm/agent-streamer-stage:$(GIT_SHA)-gpu-agent streamer/
+	$(STEP) "Pushing sidecar"
+	docker push dazzlefm/agent-streamer-sidecar:$(GIT_SHA)-amd64
+	$(STEP) "Pushing GPU agent"
+	docker push dazzlefm/agent-streamer-stage:$(GIT_SHA)-gpu-agent
+	$(OK) "GPU images pushed: $(GIT_SHA)-gpu-agent"
+
+gpu/deploy: check-cluster ## Deploy control-plane with current GPU agent image tag
+	$(MAKE) build-cp deploy
+	$(STEP) "Applying GPU node classes"
+	$(KCTL) apply -f k8s/gpu/
+	$(KCTL) set env deployment/control-plane STREAMER_IMAGE=dazzlefm/agent-streamer-stage:$(GIT_SHA)
+	$(KCTL) rollout status deployment/control-plane --timeout=120s
+	$(OK) "Control-plane deployed with GPU image $(GIT_SHA)-gpu-agent"
+
+GPU_CLASS ?= l40s
+gpu/node-create: check-cluster ## Create a GPU node (GPU_CLASS=l40s|a40)
+	$(KCTL) apply -f - <<< '{"apiVersion":"dazzle.fm/v1","kind":"GPUNode","metadata":{"name":"gpu-1","namespace":"$(NS)"},"spec":{"nodeClassRef":{"name":"$(GPU_CLASS)"}}}'
+	$(OK) "GPUNode gpu-1 created (class=$(GPU_CLASS)) — watch with: make gpu/logs"
+
+gpu/node-delete: check-cluster ## Delete the GPU node (terminates RunPod pod)
+	$(KCTL) delete gpunode gpu-1 --ignore-not-found
+	$(OK) "GPUNode gpu-1 deleted"
+
+gpu/node-recreate: gpu/node-delete ## Delete and recreate GPU node (pulls fresh image)
+	@sleep 10
+	$(MAKE) gpu/node-create
+
+gpu/status: check-cluster ## Show GPU node status and stages
+	@echo "── GPU Nodes ──"
+	@$(KCTL) get gpunodes -o wide 2>/dev/null || echo "  (none)"
+	@echo ""
+	@echo "── GPU Node Classes ──"
+	@$(KCTL) get gpunodeclasses -o wide 2>/dev/null || echo "  (none)"
+
+gpu/logs: check-cluster ## Tail control-plane logs (GPU provisioning)
+	$(KCTL) logs -f deployment/control-plane
+
+gpu/port-forward: check-cluster ## Port-forward control-plane for CLI access
+	$(KCTL) port-forward svc/control-plane 8080:8080
+
+# CLI convenience targets (require port-forward running in another terminal)
+cli/stages: ## List stages via local CLI
+	@$(CLI) stage list
+
+cli/up: ## Activate a stage (STAGE=name)
+	@$(CLI) stage up -s $(STAGE)
+
+cli/down: ## Deactivate a stage (STAGE=name)
+	@$(CLI) stage down -s $(STAGE)
+
+cli/sync: ## Sync content to a stage (STAGE=name DIR=path)
+	@$(CLI) stage sync -s $(STAGE) $(DIR)
+
+cli/screenshot: ## Take a screenshot (STAGE=name)
+	@$(CLI) stage screenshot -s $(STAGE) -o /tmp/stage-screenshot.png
+	@echo "Screenshot saved to /tmp/stage-screenshot.png"
+
+cli/logs: ## Show stage console logs (STAGE=name)
+	@$(CLI) stage logs -s $(STAGE)
+
 deploy: check-deps check-cluster ## Apply manifests and restart control-plane in Kind
 	$(STEP) "Applying secrets"
 	sops -d k8s/local/local.secrets.yaml | $(KCTL) apply -f -
-	@if sops -d k8s/secrets/oauth.secrets.yaml 2>/dev/null | $(KCTL) apply -f - 2>/dev/null; then \
-		echo "  oauth secrets applied"; \
-	fi
-	@if sops -d k8s/secrets/r2-credentials.secrets.yaml 2>/dev/null | $(KCTL) apply -f - 2>/dev/null; then \
-		echo "  r2 credentials applied"; \
+	@for secret in k8s/secrets/*.secrets.yaml; do \
+		[ -f "$$secret" ] || continue; \
+		if sops -d "$$secret" 2>/dev/null | $(KCTL) apply -f - 2>/dev/null; then \
+			echo "  $$secret"; \
+		fi; \
+	done
+	$(STEP) "Applying CRDs"
+	@if [ -d k8s/crds ] && ls k8s/crds/*.yaml >/dev/null 2>&1; then \
+		$(KCTL) apply -f k8s/crds/; \
 	fi
 	$(STEP) "Deploying postgres"
 	$(KCTL) apply -f k8s/infrastructure/postgres.yaml
 	$(STEP) "Deploying control-plane"
 	$(KCTL) apply -f k8s/control-plane/rbac.yaml
 	$(KCTL) apply -f k8s/control-plane/deployment.yaml
+	$(KCTL) set image deployment/control-plane control-plane=$(CP_IMG)
 	$(KCTL) apply -f k8s/local/service.yaml
 	$(KCTL) set env deployment/control-plane OAUTH_REDIRECT_BASE_URL=http://localhost:5173
 	$(STEP) "Restarting control-plane"

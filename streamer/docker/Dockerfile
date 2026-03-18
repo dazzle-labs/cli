@@ -1,4 +1,12 @@
-FROM ubuntu:24.04
+ARG VARIANT=cpu
+ARG SIDECAR_IMAGE=dazzlefm/agent-streamer-sidecar:main
+
+# --- Base images per variant ---
+FROM ubuntu:24.04                        AS base-cpu
+FROM nvidia/cuda:12.6.0-base-ubuntu24.04 AS base-gpu
+
+# --- Common packages (no GL libs here) ---
+FROM base-${VARIANT} AS base
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -7,6 +15,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # We install Chromium from the Playwright team's PPA which provides a real .deb package.
 RUN apt-get update && apt-get install -y \
     xvfb \
+    xauth \
     pulseaudio \
     ffmpeg \
     curl \
@@ -28,12 +37,6 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
     wget \
     unclutter \
-    libglvnd0 \
-    libglx0 \
-    libgl1-mesa-dri \
-    libglapi-mesa \
-    mesa-vulkan-drivers \
-    mesa-utils \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Chromium from the official Google Chrome stable channel (real .deb, not snap)
@@ -43,15 +46,58 @@ RUN wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-
     && rm /tmp/chrome.deb \
     && rm -rf /var/lib/apt/lists/*
 
+# --- GL libraries per variant ---
+FROM base AS gl-cpu
+RUN apt-get update && apt-get install -y \
+    libglvnd0 \
+    libglx0 \
+    libgl1-mesa-dri \
+    libglapi-mesa \
+    mesa-vulkan-drivers \
+    mesa-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+FROM base AS gl-gpu
+# GPU GL layer: Vulkan for Chrome ANGLE, plus Mesa DRI (llvmpipe) as software fallback.
+# Chrome uses --use-gl=angle --use-angle=vulkan to render WebGL via Vulkan, bypassing
+# X11/GLX entirely (Xvfb can't hardware-accelerate GLX). The NVIDIA Vulkan ICD is
+# bind-mounted by nvidia-container-toolkit when NVIDIA_DRIVER_CAPABILITIES includes graphics.
+RUN apt-get update && apt-get install -y \
+    libglvnd0 \
+    libglx0 \
+    libgl1 \
+    libgl1-mesa-dri \
+    libgles2 \
+    libegl1 \
+    libvulkan1 \
+    mesa-vulkan-drivers \
+    vulkan-tools \
+    mesa-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+# --- Final image ---
+FROM gl-${VARIANT} AS final
+
 # Copy PulseAudio config
 COPY docker/pulse-default.pa /etc/pulse/default.pa
 
-# Copy entrypoint and prestop hook
+# Copy entrypoint, prestop hook, and multi-tenant stage-start script
 COPY docker/entrypoint.sh /entrypoint.sh
 COPY docker/prestop.sh /scripts/prestop.sh
-RUN chmod +x /entrypoint.sh /scripts/prestop.sh
+COPY docker/stage-start.sh /stage-start.sh
+RUN chmod +x /entrypoint.sh /scripts/prestop.sh /stage-start.sh
 
 ENV DISPLAY=:99
 ENV PULSE_SERVER=unix:/tmp/pulse/native
+# NVIDIA container runtime: request all driver capabilities so that
+# libGL/libEGL/libvulkan are bind-mounted from the host GPU driver.
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=all
 
 ENTRYPOINT ["/entrypoint.sh"]
+
+# --- GPU Agent: streamer + sidecar in agent mode ---
+FROM ${SIDECAR_IMAGE} AS sidecar-src
+FROM final AS agent
+COPY --from=sidecar-src /sidecar /sidecar
+ENTRYPOINT ["/sidecar", "agent"]

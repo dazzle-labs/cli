@@ -15,12 +15,31 @@ trap cleanup EXIT INT TERM
 SCREEN_WIDTH="${SCREEN_WIDTH:-1280}"
 SCREEN_HEIGHT="${SCREEN_HEIGHT:-720}"
 
-# Chrome flags — set via CHROME_FLAGS env var from the k8s deployment.
-# No defaults baked in — all flags are explicit in the deployment manifest.
+# Chrome policy flags — set via CHROME_FLAGS env var from the k8s deployment.
+# Runtime flags (display, data dir, window size, CDP) are appended below.
 if [ -z "${CHROME_FLAGS:-}" ]; then
     echo "ERROR: CHROME_FLAGS env var is required"
     exit 1
 fi
+
+# Strip runtime flags that may be left over from legacy CHROME_FLAGS values.
+# These are now managed by the entrypoint/stage-start scripts, not the env var.
+strip_runtime_flags() {
+    echo "$1" | sed -E \
+        -e 's/--display=:[0-9]+//g' \
+        -e 's/--user-data-dir=[^ ]+//g' \
+        -e 's/--window-size=[^ ]+//g' \
+        -e 's/--window-position=[^ ]+//g' \
+        -e 's/--remote-debugging-port=[0-9]+//g' \
+        -e 's/--remote-debugging-address=[^ ]+//g' \
+        -e 's/  +/ /g' -e 's/^ +//' -e 's/ +$//'
+}
+CHROME_FLAGS="$(strip_runtime_flags "$CHROME_FLAGS")"
+
+# Append per-instance runtime flags
+CHROME_FLAGS="$CHROME_FLAGS --display=:99 --user-data-dir=/data/chrome"
+CHROME_FLAGS="$CHROME_FLAGS --window-size=${SCREEN_WIDTH},${SCREEN_HEIGHT} --window-position=0,0"
+CHROME_FLAGS="$CHROME_FLAGS --remote-debugging-port=9222 --remote-debugging-address=0.0.0.0"
 
 # Renderer config (SwiftShader.ini) is mounted from the swiftshader-ini ConfigMap.
 # Controls thread count for software rendering. Entrypoint ensures the dir exists.

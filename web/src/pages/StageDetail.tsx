@@ -7,7 +7,7 @@ import type { StreamDestination } from "../gen/api/v1/stream_pb.js";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Cpu, Globe, Check, ArrowUpRight, Pencil, X as XIcon, Link2, RefreshCw, ExternalLink } from "lucide-react";
+import { Trash2, Cpu, Globe, Check, ArrowUpRight, Pencil, X as XIcon, Link2, RefreshCw, ExternalLink, Zap } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { StreamPreview } from "@/components/StreamPreview";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -159,6 +159,12 @@ export function StageDetail() {
           </div>
         )}
         <div className="flex items-center gap-2">
+          {stage.capabilities.includes("gpu") && (
+            <Badge variant="outline" className="text-amber-500 border-amber-500/30 gap-1 px-1.5">
+              <Zap className="h-3 w-3" />
+              GPU
+            </Badge>
+          )}
           {(isRunning || isStarting) && (
             <span className="relative flex h-2.5 w-2.5">
               <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", isRunning ? "bg-emerald-400" : "bg-amber-400")} />

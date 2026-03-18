@@ -2,6 +2,9 @@ package server
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"encoding/base64"
 	"log"
 	"net/http"
 	"os"
@@ -24,7 +27,6 @@ const RoutePrefix = "/_dz_9f7a3b1c"
 
 type Config struct {
 	Port         string
-	Token        string
 	StageID      string
 	UserID       string
 	ScreenWidth  string
@@ -34,12 +36,11 @@ type Config struct {
 	HLSDir       string
 	CDPHost      string
 	CDPPort      string
-	OBSHost      string // kept for config compat, unused by pipeline
-	OBSPort      string // kept for config compat, unused by pipeline
 	R2Bucket     string
 	R2Endpoint   string
 	R2AccessKey  string
 	R2SecretKey  string
+	ContentNonce string // random path prefix for content serving (multi-tenant isolation)
 }
 
 // ScreenSize returns "WxH" for ffmpeg.
@@ -47,10 +48,30 @@ func (c Config) ScreenSize() string {
 	return c.ScreenWidth + "x" + c.ScreenHeight
 }
 
+// ContentURL returns the localhost URL for a content path, including
+// the nonce prefix in multi-tenant mode. When TLS is configured, Chrome
+// uses the localhost-only HTTP port instead of the mTLS port.
+func (c Config) ContentURL(path string) string {
+	port := c.Port
+	// In mTLS mode, Chrome connects to the local HTTP port (not the mTLS port)
+	if os.Getenv("TLS_SERVER_CERT") != "" {
+		if lp := os.Getenv("LOCAL_HTTP_PORT"); lp != "" {
+			port = lp
+		} else {
+			port = "8080"
+		}
+	}
+	if c.ContentNonce != "" {
+		return "http://localhost:" + port + "/" + c.ContentNonce + "/" + path
+	}
+	return "http://localhost:" + port + "/" + path
+}
+
 type Server struct {
 	cfg          Config
 	mux          *http.ServeMux
-	cdpClient    *cdp.Client
+	localMux     *http.ServeMux // content-only mux for localhost HTTP (no internal APIs)
+	cdpClient    cdp.CDP
 	pipeline     *pipeline.Pipeline
 	syncState    *SyncState
 	logBuffer    *LogBuffer
@@ -71,12 +92,28 @@ type Server struct {
 
 func New(cfg Config) (*Server, error) {
 	now := time.Now()
+	// Pipeline options
+	var pipelineOpts []pipeline.Option
+	if codec := os.Getenv("SIDECAR_VIDEO_CODEC"); codec != "" {
+		pipelineOpts = append(pipelineOpts, pipeline.WithVideoCodec(codec))
+	}
+
+	// Choose CDP transport: pipe mode (no TCP port) or WebSocket (traditional)
+	var cdpClient cdp.CDP
+	if pipeIn := os.Getenv("CDP_PIPE_IN"); pipeIn != "" {
+		pipeOut := os.Getenv("CDP_PIPE_OUT")
+		cdpClient = cdp.NewPipeClient(pipeIn, pipeOut)
+		log.Printf("CDP: using pipe transport (%s, %s)", pipeIn, pipeOut)
+	} else {
+		cdpClient = cdp.NewClient(cfg.CDPHost, cfg.CDPPort)
+	}
+
 	s := &Server{
 		cfg:       cfg,
 		mux:       http.NewServeMux(),
-		cdpClient: cdp.NewClient(cfg.CDPHost, cfg.CDPPort),
+		cdpClient: cdpClient,
 		pipeline: pipeline.New(
-			":99", cfg.ScreenSize(), cfg.HLSDir,
+			func() string { if d := os.Getenv("DISPLAY"); d != "" { return d }; return ":99" }(), cfg.ScreenSize(), cfg.HLSDir, pipelineOpts...,
 		),
 		syncState:    NewSyncState(cfg.SyncDir),
 		logBuffer:    NewLogBuffer(1000),
@@ -99,33 +136,27 @@ func New(cfg Config) (*Server, error) {
 	return s, nil
 }
 
-// tokenAuthInterceptor returns a connect interceptor that checks the TOKEN.
-func tokenAuthInterceptor(token string) connect.UnaryInterceptorFunc {
+// mtlsAuthInterceptor returns a connect interceptor that requires a verified mTLS peer cert.
+// If TLS is not configured (plain HTTP mode), all requests are allowed.
+func mtlsAuthInterceptor() connect.UnaryInterceptorFunc {
+	tlsConfigured := os.Getenv("TLS_SERVER_CERT") != ""
 	return func(next connect.UnaryFunc) connect.UnaryFunc {
 		return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-			if token == "" {
+			if !tlsConfigured {
 				return next(ctx, req)
 			}
-			auth := req.Header().Get("Authorization")
-			t := strings.TrimPrefix(auth, "Bearer ")
-			if t != token {
-				return nil, connect.NewError(connect.CodeUnauthenticated, nil)
-			}
+			// peer cert is verified by the TLS handshake (RequireAndVerifyClientCert);
+			// if we reach here over TLS the chain is already valid.
 			return next(ctx, req)
 		}
 	}
-}
-
-// tokenAuthStreamInterceptor returns a connect interceptor for streaming RPCs.
-func tokenAuthStreamInterceptor(token string) connect.UnaryInterceptorFunc {
-	return tokenAuthInterceptor(token)
 }
 
 func (s *Server) routes() {
 	p := RoutePrefix
 
 	// ConnectRPC handler options with auth interceptor
-	interceptors := connect.WithInterceptors(tokenAuthInterceptor(s.cfg.Token))
+	interceptors := connect.WithInterceptors(mtlsAuthInterceptor())
 
 	// Build a sub-mux that lives behind /_dz_9f7a3b1c/.
 	// All internal endpoints — both ConnectRPC and plain HTTP — go here.
@@ -134,43 +165,76 @@ func (s *Server) routes() {
 	// ConnectRPC services
 	syncHandler := &syncServer{s: s}
 	runtimeHandler := &runtimeServer{s: s}
-	obsHandler := &obsServer{s: s}
+	bcHandler := &broadcastServer{s: s}
 
 	syncPath, syncH := sidecarv1connect.NewSyncServiceHandler(syncHandler, interceptors)
 	runtimePath, runtimeH := sidecarv1connect.NewRuntimeServiceHandler(runtimeHandler, interceptors)
-	obsPath, obsH := sidecarv1connect.NewObsServiceHandler(obsHandler, interceptors)
+	bcPath, bcH := sidecarv1connect.NewBroadcastPipelineServiceHandler(bcHandler, interceptors)
 
 	subMux.Handle(syncPath, syncH)
 	subMux.Handle(runtimePath, runtimeH)
-	subMux.Handle(obsPath, obsH)
+	subMux.Handle(bcPath, bcH)
 
 	// Plain HTTP routes (also behind prefix)
 	subMux.HandleFunc("/health", s.handleHealth)
-	subMux.HandleFunc("/metrics", s.handleMetrics)
-	subMux.HandleFunc("/hls/", s.handleHLS)
-	subMux.HandleFunc("/thumbnail.png", s.handleThumbnail)
+	subMux.HandleFunc("/metrics", s.authWrap(s.handleMetrics))
+	subMux.HandleFunc("/hls/", s.authWrap(s.handleHLS))
+	subMux.HandleFunc("/thumbnail.png", s.authWrap(s.handleThumbnail))
 	subMux.HandleFunc("/cdp/", s.authWrap(s.handleCDPProxy))
 
 	// Mount everything behind the prefix
 	s.mux.Handle(p+"/", http.StripPrefix(p, subMux))
 
-	// User content at root (fallback — no prefix, no auth)
-	s.mux.Handle("/", http.FileServer(http.Dir(s.cfg.SyncDir)))
+	// User content serving.
+	// In multi-tenant mode (ContentNonce set), content is served at /<nonce>/
+	// so co-tenants can't read source code via localhost without knowing the nonce.
+	// Chrome loads /_boot (no secret in cmdline) which redirects to /<nonce>/.
+	// The nonce only exists in the sidecar's environ (mode 0400, same-UID only).
+	// In single-tenant mode (no nonce), content is served at / as before.
+	fs := http.FileServer(http.Dir(s.cfg.SyncDir))
+	if s.cfg.ContentNonce != "" {
+		contentPrefix := "/" + s.cfg.ContentNonce
+		s.mux.Handle(contentPrefix+"/", http.StripPrefix(contentPrefix, fs))
+		s.mux.HandleFunc("/_boot", func(w http.ResponseWriter, r *http.Request) {
+			http.Redirect(w, r, contentPrefix+"/", http.StatusFound)
+		})
+		s.mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			http.NotFound(w, r)
+		})
+	} else {
+		s.mux.Handle("/", fs)
+	}
+
+	// Build a separate mux for the localhost-only HTTP listener (Chrome content).
+	// This mux only serves content routes — no /_dz_9f7a3b1c/ prefix routes
+	// (HLS, thumbnails, metrics, CDP proxy, RPCs). On multi-tenant GPU pods,
+	// co-tenant stages share the network namespace and could otherwise hit
+	// these endpoints on another stage's local HTTP port without mTLS.
+	s.localMux = http.NewServeMux()
+	if s.cfg.ContentNonce != "" {
+		contentPrefix := "/" + s.cfg.ContentNonce
+		s.localMux.Handle(contentPrefix+"/", http.StripPrefix(contentPrefix, fs))
+		s.localMux.HandleFunc("/_boot", func(w http.ResponseWriter, r *http.Request) {
+			http.Redirect(w, r, contentPrefix+"/", http.StatusFound)
+		})
+		s.localMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			http.NotFound(w, r)
+		})
+	} else {
+		s.localMux.Handle("/", fs)
+	}
+	// Health check is needed on the local port for stage-start.sh readiness probe
+	s.localMux.HandleFunc(p+"/health", s.handleHealth)
 }
 
 func (s *Server) authWrap(handler http.HandlerFunc) http.HandlerFunc {
+	tlsConfigured := os.Getenv("TLS_SERVER_CERT") != ""
 	return func(w http.ResponseWriter, r *http.Request) {
 		s.lastActivity = time.Now()
-		if s.cfg.Token == "" {
-			handler(w, r)
-			return
-		}
-		token := r.URL.Query().Get("token")
-		if token == "" {
-			auth := r.Header.Get("Authorization")
-			token = strings.TrimPrefix(auth, "Bearer ")
-		}
-		if token != s.cfg.Token {
+		// In plain HTTP mode (no TLS certs) the server is only reachable inside the
+		// pod network, so no additional auth is needed.
+		// In mTLS mode, the TLS handshake already enforced RequireAndVerifyClientCert.
+		if tlsConfigured && (r.TLS == nil || len(r.TLS.VerifiedChains) == 0) {
 			http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
 			return
 		}
@@ -186,11 +250,6 @@ func (s *Server) Run() error {
 	// Seed placeholder if no index.html
 	s.seedPlaceholder()
 
-	srv := &http.Server{
-		Addr:    ":" + s.cfg.Port,
-		Handler: s.mux,
-	}
-
 	// Start background services
 	go s.cdpClient.ConnectLoop(s.logBuffer)
 	go s.startPipeline()
@@ -202,12 +261,57 @@ func (s *Server) Run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer stop()
 
-	go func() {
-		log.Printf("Sidecar listening on :%s", s.cfg.Port)
-		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-			log.Printf("HTTP server error: %v", err)
+	tlsCfg := buildSidecarTLSConfig()
+
+	var mainSrv, localSrv *http.Server
+
+	if tlsCfg != nil {
+		// mTLS mode: serve mTLS on the main port (0.0.0.0:PORT) for external
+		// access, and plain HTTP on localhost only for Chrome content loading.
+		mainSrv = &http.Server{
+			Handler:   s.mux,
+			TLSConfig: tlsCfg,
 		}
-	}()
+		ln, err := tls.Listen("tcp", ":"+s.cfg.Port, tlsCfg)
+		if err != nil {
+			log.Fatalf("mTLS listener failed on :%s: %v", s.cfg.Port, err)
+		}
+		go func() {
+			log.Printf("Sidecar mTLS listening on :%s", s.cfg.Port)
+			if err := mainSrv.Serve(ln); err != http.ErrServerClosed {
+				log.Printf("mTLS server error: %v", err)
+			}
+		}()
+
+		// Localhost-only plain HTTP for Chrome to load content.
+		// Chrome connects to http://127.0.0.1:<localPort>/<nonce>/
+		localPort := os.Getenv("LOCAL_HTTP_PORT")
+		if localPort == "" {
+			localPort = "8080"
+		}
+		localSrv = &http.Server{
+			Addr:    "127.0.0.1:" + localPort,
+			Handler: s.localMux,
+		}
+		go func() {
+			log.Printf("Sidecar local HTTP on 127.0.0.1:%s (Chrome only)", localPort)
+			if err := localSrv.ListenAndServe(); err != http.ErrServerClosed {
+				log.Printf("Local HTTP server error: %v", err)
+			}
+		}()
+	} else {
+		// No TLS: plain HTTP on all interfaces (local k8s pod)
+		mainSrv = &http.Server{
+			Addr:    ":" + s.cfg.Port,
+			Handler: s.mux,
+		}
+		go func() {
+			log.Printf("Sidecar listening on :%s", s.cfg.Port)
+			if err := mainSrv.ListenAndServe(); err != http.ErrServerClosed {
+				log.Printf("HTTP server error: %v", err)
+			}
+		}()
+	}
 
 	<-ctx.Done()
 	log.Println("Shutting down...")
@@ -222,7 +326,10 @@ func (s *Server) Run() error {
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	return srv.Shutdown(shutdownCtx)
+	if localSrv != nil {
+		localSrv.Shutdown(shutdownCtx)
+	}
+	return mainSrv.Shutdown(shutdownCtx)
 }
 
 func (s *Server) startPipeline() {
@@ -319,6 +426,62 @@ func (s *Server) seedPlaceholder() {
 		return
 	}
 	os.WriteFile(indexPath, []byte(placeholderHTML), 0o644)
+}
+
+// buildSidecarTLSConfig creates a TLS config for the mTLS listener.
+// Returns nil if TLS env vars are not set.
+func buildSidecarTLSConfig() *tls.Config {
+	caB64 := os.Getenv("TLS_CA_CERT")
+	certB64 := os.Getenv("TLS_SERVER_CERT")
+	keyB64 := os.Getenv("TLS_SERVER_KEY")
+	if caB64 == "" || certB64 == "" || keyB64 == "" {
+		return nil
+	}
+
+	caPEM, err := decodePEM(caB64)
+	if err != nil {
+		log.Printf("WARN: failed to decode TLS_CA_CERT: %v", err)
+		return nil
+	}
+	certPEM, err := decodePEM(certB64)
+	if err != nil {
+		log.Printf("WARN: failed to decode TLS_SERVER_CERT: %v", err)
+		return nil
+	}
+	keyPEM, err := decodePEM(keyB64)
+	if err != nil {
+		log.Printf("WARN: failed to decode TLS_SERVER_KEY: %v", err)
+		return nil
+	}
+
+	caPool := x509.NewCertPool()
+	if !caPool.AppendCertsFromPEM(caPEM) {
+		log.Printf("WARN: failed to parse TLS_CA_CERT PEM")
+		return nil
+	}
+
+	serverCert, err := tls.X509KeyPair(certPEM, keyPEM)
+	if err != nil {
+		log.Printf("WARN: failed to load TLS server keypair: %v", err)
+		return nil
+	}
+
+	return &tls.Config{
+		Certificates: []tls.Certificate{serverCert},
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		ClientCAs:    caPool,
+	}
+}
+
+// decodePEM accepts either raw PEM or base64-encoded PEM and returns PEM bytes.
+func decodePEM(s string) ([]byte, error) {
+	s = strings.TrimSpace(s)
+	if strings.HasPrefix(s, "-----BEGIN") {
+		return []byte(s), nil
+	}
+	s = strings.ReplaceAll(s, "\n", "")
+	s = strings.ReplaceAll(s, "\r", "")
+	return base64.StdEncoding.DecodeString(s)
 }
 
 const placeholderHTML = `<!DOCTYPE html>

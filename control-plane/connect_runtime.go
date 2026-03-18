@@ -29,7 +29,7 @@ func (s *runtimeServer) requireRunningStageForUser(stageID, userID string) (*Sta
 		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("stage not found"))
 	}
 	stage, ok := s.mgr.getStage(stageID)
-	if !ok || stage.Status != StatusRunning || stage.PodIP == "" {
+	if !ok || stage.Status != StatusRunning || (stage.PodIP == "" && stage.SidecarURL == "") {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("stage is not active"))
 	}
 	return stage, nil
@@ -49,7 +49,7 @@ func (s *runtimeServer) EmitEvent(ctx context.Context, req *connect.Request[apiv
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("data must be a valid JSON object: %w", err))
 	}
 
-	if err := s.mgr.pc.EmitEvent(stage.PodIP, req.Msg.Event, req.Msg.Data); err != nil {
+	if err := s.mgr.pc.EmitEvent(stage, req.Msg.Event, req.Msg.Data); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
@@ -72,7 +72,7 @@ func (s *runtimeServer) GetLogs(ctx context.Context, req *connect.Request[apiv1.
 		limit = 1000
 	}
 
-	entries, err := s.mgr.pc.GetLogs(stage.PodIP, limit)
+	entries, err := s.mgr.pc.GetLogs(stage, limit)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -97,45 +97,12 @@ func (s *runtimeServer) Screenshot(ctx context.Context, req *connect.Request[api
 		return nil, err
 	}
 
-	imageBytes, err := s.mgr.pc.Screenshot(stage.PodIP)
+	imageBytes, err := s.mgr.pc.Screenshot(stage)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	return connect.NewResponse(&apiv1.ScreenshotResponse{Image: imageBytes}), nil
-}
-
-func (s *runtimeServer) ObsCommand(ctx context.Context, req *connect.Request[apiv1.ObsCommandRequest]) (*connect.Response[apiv1.ObsCommandResponse], error) {
-	info := mustAuth(ctx)
-
-	stage, err := s.requireRunningStageForUser(req.Msg.StageId, info.UserID)
-	if err != nil {
-		return nil, err
-	}
-
-	args := req.Msg.Args
-
-	if isBlockedObsCommand(args) {
-		return nil, connect.NewError(connect.CodePermissionDenied, fmt.Errorf("access denied: stream service settings contain credentials and cannot be read"))
-	}
-
-	// When going live, ensure stream destination is configured first
-	if isStartStreamCommand(args) {
-		dest, err := s.mgr.validateStreamDestination(req.Msg.StageId, info.UserID)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
-		}
-		if err := s.mgr.configureOBSStream(stage, dest); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("configure stream: %w", err))
-		}
-	}
-
-	output, err := s.mgr.pc.ObsCommand(stage.PodIP, args)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("%s", redactStreamSecrets(err.Error())))
-	}
-
-	return connect.NewResponse(&apiv1.ObsCommandResponse{Output: redactStreamSecrets(output)}), nil
 }
 
 func (s *runtimeServer) SyncDiff(ctx context.Context, req *connect.Request[apiv1.SyncDiffRequest]) (*connect.Response[apiv1.SyncDiffResponse], error) {
@@ -146,7 +113,7 @@ func (s *runtimeServer) SyncDiff(ctx context.Context, req *connect.Request[apiv1
 		return nil, err
 	}
 
-	result, err := s.mgr.pc.SyncDiff(stage.PodIP, req.Msg.Files, req.Msg.Entry)
+	result, err := s.mgr.pc.SyncDiff(stage, req.Msg.Files, req.Msg.Entry)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -190,7 +157,7 @@ func (s *runtimeServer) SyncPush(ctx context.Context, stream *connect.ClientStre
 	resultCh := make(chan pushResult, 1)
 
 	go func() {
-		res, err := s.mgr.pc.SyncPush(stage.PodIP, pr)
+		res, err := s.mgr.pc.SyncPush(stage, pr)
 		resultCh <- pushResult{res, err}
 	}()
 
@@ -245,7 +212,7 @@ func (s *runtimeServer) GetStageStats(ctx context.Context, req *connect.Request[
 		return nil, err
 	}
 
-	stats, err := s.mgr.pc.GetStats(stage.PodIP)
+	stats, err := s.mgr.pc.GetStats(stage)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -270,7 +237,7 @@ func (s *runtimeServer) Refresh(ctx context.Context, req *connect.Request[apiv1.
 		return nil, err
 	}
 
-	if err := s.mgr.pc.SyncRefresh(stage.PodIP); err != nil {
+	if err := s.mgr.pc.SyncRefresh(stage); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 

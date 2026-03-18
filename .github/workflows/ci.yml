@@ -189,6 +189,7 @@ jobs:
       image_tag: ${{ steps.tags.outputs.short_sha }}
 
   streamer:
+    needs: [sidecar]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -292,11 +293,25 @@ jobs:
           file: sidecar/Dockerfile
           platforms: linux/amd64
           push: ${{ github.ref == 'refs/heads/main' }}
+          load: true
           tags: |
             ${{ steps.tags.outputs.image_tag }}
             ${{ steps.tags.outputs.branch_tag }}
           cache-from: type=registry,ref=${{ env.SIDECAR_REPO }}:buildcache
           cache-to: ${{ github.ref == 'refs/heads/main' && format('type=registry,ref={0}:buildcache,mode=max', env.SIDECAR_REPO) || '' }}
+
+      - name: Build GPU Agent Image
+        run: |
+          docker build \
+            --build-arg VARIANT=gpu \
+            --build-arg SIDECAR_IMAGE=${{ env.SIDECAR_REPO }}:${{ steps.tags.outputs.short_sha }} \
+            --target agent \
+            --tag ${{ env.STREAMER_REPO }}:${{ steps.tags.outputs.short_sha }}-gpu-agent \
+            -f streamer/docker/Dockerfile \
+            streamer/
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            docker push ${{ env.STREAMER_REPO }}:${{ steps.tags.outputs.short_sha }}-gpu-agent
+          fi
 
     outputs:
       image_tag: ${{ steps.tags.outputs.short_sha }}

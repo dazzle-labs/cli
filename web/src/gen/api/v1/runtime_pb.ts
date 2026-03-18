@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file api/v1/runtime.proto.
  */
 export const file_api_v1_runtime: GenFile = /*@__PURE__*/
-  fileDesc("ChRhcGkvdjEvcnVudGltZS5wcm90bxIJZGF6emxlLnYxIkEKEEVtaXRFdmVudFJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSDQoFZXZlbnQYAiABKAkSDAoEZGF0YRgDIAEoCSIfChFFbWl0RXZlbnRSZXNwb25zZRIKCgJvaxgBIAEoCCIxCg5HZXRMb2dzUmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRINCgVsaW1pdBgCIAEoBSI9CghMb2dFbnRyeRINCgVsZXZlbBgBIAEoCRIPCgdtZXNzYWdlGAIgASgJEhEKCXRpbWVzdGFtcBgDIAEoCSI3Cg9HZXRMb2dzUmVzcG9uc2USJAoHZW50cmllcxgBIAMoCzITLmRhenpsZS52MS5Mb2dFbnRyeSIlChFTY3JlZW5zaG90UmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCSIjChJTY3JlZW5zaG90UmVzcG9uc2USDQoFaW1hZ2UYASABKAwiMwoRT2JzQ29tbWFuZFJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSDAoEYXJncxgCIAMoCSIkChJPYnNDb21tYW5kUmVzcG9uc2USDgoGb3V0cHV0GAEgASgJIpYBCg9TeW5jRGlmZlJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSNAoFZmlsZXMYAiADKAsyJS5kYXp6bGUudjEuU3luY0RpZmZSZXF1ZXN0LkZpbGVzRW50cnkSDQoFZW50cnkYAyABKAkaLAoKRmlsZXNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIiAKEFN5bmNEaWZmUmVzcG9uc2USDAoEbmVlZBgBIAMoCSIyCg9TeW5jUHVzaFJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSDQoFY2h1bmsYAiABKAwiMwoQU3luY1B1c2hSZXNwb25zZRIOCgZzeW5jZWQYASABKAUSDwoHZGVsZXRlZBgCIAEoBSIiCg5SZWZyZXNoUmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCSIdCg9SZWZyZXNoUmVzcG9uc2USCgoCb2sYASABKAgiKAoUR2V0U3RhZ2VTdGF0c1JlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAki4wEKFUdldFN0YWdlU3RhdHNSZXNwb25zZRIRCglzdGFnZV9mcHMYASABKAESFQoNYnJvYWRjYXN0X2ZwcxgCIAEoARIWCg5kcm9wcGVkX2ZyYW1lcxgDIAEoAxIdChVkcm9wcGVkX2ZyYW1lc19yZWNlbnQYBCABKAMSEwoLdG90YWxfYnl0ZXMYBSABKAMSFAoMYnJvYWRjYXN0aW5nGAYgASgIEiAKGGJyb2FkY2FzdF91cHRpbWVfc2Vjb25kcxgHIAEoAxIcChRzdGFnZV91cHRpbWVfc2Vjb25kcxgIIAEoAzLSBAoOUnVudGltZVNlcnZpY2USRgoJRW1pdEV2ZW50EhsuZGF6emxlLnYxLkVtaXRFdmVudFJlcXVlc3QaHC5kYXp6bGUudjEuRW1pdEV2ZW50UmVzcG9uc2USQAoHR2V0TG9ncxIZLmRhenpsZS52MS5HZXRMb2dzUmVxdWVzdBoaLmRhenpsZS52MS5HZXRMb2dzUmVzcG9uc2USUgoNR2V0U3RhZ2VTdGF0cxIfLmRhenpsZS52MS5HZXRTdGFnZVN0YXRzUmVxdWVzdBogLmRhenpsZS52MS5HZXRTdGFnZVN0YXRzUmVzcG9uc2USSQoKU2NyZWVuc2hvdBIcLmRhenpsZS52MS5TY3JlZW5zaG90UmVxdWVzdBodLmRhenpsZS52MS5TY3JlZW5zaG90UmVzcG9uc2USSQoKT2JzQ29tbWFuZBIcLmRhenpsZS52MS5PYnNDb21tYW5kUmVxdWVzdBodLmRhenpsZS52MS5PYnNDb21tYW5kUmVzcG9uc2USQwoIU3luY0RpZmYSGi5kYXp6bGUudjEuU3luY0RpZmZSZXF1ZXN0GhsuZGF6emxlLnYxLlN5bmNEaWZmUmVzcG9uc2USRQoIU3luY1B1c2gSGi5kYXp6bGUudjEuU3luY1B1c2hSZXF1ZXN0GhsuZGF6emxlLnYxLlN5bmNQdXNoUmVzcG9uc2UoARJACgdSZWZyZXNoEhkuZGF6emxlLnYxLlJlZnJlc2hSZXF1ZXN0GhouZGF6emxlLnYxLlJlZnJlc2hSZXNwb25zZUItWitnaXRodWIuY29tL2RhenpsZS1sYWJzL2NsaS9nZW4vYXBpL3YxO2FwaXYxYgZwcm90bzM");
+  fileDesc("ChRhcGkvdjEvcnVudGltZS5wcm90bxIJZGF6emxlLnYxIkEKEEVtaXRFdmVudFJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSDQoFZXZlbnQYAiABKAkSDAoEZGF0YRgDIAEoCSIfChFFbWl0RXZlbnRSZXNwb25zZRIKCgJvaxgBIAEoCCIxCg5HZXRMb2dzUmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRINCgVsaW1pdBgCIAEoBSI9CghMb2dFbnRyeRINCgVsZXZlbBgBIAEoCRIPCgdtZXNzYWdlGAIgASgJEhEKCXRpbWVzdGFtcBgDIAEoCSI3Cg9HZXRMb2dzUmVzcG9uc2USJAoHZW50cmllcxgBIAMoCzITLmRhenpsZS52MS5Mb2dFbnRyeSIlChFTY3JlZW5zaG90UmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCSIjChJTY3JlZW5zaG90UmVzcG9uc2USDQoFaW1hZ2UYASABKAwilgEKD1N5bmNEaWZmUmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRI0CgVmaWxlcxgCIAMoCzIlLmRhenpsZS52MS5TeW5jRGlmZlJlcXVlc3QuRmlsZXNFbnRyeRINCgVlbnRyeRgDIAEoCRosCgpGaWxlc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiIAoQU3luY0RpZmZSZXNwb25zZRIMCgRuZWVkGAEgAygJIjIKD1N5bmNQdXNoUmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRINCgVjaHVuaxgCIAEoDCIzChBTeW5jUHVzaFJlc3BvbnNlEg4KBnN5bmNlZBgBIAEoBRIPCgdkZWxldGVkGAIgASgFIiIKDlJlZnJlc2hSZXF1ZXN0EhAKCHN0YWdlX2lkGAEgASgJIh0KD1JlZnJlc2hSZXNwb25zZRIKCgJvaxgBIAEoCCIoChRHZXRTdGFnZVN0YXRzUmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCSLjAQoVR2V0U3RhZ2VTdGF0c1Jlc3BvbnNlEhEKCXN0YWdlX2ZwcxgBIAEoARIVCg1icm9hZGNhc3RfZnBzGAIgASgBEhYKDmRyb3BwZWRfZnJhbWVzGAMgASgDEh0KFWRyb3BwZWRfZnJhbWVzX3JlY2VudBgEIAEoAxITCgt0b3RhbF9ieXRlcxgFIAEoAxIUCgxicm9hZGNhc3RpbmcYBiABKAgSIAoYYnJvYWRjYXN0X3VwdGltZV9zZWNvbmRzGAcgASgDEhwKFHN0YWdlX3VwdGltZV9zZWNvbmRzGAggASgDMocECg5SdW50aW1lU2VydmljZRJGCglFbWl0RXZlbnQSGy5kYXp6bGUudjEuRW1pdEV2ZW50UmVxdWVzdBocLmRhenpsZS52MS5FbWl0RXZlbnRSZXNwb25zZRJACgdHZXRMb2dzEhkuZGF6emxlLnYxLkdldExvZ3NSZXF1ZXN0GhouZGF6emxlLnYxLkdldExvZ3NSZXNwb25zZRJSCg1HZXRTdGFnZVN0YXRzEh8uZGF6emxlLnYxLkdldFN0YWdlU3RhdHNSZXF1ZXN0GiAuZGF6emxlLnYxLkdldFN0YWdlU3RhdHNSZXNwb25zZRJJCgpTY3JlZW5zaG90EhwuZGF6emxlLnYxLlNjcmVlbnNob3RSZXF1ZXN0Gh0uZGF6emxlLnYxLlNjcmVlbnNob3RSZXNwb25zZRJDCghTeW5jRGlmZhIaLmRhenpsZS52MS5TeW5jRGlmZlJlcXVlc3QaGy5kYXp6bGUudjEuU3luY0RpZmZSZXNwb25zZRJFCghTeW5jUHVzaBIaLmRhenpsZS52MS5TeW5jUHVzaFJlcXVlc3QaGy5kYXp6bGUudjEuU3luY1B1c2hSZXNwb25zZSgBEkAKB1JlZnJlc2gSGS5kYXp6bGUudjEuUmVmcmVzaFJlcXVlc3QaGi5kYXp6bGUudjEuUmVmcmVzaFJlc3BvbnNlQi1aK2dpdGh1Yi5jb20vZGF6emxlLWxhYnMvY2xpL2dlbi9hcGkvdjE7YXBpdjFiBnByb3RvMw");
 
 /**
  * @generated from message dazzle.v1.EmitEventRequest
@@ -157,45 +157,6 @@ export const ScreenshotResponseSchema: GenMessage<ScreenshotResponse> = /*@__PUR
   messageDesc(file_api_v1_runtime, 6);
 
 /**
- * @generated from message dazzle.v1.ObsCommandRequest
- */
-export type ObsCommandRequest = Message<"dazzle.v1.ObsCommandRequest"> & {
-  /**
-   * @generated from field: string stage_id = 1;
-   */
-  stageId: string;
-
-  /**
-   * @generated from field: repeated string args = 2;
-   */
-  args: string[];
-};
-
-/**
- * Describes the message dazzle.v1.ObsCommandRequest.
- * Use `create(ObsCommandRequestSchema)` to create a new message.
- */
-export const ObsCommandRequestSchema: GenMessage<ObsCommandRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_runtime, 7);
-
-/**
- * @generated from message dazzle.v1.ObsCommandResponse
- */
-export type ObsCommandResponse = Message<"dazzle.v1.ObsCommandResponse"> & {
-  /**
-   * @generated from field: string output = 1;
-   */
-  output: string;
-};
-
-/**
- * Describes the message dazzle.v1.ObsCommandResponse.
- * Use `create(ObsCommandResponseSchema)` to create a new message.
- */
-export const ObsCommandResponseSchema: GenMessage<ObsCommandResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_runtime, 8);
-
-/**
  * @generated from message dazzle.v1.SyncDiffRequest
  */
 export type SyncDiffRequest = Message<"dazzle.v1.SyncDiffRequest"> & {
@@ -224,7 +185,7 @@ export type SyncDiffRequest = Message<"dazzle.v1.SyncDiffRequest"> & {
  * Use `create(SyncDiffRequestSchema)` to create a new message.
  */
 export const SyncDiffRequestSchema: GenMessage<SyncDiffRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_runtime, 9);
+  messageDesc(file_api_v1_runtime, 7);
 
 /**
  * @generated from message dazzle.v1.SyncDiffResponse
@@ -243,7 +204,7 @@ export type SyncDiffResponse = Message<"dazzle.v1.SyncDiffResponse"> & {
  * Use `create(SyncDiffResponseSchema)` to create a new message.
  */
 export const SyncDiffResponseSchema: GenMessage<SyncDiffResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_runtime, 10);
+  messageDesc(file_api_v1_runtime, 8);
 
 /**
  * @generated from message dazzle.v1.SyncPushRequest
@@ -267,7 +228,7 @@ export type SyncPushRequest = Message<"dazzle.v1.SyncPushRequest"> & {
  * Use `create(SyncPushRequestSchema)` to create a new message.
  */
 export const SyncPushRequestSchema: GenMessage<SyncPushRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_runtime, 11);
+  messageDesc(file_api_v1_runtime, 9);
 
 /**
  * @generated from message dazzle.v1.SyncPushResponse
@@ -289,7 +250,7 @@ export type SyncPushResponse = Message<"dazzle.v1.SyncPushResponse"> & {
  * Use `create(SyncPushResponseSchema)` to create a new message.
  */
 export const SyncPushResponseSchema: GenMessage<SyncPushResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_runtime, 12);
+  messageDesc(file_api_v1_runtime, 10);
 
 /**
  * @generated from message dazzle.v1.RefreshRequest
@@ -306,7 +267,7 @@ export type RefreshRequest = Message<"dazzle.v1.RefreshRequest"> & {
  * Use `create(RefreshRequestSchema)` to create a new message.
  */
 export const RefreshRequestSchema: GenMessage<RefreshRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_runtime, 13);
+  messageDesc(file_api_v1_runtime, 11);
 
 /**
  * @generated from message dazzle.v1.RefreshResponse
@@ -323,7 +284,7 @@ export type RefreshResponse = Message<"dazzle.v1.RefreshResponse"> & {
  * Use `create(RefreshResponseSchema)` to create a new message.
  */
 export const RefreshResponseSchema: GenMessage<RefreshResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_runtime, 14);
+  messageDesc(file_api_v1_runtime, 12);
 
 /**
  * @generated from message dazzle.v1.GetStageStatsRequest
@@ -340,7 +301,7 @@ export type GetStageStatsRequest = Message<"dazzle.v1.GetStageStatsRequest"> & {
  * Use `create(GetStageStatsRequestSchema)` to create a new message.
  */
 export const GetStageStatsRequestSchema: GenMessage<GetStageStatsRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_runtime, 15);
+  messageDesc(file_api_v1_runtime, 13);
 
 /**
  * @generated from message dazzle.v1.GetStageStatsResponse
@@ -396,7 +357,7 @@ export type GetStageStatsResponse = Message<"dazzle.v1.GetStageStatsResponse"> &
  * Use `create(GetStageStatsResponseSchema)` to create a new message.
  */
 export const GetStageStatsResponseSchema: GenMessage<GetStageStatsResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_runtime, 16);
+  messageDesc(file_api_v1_runtime, 14);
 
 /**
  * @generated from service dazzle.v1.RuntimeService
@@ -433,14 +394,6 @@ export const RuntimeService: GenService<{
     methodKind: "unary";
     input: typeof ScreenshotRequestSchema;
     output: typeof ScreenshotResponseSchema;
-  },
-  /**
-   * @generated from rpc dazzle.v1.RuntimeService.ObsCommand
-   */
-  obsCommand: {
-    methodKind: "unary";
-    input: typeof ObsCommandRequestSchema;
-    output: typeof ObsCommandResponseSchema;
   },
   /**
    * @generated from rpc dazzle.v1.RuntimeService.SyncDiff

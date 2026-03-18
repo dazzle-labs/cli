@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"database/sql"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -27,12 +30,16 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
 	apiv1connect "github.com/dazzle-labs/cli/gen/api/v1/apiv1connect"
 
 	apiv1internalconnect "github.com/browser-streamer/control-plane/internal/gen/api/v1/apiv1internalconnect"
+	"github.com/browser-streamer/control-plane/internal/controller"
+	"github.com/browser-streamer/control-plane/internal/runpod"
 )
 
 // Set via -ldflags at build time; falls back to "main".
@@ -67,6 +74,9 @@ type Stage struct {
 	OwnerUserID   string      `json:"ownerUserId,omitempty"`
 	DestinationID string      `json:"destinationId,omitempty"`
 	PreviewToken  string      `json:"previewToken,omitempty"`
+	Provider      string      `json:"provider,omitempty"`      // "kubernetes" (default) or "gpu"
+	SidecarURL    string      `json:"sidecarUrl,omitempty"`    // fully-qualified sidecar base URL (GPU stages)
+	Capabilities  []string    `json:"capabilities,omitempty"`  // e.g., ["gpu"]
 }
 
 type Manager struct {
@@ -80,17 +90,23 @@ type Manager struct {
 	sidecarImage  string
 	r2Client      *R2Client
 	r2Bucket      string
-	podToken         string // internal token for streamer pod auth
 	maxStages        int
 	imagePullSecrets []corev1.LocalObjectReference
 	db            *sql.DB
 	auth          *authenticator
 	encryptionKey []byte
 	pc            *podClient
-	oauth         *oauthHandler
-	cliSessions   *cliSessionManager
-	cliSessionRL  *rateLimiter
-	publicBaseURL string
+	oauth              *oauthHandler
+	cliSessions        *cliSessionManager
+	cliSessionRL       *rateLimiter
+	publicBaseURL      string
+
+	// GPU provisioning (active when RUNPOD_API_KEY is set)
+	dynamicClient      dynamic.Interface
+	gpuController      *controller.GPUNodeController
+	gpuStageController *controller.GPUStageController
+	runpodClient       *runpod.Client
+	agentHTTPClient    *http.Client // mTLS client for all sidecar/agent RPC
 }
 
 
@@ -179,7 +195,6 @@ func NewManager() (*Manager, error) {
 		streamerImage: envOrDefault("STREAMER_IMAGE", "browser-streamer:latest"),
 		sidecarImage:  envOrDefault("SIDECAR_IMAGE", "stage-sidecar:latest"),
 		r2Bucket:      os.Getenv("R2_BUCKET"),
-		podToken:      os.Getenv("POD_TOKEN"),
 		maxStages:     envIntOrDefault("MAX_STAGES", 3),
 		db:            db,
 		auth:          newAuthenticator(db, clerkSecretKey),
@@ -202,7 +217,35 @@ func NewManager() (*Manager, error) {
 		}
 	}
 
-	m.pc = newPodClient(m.podToken)
+	m.pc = newPodClient()
+
+	// Build mTLS client — used for all sidecar/agent communication
+	agentTLSConfig, err := buildAgentTLSConfig()
+	if err != nil {
+		return nil, fmt.Errorf("mTLS config: %w", err)
+	}
+	if agentTLSConfig != nil {
+		m.agentHTTPClient = &http.Client{
+			Timeout:   30 * time.Second,
+			Transport: &http.Transport{TLSClientConfig: agentTLSConfig},
+		}
+		m.pc.agentHTTPClient = m.agentHTTPClient
+	}
+
+	// GPU provisioning (optional — only active when RUNPOD_API_KEY is set)
+	if runpodAPIKey := os.Getenv("RUNPOD_API_KEY"); runpodAPIKey != "" {
+		m.runpodClient = runpod.NewClient(runpodAPIKey)
+
+		dynClient, err := dynamic.NewForConfig(config)
+		if err != nil {
+			return nil, fmt.Errorf("k8s dynamic client: %w", err)
+		}
+		m.dynamicClient = dynClient
+
+		m.gpuController = controller.NewGPUNodeController(dynClient, m.runpodClient, m.namespace, agentTLSConfig)
+		m.gpuStageController = controller.NewGPUStageController(dynClient, db, m.namespace, m.agentHTTPClient)
+		log.Printf("GPU provisioning enabled (RunPod)")
+	}
 
 	if secret := os.Getenv("IMAGE_PULL_SECRET"); secret != "" {
 		m.imagePullSecrets = []corev1.LocalObjectReference{{Name: secret}}
@@ -389,17 +432,10 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 						},
 					},
 					Env: append(sidecarEnvVars(userID, id, m.r2Bucket),
-						corev1.EnvVar{
-							Name: "TOKEN",
-							ValueFrom: &corev1.EnvVarSource{
-								SecretKeyRef: &corev1.SecretKeySelector{
-									LocalObjectReference: corev1.LocalObjectReference{Name: "browserless-auth"},
-									Key:                  "token",
-								},
-							},
-						},
-						corev1.EnvVar{Name: "DISPLAY", Value: ":99"},
-						corev1.EnvVar{Name: "PULSE_SERVER", Value: "unix:/tmp/pulse/native"},
+						append(mtlsEnvVars(),
+							corev1.EnvVar{Name: "DISPLAY", Value: ":99"},
+							corev1.EnvVar{Name: "PULSE_SERVER", Value: "unix:/tmp/pulse/native"},
+						)...,
 					),
 					VolumeMounts: []corev1.VolumeMount{
 						{Name: "stage-data", MountPath: "/data"},
@@ -580,6 +616,39 @@ func sidecarEnvVars(userID, stageID, bucket string) []corev1.EnvVar {
 	}
 }
 
+// mtlsEnvVars injects the mTLS server cert/key/CA into the sidecar container
+// from the dazzle-mtls secret. The sidecar uses these to serve mTLS on port 8080.
+func mtlsEnvVars() []corev1.EnvVar {
+	optional := boolPtr(true)
+	mtls := corev1.LocalObjectReference{Name: "dazzle-mtls"}
+	return []corev1.EnvVar{
+		{
+			Name: "TLS_SERVER_CERT",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: mtls, Key: "server.crt", Optional: optional,
+				},
+			},
+		},
+		{
+			Name: "TLS_SERVER_KEY",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: mtls, Key: "server.key", Optional: optional,
+				},
+			},
+		},
+		{
+			Name: "TLS_CA_CERT",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: mtls, Key: "ca.crt", Optional: optional,
+				},
+			},
+		},
+	}
+}
+
 // deleteStage removes the pod (if active) and the DB record.
 func (m *Manager) deleteStage(id string) error {
 	val, _ := m.activateMu.LoadOrStore(id, &sync.Mutex{})
@@ -597,7 +666,22 @@ func (m *Manager) deleteStage(id string) error {
 	}
 	m.mu.Unlock()
 
-	if ok && stage.PodName != "" {
+	// Determine if GPU stage: check in-memory first, fall back to DB capabilities
+	isGPU := ok && stage.Provider == "gpu"
+	if !isGPU && !ok {
+		if row, err := dbGetStage(m.db, id); err == nil && row != nil {
+			isGPU = hasCapability(row.Capabilities, "gpu")
+		}
+	}
+
+	if isGPU {
+		// GPU stage: call agent DestroyStage, don't delete local k8s pod
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		if err := m.deactivateGPUStage(ctx, id); err != nil {
+			log.Printf("WARN: GPU stage %s cleanup: %v", id, err)
+		}
+	} else if ok && stage.PodName != "" {
 		err := m.clientset.CoreV1().Pods(m.namespace).Delete(context.Background(), stage.PodName, metav1.DeleteOptions{})
 		if err != nil {
 			log.Printf("WARN: delete pod %s: %v", stage.PodName, err)
@@ -634,7 +718,21 @@ func (m *Manager) doDeactivateStage(id string) error {
 	}
 	m.mu.Unlock()
 
-	if ok && stage.PodName != "" {
+	// Determine if GPU stage: check in-memory first, fall back to DB capabilities
+	isGPU := ok && stage.Provider == "gpu"
+	if !isGPU && !ok {
+		if row, err := dbGetStage(m.db, id); err == nil && row != nil {
+			isGPU = hasCapability(row.Capabilities, "gpu")
+		}
+	}
+
+	if isGPU {
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		if err := m.deactivateGPUStage(ctx, id); err != nil {
+			log.Printf("WARN: GPU stage %s deactivation: %v", id, err)
+		}
+	} else if ok && stage.PodName != "" {
 		err := m.clientset.CoreV1().Pods(m.namespace).Delete(context.Background(), stage.PodName, metav1.DeleteOptions{})
 		if err != nil {
 			log.Printf("WARN: delete pod %s: %v", stage.PodName, err)
@@ -644,7 +742,6 @@ func (m *Manager) doDeactivateStage(id string) error {
 	m.mu.Lock()
 	delete(m.stages, id)
 	m.mu.Unlock()
-
 
 	if m.db != nil {
 		dbUpdateStageStatus(m.db, id, "inactive", "", "")
@@ -788,11 +885,11 @@ func (m *Manager) refreshPodStatuses() {
 }
 
 // createStageRecord creates a stage DB record (status=inactive) without provisioning a pod.
-func (m *Manager) createStageRecord(userID, name string) (*Stage, error) {
+func (m *Manager) createStageRecord(userID, name string, capabilities []string) (*Stage, error) {
 	if m.db == nil {
 		return nil, fmt.Errorf("database not available")
 	}
-	id, token, err := dbCreateStage(m.db, userID, name)
+	id, token, err := dbCreateStage(m.db, userID, name, capabilities)
 	if err != nil {
 		return nil, err
 	}
@@ -802,8 +899,165 @@ func (m *Manager) createStageRecord(userID, name string) (*Stage, error) {
 		Status:       StatusInactive,
 		OwnerUserID:  userID,
 		PreviewToken: token,
+		Capabilities: capabilities,
 		CreatedAt:    time.Now(),
 	}, nil
+}
+
+// activateGPUStage creates a GPUStage CR and waits for the controller to assign it to a node.
+func (m *Manager) activateGPUStage(ctx context.Context, id, userID string) (*Stage, error) {
+	if m.gpuStageController == nil {
+		return nil, fmt.Errorf("GPU provisioning not configured")
+	}
+
+	stageCRName := "stage-" + id
+	cr := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "dazzle.fm/v1",
+			"kind":       "GPUStage",
+			"metadata": map[string]interface{}{
+				"name":      stageCRName,
+				"namespace": m.namespace,
+			},
+			"spec": map[string]interface{}{
+				"stageId": id,
+				"userId":  userID,
+			},
+		},
+	}
+
+	gpuStageGVR := controller.GPUStageGVR()
+	_, err := m.dynamicClient.Resource(gpuStageGVR).Namespace(m.namespace).Create(ctx, cr, metav1.CreateOptions{})
+	if err != nil && !strings.Contains(err.Error(), "already exists") {
+		return nil, fmt.Errorf("create GPUStage CR: %w", err)
+	}
+
+	sidecarURL, err := m.gpuStageController.WaitForRunning(ctx, stageCRName)
+	if err != nil {
+		return nil, err
+	}
+
+	stage := &Stage{
+		ID:          id,
+		Status:      StatusRunning,
+		OwnerUserID: userID,
+		Provider:    "gpu",
+		SidecarURL:  sidecarURL,
+		CreatedAt:   time.Now(),
+	}
+
+	m.mu.Lock()
+	m.stages[id] = stage
+	m.mu.Unlock()
+
+	log.Printf("GPU stage %s activated (sidecarURL=%s)", id, sidecarURL)
+	return stage, nil
+}
+
+// deactivateGPUStage deletes the GPUStage CR; the stage controller handles cleanup via finalizer.
+func (m *Manager) deactivateGPUStage(ctx context.Context, id string) error {
+	if m.gpuStageController == nil {
+		return nil
+	}
+	gpuStageGVR := controller.GPUStageGVR()
+	stageCRName := "stage-" + id
+	err := m.dynamicClient.Resource(gpuStageGVR).Namespace(m.namespace).Delete(ctx, stageCRName, metav1.DeleteOptions{})
+	if err != nil && !strings.Contains(err.Error(), "not found") {
+		return fmt.Errorf("delete GPUStage CR %s: %w", stageCRName, err)
+	}
+	return nil
+}
+
+// buildAgentTLSConfig creates TLS config for mTLS agent communication.
+func buildAgentTLSConfig() (*tls.Config, error) {
+	certB64 := os.Getenv("MTLS_CLIENT_CERT")
+	keyB64 := os.Getenv("MTLS_CLIENT_KEY")
+	caB64 := os.Getenv("MTLS_CA_CERT")
+	if certB64 == "" || keyB64 == "" || caB64 == "" {
+		return nil, fmt.Errorf("MTLS_CLIENT_CERT, MTLS_CLIENT_KEY, and MTLS_CA_CERT are all required")
+	}
+
+	certPEM, err := decodePEM(certB64)
+	if err != nil {
+		return nil, fmt.Errorf("decode MTLS_CLIENT_CERT: %w", err)
+	}
+	keyPEM, err := decodePEM(keyB64)
+	if err != nil {
+		return nil, fmt.Errorf("decode MTLS_CLIENT_KEY: %w", err)
+	}
+	caPEM, err := decodePEM(caB64)
+	if err != nil {
+		return nil, fmt.Errorf("decode MTLS_CA_CERT: %w", err)
+	}
+
+	cert, err := tls.X509KeyPair(certPEM, keyPEM)
+	if err != nil {
+		return nil, fmt.Errorf("load client cert: %w", err)
+	}
+
+	caPool := x509.NewCertPool()
+	if !caPool.AppendCertsFromPEM(caPEM) {
+		return nil, fmt.Errorf("parse MTLS_CA_CERT PEM")
+	}
+
+	tlsConfig := &tls.Config{
+		Certificates:       []tls.Certificate{cert},
+		RootCAs:            caPool,
+		InsecureSkipVerify: true, // RunPod IPs are dynamic — no matching SANs possible
+	}
+	// InsecureSkipVerify skips hostname/SAN validation (necessary for dynamic IPs)
+	// but we still verify the server cert chain against our CA via VerifyPeerCertificate.
+	tlsConfig.VerifyPeerCertificate = func(rawCerts [][]byte, _ [][]*x509.Certificate) error {
+		if len(rawCerts) == 0 {
+			return fmt.Errorf("server presented no certificates")
+		}
+		serverCert, err := x509.ParseCertificate(rawCerts[0])
+		if err != nil {
+			return fmt.Errorf("parse server cert: %w", err)
+		}
+		opts := x509.VerifyOptions{Roots: caPool}
+		if _, err := serverCert.Verify(opts); err != nil {
+			return fmt.Errorf("server cert not signed by our CA: %w", err)
+		}
+		return nil
+	}
+
+	return tlsConfig, nil
+}
+
+// decodePEM accepts either raw PEM or base64-encoded PEM and returns PEM bytes.
+func decodePEM(s string) ([]byte, error) {
+	s = strings.TrimSpace(s)
+	// If it starts with "-----BEGIN", it's already raw PEM
+	if strings.HasPrefix(s, "-----BEGIN") {
+		return []byte(s), nil
+	}
+	// Otherwise treat as base64-encoded PEM (strip whitespace first)
+	s = strings.ReplaceAll(s, "\n", "")
+	s = strings.ReplaceAll(s, "\r", "")
+	b, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		b, err = base64.URLEncoding.DecodeString(s)
+	}
+	return b, err
+}
+
+// stageIsReady returns true if the stage is running and reachable.
+func stageIsReady(stage *Stage) bool {
+	return stage.Status == StatusRunning && (stage.PodIP != "" || stage.SidecarURL != "")
+}
+
+// stageProxyTarget returns the reverse proxy target URL for a stage.
+// GPU stages use the SidecarURL (NodePort), local stages use PodIP.
+func stageProxyTarget(stage *Stage) *url.URL {
+	if stage.SidecarURL != "" {
+		// SidecarURL is like http://IP:PORT/_dz_9f7a3b1c — we need the base http://IP:PORT
+		base := strings.TrimSuffix(stage.SidecarURL, "/_dz_9f7a3b1c")
+		u, _ := url.Parse(base)
+		return u
+	}
+	u, _ := url.Parse(fmt.Sprintf("https://%s:8080", stage.PodIP))
+	return u
 }
 
 // handleHLSProxy handles /stage/<uuid>/hls/* with preview token auth and M3U8 rewriting.
@@ -839,13 +1093,16 @@ func (m *Manager) handleHLSProxy(w http.ResponseWriter, r *http.Request) {
 		}
 
 		stage, ok := m.getStage(stageID)
-		if !ok || stage.Status != StatusRunning || stage.PodIP == "" {
+		if !ok || !stageIsReady(stage) {
 			writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "stage not active"})
 			return
 		}
 
-		target, _ := url.Parse(fmt.Sprintf("http://%s:8080", stage.PodIP))
+		target := stageProxyTarget(stage)
 		proxy := httputil.NewSingleHostReverseProxy(target)
+		if target.Scheme == "https" && m.agentHTTPClient != nil && m.agentHTTPClient.Transport != nil {
+			proxy.Transport = m.agentHTTPClient.Transport
+		}
 		r.URL.Path = "/_dz_9f7a3b1c/hls/" + filename
 		r.URL.RawQuery = "" // strip token from proxied request
 		r.Host = target.Host
@@ -884,13 +1141,16 @@ func (m *Manager) handleHLSProxy(w http.ResponseWriter, r *http.Request) {
 	// No preview token: authenticate via Clerk JWT and proxy HLS directly.
 	m.auth.authMiddlewareHTTP(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		stage, ok := m.getStage(stageID)
-		if !ok || stage.Status != StatusRunning || stage.PodIP == "" {
+		if !ok || !stageIsReady(stage) {
 			writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "stage not active"})
 			return
 		}
 
-		target, _ := url.Parse(fmt.Sprintf("http://%s:8080", stage.PodIP))
+		target := stageProxyTarget(stage)
 		proxy := httputil.NewSingleHostReverseProxy(target)
+		if target.Scheme == "https" && m.agentHTTPClient != nil && m.agentHTTPClient.Transport != nil {
+			proxy.Transport = m.agentHTTPClient.Transport
+		}
 		r.URL.Path = "/_dz_9f7a3b1c/hls/" + filename
 		r.URL.RawQuery = ""
 		r.Host = target.Host
@@ -915,7 +1175,7 @@ func (m *Manager) handleThumbnail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	stage, ok := m.getStage(stageID)
-	if !ok || stage.Status != StatusRunning || stage.PodIP == "" {
+	if !ok || !stageIsReady(stage) {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
@@ -924,8 +1184,11 @@ func (m *Manager) handleThumbnail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	target, _ := url.Parse(fmt.Sprintf("http://%s:8080", stage.PodIP))
+	target := stageProxyTarget(stage)
 	proxy := httputil.NewSingleHostReverseProxy(target)
+	if target.Scheme == "https" && m.agentHTTPClient != nil && m.agentHTTPClient.Transport != nil {
+		proxy.Transport = m.agentHTTPClient.Transport
+	}
 	r.URL.Path = "/_dz_9f7a3b1c/thumbnail.png"
 	r.URL.RawQuery = ""
 	r.Host = target.Host
@@ -963,12 +1226,12 @@ func (m *Manager) handleStageProxy(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusNotFound, map[string]any{"error": "stage not found"})
 		return
 	}
-	if stage.PodIP == "" || stage.Status != StatusRunning {
+	if !stageIsReady(stage) {
 		writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "stage not ready", "status": string(stage.Status)})
 		return
 	}
 
-	target, _ := url.Parse(fmt.Sprintf("http://%s:8080", stage.PodIP))
+	target := stageProxyTarget(stage)
 	proxy := httputil.NewSingleHostReverseProxy(target)
 	r.URL.Path = remainder
 	r.Host = target.Host
@@ -976,6 +1239,11 @@ func (m *Manager) handleStageProxy(w http.ResponseWriter, r *http.Request) {
 	// Strip client auth — the control plane already validated the user,
 	// and the streamer pod doesn't understand Clerk JWTs.
 	r.Header.Del("Authorization")
+
+	// GPU stages use HTTPS (mTLS) — configure the proxy transport
+	if target.Scheme == "https" && m.agentHTTPClient != nil && m.agentHTTPClient.Transport != nil {
+		proxy.Transport = m.agentHTTPClient.Transport
+	}
 
 	proxy.ServeHTTP(w, r)
 }
@@ -1002,13 +1270,13 @@ func (m *Manager) handleWebSocketUpgrade(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "stage not found", http.StatusNotFound)
 		return
 	}
-	if stage.PodIP == "" || stage.Status != StatusRunning {
+	if !stageIsReady(stage) {
 		http.Error(w, "stage not ready", http.StatusServiceUnavailable)
 		return
 	}
 
 	// Proxy WebSocket to pod's CDP port
-	target, _ := url.Parse(fmt.Sprintf("http://%s:8080", stage.PodIP))
+	target := stageProxyTarget(stage)
 	proxy := httputil.NewSingleHostReverseProxy(target)
 	// Strip the /stage/:id prefix, forward the rest (or just /)
 	parts := strings.SplitN(path, "/", 2)
@@ -1018,6 +1286,11 @@ func (m *Manager) handleWebSocketUpgrade(w http.ResponseWriter, r *http.Request)
 		r.URL.Path = "/"
 	}
 	r.Host = target.Host
+
+	// GPU stages use HTTPS (mTLS) — configure the proxy transport
+	if target.Scheme == "https" && m.agentHTTPClient != nil && m.agentHTTPClient.Transport != nil {
+		proxy.Transport = m.agentHTTPClient.Transport
+	}
 
 	// For WebSocket, we need a custom FlushInterval
 	proxy.FlushInterval = -1
@@ -1165,7 +1438,7 @@ func (m *Manager) handleCDP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	stage, ok := m.getStage(stageID)
-	if !ok || stage.PodIP == "" || stage.Status != StatusRunning {
+	if !ok || !stageIsReady(stage) {
 		status := "inactive"
 		if ok {
 			status = string(stage.Status)
@@ -1226,15 +1499,7 @@ func (m *Manager) proxyCDPWebSocket(w http.ResponseWriter, r *http.Request, chro
 		return
 	}
 
-	// Send WebSocket upgrade request to Chrome (add token for pod auth)
 	reqURI := parsed.RequestURI()
-	if m.podToken != "" {
-		if strings.Contains(reqURI, "?") {
-			reqURI += "&token=" + url.QueryEscape(m.podToken)
-		} else {
-			reqURI += "?token=" + url.QueryEscape(m.podToken)
-		}
-	}
 	upgradeReq := fmt.Sprintf("GET %s HTTP/1.1\r\nHost: %s\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n", reqURI, parsed.Host)
 	for _, key := range []string{"Sec-WebSocket-Key", "Sec-WebSocket-Version", "Sec-WebSocket-Extensions", "Sec-WebSocket-Protocol"} {
 		if v := r.Header.Get(key); v != "" {
@@ -1433,9 +1698,7 @@ func main() {
 	// Stage handler: all stage-specific routes under /stage/<uuid>/
 	//   /stage/<uuid>/cdp           — CDP WebSocket proxy and HTTP discovery
 	//   /stage/<uuid>/cdp/json/*    — CDP discovery (URL-rewritten)
-	//   /stage/<uuid>/mcp/*         — MCP server
 	//   /stage/<uuid>/*             — reverse proxy to streamer pod
-	mcpHandler := mgr.mcpMiddleware(mgr.setupMCP())
 	spaHandler := spaFileServer("web")
 	mux.HandleFunc("/stage/", func(w http.ResponseWriter, r *http.Request) {
 		// Extract the third path segment: /stage/<uuid>/<segment>/...
@@ -1462,8 +1725,6 @@ func main() {
 		switch segment {
 		case "cdp":
 			corsMiddleware(http.HandlerFunc(mgr.handleCDP)).ServeHTTP(w, r)
-		case "mcp":
-			mcpHandler.ServeHTTP(w, r)
 		case "hls":
 			mgr.handleHLSProxy(w, r)
 		case "thumbnail":
@@ -1511,8 +1772,17 @@ func main() {
 		Handler: mux,
 	}
 
-	// GC + status refresh loop
+	// Start GPU controllers if configured
 	ctx, cancel := context.WithCancel(context.Background())
+	if mgr.gpuController != nil {
+		mgr.gpuController.RecoverNodes(ctx)
+		go mgr.gpuController.Start(ctx)
+	}
+	if mgr.gpuStageController != nil {
+		go mgr.gpuStageController.Run(ctx)
+	}
+
+	// GC + status refresh loop
 	go func() {
 		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()

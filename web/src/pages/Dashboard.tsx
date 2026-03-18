@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useUser } from "@clerk/react";
 import { Link, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
@@ -9,21 +10,33 @@ import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Radio, X, Loader2, ArrowRight, Rocket, Plus } from "lucide-react";
+import { Radio, X, Loader2, ArrowRight, Rocket, Plus, Zap } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 import { toast } from "sonner";
 import { Alert, AlertTitle, AlertAction } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { AnimatedPage } from "@/components/AnimatedPage";
 import { AnimatedList, AnimatedListItem } from "@/components/AnimatedList";
 import { StageThumbnail } from "@/components/StageThumbnail";
 import { springs, fadeInUp } from "@/lib/motion";
 
+const GPU_ROLES = ["tester", "developer"];
+
 export function Dashboard() {
+  const { user } = useUser();
+  const canUseGPU = GPU_ROLES.includes((user?.publicMetadata?.role as string) ?? "");
+
   const [stages, setStages] = useState<Stage[]>([]);
   const [destinations, setDestinations] = useState<StreamDestination[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createName, setCreateName] = useState("");
+  const [createGPU, setCreateGPU] = useState(false);
   const [creatingStage, setCreatingStage] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardSkipIntro, setWizardSkipIntro] = useState(false);
@@ -77,8 +90,14 @@ export function Dashboard() {
   async function handleCreateStage() {
     setCreatingStage(true);
     try {
-      const resp = await stageClient.createStage({ name: "" });
+      const resp = await stageClient.createStage({
+        name: createName.trim(),
+        capabilities: createGPU ? ["gpu"] : [],
+      });
       if (resp.stage) {
+        setCreateOpen(false);
+        setCreateName("");
+        setCreateGPU(false);
         navigate(`/stage/${resp.stage.id}`);
       }
     } catch {
@@ -135,17 +154,12 @@ export function Dashboard() {
           </h1>
           {stages.length > 0 && (
             <Button
-              onClick={handleCreateStage}
-              disabled={creatingStage}
+              onClick={() => setCreateOpen(true)}
               variant="outline"
               size="sm"
               className="text-primary border-primary/25 hover:bg-primary/10 hover:border-primary/40"
             >
-              {creatingStage ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Plus className="h-4 w-4" />
-              )}
+              <Plus className="h-4 w-4" />
               <span className="sm:hidden">Create</span>
               <span className="hidden sm:inline">Create Stage</span>
             </Button>
@@ -155,6 +169,48 @@ export function Dashboard() {
           Cloud environments your agents can control and broadcast from.
         </p>
       </div>
+
+      {/* Create stage dialog */}
+      <Dialog open={createOpen} onOpenChange={(open) => {
+        setCreateOpen(open);
+        if (!open) { setCreateName(""); setCreateGPU(false); }
+      }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Create Stage</DialogTitle>
+            <DialogDescription>
+              A cloud environment your AI agent can control.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="stage-name">Name</Label>
+              <Input
+                id="stage-name"
+                placeholder="my-stage"
+                value={createName}
+                onChange={(e) => setCreateName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleCreateStage(); }}
+              />
+            </div>
+            {canUseGPU && (
+              <div className="flex items-center justify-between rounded-lg border p-3">
+                <div className="flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-amber-500" />
+                  <Label htmlFor="gpu-toggle" className="cursor-pointer font-normal">GPU-accelerated</Label>
+                </div>
+                <Switch id="gpu-toggle" checked={createGPU} onCheckedChange={setCreateGPU} />
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button onClick={handleCreateStage} disabled={creatingStage}>
+              {creatingStage && <Loader2 className="h-4 w-4 animate-spin" />}
+              Create
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Onboarding wizard overlay */}
       <OnboardingWizard
@@ -220,6 +276,12 @@ export function Dashboard() {
                             {stage.name || "Untitled Stage"}
                           </span>
                           <div className="flex items-center gap-2">
+                            {stage.capabilities.includes("gpu") && (
+                              <Badge variant="outline" className="text-amber-500 border-amber-500/30 gap-1 px-1.5">
+                                <Zap className="h-3 w-3" />
+                                GPU
+                              </Badge>
+                            )}
                             {(isRunning || isStarting) && (
                               <span className="relative flex h-2.5 w-2.5">
                                 <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", isRunning ? "bg-emerald-400" : "bg-amber-400")} />

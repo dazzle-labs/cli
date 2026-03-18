@@ -26,6 +26,14 @@ type authInfo struct {
 	UserID string
 	Method authMethod
 	KeyID  string // only set for API key auth
+	Role   string // Clerk publicMetadata.role (empty for API key auth)
+}
+
+// clerkPublicMetadataClaims extracts public_metadata from the Clerk JWT.
+type clerkPublicMetadataClaims struct {
+	PublicMetadata struct {
+		Role string `json:"role"`
+	} `json:"public_metadata"`
 }
 
 type authInfoKeyType struct{}
@@ -127,7 +135,8 @@ func (a *authenticator) verifyClerkJWT(ctx context.Context, token string) (*auth
 		a.jwkStore.jwk = jwk
 	}
 
-	claims, err := jwt.Verify(ctx, &jwt.VerifyParams{Token: token, JWK: jwk})
+	customCtor := func(_ context.Context) any { return &clerkPublicMetadataClaims{} }
+	claims, err := jwt.Verify(ctx, &jwt.VerifyParams{Token: token, JWK: jwk, CustomClaimsConstructor: customCtor})
 	if err != nil {
 		// JWK might be rotated — clear cache and retry once
 		a.jwkStore.jwk = nil
@@ -143,13 +152,17 @@ func (a *authenticator) verifyClerkJWT(ctx context.Context, token string) (*auth
 			return nil, err
 		}
 		a.jwkStore.jwk = jwk
-		claims, err = jwt.Verify(ctx, &jwt.VerifyParams{Token: token, JWK: jwk})
+		claims, err = jwt.Verify(ctx, &jwt.VerifyParams{Token: token, JWK: jwk, CustomClaimsConstructor: customCtor})
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return &authInfo{UserID: claims.Subject, Method: authMethodClerk}, nil
+	var role string
+	if meta, ok := claims.Custom.(*clerkPublicMetadataClaims); ok {
+		role = meta.PublicMetadata.Role
+	}
+	return &authInfo{UserID: claims.Subject, Method: authMethodClerk, Role: role}, nil
 }
 
 // extractBearerToken gets the token from Authorization header or query param.

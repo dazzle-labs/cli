@@ -8,6 +8,12 @@ import (
 )
 
 func (s *Server) handleCDPProxy(w http.ResponseWriter, r *http.Request) {
+	// In pipe mode, CDP is not accessible via HTTP proxy
+	if s.cfg.CDPPort == "" {
+		http.Error(w, `{"error":"CDP proxy not available in pipe mode"}`, http.StatusServiceUnavailable)
+		return
+	}
+
 	// Path has already been stripped of the prefix by StripPrefix.
 	// We get /cdp/<subpath>
 	subPath := strings.TrimPrefix(r.URL.Path, "/cdp")

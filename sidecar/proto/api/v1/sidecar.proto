@@ -20,9 +20,10 @@ service RuntimeService {
   rpc Screenshot(ScreenshotRequest) returns (ScreenshotResponse);
 }
 
-// ObsService proxies commands to OBS via gobs-cli.
-service ObsService {
-  rpc Command(ObsCommandRequest) returns (ObsCommandResponse);
+// BroadcastPipelineService controls the ffmpeg broadcast pipeline.
+service BroadcastPipelineService {
+  rpc Start(BroadcastStartRequest) returns (BroadcastStartResponse);
+  rpc Stop(BroadcastStopRequest) returns (BroadcastStopResponse);
 }
 
 // --- Sync messages ---
@@ -108,24 +109,14 @@ message ScreenshotResponse {
   bytes image = 1;                // raw PNG bytes
 }
 
-message GetStatsRequest {}
+// --- Broadcast pipeline messages ---
 
-message GetStatsResponse {
-  double fps = 1;
-  int64 dropped_frames = 2;
-  int64 dropped_frames_recent = 3;
-  int64 total_bytes = 4;
-  double speed = 5;
-  bool broadcasting = 6;
-  int64 pipeline_uptime_seconds = 7;
+message BroadcastStartRequest {
+  string rtmp_url = 1;
 }
 
-// --- OBS messages ---
+message BroadcastStartResponse {}
 
-message ObsCommandRequest {
-  repeated string args = 1;
-}
+message BroadcastStopRequest {}
 
-message ObsCommandResponse {
-  string output = 1;
-}
+message BroadcastStopResponse {}

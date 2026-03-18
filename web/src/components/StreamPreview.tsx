@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import { motion } from "motion/react";
-import { useAuth } from "@clerk/react";
+import { useGetToken } from "../useDevToken.js";
 import Hls from "hls.js";
 import { springs } from "@/lib/motion";
 
@@ -13,7 +13,7 @@ export function StreamPreview({ stageId, status }: StreamPreviewProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { getToken } = useAuth();
+  const getToken = useGetToken();
 
   const destroyHls = useCallback(() => {
     if (retryTimerRef.current) {

@@ -25,8 +25,8 @@ const (
 	SyncServiceName = "dazzle.sidecar.v1.SyncService"
 	// RuntimeServiceName is the fully-qualified name of the RuntimeService service.
 	RuntimeServiceName = "dazzle.sidecar.v1.RuntimeService"
-	// ObsServiceName is the fully-qualified name of the ObsService service.
-	ObsServiceName = "dazzle.sidecar.v1.ObsService"
+	// BroadcastPipelineServiceName is the fully-qualified name of the BroadcastPipelineService service.
+	BroadcastPipelineServiceName = "dazzle.sidecar.v1.BroadcastPipelineService"
 )
 
 // These constants are the fully-qualified names of the RPCs defined in this package. They're
@@ -55,8 +55,12 @@ const (
 	// RuntimeServiceScreenshotProcedure is the fully-qualified name of the RuntimeService's Screenshot
 	// RPC.
 	RuntimeServiceScreenshotProcedure = "/dazzle.sidecar.v1.RuntimeService/Screenshot"
-	// ObsServiceCommandProcedure is the fully-qualified name of the ObsService's Command RPC.
-	ObsServiceCommandProcedure = "/dazzle.sidecar.v1.ObsService/Command"
+	// BroadcastPipelineServiceStartProcedure is the fully-qualified name of the
+	// BroadcastPipelineService's Start RPC.
+	BroadcastPipelineServiceStartProcedure = "/dazzle.sidecar.v1.BroadcastPipelineService/Start"
+	// BroadcastPipelineServiceStopProcedure is the fully-qualified name of the
+	// BroadcastPipelineService's Stop RPC.
+	BroadcastPipelineServiceStopProcedure = "/dazzle.sidecar.v1.BroadcastPipelineService/Stop"
 )
 
 // SyncServiceClient is a client for the dazzle.sidecar.v1.SyncService service.
@@ -355,72 +359,100 @@ func (UnimplementedRuntimeServiceHandler) Screenshot(context.Context, *connect.R
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.sidecar.v1.RuntimeService.Screenshot is not implemented"))
 }
 
-// ObsServiceClient is a client for the dazzle.sidecar.v1.ObsService service.
-type ObsServiceClient interface {
-	Command(context.Context, *connect.Request[v1.ObsCommandRequest]) (*connect.Response[v1.ObsCommandResponse], error)
+// BroadcastPipelineServiceClient is a client for the dazzle.sidecar.v1.BroadcastPipelineService
+// service.
+type BroadcastPipelineServiceClient interface {
+	Start(context.Context, *connect.Request[v1.BroadcastStartRequest]) (*connect.Response[v1.BroadcastStartResponse], error)
+	Stop(context.Context, *connect.Request[v1.BroadcastStopRequest]) (*connect.Response[v1.BroadcastStopResponse], error)
 }
 
-// NewObsServiceClient constructs a client for the dazzle.sidecar.v1.ObsService service. By default,
-// it uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses, and
-// sends uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the connect.WithGRPC()
-// or connect.WithGRPCWeb() options.
+// NewBroadcastPipelineServiceClient constructs a client for the
+// dazzle.sidecar.v1.BroadcastPipelineService service. By default, it uses the Connect protocol with
+// the binary Protobuf Codec, asks for gzipped responses, and sends uncompressed requests. To use
+// the gRPC or gRPC-Web protocols, supply the connect.WithGRPC() or connect.WithGRPCWeb() options.
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewObsServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) ObsServiceClient {
+func NewBroadcastPipelineServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) BroadcastPipelineServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
-	obsServiceMethods := v1.File_api_v1_sidecar_proto.Services().ByName("ObsService").Methods()
-	return &obsServiceClient{
-		command: connect.NewClient[v1.ObsCommandRequest, v1.ObsCommandResponse](
+	broadcastPipelineServiceMethods := v1.File_api_v1_sidecar_proto.Services().ByName("BroadcastPipelineService").Methods()
+	return &broadcastPipelineServiceClient{
+		start: connect.NewClient[v1.BroadcastStartRequest, v1.BroadcastStartResponse](
 			httpClient,
-			baseURL+ObsServiceCommandProcedure,
-			connect.WithSchema(obsServiceMethods.ByName("Command")),
+			baseURL+BroadcastPipelineServiceStartProcedure,
+			connect.WithSchema(broadcastPipelineServiceMethods.ByName("Start")),
+			connect.WithClientOptions(opts...),
+		),
+		stop: connect.NewClient[v1.BroadcastStopRequest, v1.BroadcastStopResponse](
+			httpClient,
+			baseURL+BroadcastPipelineServiceStopProcedure,
+			connect.WithSchema(broadcastPipelineServiceMethods.ByName("Stop")),
 			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
-// obsServiceClient implements ObsServiceClient.
-type obsServiceClient struct {
-	command *connect.Client[v1.ObsCommandRequest, v1.ObsCommandResponse]
+// broadcastPipelineServiceClient implements BroadcastPipelineServiceClient.
+type broadcastPipelineServiceClient struct {
+	start *connect.Client[v1.BroadcastStartRequest, v1.BroadcastStartResponse]
+	stop  *connect.Client[v1.BroadcastStopRequest, v1.BroadcastStopResponse]
 }
 
-// Command calls dazzle.sidecar.v1.ObsService.Command.
-func (c *obsServiceClient) Command(ctx context.Context, req *connect.Request[v1.ObsCommandRequest]) (*connect.Response[v1.ObsCommandResponse], error) {
-	return c.command.CallUnary(ctx, req)
+// Start calls dazzle.sidecar.v1.BroadcastPipelineService.Start.
+func (c *broadcastPipelineServiceClient) Start(ctx context.Context, req *connect.Request[v1.BroadcastStartRequest]) (*connect.Response[v1.BroadcastStartResponse], error) {
+	return c.start.CallUnary(ctx, req)
 }
 
-// ObsServiceHandler is an implementation of the dazzle.sidecar.v1.ObsService service.
-type ObsServiceHandler interface {
-	Command(context.Context, *connect.Request[v1.ObsCommandRequest]) (*connect.Response[v1.ObsCommandResponse], error)
+// Stop calls dazzle.sidecar.v1.BroadcastPipelineService.Stop.
+func (c *broadcastPipelineServiceClient) Stop(ctx context.Context, req *connect.Request[v1.BroadcastStopRequest]) (*connect.Response[v1.BroadcastStopResponse], error) {
+	return c.stop.CallUnary(ctx, req)
 }
 
-// NewObsServiceHandler builds an HTTP handler from the service implementation. It returns the path
-// on which to mount the handler and the handler itself.
+// BroadcastPipelineServiceHandler is an implementation of the
+// dazzle.sidecar.v1.BroadcastPipelineService service.
+type BroadcastPipelineServiceHandler interface {
+	Start(context.Context, *connect.Request[v1.BroadcastStartRequest]) (*connect.Response[v1.BroadcastStartResponse], error)
+	Stop(context.Context, *connect.Request[v1.BroadcastStopRequest]) (*connect.Response[v1.BroadcastStopResponse], error)
+}
+
+// NewBroadcastPipelineServiceHandler builds an HTTP handler from the service implementation. It
+// returns the path on which to mount the handler and the handler itself.
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewObsServiceHandler(svc ObsServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	obsServiceMethods := v1.File_api_v1_sidecar_proto.Services().ByName("ObsService").Methods()
-	obsServiceCommandHandler := connect.NewUnaryHandler(
-		ObsServiceCommandProcedure,
-		svc.Command,
-		connect.WithSchema(obsServiceMethods.ByName("Command")),
+func NewBroadcastPipelineServiceHandler(svc BroadcastPipelineServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	broadcastPipelineServiceMethods := v1.File_api_v1_sidecar_proto.Services().ByName("BroadcastPipelineService").Methods()
+	broadcastPipelineServiceStartHandler := connect.NewUnaryHandler(
+		BroadcastPipelineServiceStartProcedure,
+		svc.Start,
+		connect.WithSchema(broadcastPipelineServiceMethods.ByName("Start")),
 		connect.WithHandlerOptions(opts...),
 	)
-	return "/dazzle.sidecar.v1.ObsService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	broadcastPipelineServiceStopHandler := connect.NewUnaryHandler(
+		BroadcastPipelineServiceStopProcedure,
+		svc.Stop,
+		connect.WithSchema(broadcastPipelineServiceMethods.ByName("Stop")),
+		connect.WithHandlerOptions(opts...),
+	)
+	return "/dazzle.sidecar.v1.BroadcastPipelineService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case ObsServiceCommandProcedure:
-			obsServiceCommandHandler.ServeHTTP(w, r)
+		case BroadcastPipelineServiceStartProcedure:
+			broadcastPipelineServiceStartHandler.ServeHTTP(w, r)
+		case BroadcastPipelineServiceStopProcedure:
+			broadcastPipelineServiceStopHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
 	})
 }
 
-// UnimplementedObsServiceHandler returns CodeUnimplemented from all methods.
-type UnimplementedObsServiceHandler struct{}
+// UnimplementedBroadcastPipelineServiceHandler returns CodeUnimplemented from all methods.
+type UnimplementedBroadcastPipelineServiceHandler struct{}
 
-func (UnimplementedObsServiceHandler) Command(context.Context, *connect.Request[v1.ObsCommandRequest]) (*connect.Response[v1.ObsCommandResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.sidecar.v1.ObsService.Command is not implemented"))
+func (UnimplementedBroadcastPipelineServiceHandler) Start(context.Context, *connect.Request[v1.BroadcastStartRequest]) (*connect.Response[v1.BroadcastStartResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.sidecar.v1.BroadcastPipelineService.Start is not implemented"))
+}
+
+func (UnimplementedBroadcastPipelineServiceHandler) Stop(context.Context, *connect.Request[v1.BroadcastStopRequest]) (*connect.Response[v1.BroadcastStopResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.sidecar.v1.BroadcastPipelineService.Stop is not implemented"))
 }

@@ -227,7 +227,15 @@ func TestBuildArgs_Broadcasting(t *testing.T) {
 		{"has hls format", func() bool { return containsPair(args, "-f", "hls") }},
 		{"has flv format", func() bool { return containsPair(args, "-f", "flv") }},
 		{"has 4 -map flags", func() bool { return countArg(args, "-map") == 4 }},
-		{"has rtmp url", func() bool { return args[len(args)-1] == "rtmp://live.example.com/app/key123" }},
+		{"rtmp url not in args", func() bool {
+			for _, a := range args {
+				if a == "rtmp://live.example.com/app/key123" {
+					return false // should NOT be in args (passed via env var)
+				}
+			}
+			return true
+		}},
+		{"ends with -f flv", func() bool { return args[len(args)-1] == "flv" }},
 		{"has rtmp preset veryfast", func() bool { return containsPair(args, "-preset", "veryfast") }},
 		{"has bufsize", func() bool { return containsPair(args, "-bufsize", "5000k") }},
 		{"has maxrate", func() bool { return containsPair(args, "-maxrate", "2500k") }},

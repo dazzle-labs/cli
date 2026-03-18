@@ -1,0 +1,1 @@
+ALTER TABLE stages ADD COLUMN IF NOT EXISTS capabilities text[] NOT NULL DEFAULT '{}';

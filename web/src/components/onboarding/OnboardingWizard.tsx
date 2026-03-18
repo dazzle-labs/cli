@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@clerk/react";
+import { useGetToken } from "../../useDevToken.js";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeft, ArrowRight, Plus } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -35,7 +35,7 @@ const stepVariants = {
 };
 
 export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardProps) {
-  const { getToken } = useAuth();
+  const getToken = useGetToken();
   const navigate = useNavigate();
   const [showInfoScreen, setShowInfoScreen] = useState(!skipIntro);
   const [step, setStep] = useState(0);

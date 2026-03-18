@@ -42,7 +42,8 @@ type Pipeline struct {
 	broadcasting bool
 	rtmpURL      string // full URL including stream key
 
-	// Broadcast encoding settings
+	// Encoding settings
+	videoCodec  string // "libx264" (default) or "h264_nvenc"
 	rtmpBitrate int    // kbps
 	rtmpPreset  string // x264 preset
 
@@ -80,6 +81,15 @@ func WithRTMPPreset(preset string) Option {
 	return func(p *Pipeline) { p.rtmpPreset = preset }
 }
 
+// WithVideoCodec sets the video codec (default "libx264", alternative "h264_nvenc").
+func WithVideoCodec(codec string) Option {
+	return func(p *Pipeline) {
+		if codec != "" {
+			p.videoCodec = codec
+		}
+	}
+}
+
 // WithFramerate sets the capture framerate (default 30).
 func WithFramerate(fps int) Option {
 	return func(p *Pipeline) { p.framerate = fps }
@@ -92,6 +102,7 @@ func New(display, screenSize, hlsDir string, opts ...Option) *Pipeline {
 		screenSize:  screenSize,
 		hlsDir:      hlsDir,
 		framerate:   30,
+		videoCodec:  "libx264",
 		hlsBitrate:  2500,
 		rtmpBitrate: 2500,
 		rtmpPreset:  "veryfast",
@@ -181,7 +192,17 @@ func (p *Pipeline) startLocked() error {
 	args := p.buildArgs()
 	log.Printf("ffmpeg pipeline: starting [broadcasting=%v]", p.broadcasting)
 
-	cmd := exec.Command("ffmpeg", args...)
+	var cmd *exec.Cmd
+	if p.broadcasting && p.rtmpURL != "" {
+		// Pass RTMP URL via env var instead of command-line arg to prevent
+		// exposure via /proc/<pid>/cmdline on multi-tenant GPU pods.
+		// /proc/<pid>/environ is UID-protected (owner-only read).
+		shellArgs := strings.Join(quoteArgs(args), " ") + ` "$RTMP_URL"`
+		cmd = exec.Command("sh", "-c", "exec ffmpeg "+shellArgs)
+		cmd.Env = append(os.Environ(), "RTMP_URL="+p.rtmpURL)
+	} else {
+		cmd = exec.Command("ffmpeg", args...)
+	}
 	cmd.Stderr = os.Stderr // ffmpeg logs to stderr
 
 	// Use -progress pipe:1 for machine-readable stats on stdout
@@ -281,9 +302,9 @@ func (p *Pipeline) buildArgs() []string {
 		args = append(args,
 			// HLS output
 			"-map", "0:v", "-map", "1:a",
-			"-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency", "-threads", "2",
-			"-crf", "28",
-			"-g", gop,
+		)
+		args = append(args, p.hlsCodecArgs(gop)...)
+		args = append(args,
 			"-c:a", "aac", "-b:a", "96k",
 			"-f", "hls",
 			"-hls_time", "1",
@@ -292,24 +313,20 @@ func (p *Pipeline) buildArgs() []string {
 			"-hls_segment_filename", segPattern,
 			hlsOut,
 
-			// RTMP output (broadcast quality — keeps zerolatency for live delivery)
+			// RTMP output
 			"-map", "0:v", "-map", "1:a",
-			"-c:v", "libx264", "-preset", p.rtmpPreset, "-tune", "zerolatency", "-threads", "2",
-			"-pix_fmt", "yuv420p",
-			"-b:v", fmt.Sprintf("%dk", p.rtmpBitrate),
-			"-maxrate", fmt.Sprintf("%dk", p.rtmpBitrate),
-			"-bufsize", fmt.Sprintf("%dk", p.rtmpBitrate*2),
-			"-g", fmt.Sprintf("%d", p.framerate*2), // 2-second GOP for RTMP (longer for CDN efficiency)
+		)
+		args = append(args, p.rtmpCodecArgs()...)
+		args = append(args,
 			"-c:a", "aac", "-b:a", "128k",
 			"-f", "flv",
-			p.rtmpURL,
 		)
+		// RTMP URL is appended via $RTMP_URL env var in startLocked
+		// to keep it out of /proc/<pid>/cmdline.
 	} else {
-		// HLS only — CRF mode lets ultrafast take shortcuts on easy frames.
+		// HLS only
+		args = append(args, p.hlsCodecArgs(gop)...)
 		args = append(args,
-			"-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency", "-threads", "2",
-			"-crf", "28",
-			"-g", gop,
 			"-c:a", "aac", "-b:a", "96k",
 			"-f", "hls",
 			"-hls_time", "1",
@@ -321,6 +338,48 @@ func (p *Pipeline) buildArgs() []string {
 	}
 
 	return args
+}
+
+// hlsCodecArgs returns codec args for HLS (CRF mode).
+func (p *Pipeline) hlsCodecArgs(gop string) []string {
+	switch p.videoCodec {
+	case "h264_nvenc":
+		return []string{
+			"-c:v", "h264_nvenc", "-preset", "p4", "-tune", "ll",
+			"-rc", "vbr", "-cq", "28",
+			"-g", gop,
+		}
+	default: // libx264
+		return []string{
+			"-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency", "-threads", "2",
+			"-crf", "28",
+			"-g", gop,
+		}
+	}
+}
+
+// rtmpCodecArgs returns codec args for RTMP broadcast output.
+func (p *Pipeline) rtmpCodecArgs() []string {
+	switch p.videoCodec {
+	case "h264_nvenc":
+		return []string{
+			"-c:v", "h264_nvenc", "-preset", "p4", "-tune", "ll",
+			"-rc", "cbr",
+			"-b:v", fmt.Sprintf("%dk", p.rtmpBitrate),
+			"-maxrate", fmt.Sprintf("%dk", p.rtmpBitrate),
+			"-bufsize", fmt.Sprintf("%dk", p.rtmpBitrate*2),
+			"-g", fmt.Sprintf("%d", p.framerate*2),
+		}
+	default: // libx264
+		return []string{
+			"-c:v", "libx264", "-preset", p.rtmpPreset, "-tune", "zerolatency", "-threads", "2",
+			"-pix_fmt", "yuv420p",
+			"-b:v", fmt.Sprintf("%dk", p.rtmpBitrate),
+			"-maxrate", fmt.Sprintf("%dk", p.rtmpBitrate),
+			"-bufsize", fmt.Sprintf("%dk", p.rtmpBitrate*2),
+			"-g", fmt.Sprintf("%d", p.framerate*2),
+		}
+	}
 }
 
 // parseProgress reads ffmpeg -progress output and updates stats.
@@ -363,4 +422,13 @@ func (p *Pipeline) parseProgress(scanner *bufio.Scanner) {
 		}
 		p.mu.Unlock()
 	}
+}
+
+// quoteArgs shell-quotes each argument for safe embedding in sh -c.
+func quoteArgs(args []string) []string {
+	out := make([]string, len(args))
+	for i, a := range args {
+		out[i] = "'" + strings.ReplaceAll(a, "'", `'\''`) + "'"
+	}
+	return out
 }

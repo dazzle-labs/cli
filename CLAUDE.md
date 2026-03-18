@@ -44,7 +44,39 @@ make prod/infra/apply            # ⚠️  Apply changes (DESTRUCTIVE — modifi
 
 **LLM SAFETY RULE: NEVER run `make prod/infra/apply` or `tofu apply` without explicit human approval.** These commands modify live production infrastructure (servers, load balancers, networking). Always run `prod/infra/plan` first and have the user review the plan output before applying. Terraform state is SOPS-encrypted in the repo — no state locking exists, so only one person should run infra commands at a time.
 
+### GPU development (RunPod)
+```bash
+make gpu/rebuild                 # Build sidecar + GPU agent for amd64, push to Docker Hub
+make gpu/deploy                  # Deploy control-plane with current GPU agent image tag
+make gpu/node-create             # Create a GPU node (applies GPUNode CR)
+make gpu/node-delete             # Delete the GPU node (terminates RunPod pod)
+make gpu/node-recreate           # Delete + recreate GPU node (pulls fresh image)
+make gpu/status                  # Show GPU node status and stages
+make gpu/logs                    # Tail control-plane logs
+make gpu/port-forward            # Port-forward control-plane for CLI access
+```
+
+### CLI (local, requires `make gpu/port-forward` in another terminal)
+```bash
+make cli/stages                  # List stages
+make cli/up STAGE=name           # Activate a stage
+make cli/down STAGE=name         # Deactivate a stage
+make cli/sync STAGE=name DIR=.   # Sync content to a stage
+make cli/screenshot STAGE=name   # Take a screenshot
+make cli/logs STAGE=name         # Show stage console logs
+```
+
 Remote builds and deploys are managed by CI/CD. See [docs/index.md](docs/index.md) for everything else.
+
+## Dev Auth Bypass (local GPU testing without Clerk)
+
+The web app supports a dev-only auth mode that injects a test token without requiring Clerk. This lets you test GPU stage creation/activation locally.
+
+Set in `web/src/main.tsx` — when `VITE_DEV_AUTH=true` (or running on localhost without a Clerk key), `DevApp.tsx` is used instead of the normal `App.tsx`. It calls `useDevToken` which hits `GET /auth/dev-token` on the control-plane and stores the result as a fake session.
+
+To enable:
+1. Set `DEV_AUTH_BYPASS=true` on the control-plane deployment (already set in `k8s/local/`)
+2. Run `make web/dev` — the dev server picks it up automatically on localhost
 
 ## Feature Development Workflow
 

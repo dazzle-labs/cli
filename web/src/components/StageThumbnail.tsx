@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useAuth } from "@clerk/react";
+import { useGetToken } from "../useDevToken.js";
 
 interface StageThumbnailProps {
   stageId: string;
@@ -14,7 +14,7 @@ export function StageThumbnail({
 }: StageThumbnailProps) {
   const [src, setSrc] = useState<string | null>(null);
   const prevUrl = useRef<string | null>(null);
-  const { getToken } = useAuth();
+  const getToken = useGetToken();
 
   useEffect(() => {
     let cancelled = false;

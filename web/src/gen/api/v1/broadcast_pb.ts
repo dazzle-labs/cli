@@ -12,7 +12,67 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file api/v1/broadcast.proto.
  */
 export const file_api_v1_broadcast: GenFile = /*@__PURE__*/
-  fileDesc("ChZhcGkvdjEvYnJvYWRjYXN0LnByb3RvEglkYXp6bGUudjEiKAoUR2V0U3RyZWFtSW5mb1JlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkiSgoVR2V0U3RyZWFtSW5mb1Jlc3BvbnNlEg0KBXRpdGxlGAEgASgJEhAKCGNhdGVnb3J5GAIgASgJEhAKCHBsYXRmb3JtGAMgASgJIjgKFVNldFN0cmVhbVRpdGxlUmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRINCgV0aXRsZRgCIAEoCSInChZTZXRTdHJlYW1UaXRsZVJlc3BvbnNlEg0KBXRpdGxlGAEgASgJIj4KGFNldFN0cmVhbUNhdGVnb3J5UmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRIQCghjYXRlZ29yeRgCIAEoCSItChlTZXRTdHJlYW1DYXRlZ29yeVJlc3BvbnNlEhAKCGNhdGVnb3J5GAEgASgJIjEKDkdldENoYXRSZXF1ZXN0EhAKCHN0YWdlX2lkGAEgASgJEg0KBWxpbWl0GAIgASgFIngKC0NoYXRNZXNzYWdlEgoKAmlkGAEgASgJEg4KBmF1dGhvchgCIAEoCRIMCgR0ZXh0GAMgASgJEi0KCXRpbWVzdGFtcBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASEAoIcGxhdGZvcm0YBSABKAkiOwoPR2V0Q2hhdFJlc3BvbnNlEigKCG1lc3NhZ2VzGAEgAygLMhYuZGF6emxlLnYxLkNoYXRNZXNzYWdlIjEKD1NlbmRDaGF0UmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRIMCgR0ZXh0GAIgASgJIiQKEFNlbmRDaGF0UmVzcG9uc2USEAoIcGxhdGZvcm0YASABKAkypAMKEEJyb2FkY2FzdFNlcnZpY2USUgoNR2V0U3RyZWFtSW5mbxIfLmRhenpsZS52MS5HZXRTdHJlYW1JbmZvUmVxdWVzdBogLmRhenpsZS52MS5HZXRTdHJlYW1JbmZvUmVzcG9uc2USVQoOU2V0U3RyZWFtVGl0bGUSIC5kYXp6bGUudjEuU2V0U3RyZWFtVGl0bGVSZXF1ZXN0GiEuZGF6emxlLnYxLlNldFN0cmVhbVRpdGxlUmVzcG9uc2USXgoRU2V0U3RyZWFtQ2F0ZWdvcnkSIy5kYXp6bGUudjEuU2V0U3RyZWFtQ2F0ZWdvcnlSZXF1ZXN0GiQuZGF6emxlLnYxLlNldFN0cmVhbUNhdGVnb3J5UmVzcG9uc2USQAoHR2V0Q2hhdBIZLmRhenpsZS52MS5HZXRDaGF0UmVxdWVzdBoaLmRhenpsZS52MS5HZXRDaGF0UmVzcG9uc2USQwoIU2VuZENoYXQSGi5kYXp6bGUudjEuU2VuZENoYXRSZXF1ZXN0GhsuZGF6emxlLnYxLlNlbmRDaGF0UmVzcG9uc2VCLVorZ2l0aHViLmNvbS9kYXp6bGUtbGFicy9jbGkvZ2VuL2FwaS92MTthcGl2MWIGcHJvdG8z", [file_google_protobuf_timestamp]);
+  fileDesc("ChZhcGkvdjEvYnJvYWRjYXN0LnByb3RvEglkYXp6bGUudjEiKQoVU3RhcnRCcm9hZGNhc3RSZXF1ZXN0EhAKCHN0YWdlX2lkGAEgASgJIhgKFlN0YXJ0QnJvYWRjYXN0UmVzcG9uc2UiKAoUU3RvcEJyb2FkY2FzdFJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkiFwoVU3RvcEJyb2FkY2FzdFJlc3BvbnNlIigKFEdldFN0cmVhbUluZm9SZXF1ZXN0EhAKCHN0YWdlX2lkGAEgASgJIkoKFUdldFN0cmVhbUluZm9SZXNwb25zZRINCgV0aXRsZRgBIAEoCRIQCghjYXRlZ29yeRgCIAEoCRIQCghwbGF0Zm9ybRgDIAEoCSI4ChVTZXRTdHJlYW1UaXRsZVJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSDQoFdGl0bGUYAiABKAkiJwoWU2V0U3RyZWFtVGl0bGVSZXNwb25zZRINCgV0aXRsZRgBIAEoCSI+ChhTZXRTdHJlYW1DYXRlZ29yeVJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSEAoIY2F0ZWdvcnkYAiABKAkiLQoZU2V0U3RyZWFtQ2F0ZWdvcnlSZXNwb25zZRIQCghjYXRlZ29yeRgBIAEoCSIxCg5HZXRDaGF0UmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRINCgVsaW1pdBgCIAEoBSJ4CgtDaGF0TWVzc2FnZRIKCgJpZBgBIAEoCRIOCgZhdXRob3IYAiABKAkSDAoEdGV4dBgDIAEoCRItCgl0aW1lc3RhbXAYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhAKCHBsYXRmb3JtGAUgASgJIjsKD0dldENoYXRSZXNwb25zZRIoCghtZXNzYWdlcxgBIAMoCzIWLmRhenpsZS52MS5DaGF0TWVzc2FnZSIxCg9TZW5kQ2hhdFJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSDAoEdGV4dBgCIAEoCSIkChBTZW5kQ2hhdFJlc3BvbnNlEhAKCHBsYXRmb3JtGAEgASgJMs8EChBCcm9hZGNhc3RTZXJ2aWNlElUKDlN0YXJ0QnJvYWRjYXN0EiAuZGF6emxlLnYxLlN0YXJ0QnJvYWRjYXN0UmVxdWVzdBohLmRhenpsZS52MS5TdGFydEJyb2FkY2FzdFJlc3BvbnNlElIKDVN0b3BCcm9hZGNhc3QSHy5kYXp6bGUudjEuU3RvcEJyb2FkY2FzdFJlcXVlc3QaIC5kYXp6bGUudjEuU3RvcEJyb2FkY2FzdFJlc3BvbnNlElIKDUdldFN0cmVhbUluZm8SHy5kYXp6bGUudjEuR2V0U3RyZWFtSW5mb1JlcXVlc3QaIC5kYXp6bGUudjEuR2V0U3RyZWFtSW5mb1Jlc3BvbnNlElUKDlNldFN0cmVhbVRpdGxlEiAuZGF6emxlLnYxLlNldFN0cmVhbVRpdGxlUmVxdWVzdBohLmRhenpsZS52MS5TZXRTdHJlYW1UaXRsZVJlc3BvbnNlEl4KEVNldFN0cmVhbUNhdGVnb3J5EiMuZGF6emxlLnYxLlNldFN0cmVhbUNhdGVnb3J5UmVxdWVzdBokLmRhenpsZS52MS5TZXRTdHJlYW1DYXRlZ29yeVJlc3BvbnNlEkAKB0dldENoYXQSGS5kYXp6bGUudjEuR2V0Q2hhdFJlcXVlc3QaGi5kYXp6bGUudjEuR2V0Q2hhdFJlc3BvbnNlEkMKCFNlbmRDaGF0EhouZGF6emxlLnYxLlNlbmRDaGF0UmVxdWVzdBobLmRhenpsZS52MS5TZW5kQ2hhdFJlc3BvbnNlQi1aK2dpdGh1Yi5jb20vZGF6emxlLWxhYnMvY2xpL2dlbi9hcGkvdjE7YXBpdjFiBnByb3RvMw", [file_google_protobuf_timestamp]);
+
+/**
+ * @generated from message dazzle.v1.StartBroadcastRequest
+ */
+export type StartBroadcastRequest = Message<"dazzle.v1.StartBroadcastRequest"> & {
+  /**
+   * @generated from field: string stage_id = 1;
+   */
+  stageId: string;
+};
+
+/**
+ * Describes the message dazzle.v1.StartBroadcastRequest.
+ * Use `create(StartBroadcastRequestSchema)` to create a new message.
+ */
+export const StartBroadcastRequestSchema: GenMessage<StartBroadcastRequest> = /*@__PURE__*/
+  messageDesc(file_api_v1_broadcast, 0);
+
+/**
+ * @generated from message dazzle.v1.StartBroadcastResponse
+ */
+export type StartBroadcastResponse = Message<"dazzle.v1.StartBroadcastResponse"> & {
+};
+
+/**
+ * Describes the message dazzle.v1.StartBroadcastResponse.
+ * Use `create(StartBroadcastResponseSchema)` to create a new message.
+ */
+export const StartBroadcastResponseSchema: GenMessage<StartBroadcastResponse> = /*@__PURE__*/
+  messageDesc(file_api_v1_broadcast, 1);
+
+/**
+ * @generated from message dazzle.v1.StopBroadcastRequest
+ */
+export type StopBroadcastRequest = Message<"dazzle.v1.StopBroadcastRequest"> & {
+  /**
+   * @generated from field: string stage_id = 1;
+   */
+  stageId: string;
+};
+
+/**
+ * Describes the message dazzle.v1.StopBroadcastRequest.
+ * Use `create(StopBroadcastRequestSchema)` to create a new message.
+ */
+export const StopBroadcastRequestSchema: GenMessage<StopBroadcastRequest> = /*@__PURE__*/
+  messageDesc(file_api_v1_broadcast, 2);
+
+/**
+ * @generated from message dazzle.v1.StopBroadcastResponse
+ */
+export type StopBroadcastResponse = Message<"dazzle.v1.StopBroadcastResponse"> & {
+};
+
+/**
+ * Describes the message dazzle.v1.StopBroadcastResponse.
+ * Use `create(StopBroadcastResponseSchema)` to create a new message.
+ */
+export const StopBroadcastResponseSchema: GenMessage<StopBroadcastResponse> = /*@__PURE__*/
+  messageDesc(file_api_v1_broadcast, 3);
 
 /**
  * @generated from message dazzle.v1.GetStreamInfoRequest
@@ -29,7 +89,7 @@ export type GetStreamInfoRequest = Message<"dazzle.v1.GetStreamInfoRequest"> & {
  * Use `create(GetStreamInfoRequestSchema)` to create a new message.
  */
 export const GetStreamInfoRequestSchema: GenMessage<GetStreamInfoRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_broadcast, 0);
+  messageDesc(file_api_v1_broadcast, 4);
 
 /**
  * @generated from message dazzle.v1.GetStreamInfoResponse
@@ -56,7 +116,7 @@ export type GetStreamInfoResponse = Message<"dazzle.v1.GetStreamInfoResponse"> &
  * Use `create(GetStreamInfoResponseSchema)` to create a new message.
  */
 export const GetStreamInfoResponseSchema: GenMessage<GetStreamInfoResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_broadcast, 1);
+  messageDesc(file_api_v1_broadcast, 5);
 
 /**
  * @generated from message dazzle.v1.SetStreamTitleRequest
@@ -78,7 +138,7 @@ export type SetStreamTitleRequest = Message<"dazzle.v1.SetStreamTitleRequest"> &
  * Use `create(SetStreamTitleRequestSchema)` to create a new message.
  */
 export const SetStreamTitleRequestSchema: GenMessage<SetStreamTitleRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_broadcast, 2);
+  messageDesc(file_api_v1_broadcast, 6);
 
 /**
  * @generated from message dazzle.v1.SetStreamTitleResponse
@@ -95,7 +155,7 @@ export type SetStreamTitleResponse = Message<"dazzle.v1.SetStreamTitleResponse">
  * Use `create(SetStreamTitleResponseSchema)` to create a new message.
  */
 export const SetStreamTitleResponseSchema: GenMessage<SetStreamTitleResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_broadcast, 3);
+  messageDesc(file_api_v1_broadcast, 7);
 
 /**
  * @generated from message dazzle.v1.SetStreamCategoryRequest
@@ -117,7 +177,7 @@ export type SetStreamCategoryRequest = Message<"dazzle.v1.SetStreamCategoryReque
  * Use `create(SetStreamCategoryRequestSchema)` to create a new message.
  */
 export const SetStreamCategoryRequestSchema: GenMessage<SetStreamCategoryRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_broadcast, 4);
+  messageDesc(file_api_v1_broadcast, 8);
 
 /**
  * @generated from message dazzle.v1.SetStreamCategoryResponse
@@ -134,7 +194,7 @@ export type SetStreamCategoryResponse = Message<"dazzle.v1.SetStreamCategoryResp
  * Use `create(SetStreamCategoryResponseSchema)` to create a new message.
  */
 export const SetStreamCategoryResponseSchema: GenMessage<SetStreamCategoryResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_broadcast, 5);
+  messageDesc(file_api_v1_broadcast, 9);
 
 /**
  * @generated from message dazzle.v1.GetChatRequest
@@ -156,7 +216,7 @@ export type GetChatRequest = Message<"dazzle.v1.GetChatRequest"> & {
  * Use `create(GetChatRequestSchema)` to create a new message.
  */
 export const GetChatRequestSchema: GenMessage<GetChatRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_broadcast, 6);
+  messageDesc(file_api_v1_broadcast, 10);
 
 /**
  * @generated from message dazzle.v1.ChatMessage
@@ -197,7 +257,7 @@ export type ChatMessage = Message<"dazzle.v1.ChatMessage"> & {
  * Use `create(ChatMessageSchema)` to create a new message.
  */
 export const ChatMessageSchema: GenMessage<ChatMessage> = /*@__PURE__*/
-  messageDesc(file_api_v1_broadcast, 7);
+  messageDesc(file_api_v1_broadcast, 11);
 
 /**
  * @generated from message dazzle.v1.GetChatResponse
@@ -214,7 +274,7 @@ export type GetChatResponse = Message<"dazzle.v1.GetChatResponse"> & {
  * Use `create(GetChatResponseSchema)` to create a new message.
  */
 export const GetChatResponseSchema: GenMessage<GetChatResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_broadcast, 8);
+  messageDesc(file_api_v1_broadcast, 12);
 
 /**
  * @generated from message dazzle.v1.SendChatRequest
@@ -236,7 +296,7 @@ export type SendChatRequest = Message<"dazzle.v1.SendChatRequest"> & {
  * Use `create(SendChatRequestSchema)` to create a new message.
  */
 export const SendChatRequestSchema: GenMessage<SendChatRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_broadcast, 9);
+  messageDesc(file_api_v1_broadcast, 13);
 
 /**
  * @generated from message dazzle.v1.SendChatResponse
@@ -253,12 +313,28 @@ export type SendChatResponse = Message<"dazzle.v1.SendChatResponse"> & {
  * Use `create(SendChatResponseSchema)` to create a new message.
  */
 export const SendChatResponseSchema: GenMessage<SendChatResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_broadcast, 10);
+  messageDesc(file_api_v1_broadcast, 14);
 
 /**
  * @generated from service dazzle.v1.BroadcastService
  */
 export const BroadcastService: GenService<{
+  /**
+   * @generated from rpc dazzle.v1.BroadcastService.StartBroadcast
+   */
+  startBroadcast: {
+    methodKind: "unary";
+    input: typeof StartBroadcastRequestSchema;
+    output: typeof StartBroadcastResponseSchema;
+  },
+  /**
+   * @generated from rpc dazzle.v1.BroadcastService.StopBroadcast
+   */
+  stopBroadcast: {
+    methodKind: "unary";
+    input: typeof StopBroadcastRequestSchema;
+    output: typeof StopBroadcastResponseSchema;
+  },
   /**
    * @generated from rpc dazzle.v1.BroadcastService.GetStreamInfo
    */

@@ -1,0 +1,21 @@
+apiVersion: dazzle.fm/v1
+kind: GPUNodeClass
+metadata:
+  name: a40
+spec:
+  provider: runpod
+  gpuTypeId: "NVIDIA A40"
+  cloudType: SECURE
+  containerDiskInGb: 20
+  maxStages: 8
+  template:
+    env:
+      # ANGLE/Vulkan: bypasses X11/GLX (which Xvfb can't HW-accelerate) and
+      # uses the GPU's Vulkan driver directly for WebGL rendering.
+      CHROME_FLAGS: >-
+        --no-sandbox
+        --use-gl=angle --use-angle=vulkan --enable-features=Vulkan
+        --ignore-gpu-blocklist --disable-gpu-compositing --disable-gpu-watchdog
+        --no-first-run --no-default-browser-check --disable-infobars
+        --autoplay-policy=no-user-gesture-required
+        --remote-allow-origins=* --disable-features=TranslateUI

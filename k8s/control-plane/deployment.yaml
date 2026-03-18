@@ -36,11 +36,6 @@ spec:
           ports:
             - containerPort: 8080
           env:
-            - name: POD_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: browserless-auth
-                  key: token
             - name: CLERK_SECRET_KEY
               valueFrom:
                 secretKeyRef:
@@ -148,6 +143,52 @@ spec:
                 secretKeyRef:
                   name: r2-credentials
                   key: bucket
+            - name: DEFAULT_GPU_NODE_CLASS
+              value: rtx5090
+            # RunPod GPU provisioning (optional — GPU only active when RUNPOD_API_KEY is set)
+            - name: RUNPOD_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: dazzle-runpod
+                  key: api-key
+                  optional: true
+            - name: RUNPOD_REGISTRY_AUTH_ID
+              valueFrom:
+                secretKeyRef:
+                  name: dazzle-runpod
+                  key: registry-auth-id
+                  optional: true
+            # mTLS for agent communication (base64-encoded PEM)
+            - name: MTLS_CLIENT_CERT
+              valueFrom:
+                secretKeyRef:
+                  name: dazzle-mtls
+                  key: client.crt
+                  optional: true
+            - name: MTLS_CLIENT_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: dazzle-mtls
+                  key: client.key
+                  optional: true
+            - name: MTLS_CA_CERT
+              valueFrom:
+                secretKeyRef:
+                  name: dazzle-mtls
+                  key: ca.crt
+                  optional: true
+            - name: MTLS_SERVER_CERT
+              valueFrom:
+                secretKeyRef:
+                  name: dazzle-mtls
+                  key: server.crt
+                  optional: true
+            - name: MTLS_SERVER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: dazzle-mtls
+                  key: server.key
+                  optional: true
             # Streamer runtime config — any STREAMER_* env var is passed
             # through to streamer pods with the prefix stripped.
             - name: STREAMER_ANGLE_DEFAULT_PLATFORM

@@ -28,7 +28,13 @@ func (s *stageServer) CreateStage(ctx context.Context, req *connect.Request[apiv
 		name = "default"
 	}
 
-	stage, err := s.mgr.createStageRecord(info.UserID, name)
+	if hasCapability(req.Msg.Capabilities, "gpu") {
+		if info.Role != "tester" && info.Role != "developer" {
+			return nil, connect.NewError(connect.CodePermissionDenied, fmt.Errorf("GPU stages require tester or developer role"))
+		}
+	}
+
+	stage, err := s.mgr.createStageRecord(info.UserID, name, req.Msg.Capabilities)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to create stage"))
 	}
@@ -84,7 +90,7 @@ func (s *stageServer) DeleteStage(ctx context.Context, req *connect.Request[apiv
 		return nil, connect.NewError(connect.CodeNotFound, nil)
 	}
 
-	// Capture pod name before deletion (needed for wait)
+	// Capture pod info before deletion (needed for wait)
 	var podName string
 	if live, ok := s.mgr.getStage(req.Msg.Id); ok {
 		podName = live.PodName
@@ -98,7 +104,8 @@ func (s *stageServer) DeleteStage(ctx context.Context, req *connect.Request[apiv
 	defer cleanupCancel()
 
 	// Wait for pod termination (ensures sidecar final sync completes)
-	if podName != "" {
+	// Skip for GPU stages — they don't have local k8s pods
+	if podName != "" && !hasCapability(row.Capabilities, "gpu") {
 		waitForPodTermination(cleanupCtx, s.mgr.clientset, s.mgr.namespace, podName, 35*time.Second)
 	}
 
@@ -169,10 +176,16 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 		return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("stage is already active"))
 	}
 
-	waitCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
+	waitCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
 
-	readyStage, err := s.mgr.activateStage(waitCtx, req.Msg.Id, info.UserID)
+	// Branch on capabilities: GPU stages use RunPod agent, others use k8s pods
+	var readyStage *Stage
+	if hasCapability(row.Capabilities, "gpu") {
+		readyStage, err = s.mgr.activateGPUStage(waitCtx, req.Msg.Id, info.UserID)
+	} else {
+		readyStage, err = s.mgr.activateStage(waitCtx, req.Msg.Id, info.UserID)
+	}
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -181,14 +194,6 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 	readyStage.Name = row.Name
 	if freshRow, err := dbGetStage(s.mgr.db, req.Msg.Id); err == nil && freshRow != nil && freshRow.PreviewToken.Valid && freshRow.PreviewToken.String != "" {
 		readyStage.PreviewToken = freshRow.PreviewToken.String
-	}
-
-	// Configure OBS stream destination if set
-	dest, destErr := s.mgr.validateStreamDestination(req.Msg.Id, info.UserID)
-	if destErr == nil {
-		if err := s.mgr.configureOBSStream(readyStage, dest); err != nil {
-			log.Printf("Warning: failed to configure stream destination for stage %s: %v", req.Msg.Id, err)
-		}
 	}
 
 	return connect.NewResponse(&apiv1.ActivateStageResponse{
@@ -299,6 +304,10 @@ func (s *stageServer) RegeneratePreviewToken(ctx context.Context, req *connect.R
 
 // stageRowToStruct merges a DB row with in-memory live state (pod IP, running status).
 func stageRowToStruct(row *stageRow, mgr *Manager) *Stage {
+	provider := row.Provider
+	if provider == "" {
+		provider = "kubernetes"
+	}
 	st := &Stage{
 		ID:            row.ID,
 		Name:          row.Name,
@@ -309,6 +318,9 @@ func stageRowToStruct(row *stageRow, mgr *Manager) *Stage {
 		OwnerUserID:   row.UserID,
 		DestinationID: row.DestinationID.String,
 		PreviewToken:  row.PreviewToken.String,
+		Provider:      provider,
+		SidecarURL:    row.SidecarURL.String,
+		Capabilities:  row.Capabilities,
 	}
 	// Overlay live in-memory state (more up-to-date pod IP, current status)
 	if live, ok := mgr.getStage(row.ID); ok {
@@ -330,6 +342,7 @@ func stageToProto(s *Stage, publicBaseURL string, db *sql.DB) *apiv1.Stage {
 		Status:        string(s.Status),
 		OwnerUserId:   s.OwnerUserID,
 		DestinationId: s.DestinationID,
+		Capabilities:  s.Capabilities,
 	}
 	if s.PreviewToken != "" && publicBaseURL != "" {
 		pb.Preview = &apiv1.StagePreview{
@@ -348,4 +361,14 @@ func stageToProto(s *Stage, publicBaseURL string, db *sql.DB) *apiv1.Stage {
 		}
 	}
 	return pb
+}
+
+// hasCapability returns true if the capabilities list contains the given capability.
+func hasCapability(caps []string, cap string) bool {
+	for _, c := range caps {
+		if c == cap {
+			return true
+		}
+	}
+	return false
 }

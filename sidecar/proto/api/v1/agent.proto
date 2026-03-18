@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package dazzle.sidecar.v1;
+
+option go_package = "github.com/browser-streamer/sidecar/gen/api/v1;sidecarv1";
+
+// AgentService manages multiple stage process groups on a single GPU node.
+service AgentService {
+  rpc CreateStage(CreateStageRequest) returns (CreateStageResponse);
+  rpc DestroyStage(DestroyStageRequest) returns (DestroyStageResponse);
+  rpc ListStages(ListStagesRequest) returns (ListStagesResponse);
+  rpc Health(AgentHealthRequest) returns (AgentHealthResponse);
+}
+
+message R2Config {
+  string endpoint = 1;
+  string access_key_id = 2;
+  string secret_access_key = 3;
+  string bucket = 4;
+}
+
+message CreateStageRequest {
+  string stage_id = 1;
+  string user_id = 2;
+  R2Config r2_config = 4;
+}
+
+message CreateStageResponse {
+  int32 port = 1; // host port assigned to this stage (e.g. 70444)
+}
+
+message DestroyStageRequest {
+  string stage_id = 1;
+}
+
+message DestroyStageResponse {}
+
+message ListStagesRequest {}
+
+message ListStagesResponse {
+  repeated StageInfo stages = 1;
+}
+
+message StageInfo {
+  string stage_id = 1;
+  int32 port = 2;
+  string status = 3; // starting, running, failed
+}
+
+message AgentHealthRequest {}
+
+message AgentHealthResponse {
+  int32 max_stages = 1;
+  int32 current_stages = 2;
+}
