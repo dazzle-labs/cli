@@ -127,10 +127,13 @@ Commands:
                                    Check broadcast status.
   stage (s) broadcast (bc) info    Get current stream title and category.
   stage (s) broadcast (bc) title
-                                   Set the stream title.
+                                   Set the stream title (not supported for
+                                   Restream).
   stage (s) broadcast (bc) category
-                                   Set the stream category or game.
-  stage (s) chat send              Send a message to live chat.
+                                   Set the stream category or game (not
+                                   supported for Restream).
+  stage (s) chat send              Send a message to live chat (not supported
+                                   for Restream).
   destination (dest) list (ls)     List broadcast destinations.
   destination (dest) add (create,new)
                                    Add a broadcast destination.
@@ -187,10 +190,13 @@ Commands:
                                    Check broadcast status.
   stage (s) broadcast (bc) info    Get current stream title and category.
   stage (s) broadcast (bc) title
-                                   Set the stream title.
+                                   Set the stream title (not supported for
+                                   Restream).
   stage (s) broadcast (bc) category
-                                   Set the stream category or game.
-  stage (s) chat send              Send a message to live chat.
+                                   Set the stream category or game (not
+                                   supported for Restream).
+  stage (s) chat send              Send a message to live chat (not supported
+                                   for Restream).
 ```
 
 #### `stage sync` flags
@@ -253,9 +259,11 @@ Commands:
                                    Check broadcast status.
   stage (s) broadcast (bc) info    Get current stream title and category.
   stage (s) broadcast (bc) title
-                                   Set the stream title.
+                                   Set the stream title (not supported for
+                                   Restream).
   stage (s) broadcast (bc) category
-                                   Set the stream category or game.
+                                   Set the stream category or game (not
+                                   supported for Restream).
 ```
 
 #### `stage event` subcommands
