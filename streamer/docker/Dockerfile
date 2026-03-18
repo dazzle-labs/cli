@@ -75,8 +75,8 @@ RUN apt-get update && apt-get install -y \
     mesa-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# --- Final image ---
-FROM gl-${VARIANT} AS final
+# --- Streamer image (CPU stages) ---
+FROM gl-${VARIANT} AS streamer
 
 # Copy PulseAudio config
 COPY docker/pulse-default.pa /etc/pulse/default.pa
@@ -98,6 +98,6 @@ ENTRYPOINT ["/entrypoint.sh"]
 
 # --- GPU Agent: streamer + sidecar in agent mode ---
 FROM ${SIDECAR_IMAGE} AS sidecar-src
-FROM final AS agent
+FROM streamer AS gpu-agent
 COPY --from=sidecar-src /sidecar /sidecar
 ENTRYPOINT ["/sidecar", "agent"]

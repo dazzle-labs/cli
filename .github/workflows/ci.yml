@@ -236,7 +236,7 @@ jobs:
         with:
           context: streamer/
           file: streamer/docker/Dockerfile
-          target: final
+          target: streamer
           platforms: linux/amd64
           push: ${{ github.ref == 'refs/heads/main' }}
           tags: |
@@ -307,7 +307,7 @@ jobs:
         with:
           context: streamer/
           file: streamer/docker/Dockerfile
-          target: agent
+          target: gpu-agent
           platforms: linux/amd64
           push: ${{ github.ref == 'refs/heads/main' }}
           load: ${{ github.event_name == 'pull_request' }}
