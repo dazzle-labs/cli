@@ -37,7 +37,7 @@ Pre-built binaries for macOS (arm64/amd64), Linux (amd64/arm64), and Windows (am
 ## Quick Start
 
 ```bash
-# Authenticate with your API key from dazzle.fm
+# Authenticate (opens browser for OAuth sign-in)
 dazzle login
 
 # Create and activate a stage
