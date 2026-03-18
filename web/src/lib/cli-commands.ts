@@ -4,7 +4,7 @@ export interface CLICommand {
   subcommand: string;
   /** `dazzle` + subcommand, e.g. `"dazzle stage sync"`. Use when appending context-specific args like `-s <stage>`. */
   base: string;
-  /** Complete copy-paste example with default args, e.g. `"dazzle stage sync ./my-app"`. Use in docs/onboarding where no customization is needed. */
+  /** Complete copy-paste example with default args, e.g. `"dazzle stage sync ./my-stage"`. Use in docs/onboarding where no customization is needed. */
   full: string;
 }
 
@@ -23,8 +23,8 @@ export const cli: Record<string, CLICommand> = {
   stageUp:            cmd("stage up"),
   stageDown:          cmd("stage down"),
   stageList:          cmd("stage list"),
-  stageSync:          cmd("stage sync", "./my-app"),
-  stageSyncWatch:     cmd("stage sync", "./my-app --watch"),
+  stageSync:          cmd("stage sync", "./my-stage"),
+  stageSyncWatch:     cmd("stage sync", "./my-stage --watch"),
   stageScreenshot:    cmd("stage screenshot"),
   stageScreenshotOut: cmd("stage screenshot", "-o preview.png"),
   stageBroadcastOn:   cmd("stage broadcast on"),

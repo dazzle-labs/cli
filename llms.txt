@@ -26,11 +26,10 @@ dazzle login
 # Opens your browser to sign in with your Dazzle account
 ```
 
-### 3. Create a stage and bring it up
+### 3. Create a stage
 
 ```bash
 dazzle s new my-stage
-dazzle s up
 ```
 
 If you have multiple stages, specify which one with `--stage` or `DAZZLE_STAGE`:
@@ -41,18 +40,38 @@ dazzle s up --stage my-stage               # bring up a specific stage
 
 # Or set for your session
 export DAZZLE_STAGE=my-stage
-dazzle s up
 ```
 
 If you only have one stage, it's auto-selected.
 
-### 4. Push content
+### 4. Create content
+
+Create a directory with an `index.html` entry point:
+
+```bash
+mkdir my-stage && cat > my-stage/index.html << 'EOF'
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    * { margin: 0; box-sizing: border-box; }
+    body { width: 100vw; height: 100vh; overflow: hidden;
+           display: grid; place-items: center; background: #000; }
+    h1 { color: #fff; font: bold 4rem system-ui; }
+  </style>
+</head>
+<body><h1>Hello, Dazzle</h1></body>
+</html>
+EOF
+```
+
+### 5. Push content
 
 Sync a local directory to your stage:
 
 ```bash
-dazzle s sync ./my-app                  # one-time sync (auto-refreshes browser)
-dazzle s sync ./my-app --watch          # watch for changes, re-sync, and auto-refresh
+dazzle s sync ./my-stage                  # one-time sync (auto-refreshes browser)
+dazzle s sync ./my-stage --watch          # watch for changes, re-sync, and auto-refresh
 ```
 
 Every sync is a full snapshot — files deleted locally are automatically removed from the stage. The browser automatically reloads after every successful sync. The directory must contain an `index.html` entry point (customizable with `--entry`).
@@ -65,7 +84,7 @@ dazzle s ss -o preview.png
 dazzle s bc on
 ```
 
-### 5. Update content live
+### 6. Update content live
 
 ```bash
 # Push live data without rewriting code
@@ -75,7 +94,7 @@ dazzle s ev e score '{"points": 42}'
 dazzle s refresh
 ```
 
-### 6. (Optional) Add a stream destination
+### 7. (Optional) Add a stream destination
 
 ```bash
 dazzle dest new
@@ -293,7 +312,7 @@ window.addEventListener('event', (e) => {
 
 ```
 1. dazzle s up                     → Bring up a stage
-2. dazzle s sync ./my-app -w       → Sync a directory (watch + auto-refresh)
+2. dazzle s sync ./my-stage -w       → Sync a directory (watch + auto-refresh)
 3. dazzle s ss                     → Verify output looks correct
 4. dazzle s stats                  → Check rendering FPS and pipeline health
 5. dazzle s bc on                  → Go live on configured destination
