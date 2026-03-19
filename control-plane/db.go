@@ -520,7 +520,21 @@ func dbListStageDestinations(db *sql.DB, stageID string) ([]stageDestJoinRow, er
 	return result, rows.Err()
 }
 
+const maxExternalDestinations = 3
+
+var errMaxDestinations = fmt.Errorf("stage has reached the maximum of %d external destinations", maxExternalDestinations)
+
 func dbAddStageDestination(db *sql.DB, stageID, destinationID string) (string, error) {
+	var externalCount int
+	if err := db.QueryRow(`
+		SELECT COUNT(*) FROM stage_destinations sd
+		JOIN stream_destinations d ON sd.destination_id = d.id
+		WHERE sd.stage_id = $1 AND d.platform != 'dazzle'`, stageID).Scan(&externalCount); err != nil {
+		return "", err
+	}
+	if externalCount >= maxExternalDestinations {
+		return "", errMaxDestinations
+	}
 	id := uuid.Must(uuid.NewV7()).String()
 	_, err := db.Exec(`
 		INSERT INTO stage_destinations (id, stage_id, destination_id, enabled)

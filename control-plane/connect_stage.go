@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -170,6 +171,9 @@ func (s *stageServer) SetStageDestination(ctx context.Context, req *connect.Requ
 			return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("destination not found"))
 		}
 		if _, err := dbAddStageDestination(s.mgr.db, stageID, req.Msg.DestinationId); err != nil {
+			if errors.Is(err, errMaxDestinations) {
+				return nil, connect.NewError(connect.CodeResourceExhausted, err)
+			}
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
 	}
