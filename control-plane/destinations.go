@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 )
 
 // syncStageOutputs builds the list of RTMP output destinations for a stage
@@ -72,15 +73,30 @@ func (m *Manager) syncStageOutputs(stageID, userID string) error {
 }
 
 // syncStageOutputsIfRunning is a fire-and-forget wrapper for use in RPC handlers.
+// It retries until the sidecar is reachable (up to 60s) since GPU sidecars
+// take a few seconds to start after the stage is marked running.
 func (m *Manager) syncStageOutputsIfRunning(stageID, userID string) {
 	stage, ok := m.getStage(stageID)
 	if !ok || !stageIsReady(stage) {
 		return
 	}
 	go func() {
-		if err := m.syncStageOutputs(stageID, userID); err != nil {
-			log.Printf("WARN: syncStageOutputs failed for %s: %v", stageID, err)
+		deadline := time.Now().Add(60 * time.Second)
+		for attempt := 0; time.Now().Before(deadline); attempt++ {
+			// Bail if stage was deactivated while we were retrying
+			if _, ok := m.getStage(stageID); !ok {
+				return
+			}
+			if err := m.syncStageOutputs(stageID, userID); err != nil {
+				if attempt == 0 || attempt%5 == 0 {
+					log.Printf("WARN: syncStageOutputs waiting for sidecar %s: %v", stageID, err)
+				}
+				time.Sleep(2 * time.Second)
+				continue
+			}
+			return
 		}
+		log.Printf("ERROR: syncStageOutputs gave up for %s after 60s", stageID)
 	}()
 }
 

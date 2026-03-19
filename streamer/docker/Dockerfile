@@ -3,7 +3,7 @@ ARG SIDECAR_IMAGE=dazzlefm/agent-streamer-sidecar:main
 
 # --- Base images per variant ---
 FROM ubuntu:24.04                        AS base-cpu
-FROM nvidia/cuda:12.6.0-base-ubuntu24.04 AS base-gpu
+FROM nvidia/cuda:12.4.1-base-ubuntu24.04 AS base-gpu
 
 # --- Common packages (no GL libs here) ---
 FROM base-${VARIANT} AS base
@@ -75,35 +75,10 @@ RUN apt-get update && apt-get install -y \
     mesa-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Build ffmpeg from source with NVENC SDK headers matching RunPod's driver.
-# RunPod hosts provide NVENC API 12.2 — pin nv-codec-headers to n12.2.72.0.
-# Using HEAD (API 13.0+) causes "Driver does not support the required nvenc
-# API version" on L40S/A40 hosts.
-#
-# TODO: If RunPod upgrades drivers, bump the nv-codec-headers tag to match.
-# Future option: ship multiple ffmpeg binaries (one per SDK version) and
-# probe at runtime which one works, to avoid coupling to a specific driver.
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        build-essential git nasm pkg-config \
-        libx264-dev libpulse-dev libx11-dev libxcb1-dev libxcb-shm0-dev \
-        libxcb-xfixes0-dev \
-    && git clone --depth 1 --branch n12.2.72.0 https://github.com/FFmpeg/nv-codec-headers /tmp/nv-codec-headers \
-    && make -C /tmp/nv-codec-headers install \
-    && git clone --depth 1 --branch n7.1 https://github.com/FFmpeg/FFmpeg /tmp/ffmpeg \
-    && cd /tmp/ffmpeg \
-    && ./configure \
-        --enable-gpl --enable-nonfree \
-        --enable-nvenc --enable-libx264 --enable-libpulse \
-        --enable-libxcb --enable-libxcb-shm --enable-libxcb-xfixes \
-        --disable-doc --disable-debug --disable-static --enable-shared \
-    && make -j$(nproc) \
-    && make install \
-    && ldconfig \
-    && cd / && rm -rf /tmp/ffmpeg /tmp/nv-codec-headers \
-    && apt-get purge -y build-essential git nasm pkg-config \
-        libx264-dev libpulse-dev libx11-dev libxcb1-dev libxcb-shm0-dev \
-        libxcb-xfixes0-dev \
-    && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
+# Use stock ffmpeg — NVENC support comes from libnvidia-encode which is
+# bind-mounted by nvidia-container-toolkit at runtime, so it always matches
+# the host driver version. No need to pin nv-codec-headers.
+RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
 
 # --- Streamer image (CPU stages) ---
 FROM gl-${VARIANT} AS streamer
