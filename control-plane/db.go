@@ -279,7 +279,7 @@ func dbUpdateStreamDest(db *sql.DB, id, userID, name, platform, rtmpURL, encStre
 func dbListStreamDests(db *sql.DB, userID string) ([]streamDestRow, error) {
 	rows, err := db.Query(`
 		SELECT `+streamDestColumns+`
-		FROM stream_destinations WHERE user_id=$1 ORDER BY created_at DESC`, userID)
+		FROM stream_destinations WHERE user_id=$1 AND platform != 'dazzle' ORDER BY created_at DESC`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -502,7 +502,7 @@ func dbListStageDestinations(db *sql.DB, stageID string) ([]stageDestJoinRow, er
 		       d.name, d.platform, d.platform_username, d.rtmp_url, d.stream_key
 		FROM stage_destinations sd
 		JOIN stream_destinations d ON sd.destination_id = d.id
-		WHERE sd.stage_id = $1
+		WHERE sd.stage_id = $1 AND d.platform != 'dazzle'
 		ORDER BY sd.created_at`, stageID)
 	if err != nil {
 		return nil, err

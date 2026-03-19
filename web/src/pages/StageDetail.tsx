@@ -12,7 +12,6 @@ import { Input } from "@/components/ui/input";
 import { StreamPreview } from "@/components/StreamPreview";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -252,50 +251,31 @@ export function StageDetail() {
               <CardTitle className="text-sm font-medium text-muted-foreground">Destinations</CardTitle>
             </CardHeader>
             <CardContent>
-              {stage.destinations.length > 0 && (
+              {stage.destinations.filter((sd) => sd.platform !== "dazzle").length > 0 && (
                 <div className="flex flex-col gap-2 mb-3">
-                  {stage.destinations.map((sd) => {
-                    const isDazzle = sd.platform === "dazzle";
-                    return (
+                  {stage.destinations.filter((sd) => sd.platform !== "dazzle").map((sd) => (
                       <div key={sd.id} className={cn("flex items-center justify-between gap-2 rounded-lg border px-3 py-2", sd.enabled ? "border-border" : "border-border/50 opacity-60")}>
                         <div className="min-w-0">
                           <div className="text-sm font-medium text-foreground truncate">
-                            {isDazzle ? "Dazzle" : sd.name || sd.platformUsername || sd.platform}
+                            {sd.name || sd.platformUsername || sd.platform}
                           </div>
-                          {!isDazzle && <div className="text-xs text-muted-foreground">{sd.platform}</div>}
+                          <div className="text-xs text-muted-foreground">{sd.platform}</div>
                         </div>
-                        {isDazzle ? (
-                          <Switch
-                            checked={sd.enabled}
-                            onCheckedChange={async (checked) => {
-                              try {
-                                if (checked) {
-                                  await stageClient.setStageDestination({ stageId: stageId!, destinationId: sd.destinationId });
-                                } else {
-                                  await stageClient.removeStageDestination({ stageId: stageId!, destinationId: sd.destinationId });
-                                }
-                                await refresh();
-                              } catch { /* ignore */ }
-                            }}
-                          />
-                        ) : (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0"
-                            onClick={async () => {
-                              try {
-                                await stageClient.removeStageDestination({ stageId: stageId!, destinationId: sd.destinationId });
-                                await refresh();
-                              } catch { /* ignore */ }
-                            }}
-                          >
-                            <XIcon className="h-3.5 w-3.5" />
-                          </Button>
-                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0"
+                          onClick={async () => {
+                            try {
+                              await stageClient.removeStageDestination({ stageId: stageId!, destinationId: sd.destinationId });
+                              await refresh();
+                            } catch { /* ignore */ }
+                          }}
+                        >
+                          <XIcon className="h-3.5 w-3.5" />
+                        </Button>
                       </div>
-                    );
-                  })}
+                  ))}
                 </div>
               )}
               {/* Add destination — show unlinked user destinations */}
