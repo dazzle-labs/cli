@@ -72,19 +72,39 @@ Created from `endpoints` table (migration `003`), renamed and extended in migrat
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
-| `id` | UUID | PRIMARY KEY DEFAULT gen_random_uuid() | Stage ID |
+| `id` | UUID | PRIMARY KEY | Stage ID (UUIDv7, generated in Go) |
 | `user_id` | TEXT | NOT NULL → users(id) CASCADE | Owner |
 | `name` | TEXT | NOT NULL DEFAULT '' | User-provided stage name |
 | `status` | TEXT | NOT NULL DEFAULT 'inactive' | `inactive` \| `starting` \| `running` \| `stopping` |
 | `pod_name` | TEXT | — | Kubernetes pod name (e.g., `streamer-<uuid8>`) |
 | `pod_ip` | TEXT | — | Pod IP (set when running) |
 | `destination_id` | TEXT | — → stream_destinations(id) | Linked stream destination |
-| `preview_token` | TEXT | — | `dpt_*` token for shareable preview URLs |
-| `script` | TEXT | — | **Deprecated/unused.** Column exists in DB but is no longer written to (`dbSetStageScript`/`dbGetStageScript` have been removed). Content is now synced via R2. |
+| `preview_token` | TEXT | — | `dpt_*` token for authenticated preview URLs |
+| `stream_key` | TEXT | UNIQUE (partial, WHERE NOT NULL) | `dsk_*` key for RTMP ingest routing — auto-generated on stage creation |
+| `slug` | TEXT | UNIQUE (partial, WHERE NOT NULL) | Short ID for public watch URLs (last 12 hex chars of UUIDv7 ID) |
 | `updated_at` | TIMESTAMPTZ | NOT NULL DEFAULT NOW() | Last status update |
 | `created_at` | TIMESTAMPTZ | NOT NULL DEFAULT NOW() | Creation time |
 
-**Index:** `idx_endpoints_user_id` on `user_id` (from original migration name)
+**Indexes:** `idx_endpoints_user_id` on `user_id`, `idx_stages_stream_key` on `stream_key`, `idx_stages_slug` on `slug`
+
+**ID generation:** Stage IDs use UUIDv7 (time-ordered). All other UUIDs (preview tokens, stream keys) also use UUIDv7. The `slug` is derived from the last 12 hex characters of the stage ID. Existing UUIDv4 stages get slugs backfilled from their IDs in migration 016.
+
+---
+
+### `rtmp_sessions`
+Created in `016_stage_streaming.up.sql`. Tracks active and historical RTMP publisher sessions.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | TEXT | PRIMARY KEY DEFAULT gen_random_uuid() | Session ID |
+| `stage_id` | TEXT | NOT NULL | Stage being streamed to |
+| `user_id` | TEXT | NOT NULL | Stage owner |
+| `stream_key` | TEXT | NOT NULL | Stream key used (matches `stages.stream_key`) |
+| `client_ip` | TEXT | NOT NULL DEFAULT '' | Publisher IP address |
+| `started_at` | TIMESTAMPTZ | NOT NULL DEFAULT NOW() | When publisher connected |
+| `ended_at` | TIMESTAMPTZ | — | When publisher disconnected (NULL = active) |
+
+**Index:** `idx_rtmp_sessions_active` on `stage_id` WHERE `ended_at IS NULL`
 
 ---
 
@@ -107,6 +127,8 @@ Migration tracking table (created by `runMigrations` if not exists).
 | `003_endpoints.up.sql` | Creates `endpoints` table (precursor to `stages`) |
 | `004_rename_session_log_to_stage_log.up.sql` | Renames `session_log` → `stage_log` |
 | `005_consolidate_stages.up.sql` | Renames `endpoints` → `stages`; adds `status`, `pod_name`, `pod_ip`, `updated_at`; drops `stage_log` |
+| `006`–`015` | Various: destination_id, preview_token, provider fields, API key changes, capabilities |
+| `016_stage_streaming.up.sql` | Adds `stream_key` to `stages`; creates `rtmp_sessions` table |
 
 ---
 
@@ -116,6 +138,7 @@ Migration tracking table (created by `runMigrations` if not exists).
 users (1) ─────── (*) api_keys
 users (1) ─────── (*) stream_destinations
 users (1) ─────── (*) stages
+stages (1) ────── (*) rtmp_sessions
 ```
 
 All child tables cascade delete when user is deleted.

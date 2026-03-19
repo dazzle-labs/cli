@@ -8,8 +8,10 @@ STR_IMG  := dazzlefm/agent-streamer-stage:main
 CLI_COMMIT := $(shell git -C cli rev-parse HEAD 2>/dev/null || echo main)
 CP_BUILD := docker build -f control-plane/docker/Dockerfile --build-arg VITE_CLERK_PUBLISHABLE_KEY=$(CLERK_PK) --build-arg GIT_COMMIT=$(CLI_COMMIT) -t $(CP_IMG) .
 SIDECAR_IMG := dazzlefm/agent-streamer-sidecar:main
+INGEST_IMG  := dazzlefm/agent-streamer-ingest:latest
 STR_BUILD := docker build --platform linux/amd64 -f streamer/docker/Dockerfile -t $(STR_IMG) streamer/
 SIDECAR_BUILD := docker build -f sidecar/Dockerfile -t $(SIDECAR_IMG) sidecar/
+INGEST_BUILD := docker build -t $(INGEST_IMG) ingest/
 
 # Colored log helpers
 _cyan    = \033[36m
@@ -30,7 +32,7 @@ INFRA_DIR := k8s/hetzner
 TFSTATE   := $(INFRA_DIR)/terraform.tfstate
 TFSTATE_ENC := $(INFRA_DIR)/terraform.tfstate.enc
 
-.PHONY: help check-deps check-hooks check-cli pull-cli proto up down build build-cp build-streamer deploy dev llms-txt logs status \
+.PHONY: help check-deps check-hooks check-cli pull-cli proto up down build build-cp build-streamer build-ingest deploy dev llms-txt logs status \
         install-hooks \
         kubectx prod/kubectl prod/status prod/nodes \
         prod/infra/init prod/infra/plan prod/infra/apply prod/infra/output \
@@ -181,7 +183,7 @@ up: check-deps check-cli ## Create Kind cluster, build images, deploy full stack
 down: ## Delete the Kind cluster
 	kind delete cluster --name $(NS)
 
-build: check-deps build-cp build-streamer build-sidecar llms-txt ## Build all images, regenerate llms.txt, load into Kind
+build: check-deps build-cp build-streamer build-sidecar build-ingest llms-txt ## Build all images, regenerate llms.txt, load into Kind
 
 build-cp: check-deps check-cluster ## Build control-plane image and load into Kind
 	$(STEP) "Building control-plane image"
@@ -200,6 +202,12 @@ build-sidecar: check-deps check-cluster ## Build sidecar image and load into Kin
 	$(SIDECAR_BUILD)
 	$(STEP) "Loading into Kind"
 	kind load docker-image $(SIDECAR_IMG) --name $(NS)
+
+build-ingest: check-deps check-cluster ## Build ingest (nginx-rtmp) image and load into Kind
+	$(STEP) "Building ingest image"
+	$(INGEST_BUILD)
+	$(STEP) "Loading into Kind"
+	kind load docker-image $(INGEST_IMG) --name $(NS)
 
 GPU_NODE_IMG := dazzlefm/agent-streamer-gpu-node:main
 GPU_NODE_BUILD := docker build --platform linux/amd64 -f streamer/docker/Dockerfile --build-arg VARIANT=gpu --build-arg SIDECAR_IMAGE=$(SIDECAR_IMG) --target gpu-node -t $(GPU_NODE_IMG) streamer/
@@ -310,6 +318,9 @@ deploy: check-deps check-cluster ## Apply manifests and restart control-plane in
 	$(KCTL) set image deployment/control-plane control-plane=$(CP_IMG)
 	$(KCTL) apply -f k8s/local/service.yaml
 	$(KCTL) set env deployment/control-plane OAUTH_REDIRECT_BASE_URL=http://localhost:5173
+	$(STEP) "Deploying ingest"
+	$(KCTL) apply -f k8s/ingest/deployment.yaml
+	$(KCTL) apply -f k8s/ingest/service.yaml
 	$(STEP) "Restarting control-plane"
 	$(KCTL) rollout restart deployment/control-plane
 	$(KCTL) rollout status deployment/control-plane --timeout=120s

@@ -115,9 +115,9 @@ interface Stage {
   destination_id: string;
   destination: StreamDestination | null;  // populated if destination_id is set
   preview: {
-    watch_url: string;
-    hls_url: string;
-  } | null;  // populated if preview token exists
+    watch_url: string;   // e.g., https://dazzle.fm/watch/a1b2c3d4e5f6
+    hls_url: string;     // e.g., https://dazzle.fm/watch/a1b2c3d4e5f6/hls/stream.m3u8
+  } | null;  // populated if stage has a slug (all stages created after v0.16)
 }
 ```
 

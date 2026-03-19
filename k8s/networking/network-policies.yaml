@@ -40,6 +40,14 @@ spec:
       ports:
         - protocol: TCP
           port: 8080
+    # Ingest pod RTMP callbacks (internal port)
+    - from:
+        - podSelector:
+            matchLabels:
+              app: ingest
+      ports:
+        - protocol: TCP
+          port: 9090
 ---
 # Postgres: only control-plane pods can connect.
 apiVersion: networking.k8s.io/v1
@@ -126,3 +134,73 @@ spec:
               - 10.0.0.0/8
               - 172.16.0.0/12
               - 192.168.0.0/16
+---
+# Ingest pod: allow RTMP from Traefik and HLS requests from control-plane.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-ingest
+  namespace: browser-streamer
+spec:
+  podSelector:
+    matchLabels:
+      app: ingest
+  policyTypes:
+    - Ingress
+  ingress:
+    # RTMP from Traefik (external publishers via LB)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: traefik
+      ports:
+        - protocol: TCP
+          port: 1935
+    # HLS from control-plane (viewer proxy)
+    - from:
+        - podSelector:
+            matchLabels:
+              app: control-plane
+      ports:
+        - protocol: TCP
+          port: 8080
+    # RTMP from streamer pods (stage → dazzle broadcast)
+    - from:
+        - podSelector:
+            matchLabels:
+              app: streamer-stage
+      ports:
+        - protocol: TCP
+          port: 1935
+---
+# Ingest pod egress: allow DNS + control-plane (on_publish callbacks).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ingest-egress
+  namespace: browser-streamer
+spec:
+  podSelector:
+    matchLabels:
+      app: ingest
+  policyTypes:
+    - Egress
+  egress:
+    # DNS
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Control-plane RTMP callbacks (internal port)
+    - to:
+        - podSelector:
+            matchLabels:
+              app: control-plane
+      ports:
+        - protocol: TCP
+          port: 9090

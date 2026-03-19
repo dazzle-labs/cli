@@ -34,7 +34,7 @@ The control plane is the central Go backend. It:
 | Encryption | AES-256-GCM (via `crypto/cipher`) | stdlib |
 | MCP Server | mcp-go | v0.44.1 |
 | Sidecar Client | ConnectRPC (sidecar proto) | — |
-| UUID | google/uuid | v1.6.0 |
+| UUID | google/uuid (UUIDv7) | v1.6.0 |
 
 ---
 
@@ -57,6 +57,7 @@ control-plane/
 ├── connect_apikey.go    # ApiKeyService RPC handlers
 ├── connect_stream.go    # RtmpDestinationService RPC handlers
 ├── connect_user.go      # UserService RPC handlers
+├── live.go              # RTMP ingest auth (on_publish/on_publish_done) + public watch HLS proxy
 ├── r2.go                # R2Client (Cloudflare R2 via minio-go) + pod termination wait
 ├── mcp.go               # MCP server setup and tool definitions
 ├── proto/
@@ -110,6 +111,8 @@ type Manager struct {
 
 ## HTTP Routes
 
+**Public port (:8080):**
+
 | Path | Method | Auth | Description |
 |------|--------|------|-------------|
 | `/health` | GET | none (stats if authed) | Health check |
@@ -119,9 +122,19 @@ type Manager struct {
 | `/api.v1.UserService/*` | POST | Clerk JWT only | User profile |
 | `/stage/<stage-id>/cdp` | WS | Clerk or API key | CDP WebSocket proxy to Chrome |
 | `/stage/<stage-id>/cdp/json/*` | GET | Clerk or API key | CDP discovery (URL-rewritten) |
+| `/stage/<id>/hls/*` | GET | preview token or Clerk | HLS proxy (authenticated preview) |
 | `/stage/<id>/*` | HTTP/WS | Clerk or API key | HTTP/WS proxy to sidecar on pod (port 8080) |
 | `/stage/<id>/mcp/*` | HTTP | Clerk or API key | MCP server (per-stage) |
+| `/watch/<slug>/hls/*` | GET | none | Public HLS proxy — resolves slug to stage, proxies sidecar HLS |
+| `/watch/<slug>` | GET | none | Watch page SPA (HLS.js player) |
 | `/*` | GET | none | Serve web SPA (fallback) |
+
+**Internal port (:9090) — cluster-only, not exposed via ingress:**
+
+| Path | Method | Auth | Description |
+|------|--------|------|-------------|
+| `/rtmp/on_publish` | POST | none (network-policy restricted) | nginx-rtmp auth callback — validates stream key, creates RTMP session |
+| `/rtmp/on_publish_done` | POST | none (network-policy restricted) | nginx-rtmp disconnect callback — ends RTMP session |
 
 ---
 

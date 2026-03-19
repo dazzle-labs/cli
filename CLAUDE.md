@@ -21,6 +21,7 @@ make build                       # Build all images and load into Kind
 make build-cp                    # Build control-plane image and load into Kind
 make build-streamer              # Build streamer image and load into Kind
 make build-sidecar               # Build sidecar image and load into Kind
+make build-ingest                # Build ingest (nginx-rtmp) image and load into Kind
 make deploy                      # Apply manifests and restart control-plane in Kind
 make logs                        # Tail control-plane logs in Kind
 make status                      # Show pods and services in Kind
@@ -77,6 +78,10 @@ Set in `web/src/main.tsx` — when `VITE_DEV_AUTH=true` (or running on localhost
 To enable:
 1. Set `DEV_AUTH_BYPASS=true` on the control-plane deployment (already set in `k8s/local/`)
 2. Run `make web/dev` — the dev server picks it up automatically on localhost
+
+## Conventions
+
+- **UUIDv7 for all new IDs** — Use `uuid.Must(uuid.NewV7())` in Go, not `uuid.New()` or `uuid.NewString()`. UUIDv7 is time-ordered which improves index locality and makes IDs sortable by creation time. Existing UUIDv4 IDs in the DB are fine; only new code should use v7.
 
 ## Feature Development Workflow
 

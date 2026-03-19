@@ -14,6 +14,7 @@ import { Docs } from "./pages/Docs.js";
 import { PublicDocs } from "./pages/PublicDocs.js";
 import { LandingPage } from "./pages/LandingPage.js";
 import { PreviewPage } from "./pages/PreviewPage.js";
+import { WatchPage } from "./pages/WatchPage.js";
 import { CliAuth } from "./pages/CliAuth.js";
 import { TooltipProvider } from "./components/ui/tooltip.js";
 
@@ -72,6 +73,7 @@ export function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/stage/:stageId/preview" element={<PreviewPage />} />
+        <Route path="/watch/:slug" element={<WatchPage />} />
         <Route path="/auth/cli/:sessionId" element={<CliAuth />} />
         <Route path="/docs" element={<DocsRouter />} />
         <Route path="*" element={<AuthenticatedApp />} />

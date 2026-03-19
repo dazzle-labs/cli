@@ -216,8 +216,13 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 
 	// Populate fields from DB that the in-memory stage doesn't track
 	readyStage.Name = row.Name
-	if freshRow, err := dbGetStage(s.mgr.db, req.Msg.Id); err == nil && freshRow != nil && freshRow.PreviewToken.Valid && freshRow.PreviewToken.String != "" {
-		readyStage.PreviewToken = freshRow.PreviewToken.String
+	if freshRow, err := dbGetStage(s.mgr.db, req.Msg.Id); err == nil && freshRow != nil {
+		if freshRow.PreviewToken.Valid {
+			readyStage.PreviewToken = freshRow.PreviewToken.String
+		}
+		if freshRow.Slug.Valid {
+			readyStage.Slug = freshRow.Slug.String
+		}
 	}
 
 	return connect.NewResponse(&apiv1.ActivateStageResponse{
@@ -300,7 +305,7 @@ func (s *stageServer) RegeneratePreviewToken(ctx context.Context, req *connect.R
 		return nil, connect.NewError(connect.CodeNotFound, nil)
 	}
 
-	newToken := "dpt_" + strings.ReplaceAll(uuid.NewString(), "-", "")
+	newToken := "dpt_" + strings.ReplaceAll(uuid.Must(uuid.NewV7()).String(), "-", "")
 	if err := dbSetPreviewToken(s.mgr.db, req.Msg.Id, newToken); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -345,6 +350,7 @@ func stageRowToStruct(row *stageRow, mgr *Manager) *Stage {
 		Provider:      provider,
 		SidecarURL:    row.SidecarURL.String,
 		Capabilities:  row.Capabilities,
+		Slug:          row.Slug.String,
 	}
 	// Overlay live in-memory state (more up-to-date pod IP, current status)
 	if live, ok := mgr.getStage(row.ID); ok {
@@ -368,10 +374,10 @@ func stageToProto(s *Stage, publicBaseURL string, db *sql.DB) *apiv1.Stage {
 		DestinationId: s.DestinationID,
 		Capabilities:  s.Capabilities,
 	}
-	if s.PreviewToken != "" && publicBaseURL != "" {
+	if publicBaseURL != "" && s.Slug != "" {
 		pb.Preview = &apiv1.StagePreview{
-			WatchUrl: publicBaseURL + "/stage/" + s.ID + "/preview?token=" + s.PreviewToken,
-			HlsUrl:   publicBaseURL + "/stage/" + s.ID + "/hls/stream.m3u8?token=" + s.PreviewToken,
+			WatchUrl: publicBaseURL + "/watch/" + s.Slug,
+			HlsUrl:   publicBaseURL + "/watch/" + s.Slug + "/hls/stream.m3u8",
 		}
 	}
 	if db != nil && s.DestinationID != "" && s.OwnerUserID != "" {

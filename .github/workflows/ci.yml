@@ -13,6 +13,7 @@ env:
   STREAMER_REPO: dazzlefm/agent-streamer-stage
   SIDECAR_REPO: dazzlefm/agent-streamer-sidecar
   GPU_NODE_REPO: dazzlefm/agent-streamer-gpu-node
+  INGEST_REPO: dazzlefm/agent-streamer-ingest
 
 jobs:
   buf:
@@ -329,8 +330,62 @@ jobs:
     outputs:
       image_tag: ${{ steps.tags.outputs.short_sha }}
 
+  ingest:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set Up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log In To Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Generate Image Tags
+        id: tags
+        run: |
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          BRANCH=$(echo "${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" | sed 's/[^a-zA-Z0-9._-]/-/g')
+          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "image_tag=${{ env.INGEST_REPO }}:${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "branch_tag=${{ env.INGEST_REPO }}:${BRANCH}" >> $GITHUB_OUTPUT
+
+      - name: Check for ingest changes
+        id: changes
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- ingest/ | head -1)
+          else
+            CHANGED=$(git diff --name-only HEAD~1 -- ingest/ | head -1)
+          fi
+          echo "ingest_changed=$( [ -n "$CHANGED" ] && echo true || echo false )" >> $GITHUB_OUTPUT
+
+      - name: Build Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ingest/
+          file: ingest/Dockerfile
+          platforms: linux/amd64
+          push: ${{ github.ref == 'refs/heads/main' }}
+          load: ${{ github.event_name == 'pull_request' }}
+          tags: |
+            ${{ steps.tags.outputs.image_tag }}
+            ${{ steps.tags.outputs.branch_tag }}
+          cache-from: type=registry,ref=${{ env.INGEST_REPO }}:buildcache
+          cache-to: ${{ github.ref == 'refs/heads/main' && format('type=registry,ref={0}:buildcache,mode=max', env.INGEST_REPO) || '' }}
+
+    outputs:
+      image_tag: ${{ steps.tags.outputs.short_sha }}
+
   deploy:
-    needs: [control-plane, streamer, sidecar]
+    needs: [control-plane, streamer, sidecar, ingest]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
@@ -436,6 +491,7 @@ jobs:
           kustomize edit set image ${{ env.CP_REPO }}:${{ needs.control-plane.outputs.image_tag }}
           kustomize edit set image ${{ env.STREAMER_REPO }}:${{ needs.streamer.outputs.image_tag }}
           kustomize edit set image ${{ env.SIDECAR_REPO }}:${{ needs.sidecar.outputs.image_tag }}
+          kustomize edit set image ${{ env.INGEST_REPO }}:${{ needs.ingest.outputs.image_tag }}
           cd ..
           make prod/k8s/deploy
 

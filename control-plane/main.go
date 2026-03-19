@@ -76,12 +76,14 @@ type Stage struct {
 	Provider      string      `json:"provider,omitempty"`      // "kubernetes" (default) or "gpu"
 	SidecarURL    string      `json:"sidecarUrl,omitempty"`    // fully-qualified sidecar base URL (GPU stages)
 	Capabilities  []string    `json:"capabilities,omitempty"`  // e.g., ["gpu"]
+	Slug          string      `json:"slug,omitempty"`          // short ID for public watch URLs
 }
 
 type Manager struct {
 	mu            sync.RWMutex
 	stages        map[string]*Stage
 	previewTokenCache *expirable.LRU[string, string] // token -> stageID, lazily populated from DB
+	ingestPodCache    *expirable.LRU[string, string] // stageID -> ingest pod IP, for HLS proxy routing
 	activateMu    sync.Map // per-stage activation locks (stageID -> *sync.Mutex)
 	clientset     *kubernetes.Clientset
 	namespace     string
@@ -189,6 +191,7 @@ func NewManager() (*Manager, error) {
 	m := &Manager{
 		stages:        make(map[string]*Stage),
 		previewTokenCache: expirable.NewLRU[string, string](1000, nil, 5*time.Minute),
+		ingestPodCache:    expirable.NewLRU[string, string](500, nil, 30*time.Second),
 		clientset:     clientset,
 		namespace:     envOrDefault("NAMESPACE", "browser-streamer"),
 		streamerImage: envOrDefault("STREAMER_IMAGE", "browser-streamer:latest"),
@@ -306,6 +309,9 @@ func (m *Manager) recoverStages() error {
 				if row.PreviewToken.Valid {
 					stage.PreviewToken = row.PreviewToken.String
 				}
+				if row.Slug.Valid {
+					stage.Slug = row.Slug.String
+				}
 			}
 		}
 
@@ -344,7 +350,7 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 
 	id := requestedID
 	if id == "" {
-		id = uuid.New().String()
+		id = uuid.Must(uuid.NewV7()).String()
 	} else if _, exists := m.stages[id]; exists {
 		return nil, fmt.Errorf("stage %s already exists", id)
 	}
@@ -1694,6 +1700,25 @@ func main() {
 		}
 	}))
 
+	// Public watch page: /watch/{slug}/hls/{filename}
+	// When a stage is broadcasting, its HLS is publicly viewable (no auth).
+	mux.HandleFunc("/watch/", func(w http.ResponseWriter, r *http.Request) {
+		parts := strings.SplitN(strings.TrimPrefix(r.URL.Path, "/watch/"), "/", 3)
+		if len(parts) >= 3 && parts[1] == "hls" {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+			if r.Method == http.MethodOptions {
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+			mgr.handleWatchHLS(w, r)
+			return
+		}
+		// SPA route for /watch/{slug}
+		spaFileServer("web").ServeHTTP(w, r)
+	})
+
 	// TODO: convert /stage/ handler to Go 1.22+ path patterns (like /oauth/ and /auth/cli/session/ above)
 	// Stage handler: all stage-specific routes under /stage/<uuid>/
 	//   /stage/<uuid>/cdp           — CDP WebSocket proxy and HTTP discovery
@@ -1765,6 +1790,22 @@ func main() {
 
 	// Web SPA (fallback route)
 	mux.Handle("/", spaFileServer("web"))
+
+	// Internal server for cluster-only callbacks (not exposed via ingress).
+	internalMux := http.NewServeMux()
+	internalMux.HandleFunc("POST /rtmp/on_publish", mgr.handleOnPublish)
+	internalMux.HandleFunc("POST /rtmp/on_publish_done", mgr.handleOnPublishDone)
+	internalPort := envOrDefault("INTERNAL_PORT", "9090")
+	go func() {
+		internalServer := &http.Server{
+			Addr:    ":" + internalPort,
+			Handler: internalMux,
+		}
+		log.Printf("Internal server listening on :%s", internalPort)
+		if err := internalServer.ListenAndServe(); err != http.ErrServerClosed {
+			log.Fatalf("Internal server error: %v", err)
+		}
+	}()
 
 	port := envOrDefault("PORT", "8080")
 	server := &http.Server{

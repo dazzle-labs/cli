@@ -11,7 +11,7 @@
 | **Product** | Dazzle — on-demand cloud browser environments for AI-driven live streaming and automation |
 | **Primary Consumers** | Dazzle CLI (`dazzle`) and Web UI |
 | **Production URL** | https://dazzle.fm |
-| **Repo Type** | Monorepo (6 parts) |
+| **Repo Type** | Monorepo (7 parts) |
 | **Infrastructure** | Hetzner Cloud k3s HA cluster (3 CP + 2 workers + autoscaler 0–3), provisioned via OpenTofu + kube-hetzner |
 | **Auth** | Clerk (JWT) + internal API keys (`dzl_*`) |
 | **API Protocol** | ConnectRPC (protobuf/HTTP2) |
@@ -27,9 +27,9 @@
 
 ### control-plane (Go backend)
 - **Path:** `control-plane/`
-- **Role:** API server, K8s orchestration, auth, DB, CDP/WS proxy, serves web SPA
+- **Role:** API server, K8s orchestration, auth, DB, CDP/WS proxy, RTMP ingest auth, serves web SPA
 - **Entry:** `control-plane/main.go`
-- **Port:** 8080
+- **Ports:** 8080 (public API + web), 9090 (internal — RTMP callbacks)
 
 ### sidecar (Go binary — per-pod)
 - **Path:** `sidecar/`
@@ -49,9 +49,14 @@
 - **Role:** Pure infrastructure — Xvfb, Chrome, PulseAudio. No custom application code.
 - **Entry:** `streamer/docker/entrypoint.sh`
 
+### ingest (RTMP receiver)
+- **Path:** `ingest/`
+- **Role:** nginx-rtmp server — receives RTMP streams, transmuxes to HLS (codec copy, no re-encode)
+- **Port:** 1935 (RTMP), 8080 (HLS serving)
+
 ### k8s (Infrastructure)
 - **Path:** `k8s/`
-- **Role:** Kubernetes manifests, Traefik, TLS, SOPS-encrypted secrets
+- **Role:** Kubernetes manifests, Traefik (HTTP + RTMP TCP), TLS, SOPS-encrypted secrets
 
 ---
 
@@ -111,9 +116,11 @@ make proto
 
 4. **Streamer + sidecar architecture** — Each stage pod has two main containers: the **streamer** (pure infrastructure: Xvfb, Chrome, PulseAudio) and the **sidecar** (Go binary with all application logic: content sync, CDP client, ffmpeg pipeline, R2 persistence). The sidecar manages ffmpeg directly for HLS preview and RTMP broadcast — no OBS. Chrome loads content from the sidecar via HTTP (`http://localhost:8080/`). All internal APIs live behind `/_dz_9f7a3b1c/` to avoid collisions with user content.
 
-5. **Protobuf as service contract** — All control-plane ↔ CLI/web communication uses generated ConnectRPC code from `proto/api/v1/`. The sidecar also uses ConnectRPC internally (`sidecar/proto/`). No hand-written API clients.
+5. **Dazzle-hosted streaming** — Every stage is automatically a live stream on dazzle.fm. The sidecar's always-on HLS output is the dazzle-hosted stream; broadcasting makes it publicly viewable at `/watch/{stageId}` (no auth required). External RTMP sources (OBS) can push to the nginx-rtmp ingest server using the stage's stream key. External platform destinations (Twitch, YouTube, etc.) are optional add-ons.
 
-6. **SOPS for secrets** — All production secrets are Age-encrypted at rest (4 recipients); decrypted at apply time by CI/CD or locally via Age key. AES-256-GCM used for stream keys within the DB.
+6. **Protobuf as service contract** — All control-plane ↔ CLI/web communication uses generated ConnectRPC code from `proto/api/v1/`. The sidecar also uses ConnectRPC internally (`sidecar/proto/`). No hand-written API clients.
+
+7. **SOPS for secrets** — All production secrets are Age-encrypted at rest (4 recipients); decrypted at apply time by CI/CD or locally via Age key. AES-256-GCM used for stream keys within the DB.
 
 ---
 

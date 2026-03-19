@@ -4,7 +4,7 @@
 
 ## Overview
 
-Agent Streamer (Dazzle) is a monorepo with 5 parts. The **control plane** is the central hub: it orchestrates Kubernetes pods, proxies all traffic, and serves the web SPA. The two primary consumers are the **Dazzle CLI** (`dazzle`) and the **Web UI** — both communicate with the control plane via ConnectRPC. All external traffic enters through Traefik and flows to the control plane.
+Agent Streamer (Dazzle) is a monorepo with 7 parts. The **control plane** is the central hub: it orchestrates Kubernetes pods, proxies all traffic, and serves the web SPA. The **ingest** server receives RTMP streams from external sources. The two primary consumers are the **Dazzle CLI** (`dazzle`) and the **Web UI** — both communicate with the control plane via ConnectRPC. HTTP traffic enters through Traefik; RTMP traffic enters via a Traefik TCP entrypoint on port 1935.
 
 ---
 
@@ -57,6 +57,15 @@ Agent Streamer (Dazzle) is a monorepo with 5 parts. The **control plane** is the
 │                                              │
 │  Sidecar: Go binary :8080                   │
 │    Content sync, CDP, ffmpeg pipeline, R2   │
+└──────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────┐
+│        RTMP Ingest (nginx-rtmp)              │
+│                                              │
+│  :1935 ← OBS/Streamlabs/ffmpeg              │
+│    on_publish → control-plane:9090 (auth)    │
+│    H.264/AAC → HLS transmux (codec copy)    │
+│  :8080 → HLS segments served to CP proxy    │
 └──────────────────────────────────────────────┘
 ```
 
@@ -125,7 +134,35 @@ In development, Vite proxies these paths from `:5173` to `:8080`.
 **R2 layout:** `users/<user_id>/stages/<stage_id>/`
 **Auth:** S3-compatible credentials via `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` env vars injected from `r2-credentials` secret.
 
-### 6. MCP Client → Control Plane *(legacy, being superseded by CLI)*
+### 6. RTMP Ingest (nginx-rtmp)
+
+External RTMP sources (OBS, Streamlabs, ffmpeg) push to the ingest server using a stage's stream key.
+
+| Direction | Protocol | Port | Description |
+|-----------|----------|------|-------------|
+| OBS → Ingest | RTMP | 1935 | `rtmp://ingest.dazzle.fm/live/<stream_key>` via Traefik TCP entrypoint |
+| Ingest → Control Plane | HTTP POST | 9090 | `on_publish` / `on_publish_done` callbacks for stream key validation |
+| Control Plane → Ingest | HTTP GET | 8080 | HLS proxy fetches segments for `/watch/{stageId}` viewer page |
+
+**Auth:** The `on_publish` callback looks up the stage by `stream_key` in the `stages` table. Invalid keys return HTTP 403 (nginx-rtmp drops the publisher).
+
+**HLS transmux:** nginx-rtmp copies H.264/AAC directly to HLS segments (no re-encoding). Segments stored at `/tmp/hls/<stream_key>/` on the ingest pod.
+
+**Internal port:** RTMP callbacks run on control-plane port 9090 (not the public 8080), so they're only reachable from within the cluster.
+
+### 7. Public Watch Page
+
+When a stage is broadcasting, its HLS stream is publicly viewable at `/watch/{slug}` without authentication. The slug is a short 12-character hex ID derived from the stage's UUIDv7 (e.g., `/watch/a1b2c3d4e5f6`).
+
+| Protocol | Path | Source | Description |
+|----------|------|--------|-------------|
+| HTTP | `/watch/{slug}/hls/stream.m3u8` | Control plane | HLS proxy to sidecar (no auth, CORS enabled) |
+| HTTP | `/watch/{slug}/hls/*.ts` | Control plane | HLS segment proxy |
+| HTTP | `/watch/{slug}` | Control plane | SPA watch page (HLS.js player) |
+
+The control plane resolves the slug to a stage ID via DB lookup, then proxies HLS from the sidecar (same as the authenticated preview proxy, but without requiring a preview token or Clerk JWT).
+
+### 8. MCP Client → Control Plane *(legacy, being superseded by CLI)*
 
 | Protocol | Path | Description |
 |----------|------|-------------|
