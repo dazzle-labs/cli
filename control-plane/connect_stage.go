@@ -15,6 +15,27 @@ import (
 	apiv1 "github.com/dazzle-labs/cli/gen/api/v1"
 )
 
+// resolveStageID resolves a slug or UUID to a stage UUID.
+// UUIDs (36 chars with dashes) pass through unchanged; anything else is
+// treated as a slug and looked up via cache, then database.
+func resolveStageID(mgr *Manager, idOrSlug string) (string, error) {
+	if len(idOrSlug) == 36 && strings.Contains(idOrSlug, "-") {
+		return idOrSlug, nil
+	}
+	if id, ok := mgr.slugCache.Get(idOrSlug); ok {
+		return id, nil
+	}
+	row, err := dbLookupStageBySlug(mgr.db, idOrSlug)
+	if err != nil {
+		return "", err
+	}
+	if row == nil {
+		return "", fmt.Errorf("stage not found")
+	}
+	mgr.slugCache.Add(idOrSlug, row.ID)
+	return row.ID, nil
+}
+
 // stageServer implements apiv1connect.StageServiceHandler.
 type stageServer struct {
 	mgr *Manager
@@ -68,6 +89,9 @@ func (s *stageServer) ListStages(ctx context.Context, req *connect.Request[apiv1
 func (s *stageServer) GetStage(ctx context.Context, req *connect.Request[apiv1.GetStageRequest]) (*connect.Response[apiv1.GetStageResponse], error) {
 	info := mustAuth(ctx)
 
+	if id, err := resolveStageID(s.mgr, req.Msg.Id); err == nil {
+		req.Msg.Id = id
+	}
 	row, err := dbGetStage(s.mgr.db, req.Msg.Id)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
@@ -85,6 +109,9 @@ func (s *stageServer) GetStage(ctx context.Context, req *connect.Request[apiv1.G
 func (s *stageServer) DeleteStage(ctx context.Context, req *connect.Request[apiv1.DeleteStageRequest]) (*connect.Response[apiv1.DeleteStageResponse], error) {
 	info := mustAuth(ctx)
 
+	if id, err := resolveStageID(s.mgr, req.Msg.Id); err == nil {
+		req.Msg.Id = id
+	}
 	row, err := dbGetStage(s.mgr.db, req.Msg.Id)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
@@ -131,6 +158,9 @@ func (s *stageServer) DeleteStage(ctx context.Context, req *connect.Request[apiv
 func (s *stageServer) SetStageDestination(ctx context.Context, req *connect.Request[apiv1.SetStageDestinationRequest]) (*connect.Response[apiv1.SetStageDestinationResponse], error) {
 	info := mustAuth(ctx)
 
+	if id, err := resolveStageID(s.mgr, req.Msg.StageId); err == nil {
+		req.Msg.StageId = id
+	}
 	row, err := dbGetStage(s.mgr.db, req.Msg.StageId)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
@@ -166,6 +196,9 @@ func (s *stageServer) SetStageDestination(ctx context.Context, req *connect.Requ
 func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[apiv1.ActivateStageRequest]) (*connect.Response[apiv1.ActivateStageResponse], error) {
 	info := mustAuth(ctx)
 
+	if id, err := resolveStageID(s.mgr, req.Msg.Id); err == nil {
+		req.Msg.Id = id
+	}
 	row, err := dbGetStage(s.mgr.db, req.Msg.Id)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
@@ -233,6 +266,9 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 func (s *stageServer) DeactivateStage(ctx context.Context, req *connect.Request[apiv1.DeactivateStageRequest]) (*connect.Response[apiv1.DeactivateStageResponse], error) {
 	info := mustAuth(ctx)
 
+	if id, err := resolveStageID(s.mgr, req.Msg.Id); err == nil {
+		req.Msg.Id = id
+	}
 	row, err := dbGetStage(s.mgr.db, req.Msg.Id)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
@@ -259,6 +295,11 @@ func (s *stageServer) DeactivateStage(ctx context.Context, req *connect.Request[
 func (s *stageServer) UpdateStage(ctx context.Context, req *connect.Request[apiv1.UpdateStageRequest]) (*connect.Response[apiv1.UpdateStageResponse], error) {
 	info := mustAuth(ctx)
 
+	if req.Msg.Stage != nil {
+		if id, err := resolveStageID(s.mgr, req.Msg.Stage.Id); err == nil {
+			req.Msg.Stage.Id = id
+		}
+	}
 	if req.Msg.Stage == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("stage is required"))
 	}
@@ -297,6 +338,9 @@ func (s *stageServer) UpdateStage(ctx context.Context, req *connect.Request[apiv
 func (s *stageServer) RegeneratePreviewToken(ctx context.Context, req *connect.Request[apiv1.RegeneratePreviewTokenRequest]) (*connect.Response[apiv1.RegeneratePreviewTokenResponse], error) {
 	info := mustAuth(ctx)
 
+	if id, err := resolveStageID(s.mgr, req.Msg.Id); err == nil {
+		req.Msg.Id = id
+	}
 	row, err := dbGetStage(s.mgr.db, req.Msg.Id)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)

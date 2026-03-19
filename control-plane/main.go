@@ -84,6 +84,7 @@ type Manager struct {
 	stages        map[string]*Stage
 	previewTokenCache *expirable.LRU[string, string] // token -> stageID, lazily populated from DB
 	ingestPodCache    *expirable.LRU[string, string] // stageID -> ingest pod IP, for HLS proxy routing
+	slugCache         *expirable.LRU[string, string] // slug -> stageID
 	activateMu    sync.Map // per-stage activation locks (stageID -> *sync.Mutex)
 	clientset     *kubernetes.Clientset
 	namespace     string
@@ -192,6 +193,7 @@ func NewManager() (*Manager, error) {
 		stages:        make(map[string]*Stage),
 		previewTokenCache: expirable.NewLRU[string, string](1000, nil, 5*time.Minute),
 		ingestPodCache:    expirable.NewLRU[string, string](500, nil, 30*time.Second),
+		slugCache:         expirable.NewLRU[string, string](1000, nil, 10*time.Minute),
 		clientset:     clientset,
 		namespace:     envOrDefault("NAMESPACE", "browser-streamer"),
 		streamerImage: envOrDefault("STREAMER_IMAGE", "browser-streamer:latest"),
@@ -1742,10 +1744,10 @@ func main() {
 			segment = parts[3]
 		}
 
-		// Resolve slug to UUID: slugs are 12 hex chars, UUIDs are 36 chars with dashes.
-		if len(parts) >= 3 && len(parts[2]) == 12 && mgr.db != nil {
-			if row, err := dbLookupStageBySlug(mgr.db, parts[2]); err == nil && row != nil {
-				parts[2] = row.ID
+		// Resolve slug to UUID if not already a UUID.
+		if len(parts) >= 3 {
+			if id, err := resolveStageID(mgr, parts[2]); err == nil {
+				parts[2] = id
 				r.URL.Path = strings.Join(parts, "/")
 			}
 		}

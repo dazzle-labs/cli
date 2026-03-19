@@ -19,8 +19,11 @@ type runtimeServer struct {
 
 var _ apiv1connect.RuntimeServiceHandler = (*runtimeServer)(nil)
 
-// requireRunningStageForUser looks up a stage by ID and verifies it belongs to the user and is running.
+// requireRunningStageForUser looks up a stage by ID or slug and verifies it belongs to the user and is running.
 func (s *runtimeServer) requireRunningStageForUser(stageID, userID string) (*Stage, error) {
+	if id, err := resolveStageID(s.mgr, stageID); err == nil {
+		stageID = id
+	}
 	row, err := dbGetStage(s.mgr.db, stageID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)

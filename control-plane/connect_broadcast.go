@@ -39,6 +39,9 @@ func mapResolvePlatformError(err error) error {
 func (s *broadcastServer) StartBroadcast(ctx context.Context, req *connect.Request[apiv1.StartBroadcastRequest]) (*connect.Response[apiv1.StartBroadcastResponse], error) {
 	info := mustAuth(ctx)
 
+	if id, err := resolveStageID(s.mgr, req.Msg.StageId); err == nil {
+		req.Msg.StageId = id
+	}
 	// Look up running stage
 	row, err := dbGetStage(s.mgr.db, req.Msg.StageId)
 	if err != nil {
@@ -74,6 +77,9 @@ func (s *broadcastServer) StartBroadcast(ctx context.Context, req *connect.Reque
 func (s *broadcastServer) StopBroadcast(ctx context.Context, req *connect.Request[apiv1.StopBroadcastRequest]) (*connect.Response[apiv1.StopBroadcastResponse], error) {
 	info := mustAuth(ctx)
 
+	if id, err := resolveStageID(s.mgr, req.Msg.StageId); err == nil {
+		req.Msg.StageId = id
+	}
 	row, err := dbGetStage(s.mgr.db, req.Msg.StageId)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
@@ -99,6 +105,9 @@ func (s *broadcastServer) GetStreamInfo(ctx context.Context, req *connect.Reques
 	defer cancel()
 
 	info := mustAuth(ctx)
+	if id, err := resolveStageID(s.mgr, req.Msg.StageId); err == nil {
+		req.Msg.StageId = id
+	}
 	client, dest, accessToken, err := s.mgr.resolvePlatformConnection(req.Msg.StageId, info.UserID)
 	if err != nil {
 		return nil, mapResolvePlatformError(err)
@@ -128,6 +137,9 @@ func (s *broadcastServer) SetStreamTitle(ctx context.Context, req *connect.Reque
 	defer cancel()
 
 	info := mustAuth(ctx)
+	if id, err := resolveStageID(s.mgr, req.Msg.StageId); err == nil {
+		req.Msg.StageId = id
+	}
 	client, dest, accessToken, err := s.mgr.resolvePlatformConnection(req.Msg.StageId, info.UserID)
 	if err != nil {
 		return nil, mapResolvePlatformError(err)
@@ -156,6 +168,9 @@ func (s *broadcastServer) SetStreamCategory(ctx context.Context, req *connect.Re
 	defer cancel()
 
 	info := mustAuth(ctx)
+	if id, err := resolveStageID(s.mgr, req.Msg.StageId); err == nil {
+		req.Msg.StageId = id
+	}
 	client, dest, accessToken, err := s.mgr.resolvePlatformConnection(req.Msg.StageId, info.UserID)
 	if err != nil {
 		return nil, mapResolvePlatformError(err)
@@ -184,6 +199,9 @@ func (s *broadcastServer) GetChat(ctx context.Context, req *connect.Request[apiv
 	defer cancel()
 
 	info := mustAuth(ctx)
+	if id, err := resolveStageID(s.mgr, req.Msg.StageId); err == nil {
+		req.Msg.StageId = id
+	}
 	client, dest, accessToken, err := s.mgr.resolvePlatformConnection(req.Msg.StageId, info.UserID)
 	if err != nil {
 		return nil, mapResolvePlatformError(err)
@@ -238,6 +256,9 @@ func (s *broadcastServer) SendChat(ctx context.Context, req *connect.Request[api
 	defer cancel()
 
 	info := mustAuth(ctx)
+	if id, err := resolveStageID(s.mgr, req.Msg.StageId); err == nil {
+		req.Msg.StageId = id
+	}
 	client, dest, accessToken, err := s.mgr.resolvePlatformConnection(req.Msg.StageId, info.UserID)
 	if err != nil {
 		return nil, mapResolvePlatformError(err)
