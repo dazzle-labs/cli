@@ -23,17 +23,9 @@ spec:
       imagePullSecrets:
         - name: dazzlefm-dockerhub-secret
       terminationGracePeriodSeconds: 120
-      securityContext:
-        runAsNonRoot: true
-        seccompProfile:
-          type: RuntimeDefault
       containers:
         - name: nginx-rtmp
           image: dazzlefm/agent-streamer-ingest:latest
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop: ["ALL"]
           ports:
             - containerPort: 1935
               name: rtmp
