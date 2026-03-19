@@ -63,6 +63,13 @@ spec:
           volumeMounts:
             - name: hls-data
               mountPath: /tmp/hls
+            - name: nginx-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+              readOnly: true
       volumes:
         - name: hls-data
           emptyDir: {}
+        - name: nginx-config
+          configMap:
+            name: ingest-nginx-config

@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ingest-nginx-config
+  namespace: browser-streamer
+data:
+  nginx.conf: |
+    worker_processes auto;
+
+    error_log /dev/stderr warn;
+
+    events {
+        worker_connections 1024;
+    }
+
+    rtmp {
+        server {
+            listen 1935;
+            chunk_size 4096;
+
+            application live {
+                live on;
+                record off;
+
+                # Auth callback — nginx-rtmp sends stream key as the "name" param.
+                # Control-plane returns 200 (allow) or 403 (reject).
+                on_publish http://control-plane.browser-streamer.svc.cluster.local:9090/rtmp/on_publish;
+                on_publish_done http://control-plane.browser-streamer.svc.cluster.local:9090/rtmp/on_publish_done;
+
+                # HLS transmux — copies H.264/AAC to HLS without re-encoding.
+                hls on;
+                hls_path /tmp/hls;
+                hls_fragment 2s;
+                hls_playlist_length 6s;
+                hls_cleanup on;
+
+                # Drop publisher if no data for 30s.
+                drop_idle_publisher 30s;
+            }
+        }
+    }
+
+    http {
+        access_log /dev/stdout;
+
+        server {
+            listen 8080;
+
+            # Serve HLS segments. nginx-rtmp writes to /tmp/hls/<stream_name>/.
+            location /hls/ {
+                alias /tmp/hls/;
+
+                types {
+                    application/vnd.apple.mpegurl m3u8;
+                    video/mp2t ts;
+                }
+
+                add_header Cache-Control no-cache;
+                add_header Access-Control-Allow-Origin *;
+            }
+
+            location /health {
+                return 200 "ok\n";
+                add_header Content-Type text/plain;
+            }
+        }
+    }
