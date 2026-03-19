@@ -2,6 +2,10 @@
 
 The official CLI for [Dazzle](https://dazzle.fm) — manage your cloud stages from the terminal.
 
+<p align="center">
+  <img src="https://dazzle.fm/static/demo.gif" alt="Dazzle CLI demo" width="700" />
+</p>
+
 ## Installation
 
 ### macOS / Linux
