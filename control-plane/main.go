@@ -954,6 +954,10 @@ func (m *Manager) activateGPUStage(ctx context.Context, id, userID string) (*Sta
 	m.mu.Unlock()
 
 	log.Printf("GPU stage %s activated (sidecarURL=%s)", id, sidecarURL)
+
+	// Sync outputs so sidecar starts broadcasting immediately
+	m.syncStageOutputsIfRunning(id, userID)
+
 	return stage, nil
 }
 
