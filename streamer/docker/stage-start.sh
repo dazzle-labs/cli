@@ -67,8 +67,8 @@ if [ -n "${STAGE_UID:-}" ] && [ "$STAGE_UID" != "0" ]; then
 fi
 
 # CDP transport: use pipe mode (no TCP port) for multi-tenant isolation.
-# Named FIFOs are created by the agent with 0600 permissions and owned by the
-# stage UID. Only recreate them here if they don't exist (standalone mode).
+# Named FIFOs are created by the agent with 0666 permissions.
+# Only recreate them here if they don't exist (standalone mode).
 CDP_PIPE_IN="/tmp/cdp-in-$SLOT"
 CDP_PIPE_OUT="/tmp/cdp-out-$SLOT"
 if [ ! -p "$CDP_PIPE_IN" ]; then

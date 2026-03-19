@@ -109,12 +109,13 @@ func (a *Agent) CreateStage(stageID, userID string, r2Endpoint, r2AccessKey, r2S
 	cdpOut := fmt.Sprintf("/tmp/cdp-out-%d", slot.slotIndex)
 	for _, fifo := range []string{cdpIn, cdpOut} {
 		os.Remove(fifo) // remove stale FIFOs
-		if err := syscall.Mkfifo(fifo, 0o600); err != nil {
+		if err := syscall.Mkfifo(fifo, 0o666); err != nil {
 			a.releaseSlot(slot)
 			return 0, fmt.Errorf("create CDP FIFO %s: %w", fifo, err)
 		}
-		os.Chmod(fifo, 0o600) // ensure restrictive perms despite umask
-		os.Chown(fifo, uid, uid)
+		// World-readable: sidecar (root) and Chrome (stage UID via setpriv) both need access.
+		// Content nonce in the URL provides the real isolation — the pipe is just transport.
+		os.Chmod(fifo, 0o666)
 	}
 
 	// Generate Xvfb auth cookie — prevents cross-display screen capture.
