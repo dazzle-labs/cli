@@ -226,9 +226,9 @@ func (c *StageStartCmd) Run(ctx *Context) error {
 	}
 
 	printText("Stage %q activated (status: %s)", resp.Msg.Stage.Name, resp.Msg.Stage.Status)
-	if resp.Msg.Stage.Preview != nil {
-		printText("Watch:  %s", resp.Msg.Stage.Preview.WatchUrl)
-		openBrowser(resp.Msg.Stage.Preview.WatchUrl)
+	if resp.Msg.Stage.WatchUrl != "" {
+		printText("Watch:  %s", resp.Msg.Stage.WatchUrl)
+		openBrowser(resp.Msg.Stage.WatchUrl)
 	}
 	return nil
 }
@@ -289,13 +289,13 @@ func (c *StageStatusCmd) Run(ctx *Context) error {
 	}
 
 	printText("Name:   %s\nStatus: %s", stage.Name, stage.Status)
-	if stage.Preview != nil {
-		printText("Watch:  %s\nHLS:    %s", stage.Preview.WatchUrl, stage.Preview.HlsUrl)
+	if stage.WatchUrl != "" {
+		printText("Watch:  %s", stage.WatchUrl)
 	}
 	return nil
 }
 
-// StagePreviewCmd shows the shareable preview URL for a running stage.
+// StagePreviewCmd shows the public watch URL for a running stage.
 type StagePreviewCmd struct{}
 
 func (c *StagePreviewCmd) Run(ctx *Context) error {
@@ -316,17 +316,17 @@ func (c *StagePreviewCmd) Run(ctx *Context) error {
 
 	stage := resp.Msg.Stage
 	if ctx.JSON {
-		printJSON(stage.Preview)
+		printJSON(map[string]string{"watch_url": stage.WatchUrl})
 		return nil
 	}
 
-	if stage.Preview == nil {
-		printText("No preview available — stage is not running.")
+	if stage.WatchUrl == "" {
+		printText("No watch URL available — stage is not running.")
 		return nil
 	}
 
-	printText("%s", stage.Preview.WatchUrl)
-	openBrowser(stage.Preview.WatchUrl)
+	printText("%s", stage.WatchUrl)
+	openBrowser(stage.WatchUrl)
 	return nil
 }
 

@@ -58,6 +58,8 @@ const (
 
 // BroadcastServiceClient is a client for the dazzle.v1.BroadcastService service.
 type BroadcastServiceClient interface {
+	// Deprecated: streaming starts automatically when a stage activates.
+	// These RPCs return Unimplemented. Use stage destinations instead.
 	StartBroadcast(context.Context, *connect.Request[v1.StartBroadcastRequest]) (*connect.Response[v1.StartBroadcastResponse], error)
 	StopBroadcast(context.Context, *connect.Request[v1.StopBroadcastRequest]) (*connect.Response[v1.StopBroadcastResponse], error)
 	GetStreamInfo(context.Context, *connect.Request[v1.GetStreamInfoRequest]) (*connect.Response[v1.GetStreamInfoResponse], error)
@@ -171,6 +173,8 @@ func (c *broadcastServiceClient) SendChat(ctx context.Context, req *connect.Requ
 
 // BroadcastServiceHandler is an implementation of the dazzle.v1.BroadcastService service.
 type BroadcastServiceHandler interface {
+	// Deprecated: streaming starts automatically when a stage activates.
+	// These RPCs return Unimplemented. Use stage destinations instead.
 	StartBroadcast(context.Context, *connect.Request[v1.StartBroadcastRequest]) (*connect.Response[v1.StartBroadcastResponse], error)
 	StopBroadcast(context.Context, *connect.Request[v1.StopBroadcastRequest]) (*connect.Response[v1.StopBroadcastResponse], error)
 	GetStreamInfo(context.Context, *connect.Request[v1.GetStreamInfoRequest]) (*connect.Response[v1.GetStreamInfoResponse], error)

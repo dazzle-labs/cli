@@ -23,7 +23,7 @@ const (
 
 type EmitEventRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"`
+	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"` // UUID or slug
 	Event         string                 `protobuf:"bytes,2,opt,name=event,proto3" json:"event,omitempty"`
 	Data          string                 `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -127,7 +127,7 @@ func (x *EmitEventResponse) GetOk() bool {
 
 type GetLogsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"`
+	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"` // UUID or slug
 	Limit         int32                  `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -283,7 +283,7 @@ func (x *GetLogsResponse) GetEntries() []*LogEntry {
 
 type ScreenshotRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"`
+	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"` // UUID or slug
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -371,7 +371,7 @@ func (x *ScreenshotResponse) GetImage() []byte {
 
 type SyncDiffRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"`
+	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"`                                                        // UUID or slug
 	Files         map[string]string      `protobuf:"bytes,2,rep,name=files,proto3" json:"files,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // relative path → sha256
 	Entry         string                 `protobuf:"bytes,3,opt,name=entry,proto3" json:"entry,omitempty"`                                                                           // HTML entry point filename
 	unknownFields protoimpl.UnknownFields
@@ -475,8 +475,8 @@ func (x *SyncDiffResponse) GetNeed() []string {
 
 type SyncPushRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"`
-	Chunk         []byte                 `protobuf:"bytes,2,opt,name=chunk,proto3" json:"chunk,omitempty"` // tar chunk
+	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"` // UUID or slug
+	Chunk         []byte                 `protobuf:"bytes,2,opt,name=chunk,proto3" json:"chunk,omitempty"`                    // tar chunk
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -579,7 +579,7 @@ func (x *SyncPushResponse) GetDeleted() int32 {
 
 type RefreshRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"`
+	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"` // UUID or slug
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -667,7 +667,7 @@ func (x *RefreshResponse) GetOk() bool {
 
 type GetStageStatsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"`
+	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"` // UUID or slug
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -711,14 +711,16 @@ func (x *GetStageStatsRequest) GetStageId() string {
 
 type GetStageStatsResponse struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
-	StageFps               float64                `protobuf:"fixed64,1,opt,name=stage_fps,json=stageFps,proto3" json:"stage_fps,omitempty"`             // Browser rendering FPS (from Chrome rAF timing)
-	BroadcastFps           float64                `protobuf:"fixed64,2,opt,name=broadcast_fps,json=broadcastFps,proto3" json:"broadcast_fps,omitempty"` // Encoder output FPS (from ffmpeg)
+	StageFps               float64                `protobuf:"fixed64,1,opt,name=stage_fps,json=stageFps,proto3" json:"stage_fps,omitempty"`
+	BroadcastFps           float64                `protobuf:"fixed64,2,opt,name=broadcast_fps,json=broadcastFps,proto3" json:"broadcast_fps,omitempty"`
 	DroppedFrames          int64                  `protobuf:"varint,3,opt,name=dropped_frames,json=droppedFrames,proto3" json:"dropped_frames,omitempty"`
 	DroppedFramesRecent    int64                  `protobuf:"varint,4,opt,name=dropped_frames_recent,json=droppedFramesRecent,proto3" json:"dropped_frames_recent,omitempty"`
 	TotalBytes             int64                  `protobuf:"varint,5,opt,name=total_bytes,json=totalBytes,proto3" json:"total_bytes,omitempty"`
-	Broadcasting           bool                   `protobuf:"varint,6,opt,name=broadcasting,proto3" json:"broadcasting,omitempty"`
+	Broadcasting           bool                   `protobuf:"varint,6,opt,name=broadcasting,proto3" json:"broadcasting,omitempty"` // deprecated — true when active_outputs > 0
 	BroadcastUptimeSeconds int64                  `protobuf:"varint,7,opt,name=broadcast_uptime_seconds,json=broadcastUptimeSeconds,proto3" json:"broadcast_uptime_seconds,omitempty"`
 	StageUptimeSeconds     int64                  `protobuf:"varint,8,opt,name=stage_uptime_seconds,json=stageUptimeSeconds,proto3" json:"stage_uptime_seconds,omitempty"`
+	ActiveOutputs          int32                  `protobuf:"varint,9,opt,name=active_outputs,json=activeOutputs,proto3" json:"active_outputs,omitempty"` // number of active RTMP destinations
+	OutputNames            []string               `protobuf:"bytes,10,rep,name=output_names,json=outputNames,proto3" json:"output_names,omitempty"`       // names of active destinations
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -809,6 +811,20 @@ func (x *GetStageStatsResponse) GetStageUptimeSeconds() int64 {
 	return 0
 }
 
+func (x *GetStageStatsResponse) GetActiveOutputs() int32 {
+	if x != nil {
+		return x.ActiveOutputs
+	}
+	return 0
+}
+
+func (x *GetStageStatsResponse) GetOutputNames() []string {
+	if x != nil {
+		return x.OutputNames
+	}
+	return nil
+}
+
 var File_api_v1_runtime_proto protoreflect.FileDescriptor
 
 const file_api_v1_runtime_proto_rawDesc = "" +
@@ -854,7 +870,7 @@ const file_api_v1_runtime_proto_rawDesc = "" +
 	"\x0fRefreshResponse\x12\x0e\n" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\"1\n" +
 	"\x14GetStageStatsRequest\x12\x19\n" +
-	"\bstage_id\x18\x01 \x01(\tR\astageId\"\xe5\x02\n" +
+	"\bstage_id\x18\x01 \x01(\tR\astageId\"\xaf\x03\n" +
 	"\x15GetStageStatsResponse\x12\x1b\n" +
 	"\tstage_fps\x18\x01 \x01(\x01R\bstageFps\x12#\n" +
 	"\rbroadcast_fps\x18\x02 \x01(\x01R\fbroadcastFps\x12%\n" +
@@ -864,7 +880,10 @@ const file_api_v1_runtime_proto_rawDesc = "" +
 	"totalBytes\x12\"\n" +
 	"\fbroadcasting\x18\x06 \x01(\bR\fbroadcasting\x128\n" +
 	"\x18broadcast_uptime_seconds\x18\a \x01(\x03R\x16broadcastUptimeSeconds\x120\n" +
-	"\x14stage_uptime_seconds\x18\b \x01(\x03R\x12stageUptimeSeconds2\x87\x04\n" +
+	"\x14stage_uptime_seconds\x18\b \x01(\x03R\x12stageUptimeSeconds\x12%\n" +
+	"\x0eactive_outputs\x18\t \x01(\x05R\ractiveOutputs\x12!\n" +
+	"\foutput_names\x18\n" +
+	" \x03(\tR\voutputNames2\x87\x04\n" +
 	"\x0eRuntimeService\x12F\n" +
 	"\tEmitEvent\x12\x1b.dazzle.v1.EmitEventRequest\x1a\x1c.dazzle.v1.EmitEventResponse\x12@\n" +
 	"\aGetLogs\x12\x19.dazzle.v1.GetLogsRequest\x1a\x1a.dazzle.v1.GetLogsResponse\x12R\n" +

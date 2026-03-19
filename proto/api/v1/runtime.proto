@@ -14,18 +14,27 @@ service RuntimeService {
   rpc Refresh(RefreshRequest) returns (RefreshResponse);
 }
 
-message EmitEventRequest { string stage_id = 1; string event = 2; string data = 3; }
+message EmitEventRequest {
+  string stage_id = 1; // UUID or slug
+  string event = 2;
+  string data = 3;
+}
 message EmitEventResponse { bool ok = 1; }
 
-message GetLogsRequest { string stage_id = 1; int32 limit = 2; }
+message GetLogsRequest {
+  string stage_id = 1; // UUID or slug
+  int32 limit = 2;
+}
 message LogEntry { string level = 1; string message = 2; string timestamp = 3; }
 message GetLogsResponse { repeated LogEntry entries = 1; }
 
-message ScreenshotRequest { string stage_id = 1; }
+message ScreenshotRequest {
+  string stage_id = 1; // UUID or slug
+}
 message ScreenshotResponse { bytes image = 1; }
 
 message SyncDiffRequest {
-  string stage_id = 1;
+  string stage_id = 1;             // UUID or slug
   map<string, string> files = 2;  // relative path → sha256
   string entry = 3;               // HTML entry point filename
 }
@@ -35,8 +44,8 @@ message SyncDiffResponse {
 }
 
 message SyncPushRequest {
-  string stage_id = 1;
-  bytes chunk = 2;        // tar chunk
+  string stage_id = 1; // UUID or slug
+  bytes chunk = 2;     // tar chunk
 }
 
 message SyncPushResponse {
@@ -45,22 +54,26 @@ message SyncPushResponse {
 }
 
 message RefreshRequest {
-  string stage_id = 1;
+  string stage_id = 1; // UUID or slug
 }
 
 message RefreshResponse {
   bool ok = 1;
 }
 
-message GetStageStatsRequest { string stage_id = 1; }
+message GetStageStatsRequest {
+  string stage_id = 1; // UUID or slug
+}
 
 message GetStageStatsResponse {
-  double stage_fps = 1;                // Browser rendering FPS (from Chrome rAF timing)
-  double broadcast_fps = 2;            // Encoder output FPS (from ffmpeg)
+  double stage_fps = 1;
+  double broadcast_fps = 2;
   int64 dropped_frames = 3;
   int64 dropped_frames_recent = 4;
   int64 total_bytes = 5;
-  bool broadcasting = 6;
+  bool broadcasting = 6;               // deprecated — true when active_outputs > 0
   int64 broadcast_uptime_seconds = 7;
   int64 stage_uptime_seconds = 8;
+  int32 active_outputs = 9;            // number of active RTMP destinations
+  repeated string output_names = 10;   // names of active destinations
 }

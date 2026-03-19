@@ -14,10 +14,10 @@ service StageService {
   rpc GetStage(GetStageRequest) returns (GetStageResponse);
   rpc DeleteStage(DeleteStageRequest) returns (DeleteStageResponse);
   rpc SetStageDestination(SetStageDestinationRequest) returns (SetStageDestinationResponse);
+  rpc RemoveStageDestination(RemoveStageDestinationRequest) returns (RemoveStageDestinationResponse);
   rpc ActivateStage(ActivateStageRequest) returns (ActivateStageResponse);
   rpc DeactivateStage(DeactivateStageRequest) returns (DeactivateStageResponse);
   rpc UpdateStage(UpdateStageRequest) returns (UpdateStageResponse);
-  rpc RegeneratePreviewToken(RegeneratePreviewTokenRequest) returns (RegeneratePreviewTokenResponse);
 }
 
 message Stage {
@@ -30,21 +30,28 @@ message Stage {
   string status = 7; // inactive | starting | running | stopping
   string owner_user_id = 8;
   string name = 9;
-  string destination_id = 10;
-  StagePreview preview = 11;
-  StreamDestination destination = 12;
-  repeated string capabilities = 13; // e.g., ["gpu"]
-  string slug = 14; // short URL slug for /stage/{slug} and /watch/{slug}
+  string destination_id = 10;             // deprecated — use destinations
+  // field 11 removed (was StagePreview preview)
+  StreamDestination destination = 12;     // deprecated — use destinations
+  repeated string capabilities = 13;     // e.g., ["gpu"]
+  string slug = 14;                       // short URL slug for /watch/{slug}
+  repeated StageDestination destinations = 15;
+  string watch_url = 16;
 }
 
-message StagePreview {
-  string watch_url = 1;
-  string hls_url = 2;
+// StageDestination represents a streaming destination linked to a stage.
+message StageDestination {
+  string id = 1;                // stage_destinations row ID
+  string destination_id = 2;    // FK to stream_destinations
+  string name = 3;
+  string platform = 4;         // "dazzle", "twitch", "youtube", "kick", "restream", "custom"
+  string platform_username = 5;
+  bool enabled = 6;
 }
 
 message CreateStageRequest {
   string name = 1;
-  repeated string capabilities = 2; // e.g., ["gpu"]
+  repeated string capabilities = 2;
 }
 
 message CreateStageResponse {
@@ -58,7 +65,7 @@ message ListStagesResponse {
 }
 
 message GetStageRequest {
-  string id = 1;
+  string id = 1; // stage UUID or slug
 }
 
 message GetStageResponse {
@@ -66,22 +73,33 @@ message GetStageResponse {
 }
 
 message DeleteStageRequest {
-  string id = 1;
+  string id = 1; // stage UUID or slug
 }
 
 message DeleteStageResponse {}
 
+// SetStageDestination adds/enables a destination for a stage.
 message SetStageDestinationRequest {
-  string stage_id = 1;
-  string destination_id = 2; // empty string to clear
+  string stage_id = 1; // stage UUID or slug
+  string destination_id = 2;
 }
 
 message SetStageDestinationResponse {
   Stage stage = 1;
 }
 
+// RemoveStageDestination removes a destination from a stage.
+message RemoveStageDestinationRequest {
+  string stage_id = 1; // stage UUID or slug
+  string destination_id = 2;
+}
+
+message RemoveStageDestinationResponse {
+  Stage stage = 1;
+}
+
 message ActivateStageRequest {
-  string id = 1;
+  string id = 1; // stage UUID or slug
 }
 
 message ActivateStageResponse {
@@ -89,7 +107,7 @@ message ActivateStageResponse {
 }
 
 message DeactivateStageRequest {
-  string id = 1;
+  string id = 1; // stage UUID or slug
 }
 
 message DeactivateStageResponse {
@@ -102,13 +120,5 @@ message UpdateStageRequest {
 }
 
 message UpdateStageResponse {
-  Stage stage = 1;
-}
-
-message RegeneratePreviewTokenRequest {
-  string id = 1;
-}
-
-message RegeneratePreviewTokenResponse {
   Stage stage = 1;
 }
