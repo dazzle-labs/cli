@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httputil"
+	"os"
 	"strconv"
 	"strings"
 
@@ -20,12 +21,12 @@ import (
 func dbLookupStageByStreamKey(db *sql.DB, streamKey string) (*stageRow, error) {
 	var s stageRow
 	err := db.QueryRow(`
-		SELECT id, user_id, name, status, pod_name, pod_ip, destination_id, preview_token, provider, runpod_pod_id, sidecar_url, gpu_node_name, capabilities, created_at, updated_at, stream_key, slug
+		SELECT id, user_id, name, status, pod_name, pod_ip, destination_id, preview_token, provider, runpod_pod_id, sidecar_url, gpu_node_name, capabilities, created_at, updated_at, stream_key, slug, stream_title, stream_category
 		FROM stages WHERE stream_key=$1`, streamKey).Scan(
 		&s.ID, &s.UserID, &s.Name, &s.Status, &s.PodName, &s.PodIP,
 		&s.DestinationID, &s.PreviewToken, &s.Provider, &s.RunPodPodID,
 		&s.SidecarURL, &s.GPUNodeName, pq.Array(&s.Capabilities),
-		&s.CreatedAt, &s.UpdatedAt, &s.StreamKey, &s.Slug)
+		&s.CreatedAt, &s.UpdatedAt, &s.StreamKey, &s.Slug, &s.StreamTitle, &s.StreamCategory)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -38,12 +39,12 @@ func dbLookupStageByStreamKey(db *sql.DB, streamKey string) (*stageRow, error) {
 func dbLookupStageBySlug(db *sql.DB, slug string) (*stageRow, error) {
 	var s stageRow
 	err := db.QueryRow(`
-		SELECT id, user_id, name, status, pod_name, pod_ip, destination_id, preview_token, provider, runpod_pod_id, sidecar_url, gpu_node_name, capabilities, created_at, updated_at, stream_key, slug
+		SELECT id, user_id, name, status, pod_name, pod_ip, destination_id, preview_token, provider, runpod_pod_id, sidecar_url, gpu_node_name, capabilities, created_at, updated_at, stream_key, slug, stream_title, stream_category
 		FROM stages WHERE slug=$1`, slug).Scan(
 		&s.ID, &s.UserID, &s.Name, &s.Status, &s.PodName, &s.PodIP,
 		&s.DestinationID, &s.PreviewToken, &s.Provider, &s.RunPodPodID,
 		&s.SidecarURL, &s.GPUNodeName, pq.Array(&s.Capabilities),
-		&s.CreatedAt, &s.UpdatedAt, &s.StreamKey, &s.Slug)
+		&s.CreatedAt, &s.UpdatedAt, &s.StreamKey, &s.Slug, &s.StreamTitle, &s.StreamCategory)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -265,4 +266,104 @@ func (m *Manager) handleWatchHLS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	proxy.ServeHTTP(w, r)
+}
+
+// handleWatchThumbnail proxies the thumbnail from the stage's sidecar for public OG images.
+func (m *Manager) handleWatchThumbnail(w http.ResponseWriter, r *http.Request, slug string) {
+	if m.db == nil {
+		http.Error(w, "service unavailable", http.StatusServiceUnavailable)
+		return
+	}
+	row, err := dbLookupStageBySlug(m.db, slug)
+	if err != nil || row == nil {
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+	stage, ok := m.getStage(row.ID)
+	if !ok || !stageIsReady(stage) {
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+	target := stageProxyTarget(stage)
+	proxy := httputil.NewSingleHostReverseProxy(target)
+	if target.Scheme == "https" && m.agentHTTPClient != nil && m.agentHTTPClient.Transport != nil {
+		proxy.Transport = m.agentHTTPClient.Transport
+	}
+	w.Header().Set("Cache-Control", "public, max-age=5")
+	r.URL.Path = "/_dz_9f7a3b1c/thumbnail.png"
+	r.URL.RawQuery = ""
+	r.Host = target.Host
+	r.Header.Del("Authorization")
+	proxy.ServeHTTP(w, r)
+}
+
+// serveWatchPage serves the SPA index.html with OG meta tags injected for social media crawlers.
+func (m *Manager) serveWatchPage(w http.ResponseWriter, r *http.Request, slug string) {
+	// Read the built index.html
+	indexBytes, err := os.ReadFile("web/index.html")
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	html := string(indexBytes)
+
+	// Try to look up stage metadata for OG tags
+	var title, category, ogImage string
+	if slug != "" && m.db != nil {
+		if row, err := dbLookupStageBySlug(m.db, slug); err == nil && row != nil {
+			title = row.Name
+			if row.StreamTitle.Valid && row.StreamTitle.String != "" {
+				title = row.StreamTitle.String
+			}
+			if row.StreamCategory.Valid {
+				category = row.StreamCategory.String
+			}
+			ogImage = fmt.Sprintf("/watch/%s/thumbnail.png", slug)
+		}
+	}
+
+	if title == "" {
+		title = "Dazzle"
+	}
+	description := "Live on Dazzle"
+	if category != "" {
+		description = category + " — Live on Dazzle"
+	}
+
+	// Build OG meta tags
+	ogTags := fmt.Sprintf(`<meta property="og:title" content="%s" />
+    <meta property="og:description" content="%s" />
+    <meta property="og:type" content="video.other" />
+    <meta property="og:url" content="%s" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="%s" />
+    <meta name="twitter:description" content="%s" />`,
+		htmlEscape(title), htmlEscape(description),
+		htmlEscape(r.URL.Path),
+		htmlEscape(title), htmlEscape(description))
+
+	if ogImage != "" {
+		ogTags += fmt.Sprintf(`
+    <meta property="og:image" content="%s" />
+    <meta name="twitter:image" content="%s" />`, htmlEscape(ogImage), htmlEscape(ogImage))
+	}
+
+	// Also update <title>
+	html = strings.Replace(html, "<title>Dazzle</title>", "<title>"+htmlEscape(title)+" — Dazzle</title>", 1)
+
+	// Inject OG tags after <head>
+	html = strings.Replace(html, "<head>", "<head>\n    "+ogTags, 1)
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	w.Write([]byte(html))
+}
+
+// htmlEscape escapes HTML special characters for safe inclusion in HTML attributes.
+func htmlEscape(s string) string {
+	s = strings.ReplaceAll(s, "&", "&amp;")
+	s = strings.ReplaceAll(s, "<", "&lt;")
+	s = strings.ReplaceAll(s, ">", "&gt;")
+	s = strings.ReplaceAll(s, `"`, "&quot;")
+	return s
 }

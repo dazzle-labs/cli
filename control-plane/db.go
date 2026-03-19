@@ -360,8 +360,10 @@ type stageRow struct {
 	Capabilities  []string
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
-	StreamKey     sql.NullString // RTMP ingest stream key (auto-generated)
-	Slug          sql.NullString // Short slug for public watch URLs
+	StreamKey       sql.NullString // RTMP ingest stream key (auto-generated)
+	Slug            sql.NullString // Short slug for public watch URLs
+	StreamTitle     sql.NullString
+	StreamCategory  sql.NullString
 }
 
 func dbCreateStage(db *sql.DB, userID, name string, capabilities []string) (string, string, error) {
@@ -382,7 +384,7 @@ func dbCreateStage(db *sql.DB, userID, name string, capabilities []string) (stri
 
 func dbListStages(db *sql.DB, userID string) ([]stageRow, error) {
 	rows, err := db.Query(`
-		SELECT id, user_id, name, status, pod_name, pod_ip, destination_id, preview_token, provider, runpod_pod_id, sidecar_url, gpu_node_name, capabilities, created_at, updated_at, stream_key, slug
+		SELECT id, user_id, name, status, pod_name, pod_ip, destination_id, preview_token, provider, runpod_pod_id, sidecar_url, gpu_node_name, capabilities, created_at, updated_at, stream_key, slug, stream_title, stream_category
 		FROM stages WHERE user_id=$1 ORDER BY created_at`, userID)
 	if err != nil {
 		return nil, err
@@ -391,7 +393,7 @@ func dbListStages(db *sql.DB, userID string) ([]stageRow, error) {
 	var stages []stageRow
 	for rows.Next() {
 		var s stageRow
-		if err := rows.Scan(&s.ID, &s.UserID, &s.Name, &s.Status, &s.PodName, &s.PodIP, &s.DestinationID, &s.PreviewToken, &s.Provider, &s.RunPodPodID, &s.SidecarURL, &s.GPUNodeName, pq.Array(&s.Capabilities), &s.CreatedAt, &s.UpdatedAt, &s.StreamKey, &s.Slug); err != nil {
+		if err := rows.Scan(&s.ID, &s.UserID, &s.Name, &s.Status, &s.PodName, &s.PodIP, &s.DestinationID, &s.PreviewToken, &s.Provider, &s.RunPodPodID, &s.SidecarURL, &s.GPUNodeName, pq.Array(&s.Capabilities), &s.CreatedAt, &s.UpdatedAt, &s.StreamKey, &s.Slug, &s.StreamTitle, &s.StreamCategory); err != nil {
 			return nil, err
 		}
 		stages = append(stages, s)
@@ -402,8 +404,8 @@ func dbListStages(db *sql.DB, userID string) ([]stageRow, error) {
 func dbGetStage(db *sql.DB, id string) (*stageRow, error) {
 	var s stageRow
 	err := db.QueryRow(`
-		SELECT id, user_id, name, status, pod_name, pod_ip, destination_id, preview_token, provider, runpod_pod_id, sidecar_url, gpu_node_name, capabilities, created_at, updated_at, stream_key, slug
-		FROM stages WHERE id=$1`, id).Scan(&s.ID, &s.UserID, &s.Name, &s.Status, &s.PodName, &s.PodIP, &s.DestinationID, &s.PreviewToken, &s.Provider, &s.RunPodPodID, &s.SidecarURL, &s.GPUNodeName, pq.Array(&s.Capabilities), &s.CreatedAt, &s.UpdatedAt, &s.StreamKey, &s.Slug)
+		SELECT id, user_id, name, status, pod_name, pod_ip, destination_id, preview_token, provider, runpod_pod_id, sidecar_url, gpu_node_name, capabilities, created_at, updated_at, stream_key, slug, stream_title, stream_category
+		FROM stages WHERE id=$1`, id).Scan(&s.ID, &s.UserID, &s.Name, &s.Status, &s.PodName, &s.PodIP, &s.DestinationID, &s.PreviewToken, &s.Provider, &s.RunPodPodID, &s.SidecarURL, &s.GPUNodeName, pq.Array(&s.Capabilities), &s.CreatedAt, &s.UpdatedAt, &s.StreamKey, &s.Slug, &s.StreamTitle, &s.StreamCategory)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -452,8 +454,8 @@ func dbRenameStage(db *sql.DB, id, userID, name string) (*stageRow, error) {
 	err := db.QueryRow(`
 		UPDATE stages SET name=$3, updated_at=NOW()
 		WHERE id=$1 AND user_id=$2
-		RETURNING id, user_id, name, status, pod_name, pod_ip, destination_id, preview_token, provider, runpod_pod_id, sidecar_url, gpu_node_name, capabilities, created_at, updated_at, stream_key, slug`,
-		id, userID, name).Scan(&s.ID, &s.UserID, &s.Name, &s.Status, &s.PodName, &s.PodIP, &s.DestinationID, &s.PreviewToken, &s.Provider, &s.RunPodPodID, &s.SidecarURL, &s.GPUNodeName, pq.Array(&s.Capabilities), &s.CreatedAt, &s.UpdatedAt, &s.StreamKey, &s.Slug)
+		RETURNING id, user_id, name, status, pod_name, pod_ip, destination_id, preview_token, provider, runpod_pod_id, sidecar_url, gpu_node_name, capabilities, created_at, updated_at, stream_key, slug, stream_title, stream_category`,
+		id, userID, name).Scan(&s.ID, &s.UserID, &s.Name, &s.Status, &s.PodName, &s.PodIP, &s.DestinationID, &s.PreviewToken, &s.Provider, &s.RunPodPodID, &s.SidecarURL, &s.GPUNodeName, pq.Array(&s.Capabilities), &s.CreatedAt, &s.UpdatedAt, &s.StreamKey, &s.Slug, &s.StreamTitle, &s.StreamCategory)
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("stage not found")
 	}

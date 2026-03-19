@@ -142,6 +142,11 @@ func (s *broadcastServer) SetStreamTitle(ctx context.Context, req *connect.Reque
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
+	// Persist stream title for OG metadata on public watch pages
+	if s.mgr.db != nil {
+		s.mgr.db.Exec("UPDATE stages SET stream_title=$1, updated_at=NOW() WHERE id=$2", req.Msg.Title, req.Msg.StageId)
+	}
+
 	return connect.NewResponse(&apiv1.SetStreamTitleResponse{Title: req.Msg.Title}), nil
 }
 
@@ -163,6 +168,11 @@ func (s *broadcastServer) SetStreamCategory(ctx context.Context, req *connect.Re
 	// No server-side validation of non-empty category; validation lives in the CLI only.
 	if err := client.SetStreamInfo(ctx, accessToken, dest.PlatformUserID, "", req.Msg.Category); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	// Persist stream category for OG metadata on public watch pages
+	if s.mgr.db != nil {
+		s.mgr.db.Exec("UPDATE stages SET stream_category=$1, updated_at=NOW() WHERE id=$2", req.Msg.Category, req.Msg.StageId)
 	}
 
 	return connect.NewResponse(&apiv1.SetStreamCategoryResponse{Category: req.Msg.Category}), nil

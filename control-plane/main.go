@@ -1704,6 +1704,13 @@ func main() {
 	// When a stage is broadcasting, its HLS is publicly viewable (no auth).
 	mux.HandleFunc("/watch/", func(w http.ResponseWriter, r *http.Request) {
 		parts := strings.SplitN(strings.TrimPrefix(r.URL.Path, "/watch/"), "/", 3)
+
+		// Public thumbnail for OG images
+		if len(parts) >= 2 && parts[1] == "thumbnail.png" {
+			mgr.handleWatchThumbnail(w, r, parts[0])
+			return
+		}
+
 		if len(parts) >= 3 && parts[1] == "hls" {
 			w.Header().Set("Access-Control-Allow-Origin", "*")
 			w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
@@ -1715,8 +1722,9 @@ func main() {
 			mgr.handleWatchHLS(w, r)
 			return
 		}
-		// SPA route for /watch/{slug}
-		spaFileServer("web").ServeHTTP(w, r)
+		// SPA route for /watch/{slug} — inject OG meta tags for crawlers
+		slug := parts[0]
+		mgr.serveWatchPage(w, r, slug)
 	})
 
 	// TODO: convert /stage/ handler to Go 1.22+ path patterns (like /oauth/ and /auth/cli/session/ above)
