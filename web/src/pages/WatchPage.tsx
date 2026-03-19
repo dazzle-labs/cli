@@ -44,7 +44,7 @@ export function WatchPage() {
   useEffect(() => {
     if (!slug || !videoRef.current) return;
 
-    const hlsUrl = `/watch/${slug}/hls/stream.m3u8`;
+    const hlsUrl = `/watch/${slug}/index.m3u8`;
 
     if (!Hls.isSupported()) {
       const video = videoRef.current;

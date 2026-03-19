@@ -28,7 +28,7 @@ export function StreamPreview({ slug, status }: StreamPreviewProps) {
     if (status !== "running" || !videoRef.current || !slug) return;
 
     // HLS from ingest (public, no auth needed)
-    const hlsUrl = `/watch/${slug}/hls/stream.m3u8`;
+    const hlsUrl = `/watch/${slug}/index.m3u8`;
 
     if (!Hls.isSupported()) {
       // Safari native HLS
