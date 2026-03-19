@@ -93,8 +93,13 @@ func New(cfg Config) (*Server, error) {
 	now := time.Now()
 	// Pipeline options
 	var pipelineOpts []pipeline.Option
-	if codec := os.Getenv("SIDECAR_VIDEO_CODEC"); codec != "" {
-		pipelineOpts = append(pipelineOpts, pipeline.WithVideoCodec(codec))
+	if codec := os.Getenv("SIDECAR_VIDEO_CODEC"); codec != "" && codec != "libx264" {
+		if pipeline.ProbeCodec(codec) {
+			log.Printf("Video codec: %s (probe passed)", codec)
+			pipelineOpts = append(pipelineOpts, pipeline.WithVideoCodec(codec))
+		} else {
+			log.Printf("Video codec: %s probe failed, falling back to libx264", codec)
+		}
 	}
 
 	// Choose CDP transport: pipe mode (no TCP port) or WebSocket (traditional)

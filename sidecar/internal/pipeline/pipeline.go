@@ -420,6 +420,19 @@ func shellQuoteArgs(args []string) string {
 	return strings.Join(parts, " ")
 }
 
+// ProbeCodec tests whether the given video codec is usable by running a
+// short ffmpeg encode. Returns true if the codec works, false otherwise.
+func ProbeCodec(codec string) bool {
+	cmd := exec.Command("ffmpeg",
+		"-loglevel", "error",
+		"-f", "lavfi", "-i", "nullsrc=s=64x64:d=0.04",
+		"-frames:v", "1",
+		"-c:v", codec,
+		"-f", "null", "-",
+	)
+	return cmd.Run() == nil
+}
+
 // outputsEqual checks if two output slices are identical.
 func outputsEqual(a, b []Output) bool {
 	if len(a) != len(b) {
