@@ -143,6 +143,17 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Configure git auth
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "https://x-access-token:${GH_TOKEN}@github.com" > ~/.git-credentials
+          git config --global credential.helper store
+          git config --global url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "git@github.com:"
+
+      - name: Fetch CLI submodule
+        run: git submodule update --init cli
+
       - name: Generate Image Tags
         id: tags
         run: |
@@ -151,9 +162,6 @@ jobs:
           echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
           echo "image_tag=${{ env.CP_REPO }}:${SHORT_SHA}" >> $GITHUB_OUTPUT
           echo "branch_tag=${{ env.CP_REPO }}:${BRANCH}" >> $GITHUB_OUTPUT
-
-      - name: Fetch CLI submodule
-        run: git submodule update --init cli
 
       - name: Set up Go
         uses: actions/setup-go@v5
