@@ -144,7 +144,7 @@ spec:
                   name: r2-credentials
                   key: bucket
             - name: DEFAULT_GPU_NODE_CLASS
-              value: rtx4090
+              value: rtx5090
             # RunPod GPU provisioning (optional — GPU only active when RUNPOD_API_KEY is set)
             - name: RUNPOD_API_KEY
               valueFrom:
