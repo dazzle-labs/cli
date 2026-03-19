@@ -165,6 +165,8 @@ func (a *Agent) CreateStage(stageID, userID string, r2Endpoint, r2AccessKey, r2S
 		fmt.Sprintf("CONTENT_NONCE=%s", contentNonce),
 		fmt.Sprintf("LOCAL_HTTP_PORT=%d", 8080+slot.slotIndex),
 		fmt.Sprintf("PATH=%s", envOrDefault("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")),
+		fmt.Sprintf("STAGE_UID=%d", slot.uid),
+		fmt.Sprintf("STAGE_GID=%d", slot.uid),
 	}
 
 	// Pass through Chrome flags
@@ -280,18 +282,11 @@ func spawnStage(slot *stageSlot, env []string, gpuGIDs []uint32) (*stageProcess,
 	cmd.Env = env
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	// Create new process group and run as the slot's dedicated UID.
-	// Running as non-root prevents reading other stages' /proc entries
-	// and enforces filesystem permission boundaries.
-	// GPU device GIDs are added as supplementary groups so non-root
-	// UIDs can access /dev/nvidia* and /dev/dri/* without chmod.
+	// Stage script runs as root so ffmpeg can access /dev/nvidia* for NVENC.
+	// Chrome is dropped to the stage UID inside stage-start.sh via setpriv.
+	// STAGE_UID/STAGE_GID env vars tell the script which UID to use.
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true,
-		Credential: &syscall.Credential{
-			Uid:    uint32(slot.uid),
-			Gid:    uint32(slot.uid),
-			Groups: gpuGIDs,
-		},
 	}
 
 	if err := cmd.Start(); err != nil {

@@ -59,8 +59,12 @@ strip_runtime_flags() {
 }
 CHROME_FLAGS="$(strip_runtime_flags "$CHROME_FLAGS")"
 
-# Ensure data directories exist
+# Ensure data directories exist and are owned by the stage UID
+# (Chrome runs as non-root and needs write access)
 mkdir -p "$DATA_DIR/content" "$DATA_DIR/chrome"
+if [ -n "${STAGE_UID:-}" ] && [ "$STAGE_UID" != "0" ]; then
+    chown -R "$STAGE_UID:${STAGE_GID:-$STAGE_UID}" "$DATA_DIR"
+fi
 
 # CDP transport: use pipe mode (no TCP port) for multi-tenant isolation.
 # Named FIFOs are created by the agent with 0600 permissions and owned by the
@@ -147,7 +151,13 @@ CHROME_START_URL="http://127.0.0.1:$LOCAL_PORT/"
 if [ -n "${CONTENT_NONCE:-}" ]; then
     CHROME_START_URL="http://127.0.0.1:$LOCAL_PORT/_boot"
 fi
-(exec 3<>"$CDP_PIPE_IN" 4>"$CDP_PIPE_OUT"; exec google-chrome-stable $CHROME_FLAGS --remote-debugging-pipe "$CHROME_START_URL") &
+# Drop to non-root stage UID for Chrome (process isolation).
+# Sidecar/ffmpeg stay root for /dev/nvidia* NVENC access.
+if [ -n "${STAGE_UID:-}" ] && [ "$STAGE_UID" != "0" ]; then
+    (exec 3<>"$CDP_PIPE_IN" 4>"$CDP_PIPE_OUT"; exec setpriv --reuid="$STAGE_UID" --regid="${STAGE_GID:-$STAGE_UID}" --clear-groups google-chrome-stable $CHROME_FLAGS --remote-debugging-pipe "$CHROME_START_URL") &
+else
+    (exec 3<>"$CDP_PIPE_IN" 4>"$CDP_PIPE_OUT"; exec google-chrome-stable $CHROME_FLAGS --remote-debugging-pipe "$CHROME_START_URL") &
+fi
 CHROME_PID=$!
 
 # Brief wait for Chrome to initialize (no TCP port to poll — pipe connects on first message)
