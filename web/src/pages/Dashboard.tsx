@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "@clerk/react";
 import { Link, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
@@ -25,12 +24,6 @@ import { StageThumbnail } from "@/components/StageThumbnail";
 import { springs, fadeInUp } from "@/lib/motion";
 
 export function Dashboard() {
-  const { has } = useAuth();
-  const canUseGPU =
-    has?.({ permission: "org:access:developer" }) ||
-    has?.({ permission: "org:access:tester" }) ||
-    false;
-
   const [stages, setStages] = useState<Stage[]>([]);
   const [destinations, setDestinations] = useState<StreamDestination[]>([]);
   const [loading, setLoading] = useState(true);
@@ -194,15 +187,13 @@ export function Dashboard() {
                 onKeyDown={(e) => { if (e.key === "Enter") handleCreateStage(); }}
               />
             </div>
-            {canUseGPU && (
-              <div className="flex items-center justify-between rounded-lg border p-3">
-                <div className="flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-amber-500" />
-                  <Label htmlFor="gpu-toggle" className="cursor-pointer font-normal">GPU-accelerated</Label>
-                </div>
-                <Switch id="gpu-toggle" checked={createGPU} onCheckedChange={setCreateGPU} />
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div className="flex items-center gap-2">
+                <Zap className="h-4 w-4 text-amber-500" />
+                <Label htmlFor="gpu-toggle" className="cursor-pointer font-normal">GPU-accelerated</Label>
               </div>
-            )}
+              <Switch id="gpu-toggle" checked={createGPU} onCheckedChange={setCreateGPU} />
+            </div>
           </div>
           <DialogFooter>
             <Button onClick={handleCreateStage} disabled={creatingStage}>

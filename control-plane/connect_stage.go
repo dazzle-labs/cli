@@ -28,10 +28,13 @@ func (s *stageServer) CreateStage(ctx context.Context, req *connect.Request[apiv
 		name = "default"
 	}
 
-	if hasCapability(req.Msg.Capabilities, "gpu") {
-		if !info.hasPermission("org:access:developer") && !info.hasPermission("org:access:tester") {
-			return nil, connect.NewError(connect.CodePermissionDenied, fmt.Errorf("GPU stages require tester or developer role"))
-		}
+	// Enforce per-user total stage limit.
+	existing, err := dbListStages(s.mgr.db, info.UserID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to check stage limits"))
+	}
+	if len(existing) >= 50 {
+		return nil, connect.NewError(connect.CodeResourceExhausted, fmt.Errorf("stage limit reached (max 50)"))
 	}
 
 	stage, err := s.mgr.createStageRecord(info.UserID, name, req.Msg.Capabilities)
@@ -174,6 +177,27 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 	// Check not already active
 	if live, ok := s.mgr.getStage(req.Msg.Id); ok && live.Status == StatusRunning {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("stage is already active"))
+	}
+
+	// Enforce per-user active stage limits: 3 total, 1 GPU.
+	allStages, listErr := dbListStages(s.mgr.db, info.UserID)
+	if listErr != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to check stage limits"))
+	}
+	activeCount, activeGPU := 0, 0
+	for _, st := range allStages {
+		if st.Status == "running" || st.Status == "starting" {
+			activeCount++
+			if hasCapability(st.Capabilities, "gpu") {
+				activeGPU++
+			}
+		}
+	}
+	if activeCount >= 3 {
+		return nil, connect.NewError(connect.CodeResourceExhausted, fmt.Errorf("active stage limit reached (max 3)"))
+	}
+	if hasCapability(row.Capabilities, "gpu") && activeGPU >= 1 {
+		return nil, connect.NewError(connect.CodeResourceExhausted, fmt.Errorf("active GPU stage limit reached (max 1)"))
 	}
 
 	waitCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)

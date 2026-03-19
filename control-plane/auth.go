@@ -23,24 +23,9 @@ const (
 )
 
 type authInfo struct {
-	UserID      string
-	Method      authMethod
-	KeyID       string   // only set for API key auth
-	Permissions []string // Clerk org permissions (e.g. "org:access:developer")
-}
-
-// clerkOrgClaims extracts organization permissions from the Clerk JWT.
-type clerkOrgClaims struct {
-	OrgPermissions []string `json:"org_permissions"`
-}
-
-func (a authInfo) hasPermission(perm string) bool {
-	for _, p := range a.Permissions {
-		if p == perm {
-			return true
-		}
-	}
-	return false
+	UserID string
+	Method authMethod
+	KeyID  string // only set for API key auth
 }
 
 type authInfoKeyType struct{}
@@ -142,8 +127,7 @@ func (a *authenticator) verifyClerkJWT(ctx context.Context, token string) (*auth
 		a.jwkStore.jwk = jwk
 	}
 
-	customCtor := func(_ context.Context) any { return &clerkOrgClaims{} }
-	claims, err := jwt.Verify(ctx, &jwt.VerifyParams{Token: token, JWK: jwk, CustomClaimsConstructor: customCtor})
+	claims, err := jwt.Verify(ctx, &jwt.VerifyParams{Token: token, JWK: jwk})
 	if err != nil {
 		// JWK might be rotated — clear cache and retry once
 		a.jwkStore.jwk = nil
@@ -159,17 +143,13 @@ func (a *authenticator) verifyClerkJWT(ctx context.Context, token string) (*auth
 			return nil, err
 		}
 		a.jwkStore.jwk = jwk
-		claims, err = jwt.Verify(ctx, &jwt.VerifyParams{Token: token, JWK: jwk, CustomClaimsConstructor: customCtor})
+		claims, err = jwt.Verify(ctx, &jwt.VerifyParams{Token: token, JWK: jwk})
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	var perms []string
-	if org, ok := claims.Custom.(*clerkOrgClaims); ok {
-		perms = org.OrgPermissions
-	}
-	return &authInfo{UserID: claims.Subject, Method: authMethodClerk, Permissions: perms}, nil
+	return &authInfo{UserID: claims.Subject, Method: authMethodClerk}, nil
 }
 
 // extractBearerToken gets the token from Authorization header or query param.
