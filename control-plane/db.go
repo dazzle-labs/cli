@@ -550,8 +550,8 @@ func dbCreateDazzleDestinationForStage(db *sql.DB, stageID, userID string) error
 	sdID := uuid.Must(uuid.NewV7()).String()
 
 	_, err := db.Exec(`
-		INSERT INTO stream_destinations (id, user_id, name, platform, rtmp_url, stream_key, created_at, updated_at)
-		VALUES ($1, $2, 'Dazzle', 'dazzle', '', '', NOW(), NOW())`, destID, userID)
+		INSERT INTO stream_destinations (id, user_id, name, platform, platform_username, rtmp_url, stream_key, created_at, updated_at)
+		VALUES ($1, $2, 'Dazzle', 'dazzle', (SELECT slug FROM stages WHERE id = $3::uuid), '', '', NOW(), NOW())`, destID, userID, stageID)
 	if err != nil {
 		return err
 	}
