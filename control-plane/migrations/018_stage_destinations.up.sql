@@ -11,7 +11,9 @@ DECLARE
     bytes bytea;
 BEGIN
     ms := extract(epoch FROM clock_timestamp()) * 1000;
-    bytes := decode(lpad(to_hex(ms), 12, '0'), 'hex') || gen_random_bytes(10);
+    -- 6 bytes timestamp + 10 random bytes from a v4 UUID (no pgcrypto needed)
+    bytes := decode(lpad(to_hex(ms), 12, '0'), 'hex')
+          || substring(decode(replace(gen_random_uuid()::text, '-', ''), 'hex') from 1 for 10);
     -- Set version 7 (bits 48-51)
     bytes := set_byte(bytes, 6, (get_byte(bytes, 6) & x'0f'::int) | x'70'::int);
     -- Set variant 2 (bits 64-65)
