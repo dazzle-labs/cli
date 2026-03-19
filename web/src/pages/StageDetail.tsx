@@ -267,7 +267,7 @@ export function StageDetail() {
                           className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0"
                           onClick={async () => {
                             try {
-                              await stageClient.removeStageDestination({ stageId: stageId!, destinationId: sd.destinationId });
+                              await stageClient.removeStageDestination({ stageId: stageId!, destinationId: sd.id });
                               await refresh();
                             } catch { /* ignore */ }
                           }}
@@ -280,7 +280,7 @@ export function StageDetail() {
               )}
               {/* Add destination — show unlinked user destinations */}
               {(() => {
-                const linkedIds = new Set(stage.destinations.map((sd) => sd.destinationId));
+                const linkedIds = new Set(stage.destinations.map((sd) => sd.id));
                 const unlinked = destinations.filter((d) => !linkedIds.has(d.id));
                 if (unlinked.length > 0) {
                   return (
