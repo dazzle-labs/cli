@@ -12,66 +12,10 @@ import (
 
 // BroadcastCmd groups broadcast subcommands.
 type BroadcastCmd struct {
-	On       BroadcastStartCmd    `cmd:"" aliases:"start" help:"Start broadcasting to the configured destination."`
-	Off      BroadcastStopCmd     `cmd:"" aliases:"stop" help:"Stop the broadcast."`
-	Status   BroadcastStatusCmd   `cmd:"" aliases:"st" help:"Check broadcast status."`
+	Status   BroadcastStatusCmd   `cmd:"" aliases:"st" help:"Check streaming status."`
 	Info     BroadcastInfoCmd     `cmd:"" help:"Get current stream title and category."`
 	Title    BroadcastTitleCmd    `cmd:"" help:"Set the stream title (not supported for Restream)."`
 	Category BroadcastCategoryCmd `cmd:"" help:"Set the stream category or game (not supported for Restream)."`
-}
-
-// BroadcastStartCmd starts broadcasting on the active stage.
-type BroadcastStartCmd struct{}
-
-func (c *BroadcastStartCmd) Run(ctx *Context) error {
-	if err := ctx.requireAuth(); err != nil {
-		return err
-	}
-	if err := ctx.resolveStage(); err != nil {
-		return err
-	}
-
-	client := apiv1connect.NewBroadcastServiceClient(ctx.HTTPClient, ctx.APIURL)
-	req := connect.NewRequest(&apiv1.StartBroadcastRequest{StageId: ctx.StageID})
-	req.Header().Set("Authorization", ctx.authHeader())
-	if _, err := client.StartBroadcast(context.Background(), req); err != nil {
-		return err
-	}
-
-	if ctx.JSON {
-		printJSON(OKResponse{OK: true})
-		return nil
-	}
-
-	printText("Broadcast started")
-	return nil
-}
-
-// BroadcastStopCmd stops broadcasting on the active stage.
-type BroadcastStopCmd struct{}
-
-func (c *BroadcastStopCmd) Run(ctx *Context) error {
-	if err := ctx.requireAuth(); err != nil {
-		return err
-	}
-	if err := ctx.resolveStage(); err != nil {
-		return err
-	}
-
-	client := apiv1connect.NewBroadcastServiceClient(ctx.HTTPClient, ctx.APIURL)
-	req := connect.NewRequest(&apiv1.StopBroadcastRequest{StageId: ctx.StageID})
-	req.Header().Set("Authorization", ctx.authHeader())
-	if _, err := client.StopBroadcast(context.Background(), req); err != nil {
-		return err
-	}
-
-	if ctx.JSON {
-		printJSON(OKResponse{OK: true})
-		return nil
-	}
-
-	printText("Broadcast stopped")
-	return nil
 }
 
 // BroadcastStatusCmd shows broadcast status on the active stage.

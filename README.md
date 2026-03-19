@@ -122,13 +122,8 @@ Commands:
                                    etc.) without re-syncing or reloading.
   stage (s) logs (l)               Retrieve stage console logs.
   stage (s) screenshot (ss)        Capture a screenshot of the stage.
-  stage (s) broadcast (bc) on (start)
-                                   Start broadcasting to the configured
-                                   destination.
-  stage (s) broadcast (bc) off (stop)
-                                   Stop the broadcast.
   stage (s) broadcast (bc) status (st)
-                                   Check broadcast status.
+                                   Check streaming status.
   stage (s) broadcast (bc) info    Get current stream title and category.
   stage (s) broadcast (bc) title
                                    Set the stream title (not supported for
@@ -183,13 +178,8 @@ Commands:
                                    etc.) without re-syncing or reloading.
   stage (s) logs (l)               Retrieve stage console logs.
   stage (s) screenshot (ss)        Capture a screenshot of the stage.
-  stage (s) broadcast (bc) on (start)
-                                   Start broadcasting to the configured
-                                   destination.
-  stage (s) broadcast (bc) off (stop)
-                                   Stop the broadcast.
   stage (s) broadcast (bc) status (st)
-                                   Check broadcast status.
+                                   Check streaming status.
   stage (s) broadcast (bc) info    Get current stream title and category.
   stage (s) broadcast (bc) title
                                    Set the stream title (not supported for
@@ -252,13 +242,8 @@ Flags:
       --api-url=STRING    API URL ($DAZZLE_API_URL).
 
 Commands:
-  stage (s) broadcast (bc) on (start)
-                                   Start broadcasting to the configured
-                                   destination.
-  stage (s) broadcast (bc) off (stop)
-                                   Stop the broadcast.
   stage (s) broadcast (bc) status (st)
-                                   Check broadcast status.
+                                   Check streaming status.
   stage (s) broadcast (bc) info    Get current stream title and category.
   stage (s) broadcast (bc) title
                                    Set the stream title (not supported for
