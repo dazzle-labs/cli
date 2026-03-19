@@ -521,7 +521,7 @@ func dbListStageDestinations(db *sql.DB, stageID string) ([]stageDestJoinRow, er
 }
 
 func dbAddStageDestination(db *sql.DB, stageID, destinationID string) (string, error) {
-	id := "sd_" + strings.ReplaceAll(uuid.Must(uuid.NewV7()).String(), "-", "")
+	id := uuid.Must(uuid.NewV7()).String()
 	_, err := db.Exec(`
 		INSERT INTO stage_destinations (id, stage_id, destination_id, enabled)
 		VALUES ($1, $2, $3, true)
@@ -546,8 +546,8 @@ func dbSetStageDestinationEnabled(db *sql.DB, stageID, destinationID string, ena
 // and links it in stage_destinations. The destination is deleted when the stage is deleted
 // (via ON DELETE CASCADE on stage_destinations + explicit cleanup).
 func dbCreateDazzleDestinationForStage(db *sql.DB, stageID, userID string) error {
-	destID := "dz_" + strings.ReplaceAll(uuid.Must(uuid.NewV7()).String(), "-", "")
-	sdID := "sd_" + strings.ReplaceAll(uuid.Must(uuid.NewV7()).String(), "-", "")
+	destID := uuid.Must(uuid.NewV7()).String()
+	sdID := uuid.Must(uuid.NewV7()).String()
 
 	_, err := db.Exec(`
 		INSERT INTO stream_destinations (id, user_id, name, platform, rtmp_url, stream_key, created_at, updated_at)
