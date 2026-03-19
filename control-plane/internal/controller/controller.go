@@ -226,8 +226,8 @@ func (c *GPUNodeController) handleNew(ctx context.Context, node *unstructured.Un
 		}
 	}
 
-	// Build port list: agent port + one per stage slot + template extras
-	ports := []string{fmt.Sprintf("%d/tcp", AgentPort)}
+	// Build port list: SSH + agent port + one per stage slot + template extras
+	ports := []string{"22/tcp", fmt.Sprintf("%d/tcp", AgentPort)}
 	for i := int64(0); i < maxStages; i++ {
 		ports = append(ports, fmt.Sprintf("%d/tcp", StageBasePort+int(i)))
 	}
