@@ -74,7 +74,20 @@ set-streamer-env: ## Update STREAMER_IMAGE env var on control-plane deployment (
 		STREAMER_IMAGE=$(STREAMER_IMAGE)
 
 verify: ## Wait for control-plane rollout to complete and show recent logs (read-only)
-	$(KUBECTL) rollout status deployment/control-plane -n browser-streamer --timeout=300s
+	@$(KUBECTL) rollout status deployment/control-plane -n browser-streamer --timeout=300s || { \
+		echo ""; \
+		echo "=== ROLLOUT FAILED — pod diagnostics ==="; \
+		echo ""; \
+		$(KUBECTL) get pods -n browser-streamer -l app=control-plane -o wide; \
+		echo ""; \
+		for POD in $$($(KUBECTL) get pods -n browser-streamer -l app=control-plane \
+			--field-selector=status.phase!=Running -o jsonpath='{.items[*].metadata.name}'); do \
+			echo "=== Logs: $$POD ==="; \
+			$(KUBECTL) logs -n browser-streamer "$$POD" --tail=30 2>&1; \
+			echo ""; \
+		done; \
+		exit 1; \
+	}
 	@echo ""
 	@echo "=== Recent logs ==="
 	@POD=$$($(KUBECTL) get pods -n browser-streamer -l app=control-plane \
