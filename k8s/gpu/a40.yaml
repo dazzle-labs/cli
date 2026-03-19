@@ -19,3 +19,6 @@ spec:
         --no-first-run --no-default-browser-check --disable-infobars
         --autoplay-policy=no-user-gesture-required
         --remote-allow-origins=* --disable-features=TranslateUI
+        --renderer-process-limit=1 --kiosk
+        --disable-background-timer-throttling
+        --disable-backgrounding-occluded-windows --disable-renderer-backgrounding

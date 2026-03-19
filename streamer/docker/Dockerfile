@@ -75,6 +75,31 @@ RUN apt-get update && apt-get install -y \
     mesa-utils \
     && rm -rf /var/lib/apt/lists/*
 
+# Build ffmpeg from source with latest NVENC SDK headers for Blackwell support.
+# Ubuntu 24.04's ffmpeg 6.1.1 ships NVENC SDK 13.0 which doesn't support SM 12.0
+# (RTX 5090). We need nv-codec-headers ≥ 13.0.19.0 (maps to Video Codec SDK 13.1).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential git nasm pkg-config \
+        libx264-dev libpulse-dev libx11-dev libxcb1-dev libxcb-shm0-dev \
+        libxcb-xfixes0-dev \
+    && git clone --depth 1 https://github.com/FFmpeg/nv-codec-headers /tmp/nv-codec-headers \
+    && make -C /tmp/nv-codec-headers install \
+    && git clone --depth 1 --branch n7.1 https://github.com/FFmpeg/FFmpeg /tmp/ffmpeg \
+    && cd /tmp/ffmpeg \
+    && ./configure \
+        --enable-gpl --enable-nonfree \
+        --enable-nvenc --enable-libx264 --enable-libpulse \
+        --enable-libxcb --enable-libxcb-shm --enable-libxcb-xfixes \
+        --disable-doc --disable-debug --disable-static --enable-shared \
+    && make -j$(nproc) \
+    && make install \
+    && ldconfig \
+    && cd / && rm -rf /tmp/ffmpeg /tmp/nv-codec-headers \
+    && apt-get purge -y build-essential git nasm pkg-config \
+        libx264-dev libpulse-dev libx11-dev libxcb1-dev libxcb-shm0-dev \
+        libxcb-xfixes0-dev \
+    && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
+
 # --- Streamer image (CPU stages) ---
 FROM gl-${VARIANT} AS streamer
 

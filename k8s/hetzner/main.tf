@@ -121,6 +121,14 @@ module "kube-hetzner" {
       source_ips      = []
       destination_ips = ["0.0.0.0/0", "::/0"]
     },
+    {
+      description     = "Allow outbound to RunPod GPU nodes"
+      direction       = "out"
+      protocol        = "tcp"
+      port            = "1024-65535"
+      source_ips      = []
+      destination_ips = ["0.0.0.0/0", "::/0"]
+    },
   ]
 
   # --- Misc ---
