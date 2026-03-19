@@ -23,6 +23,7 @@ resources:
   - scheduling/placeholder.yaml
   - scheduling/trimaran/metrics-rbac.yaml
   - gpu/rtx5090.yaml
+  - gpu/rtx4090.yaml
   - gpu/l40s.yaml
   - gpu/a40.yaml
 
