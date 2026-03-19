@@ -34,7 +34,6 @@ WORKDIR /app
 COPY --from=builder /src/control-plane/control-plane .
 COPY --from=builder /src/control-plane/migrations/ ./migrations/
 COPY --from=web /app/dist/ ./web/
-COPY llms.txt ./web/llms.txt
 RUN mkdir -p ./web/.well-known && cp ./web/llms.txt ./web/.well-known/llms.txt
 EXPOSE 8080
 ENTRYPOINT ["./control-plane"]

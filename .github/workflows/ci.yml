@@ -92,16 +92,8 @@ jobs:
             control-plane/go.sum
             sidecar/go.sum
 
-      - name: Regenerate llms.txt
+      - name: Verify llms.txt generates cleanly
         run: make llms-txt
-
-      - name: Check llms.txt is up-to-date
-        run: |
-          if ! git diff --exit-code llms.txt web/public/llms.txt; then
-            echo ""
-            echo "llms.txt is stale. Run 'make llms-txt' and commit the result."
-            exit 1
-          fi
 
   check-cli-commands:
     runs-on: ubuntu-latest
@@ -159,6 +151,19 @@ jobs:
           echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
           echo "image_tag=${{ env.CP_REPO }}:${SHORT_SHA}" >> $GITHUB_OUTPUT
           echo "branch_tag=${{ env.CP_REPO }}:${BRANCH}" >> $GITHUB_OUTPUT
+
+      - name: Fetch CLI submodule
+        run: git submodule update --init cli
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache: true
+          cache-dependency-path: control-plane/go.sum
+
+      - name: Generate llms.txt
+        run: make llms-txt
 
       - name: Get CLI submodule commit
         id: cli
