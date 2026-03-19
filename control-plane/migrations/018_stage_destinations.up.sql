@@ -23,6 +23,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- Migrate stream_destinations.id and stages.destination_id from TEXT to UUID.
 -- Existing values are gen_random_uuid()::text so the cast is safe.
 ALTER TABLE stages DROP CONSTRAINT IF EXISTS stages_destination_id_fkey;
+ALTER TABLE stream_destinations ALTER COLUMN id DROP DEFAULT;
 ALTER TABLE stream_destinations ALTER COLUMN id TYPE UUID USING id::uuid;
 ALTER TABLE stream_destinations ALTER COLUMN id SET DEFAULT uuidv7();
 ALTER TABLE stages ALTER COLUMN destination_id TYPE UUID USING destination_id::uuid;
