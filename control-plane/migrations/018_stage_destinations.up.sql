@@ -49,7 +49,7 @@ DECLARE
     r RECORD;
     dest_id UUID;
 BEGIN
-    FOR r IN SELECT id, user_id FROM stages LOOP
+    FOR r IN SELECT id, user_id, slug FROM stages LOOP
         dest_id := uuidv7();
 
         INSERT INTO stream_destinations (id, user_id, name, platform, platform_username, rtmp_url, stream_key, created_at, updated_at)
