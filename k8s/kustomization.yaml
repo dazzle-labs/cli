@@ -10,6 +10,7 @@ resources:
   - control-plane/swiftshader-configmap.yaml
   - control-plane/service.yaml
   - control-plane/pdb.yaml
+  - ingest/configmap.yaml
   - ingest/deployment.yaml
   - ingest/service.yaml
   - ingest/pdb.yaml
