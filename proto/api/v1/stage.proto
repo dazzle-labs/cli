@@ -34,6 +34,7 @@ message Stage {
   StagePreview preview = 11;
   StreamDestination destination = 12;
   repeated string capabilities = 13; // e.g., ["gpu"]
+  string slug = 14; // short URL slug for /stage/{slug} and /watch/{slug}
 }
 
 message StagePreview {

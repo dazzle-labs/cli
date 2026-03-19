@@ -38,6 +38,7 @@ type Stage struct {
 	Preview       *StagePreview          `protobuf:"bytes,11,opt,name=preview,proto3" json:"preview,omitempty"`
 	Destination   *StreamDestination     `protobuf:"bytes,12,opt,name=destination,proto3" json:"destination,omitempty"`
 	Capabilities  []string               `protobuf:"bytes,13,rep,name=capabilities,proto3" json:"capabilities,omitempty"` // e.g., ["gpu"]
+	Slug          string                 `protobuf:"bytes,14,opt,name=slug,proto3" json:"slug,omitempty"`                 // short URL slug for /stage/{slug} and /watch/{slug}
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -161,6 +162,13 @@ func (x *Stage) GetCapabilities() []string {
 		return x.Capabilities
 	}
 	return nil
+}
+
+func (x *Stage) GetSlug() string {
+	if x != nil {
+		return x.Slug
+	}
+	return ""
 }
 
 type StagePreview struct {
@@ -1019,7 +1027,7 @@ var File_api_v1_stage_proto protoreflect.FileDescriptor
 
 const file_api_v1_stage_proto_rawDesc = "" +
 	"\n" +
-	"\x12api/v1/stage.proto\x12\tdazzle.v1\x1a\x13api/v1/stream.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xf4\x03\n" +
+	"\x12api/v1/stage.proto\x12\tdazzle.v1\x1a\x13api/v1/stream.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x88\x04\n" +
 	"\x05Stage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
 	"\bpod_name\x18\x02 \x01(\tR\apodName\x12\x15\n" +
@@ -1036,7 +1044,8 @@ const file_api_v1_stage_proto_rawDesc = "" +
 	" \x01(\tR\rdestinationId\x121\n" +
 	"\apreview\x18\v \x01(\v2\x17.dazzle.v1.StagePreviewR\apreview\x12>\n" +
 	"\vdestination\x18\f \x01(\v2\x1c.dazzle.v1.StreamDestinationR\vdestination\x12\"\n" +
-	"\fcapabilities\x18\r \x03(\tR\fcapabilities\"D\n" +
+	"\fcapabilities\x18\r \x03(\tR\fcapabilities\x12\x12\n" +
+	"\x04slug\x18\x0e \x01(\tR\x04slug\"D\n" +
 	"\fStagePreview\x12\x1b\n" +
 	"\twatch_url\x18\x01 \x01(\tR\bwatchUrl\x12\x17\n" +
 	"\ahls_url\x18\x02 \x01(\tR\x06hlsUrl\"L\n" +
