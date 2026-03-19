@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useUser } from "@clerk/react";
+import { useAuth } from "@clerk/react";
 import { Link, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
@@ -24,11 +24,12 @@ import { AnimatedList, AnimatedListItem } from "@/components/AnimatedList";
 import { StageThumbnail } from "@/components/StageThumbnail";
 import { springs, fadeInUp } from "@/lib/motion";
 
-const GPU_ROLES = ["tester", "developer"];
-
 export function Dashboard() {
-  const { user } = useUser();
-  const canUseGPU = GPU_ROLES.includes((user?.publicMetadata?.role as string) ?? "");
+  const { has } = useAuth();
+  const canUseGPU =
+    has?.({ permission: "org:access:developer" }) ||
+    has?.({ permission: "org:access:tester" }) ||
+    false;
 
   const [stages, setStages] = useState<Stage[]>([]);
   const [destinations, setDestinations] = useState<StreamDestination[]>([]);

@@ -23,17 +23,24 @@ const (
 )
 
 type authInfo struct {
-	UserID string
-	Method authMethod
-	KeyID  string // only set for API key auth
-	Role   string // Clerk publicMetadata.role (empty for API key auth)
+	UserID      string
+	Method      authMethod
+	KeyID       string   // only set for API key auth
+	Permissions []string // Clerk org permissions (e.g. "org:access:developer")
 }
 
-// clerkPublicMetadataClaims extracts public_metadata from the Clerk JWT.
-type clerkPublicMetadataClaims struct {
-	PublicMetadata struct {
-		Role string `json:"role"`
-	} `json:"public_metadata"`
+// clerkOrgClaims extracts organization permissions from the Clerk JWT.
+type clerkOrgClaims struct {
+	OrgPermissions []string `json:"org_permissions"`
+}
+
+func (a authInfo) hasPermission(perm string) bool {
+	for _, p := range a.Permissions {
+		if p == perm {
+			return true
+		}
+	}
+	return false
 }
 
 type authInfoKeyType struct{}
@@ -135,7 +142,7 @@ func (a *authenticator) verifyClerkJWT(ctx context.Context, token string) (*auth
 		a.jwkStore.jwk = jwk
 	}
 
-	customCtor := func(_ context.Context) any { return &clerkPublicMetadataClaims{} }
+	customCtor := func(_ context.Context) any { return &clerkOrgClaims{} }
 	claims, err := jwt.Verify(ctx, &jwt.VerifyParams{Token: token, JWK: jwk, CustomClaimsConstructor: customCtor})
 	if err != nil {
 		// JWK might be rotated — clear cache and retry once
@@ -158,11 +165,11 @@ func (a *authenticator) verifyClerkJWT(ctx context.Context, token string) (*auth
 		}
 	}
 
-	var role string
-	if meta, ok := claims.Custom.(*clerkPublicMetadataClaims); ok {
-		role = meta.PublicMetadata.Role
+	var perms []string
+	if org, ok := claims.Custom.(*clerkOrgClaims); ok {
+		perms = org.OrgPermissions
 	}
-	return &authInfo{UserID: claims.Subject, Method: authMethodClerk, Role: role}, nil
+	return &authInfo{UserID: claims.Subject, Method: authMethodClerk, Permissions: perms}, nil
 }
 
 // extractBearerToken gets the token from Authorization header or query param.

@@ -29,7 +29,7 @@ func (s *stageServer) CreateStage(ctx context.Context, req *connect.Request[apiv
 	}
 
 	if hasCapability(req.Msg.Capabilities, "gpu") {
-		if info.Role != "tester" && info.Role != "developer" {
+		if !info.hasPermission("org:access:developer") && !info.hasPermission("org:access:tester") {
 			return nil, connect.NewError(connect.CodePermissionDenied, fmt.Errorf("GPU stages require tester or developer role"))
 		}
 	}
