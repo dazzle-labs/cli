@@ -18,7 +18,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { cli } from "@/lib/cli-commands";
 
 const STEPS = [
   {
@@ -71,21 +70,6 @@ const FRAMEWORKS = [
   "LangGraph",
   "AutoGen",
   "OpenClaw",
-];
-
-const TERMINAL_LINES = [
-  { text: `$ ${cli.stageCreate.base}`, cls: "text-zinc-300" },
-  { text: '✓ Stage "vivid-aurora" created', cls: "text-zinc-500" },
-  { text: "", cls: "" },
-  { text: `$ ${cli.stageUp.full}`, cls: "text-zinc-300" },
-  { text: "✓ Chrome environment ready", cls: "text-zinc-500" },
-  { text: "  dazzle.fm/preview/a8f2k", cls: "text-emerald-400/60" },
-  { text: "", cls: "" },
-  {
-    text: `$ ${cli.stageBroadcastOn.full}`,
-    cls: "text-zinc-300",
-  },
-  { text: "✓ Live on 2 platforms", cls: "text-emerald-400" },
 ];
 
 const ease = [0.25, 0.1, 0.25, 1] as const;
@@ -267,54 +251,20 @@ export function LandingPage() {
       {/* ── Terminal demo ── */}
       <section className="relative z-10 px-6 pb-28 md:pb-36">
         <motion.div
-          className="relative mx-auto max-w-2xl"
+          className="relative mx-auto max-w-3xl"
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.6, ease }}
         >
-          <div className="rounded-xl border border-white/[0.08] bg-zinc-900/60 backdrop-blur-sm overflow-hidden transition-all duration-500 hover:border-emerald-500/15">
-            {/* Title bar */}
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06]">
-              <div className="flex gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-zinc-700" />
-                <div className="w-2.5 h-2.5 rounded-full bg-zinc-700" />
-                <div className="w-2.5 h-2.5 rounded-full bg-zinc-700" />
-              </div>
-              <span className="text-[11px] text-zinc-600 ml-2 font-mono">
-                terminal
-              </span>
-            </div>
-            {/* Lines */}
-            <motion.div
-              className="p-5 md:p-6 font-mono text-[13px] md:text-sm leading-relaxed"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={{
-                hidden: {},
-                visible: {
-                  transition: { staggerChildren: 0.12, delayChildren: 0.3 },
-                },
-              }}
-            >
-              {TERMINAL_LINES.map((line, i) =>
-                line.text === "" ? (
-                  <div key={i} className="h-3" />
-                ) : (
-                  <motion.div
-                    key={i}
-                    variants={{
-                      hidden: { opacity: 0, x: -8 },
-                      visible: { opacity: 1, x: 0 },
-                    }}
-                    transition={{ duration: 0.4 }}
-                    className={line.cls}
-                  >
-                    {line.text}
-                  </motion.div>
-                ),
-              )}
-            </motion.div>
+          <div className="rounded-xl border border-white/[0.08] overflow-hidden transition-all duration-500 hover:border-emerald-500/15">
+            <video
+              src="/static/demo.webm"
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full"
+            />
           </div>
           {/* Glow reflection beneath terminal */}
           <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-2/3 h-12 bg-emerald-500/[0.04] blur-2xl rounded-full pointer-events-none" />

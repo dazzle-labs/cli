@@ -1,0 +1,12 @@
+create a cloud stage
+
+start with a simple page
+sync it to the stage
+add live events + persistence
+
+re-sync
+send data to the page — no re-deploy needed
+
+localStorage survives stage restarts
+
+go live
