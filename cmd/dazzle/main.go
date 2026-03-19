@@ -31,11 +31,11 @@ var cli struct {
 func main() {
 	k := kong.Parse(&cli,
 		kong.Name("dazzle"),
-		kong.Description(`Dazzle — cloud stages for broadcasting.
+		kong.Description(`Dazzle — cloud stages for streaming.
 
-A stage is a cloud browser environment that renders and broadcasts your content.
+A stage is a cloud browser environment that renders and streams your content.
 Sync a local directory (must contain an index.html) and everything visible in
-the browser window is what gets broadcast to viewers.
+the browser window is what gets streamed to viewers.
 
 Your content runs in a real browser with full access to standard web APIs
 (DOM, Canvas, WebGL, Web Audio, fetch, etc.). localStorage is persisted across
@@ -44,11 +44,10 @@ stage restarts — use it to store app state that should survive between session
 Workflow:
   1. dazzle login                       # authenticate (one-time)
   2. dazzle s new my-stage              # create a stage
-  3. dazzle s up                        # bring it up
+  3. dazzle s up                        # bring it up — starts streaming to Dazzle
   4. dazzle s sync ./my-app -w          # sync + auto-refresh on changes
   5. dazzle s ss -o preview.png         # take a screenshot to verify
-  6. dazzle s bc on                     # go live on configured destination
-  7. dazzle s bc off && dazzle s down   # stop streaming and shut down
+  6. dazzle s down                      # stop streaming and shut down
 
 Stage selection: use -s <name>, DAZZLE_STAGE env, or auto-selected if only one.
 

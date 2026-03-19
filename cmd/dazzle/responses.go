@@ -5,7 +5,7 @@ package main
 // Do NOT change field names or remove fields without a major version bump.
 
 // OKResponse is returned by mutation commands with no meaningful payload.
-// Used by: broadcast on, broadcast off, emit, refresh, login (non-interactive).
+// Used by: emit, refresh, login (non-interactive).
 type OKResponse struct {
 	OK bool `json:"ok"`
 }
