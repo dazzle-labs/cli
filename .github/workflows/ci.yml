@@ -318,7 +318,7 @@ jobs:
             VARIANT=gpu
             SIDECAR_IMAGE=${{ env.SIDECAR_REPO }}:${{ steps.tags.outputs.short_sha }}
           cache-from: type=registry,ref=${{ env.GPU_NODE_REPO }}:buildcache
-          cache-to: ${{ github.ref == 'refs/heads/main' && format('type=registry,ref={0}:buildcache,mode=max', env.SIDECAR_REPO) || '' }}
+          cache-to: ${{ github.ref == 'refs/heads/main' && format('type=registry,ref={0}:buildcache,mode=max', env.GPU_NODE_REPO) || '' }}
 
     outputs:
       image_tag: ${{ steps.tags.outputs.short_sha }}
