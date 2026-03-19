@@ -1734,12 +1734,20 @@ func main() {
 	//   /stage/<uuid>/*             — reverse proxy to streamer pod
 	spaHandler := spaFileServer("web")
 	mux.HandleFunc("/stage/", func(w http.ResponseWriter, r *http.Request) {
-		// Extract the third path segment: /stage/<uuid>/<segment>/...
-		// parts[0]="", parts[1]="stage", parts[2]="<uuid>", parts[3]="<segment>", ...
+		// Extract the third path segment: /stage/<id-or-slug>/<segment>/...
+		// parts[0]="", parts[1]="stage", parts[2]="<id-or-slug>", parts[3]="<segment>", ...
 		parts := strings.SplitN(r.URL.Path, "/", 5)
 		var segment string
 		if len(parts) >= 4 {
 			segment = parts[3]
+		}
+
+		// Resolve slug to UUID: slugs are 12 hex chars, UUIDs are 36 chars with dashes.
+		if len(parts) >= 3 && len(parts[2]) == 12 && mgr.db != nil {
+			if row, err := dbLookupStageBySlug(mgr.db, parts[2]); err == nil && row != nil {
+				parts[2] = row.ID
+				r.URL.Path = strings.Join(parts, "/")
+			}
 		}
 
 		// No sub-path (e.g. /stage/<uuid>) — this is a frontend SPA route

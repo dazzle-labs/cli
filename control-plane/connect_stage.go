@@ -373,6 +373,7 @@ func stageToProto(s *Stage, publicBaseURL string, db *sql.DB) *apiv1.Stage {
 		OwnerUserId:   s.OwnerUserID,
 		DestinationId: s.DestinationID,
 		Capabilities:  s.Capabilities,
+		Slug:          s.Slug,
 	}
 	if publicBaseURL != "" && s.Slug != "" {
 		pb.Preview = &apiv1.StagePreview{

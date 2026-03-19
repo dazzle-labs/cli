@@ -92,7 +92,7 @@ export function Dashboard() {
         setCreateOpen(false);
         setCreateName("");
         setCreateGPU(false);
-        navigate(`/stage/${resp.stage.id}`);
+        navigate(`/stage/${resp.stage.slug || resp.stage.id}`);
       }
     } catch {
       // ignore
@@ -250,7 +250,7 @@ export function Dashboard() {
             const isStarting = stage.status === "starting";
             return (
               <AnimatedListItem key={stage.id}>
-                <Link to={`/stage/${stage.id}`} className="group">
+                <Link to={`/stage/${stage.slug || stage.id}`} className="group">
                   <motion.div
                     whileHover={{ y: -2 }}
                     whileTap={{ scale: 0.98 }}
