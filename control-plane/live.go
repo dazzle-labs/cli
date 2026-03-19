@@ -3,14 +3,12 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"os"
-	"strconv"
 	"strings"
 )
 
@@ -163,30 +161,51 @@ func (m *Manager) handleOnPublishDone(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "ok")
 }
 
-// handleWatchHLS proxies HLS for the public watch page.
-// HLS is served from the ingest pod (nginx-rtmp), not the sidecar.
-// Route: /watch/{slug}/hls/{filename}
-func (m *Manager) handleWatchHLS(w http.ResponseWriter, r *http.Request) {
-	parts := strings.SplitN(strings.TrimPrefix(r.URL.Path, "/watch/"), "/", 3)
-	if len(parts) < 3 {
-		http.Error(w, "invalid path", http.StatusBadRequest)
-		return
+// parseWatchHLSPath extracts (slug, filename) from HLS watch paths.
+// Supports:
+//
+//	/watch/<slug>/index.m3u8       → (slug, "index.m3u8")
+//	/watch/<slug>/42.ts            → (slug, "42.ts")
+//	/watch/<slug>/hls/index.m3u8   → (slug, "index.m3u8")   [legacy]
+//	/watch/<slug>/hls/42.ts        → (slug, "42.ts")         [legacy]
+func parseWatchHLSPath(path string) (slug, filename string, ok bool) {
+	path = strings.TrimPrefix(path, "/watch/")
+	parts := strings.Split(path, "/")
+	if len(parts) < 2 {
+		return "", "", false
 	}
-	slug := parts[0]
-	// parts[1] == "hls"
-	filename := parts[2]
+	slug = parts[0]
 
-	// Path sanitization
-	if strings.Contains(filename, "/") || strings.Contains(filename, "..") {
-		http.Error(w, "forbidden", http.StatusForbidden)
-		return
+	// Legacy /watch/<slug>/hls/<file>
+	if len(parts) >= 3 && parts[1] == "hls" {
+		filename = parts[2]
+	} else {
+		filename = parts[1]
+	}
+
+	// Sanitize
+	if filename == "" || strings.Contains(filename, "/") || strings.Contains(filename, "..") {
+		return "", "", false
 	}
 	if !strings.HasSuffix(filename, ".m3u8") && !strings.HasSuffix(filename, ".ts") {
-		http.Error(w, "forbidden", http.StatusForbidden)
-		return
+		return "", "", false
 	}
+	return slug, filename, true
+}
 
-	// Resolve slug → stage.
+// handleWatchHLS proxies HLS for the public watch page.
+// HLS is served from the ingest pod (nginx-rtmp), not the sidecar.
+//
+// nginx-rtmp with hls_nested writes to /tmp/hls/<stream_key>/:
+//   index.m3u8, index-0.ts, index-1.ts, ...
+//
+// The m3u8 uses relative refs (index-0.ts) so no rewriting is needed —
+// the browser resolves them relative to the m3u8 URL. The proxy just
+// maps the slug to the stream key directory:
+//
+//	/watch/<slug>/index.m3u8    →  /hls/<stream_key>/index.m3u8
+//	/watch/<slug>/index-42.ts   →  /hls/<stream_key>/index-42.ts
+func (m *Manager) handleWatchHLS(w http.ResponseWriter, r *http.Request, slug, filename string) {
 	if m.db == nil {
 		http.Error(w, "service unavailable", http.StatusServiceUnavailable)
 		return
@@ -203,52 +222,26 @@ func (m *Manager) handleWatchHLS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get the ingest pod IP for this stage's stream
 	ingestIP := m.getIngestPodIP(row.ID)
 	if ingestIP == "" {
 		writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "stream not yet available"})
 		return
 	}
 
-	// Proxy from ingest pod: HLS is at /hls/<stream_key>/<filename>
-	// (the RTMP stream name is the stream key, so nginx-rtmp writes HLS there)
-	proxyTarget, _ := url.Parse(fmt.Sprintf("http://%s:8080", ingestIP))
-	proxy := httputil.NewSingleHostReverseProxy(proxyTarget)
-
 	if !row.StreamKey.Valid || row.StreamKey.String == "" {
 		http.Error(w, "stream not configured", http.StatusServiceUnavailable)
 		return
 	}
+
+	proxyTarget, _ := url.Parse(fmt.Sprintf("http://%s:8080", ingestIP))
+	proxy := httputil.NewSingleHostReverseProxy(proxyTarget)
+
 	r.URL.Path = "/hls/" + row.StreamKey.String + "/" + filename
 	r.URL.RawQuery = ""
 	r.Host = proxyTarget.Host
 	r.Header.Del("Authorization")
 
-	if strings.HasSuffix(filename, ".m3u8") {
-		proxy.ModifyResponse = func(resp *http.Response) error {
-			if resp.StatusCode != http.StatusOK {
-				return nil
-			}
-			body, err := io.ReadAll(resp.Body)
-			resp.Body.Close()
-			if err != nil {
-				return err
-			}
-			lines := strings.Split(string(body), "\n")
-			for i, line := range lines {
-				if line == "" || strings.HasPrefix(line, "#") {
-					continue
-				}
-				lines[i] = "/watch/" + slug + "/hls/" + line
-			}
-			modified := []byte(strings.Join(lines, "\n"))
-			resp.Body = io.NopCloser(strings.NewReader(string(modified)))
-			resp.ContentLength = int64(len(modified))
-			resp.Header.Set("Content-Length", strconv.Itoa(len(modified)))
-			return nil
-		}
-	}
-
+	w.Header().Set("Cache-Control", "no-cache")
 	proxy.ServeHTTP(w, r)
 }
 

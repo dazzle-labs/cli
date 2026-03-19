@@ -1712,7 +1712,8 @@ func main() {
 			return
 		}
 
-		if len(parts) >= 3 && parts[1] == "hls" {
+		// HLS: /watch/<slug>/index.m3u8, /watch/<slug>/N.ts
+		if slug, file, ok := parseWatchHLSPath(r.URL.Path); ok {
 			w.Header().Set("Access-Control-Allow-Origin", "*")
 			w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
 			w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
@@ -1720,7 +1721,7 @@ func main() {
 				w.WriteHeader(http.StatusNoContent)
 				return
 			}
-			mgr.handleWatchHLS(w, r)
+			mgr.handleWatchHLS(w, r, slug, file)
 			return
 		}
 		// SPA route for /watch/{slug} — inject OG meta tags for crawlers

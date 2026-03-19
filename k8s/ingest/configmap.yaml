@@ -28,8 +28,11 @@ data:
                 on_publish_done http://control-plane.browser-streamer.svc.cluster.local:9090/rtmp/on_publish_done;
 
                 # HLS transmux — copies H.264/AAC to HLS without re-encoding.
+                # hls_nested creates /tmp/hls/<stream_name>/index.m3u8 so
+                # filenames don't contain the stream key.
                 hls on;
                 hls_path /tmp/hls;
+                hls_nested on;
                 hls_fragment 2s;
                 hls_playlist_length 6s;
                 hls_cleanup on;
