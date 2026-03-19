@@ -338,6 +338,14 @@ func (m *Manager) recoverStages() error {
 	}
 
 	log.Printf("Recovered %d active stages", len(m.stages))
+
+	// Sync outputs for all recovered running stages so sidecars resume broadcasting
+	for id, stage := range m.stages {
+		if stage.Status == StatusRunning {
+			m.syncStageOutputsIfRunning(id, stage.OwnerUserID)
+		}
+	}
+
 	return nil
 }
 
@@ -791,6 +799,8 @@ func (m *Manager) activateStage(ctx context.Context, id, userID string) (*Stage,
 		m.doDeactivateStage(id)
 		return nil, err
 	}
+	// Sync outputs so sidecar starts broadcasting immediately
+	m.syncStageOutputsIfRunning(id, userID)
 	return s, nil
 }
 
