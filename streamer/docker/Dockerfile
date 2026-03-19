@@ -75,14 +75,15 @@ RUN apt-get update && apt-get install -y \
     mesa-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Build ffmpeg from source with latest NVENC SDK headers for Blackwell support.
-# Ubuntu 24.04's ffmpeg 6.1.1 ships NVENC SDK 13.0 which doesn't support SM 12.0
-# (RTX 5090). We need nv-codec-headers ≥ 13.0.19.0 (maps to Video Codec SDK 13.1).
+# Build ffmpeg from source with NVENC SDK headers matching RunPod's driver.
+# RunPod hosts provide NVENC API 12.2 — pin nv-codec-headers to n12.2.72.0.
+# Using HEAD (API 13.0+) causes "Driver does not support the required nvenc
+# API version" on L40S/A40 hosts.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential git nasm pkg-config \
         libx264-dev libpulse-dev libx11-dev libxcb1-dev libxcb-shm0-dev \
         libxcb-xfixes0-dev \
-    && git clone --depth 1 https://github.com/FFmpeg/nv-codec-headers /tmp/nv-codec-headers \
+    && git clone --depth 1 --branch n12.2.72.0 https://github.com/FFmpeg/nv-codec-headers /tmp/nv-codec-headers \
     && make -C /tmp/nv-codec-headers install \
     && git clone --depth 1 --branch n7.1 https://github.com/FFmpeg/FFmpeg /tmp/ffmpeg \
     && cd /tmp/ffmpeg \
