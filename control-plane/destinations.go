@@ -23,7 +23,7 @@ func (m *Manager) syncStageOutputs(stageID, userID string) error {
 		return err
 	}
 
-	dests, err := dbListStageDestinations(m.db, stageID)
+	dests, err := dbListAllStageDestinations(m.db, stageID)
 	if err != nil {
 		return err
 	}

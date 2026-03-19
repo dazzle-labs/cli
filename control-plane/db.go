@@ -497,13 +497,25 @@ type stageDestJoinRow struct {
 }
 
 func dbListStageDestinations(db *sql.DB, stageID string) ([]stageDestJoinRow, error) {
-	rows, err := db.Query(`
+	return dbListStageDestinationsFilter(db, stageID, true)
+}
+
+func dbListAllStageDestinations(db *sql.DB, stageID string) ([]stageDestJoinRow, error) {
+	return dbListStageDestinationsFilter(db, stageID, false)
+}
+
+func dbListStageDestinationsFilter(db *sql.DB, stageID string, excludeDazzle bool) ([]stageDestJoinRow, error) {
+	query := `
 		SELECT sd.id, sd.stage_id, sd.destination_id, sd.enabled,
 		       d.name, d.platform, d.platform_username, d.rtmp_url, d.stream_key
 		FROM stage_destinations sd
 		JOIN stream_destinations d ON sd.destination_id = d.id
-		WHERE sd.stage_id = $1 AND d.platform != 'dazzle'
-		ORDER BY sd.created_at`, stageID)
+		WHERE sd.stage_id = $1`
+	if excludeDazzle {
+		query += ` AND d.platform != 'dazzle'`
+	}
+	query += ` ORDER BY sd.created_at`
+	rows, err := db.Query(query, stageID)
 	if err != nil {
 		return nil, err
 	}
