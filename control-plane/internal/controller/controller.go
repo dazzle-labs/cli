@@ -212,12 +212,13 @@ func (c *GPUNodeController) handleNew(ctx context.Context, node *unstructured.Un
 	// Layer 3: Controller-injected values (always win)
 	env["MAX_STAGES"] = fmt.Sprintf("%d", maxStages)
 
-	// Sensitive values: prefer RunPod secrets ({{ RUNPOD_SECRET_... }} syntax)
-	// over passing raw values from the control-plane's environment.
+	// Sensitive values: use RunPod secrets ({{ RUNPOD_SECRET_... }} syntax)
+	// so credentials aren't passed as plaintext in the pod creation API call.
 	// RunPod secrets must be pre-created in the RunPod console:
 	//   mtls_server_cert, mtls_server_key, mtls_ca_cert,
 	//   r2_access_key_id, r2_secret_access_key
-	useRunPodSecrets := os.Getenv("RUNPOD_USE_SECRETS") == "true"
+	// Set RUNPOD_RAW_SECRETS=true to disable and pass raw values instead.
+	useRunPodSecrets := os.Getenv("RUNPOD_RAW_SECRETS") != "true"
 
 	if useRunPodSecrets {
 		env["TLS_SERVER_CERT"] = "{{ RUNPOD_SECRET_mtls_server_cert }}"
