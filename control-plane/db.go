@@ -426,6 +426,17 @@ func dbGetStage(db *sql.DB, id string) (*stageRow, error) {
 	return s, err
 }
 
+func dbGetStageByStreamKey(db *sql.DB, streamKey string) (*stageRow, error) {
+	row := db.QueryRow(`
+		SELECT `+stageColumns+`
+		FROM stages WHERE stream_key=$1`, streamKey)
+	s, err := scanStage(row)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	return s, err
+}
+
 func dbDeleteStage(db *sql.DB, id, userID string) error {
 	// Clean up Dazzle stream_destinations before deleting the stage
 	// (stage_destinations rows are cleaned up by ON DELETE CASCADE,

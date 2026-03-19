@@ -34,12 +34,14 @@ func (m *Manager) syncStageOutputs(stageID, userID string) error {
 			continue
 		}
 		if d.Platform == "dazzle" {
-			// Dazzle destination: publish to ingest as <stage_id>?key=<stream_key>
-			// The stage ID becomes the RTMP stream name (and HLS directory),
-			// keeping the stream key out of any URL path.
+			// Dazzle destination: the stream key IS the RTMP publish name,
+			// matching how Twitch/Kick/etc work. The on_publish callback
+			// looks up the stage from the key. We don't put the stageID in
+			// the URL because ffmpeg drops RTMP query params (they go on
+			// tcUrl, not the publish name, so nginx-rtmp never sees them).
 			if row.StreamKey.Valid && row.StreamKey.String != "" {
 				ingestURL := m.ingestURL(stage)
-				rtmpURL := strings.TrimSuffix(ingestURL, "/") + "/" + stageID + "?key=" + row.StreamKey.String
+				rtmpURL := strings.TrimSuffix(ingestURL, "/") + "/" + row.StreamKey.String
 				outputs = append(outputs, OutputTarget{Name: "dazzle", RtmpURL: rtmpURL})
 			}
 			continue
@@ -91,11 +93,11 @@ func (m *Manager) ingestURL(stage *Stage) string {
 		if url := os.Getenv("INGEST_PUBLIC_URL"); url != "" {
 			return url
 		}
-		return "rtmp://ingest.dazzle.fm:1935/live"
+		return "rtmp://ingest.dazzle.fm:1935/v1"
 	}
 	// Local k8s stage — use internal service
 	if url := os.Getenv("INGEST_INTERNAL_URL"); url != "" {
 		return url
 	}
-	return "rtmp://ingest:1935/live"
+	return "rtmp://ingest:1935/v1"
 }

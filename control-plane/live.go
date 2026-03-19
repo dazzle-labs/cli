@@ -71,12 +71,11 @@ func (m *Manager) getIngestPodIP(stageID string) string {
 // --- HTTP handlers for nginx-rtmp callbacks ---
 
 // handleOnPublish is called by nginx-rtmp when a publisher connects.
-// The publisher uses the stage ID as the RTMP stream name and passes
-// the stream key as a query param:
+// The stream key IS the RTMP publish name (like Twitch/Kick):
 //
-//	rtmp://ingest.dazzle.fm/live/<stage_id>?key=<stream_key>
+//	rtmp://ingest.dazzle.fm/live/<stream_key>
 //
-// nginx-rtmp POSTs form-encoded: name=<stage_id>&args=key=<stream_key>&addr=<client_ip>&app=live
+// nginx-rtmp POSTs form-encoded: name=<stream_key>&addr=<client_ip>&app=live
 // Return 200 to allow, non-200 to reject.
 func (m *Manager) handleOnPublish(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -88,25 +87,10 @@ func (m *Manager) handleOnPublish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stageID := r.FormValue("name")
+	streamKey := r.FormValue("name")
 	addr := r.FormValue("addr")
 
-	if stageID == "" {
-		http.Error(w, "forbidden", http.StatusForbidden)
-		return
-	}
-
-	// Extract stream key from args (nginx-rtmp passes query params here)
-	args := r.FormValue("args")
-	var streamKey string
-	for _, part := range strings.Split(args, "&") {
-		if strings.HasPrefix(part, "key=") {
-			streamKey = strings.TrimPrefix(part, "key=")
-			break
-		}
-	}
 	if streamKey == "" {
-		log.Printf("INFO: rtmp on_publish rejected %s from %s (no stream key)", stageID, addr)
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -116,15 +100,15 @@ func (m *Manager) handleOnPublish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate: look up the stage and verify the stream key matches
-	stage, err := dbGetStage(m.db, stageID)
+	// Look up stage by stream key
+	stage, err := dbGetStageByStreamKey(m.db, streamKey)
 	if err != nil {
 		log.Printf("WARN: rtmp on_publish lookup error: %v", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
-	if stage == nil || !stage.StreamKey.Valid || stage.StreamKey.String != streamKey {
-		log.Printf("INFO: rtmp on_publish rejected %s from %s (invalid key)", stageID, addr)
+	if stage == nil {
+		log.Printf("INFO: rtmp on_publish rejected from %s (invalid key)", addr)
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -133,20 +117,20 @@ func (m *Manager) handleOnPublish(w http.ResponseWriter, r *http.Request) {
 	// HLS proxy can route directly to the correct pod.
 	podIP, _, _ := net.SplitHostPort(r.RemoteAddr)
 
-	if err := dbCreateRTMPSession(m.db, stageID, stage.UserID, stageID, addr, podIP); err != nil {
+	if err := dbCreateRTMPSession(m.db, stage.ID, stage.UserID, streamKey, addr, podIP); err != nil {
 		log.Printf("WARN: rtmp on_publish failed to create session: %v", err)
 	}
 
 	// Cache the pod IP for fast HLS proxy lookups.
-	m.ingestPodCache.Add(stageID, podIP)
+	m.ingestPodCache.Add(stage.ID, podIP)
 
-	log.Printf("INFO: rtmp on_publish accepted stream for stage %s from %s (ingest pod %s)", stageID, addr, podIP)
+	log.Printf("INFO: rtmp on_publish accepted stream for stage %s from %s (ingest pod %s)", stage.ID, addr, podIP)
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprint(w, "ok")
 }
 
 // handleOnPublishDone is called by nginx-rtmp when a publisher disconnects.
-// name is the stage ID (the RTMP stream name).
+// name is the stream key (the RTMP publish name).
 func (m *Manager) handleOnPublishDone(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -157,18 +141,21 @@ func (m *Manager) handleOnPublishDone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stageID := r.FormValue("name")
-	if stageID == "" {
+	streamKey := r.FormValue("name")
+	if streamKey == "" {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 
 	if m.db != nil {
-		m.ingestPodCache.Remove(stageID)
-		if err := dbEndRTMPSession(m.db, stageID); err != nil {
-			log.Printf("WARN: rtmp on_publish_done failed to end session for stage %s: %v", stageID, err)
-		} else {
-			log.Printf("INFO: rtmp on_publish_done ended session for stage %s", stageID)
+		stage, err := dbGetStageByStreamKey(m.db, streamKey)
+		if err == nil && stage != nil {
+			m.ingestPodCache.Remove(stage.ID)
+			if err := dbEndRTMPSession(m.db, stage.ID); err != nil {
+				log.Printf("WARN: rtmp on_publish_done failed to end session for stage %s: %v", stage.ID, err)
+			} else {
+				log.Printf("INFO: rtmp on_publish_done ended session for stage %s", stage.ID)
+			}
 		}
 	}
 
@@ -223,12 +210,16 @@ func (m *Manager) handleWatchHLS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Proxy from ingest pod: HLS is at /hls/<stage_id>/<filename>
-	// (the RTMP stream name is the stage ID, not the stream key)
+	// Proxy from ingest pod: HLS is at /hls/<stream_key>/<filename>
+	// (the RTMP stream name is the stream key, so nginx-rtmp writes HLS there)
 	proxyTarget, _ := url.Parse(fmt.Sprintf("http://%s:8080", ingestIP))
 	proxy := httputil.NewSingleHostReverseProxy(proxyTarget)
 
-	r.URL.Path = "/hls/" + row.ID + "/" + filename
+	if !row.StreamKey.Valid || row.StreamKey.String == "" {
+		http.Error(w, "stream not configured", http.StatusServiceUnavailable)
+		return
+	}
+	r.URL.Path = "/hls/" + row.StreamKey.String + "/" + filename
 	r.URL.RawQuery = ""
 	r.Host = proxyTarget.Host
 	r.Header.Del("Authorization")

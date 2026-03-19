@@ -18,12 +18,12 @@ data:
             listen 1935;
             chunk_size 4096;
 
-            application live {
+            application v1 {
                 live on;
                 record off;
 
-                # Auth callback — nginx-rtmp sends stream key as the "name" param.
-                # Control-plane returns 200 (allow) or 403 (reject).
+                # Auth callback — the RTMP publish name IS the stream key.
+                # Control-plane looks up the stage and returns 200 (allow) or 403 (reject).
                 on_publish http://control-plane.browser-streamer.svc.cluster.local:9090/rtmp/on_publish;
                 on_publish_done http://control-plane.browser-streamer.svc.cluster.local:9090/rtmp/on_publish_done;
 
