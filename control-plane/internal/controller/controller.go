@@ -211,16 +211,40 @@ func (c *GPUNodeController) handleNew(ctx context.Context, node *unstructured.Un
 
 	// Layer 3: Controller-injected values (always win)
 	env["MAX_STAGES"] = fmt.Sprintf("%d", maxStages)
-	if serverCert := os.Getenv("MTLS_SERVER_CERT"); serverCert != "" {
-		env["TLS_SERVER_CERT"] = ensurePEM(serverCert)
+
+	// Sensitive values: prefer RunPod secrets ({{ RUNPOD_SECRET_... }} syntax)
+	// over passing raw values from the control-plane's environment.
+	// RunPod secrets must be pre-created in the RunPod console:
+	//   mtls_server_cert, mtls_server_key, mtls_ca_cert,
+	//   r2_access_key_id, r2_secret_access_key
+	useRunPodSecrets := os.Getenv("RUNPOD_USE_SECRETS") == "true"
+
+	if useRunPodSecrets {
+		env["TLS_SERVER_CERT"] = "{{ RUNPOD_SECRET_mtls_server_cert }}"
+		env["TLS_SERVER_KEY"] = "{{ RUNPOD_SECRET_mtls_server_key }}"
+		env["TLS_CA_CERT"] = "{{ RUNPOD_SECRET_mtls_ca_cert }}"
+		env["R2_ACCESS_KEY_ID"] = "{{ RUNPOD_SECRET_r2_access_key_id }}"
+		env["R2_SECRET_ACCESS_KEY"] = "{{ RUNPOD_SECRET_r2_secret_access_key }}"
+	} else {
+		// Fallback: pass raw values from control-plane env (less secure)
+		if serverCert := os.Getenv("MTLS_SERVER_CERT"); serverCert != "" {
+			env["TLS_SERVER_CERT"] = ensurePEM(serverCert)
+		}
+		if serverKey := os.Getenv("MTLS_SERVER_KEY"); serverKey != "" {
+			env["TLS_SERVER_KEY"] = ensurePEM(serverKey)
+		}
+		if caCert := os.Getenv("MTLS_CA_CERT"); caCert != "" {
+			env["TLS_CA_CERT"] = ensurePEM(caCert)
+		}
+		if v := os.Getenv("R2_ACCESS_KEY_ID"); v != "" {
+			env["R2_ACCESS_KEY_ID"] = v
+		}
+		if v := os.Getenv("R2_SECRET_ACCESS_KEY"); v != "" {
+			env["R2_SECRET_ACCESS_KEY"] = v
+		}
 	}
-	if serverKey := os.Getenv("MTLS_SERVER_KEY"); serverKey != "" {
-		env["TLS_SERVER_KEY"] = ensurePEM(serverKey)
-	}
-	if caCert := os.Getenv("MTLS_CA_CERT"); caCert != "" {
-		env["TLS_CA_CERT"] = ensurePEM(caCert)
-	}
-	for _, key := range []string{"R2_ENDPOINT", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET"} {
+	// Non-sensitive R2 config — always from env
+	for _, key := range []string{"R2_ENDPOINT", "R2_BUCKET"} {
 		if v := os.Getenv(key); v != "" {
 			env[key] = v
 		}
