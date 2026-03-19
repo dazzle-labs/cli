@@ -70,9 +70,8 @@ type Stage struct {
 	DirectPort    int32       `json:"directPort"`
 	CreatedAt     time.Time   `json:"createdAt"`
 	Status        StageStatus `json:"status"`
-	OwnerUserID   string      `json:"ownerUserId,omitempty"`
-	DestinationID string      `json:"destinationId,omitempty"`
-	PreviewToken  string      `json:"previewToken,omitempty"`
+	OwnerUserID  string `json:"ownerUserId,omitempty"`
+	PreviewToken string `json:"previewToken,omitempty"`
 	Provider      string      `json:"provider,omitempty"`      // "kubernetes" (default) or "gpu"
 	SidecarURL    string      `json:"sidecarUrl,omitempty"`    // fully-qualified sidecar base URL (GPU stages)
 	Capabilities  []string    `json:"capabilities,omitempty"`  // e.g., ["gpu"]
@@ -893,6 +892,7 @@ func (m *Manager) refreshPodStatuses() {
 }
 
 // createStageRecord creates a stage DB record (status=inactive) without provisioning a pod.
+// Also creates and links a Dazzle destination for the stage (auto-streaming to Dazzle ingest).
 func (m *Manager) createStageRecord(userID, name string, capabilities []string) (*Stage, error) {
 	if m.db == nil {
 		return nil, fmt.Errorf("database not available")
@@ -901,6 +901,12 @@ func (m *Manager) createStageRecord(userID, name string, capabilities []string) 
 	if err != nil {
 		return nil, err
 	}
+
+	// Auto-create a Dazzle destination for this stage (hidden from UI, deleted with stage)
+	if err := dbCreateDazzleDestinationForStage(m.db, id, userID); err != nil {
+		log.Printf("WARN: failed to create Dazzle destination for stage %s: %v", id, err)
+	}
+
 	return &Stage{
 		ID:           id,
 		Name:         name,
@@ -1768,12 +1774,8 @@ func main() {
 		switch segment {
 		case "cdp":
 			corsMiddleware(http.HandlerFunc(mgr.handleCDP)).ServeHTTP(w, r)
-		case "hls":
-			mgr.handleHLSProxy(w, r)
 		case "thumbnail":
 			mgr.auth.authMiddlewareHTTP(http.HandlerFunc(mgr.handleThumbnail)).ServeHTTP(w, r)
-		case "preview":
-			spaHandler.ServeHTTP(w, r)
 		default:
 			if isWebSocketUpgrade(r) {
 				mgr.handleWebSocketUpgrade(w, r)

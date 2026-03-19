@@ -45,7 +45,7 @@ export const QUICK_START_STEPS: QuickStartStep[] = [
   { n: 3, label: "Create content", cmd: "mkdir my-stage", code: BOOTSTRAP_HTML, language: "html", note: "Save as my-stage/index.html" },
   { n: 4, label: "Push content", cmd: cli.stageSync.full },
   { n: 5, label: "Screenshot to verify", cmd: cli.stageScreenshot.full },
-  { n: 6, label: "Go live", cmd: cli.stageBroadcastOn.full },
+  { n: 6, label: "Check status", cmd: cli.stageStatus.full },
 ];
 
 export const EVENTS_HTML_SNIPPET = `<!-- my-stage/index.html -->

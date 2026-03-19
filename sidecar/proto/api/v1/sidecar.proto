@@ -20,10 +20,11 @@ service RuntimeService {
   rpc Screenshot(ScreenshotRequest) returns (ScreenshotResponse);
 }
 
-// BroadcastPipelineService controls the ffmpeg broadcast pipeline.
-service BroadcastPipelineService {
-  rpc Start(BroadcastStartRequest) returns (BroadcastStartResponse);
-  rpc Stop(BroadcastStopRequest) returns (BroadcastStopResponse);
+// OutputPipelineService controls the ffmpeg output pipeline.
+// The pipeline supports N simultaneous RTMP outputs (via tee muxer).
+// When outputs is empty, the pipeline is idle (no encoding).
+service OutputPipelineService {
+  rpc SetOutputs(SetOutputsRequest) returns (SetOutputsResponse);
 }
 
 // --- Sync messages ---
@@ -90,9 +91,10 @@ message GetStatsResponse {
   int64 dropped_frames = 3;
   int64 dropped_frames_recent = 4;   // Last 60 seconds
   int64 total_bytes = 5;
-  bool broadcasting = 6;
+  int32 active_outputs = 6;          // Number of active RTMP output destinations
   int64 broadcast_uptime_seconds = 7;
   int64 stage_uptime_seconds = 8;
+  repeated string output_names = 9;  // Names of active output destinations
 }
 
 message NavigateRequest {
@@ -109,14 +111,15 @@ message ScreenshotResponse {
   bytes image = 1;                // raw PNG bytes
 }
 
-// --- Broadcast pipeline messages ---
+// --- Output pipeline messages ---
 
-message BroadcastStartRequest {
-  string rtmp_url = 1;
+message OutputTarget {
+  string name = 1;      // e.g. "dazzle", "twitch-myuser"
+  string rtmp_url = 2;  // full RTMP URL including stream key
 }
 
-message BroadcastStartResponse {}
+message SetOutputsRequest {
+  repeated OutputTarget outputs = 1;
+}
 
-message BroadcastStopRequest {}
-
-message BroadcastStopResponse {}
+message SetOutputsResponse {}

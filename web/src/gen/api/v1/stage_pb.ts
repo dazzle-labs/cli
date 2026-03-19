@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file api/v1/stage.proto.
  */
 export const file_api_v1_stage: GenFile = /*@__PURE__*/
-  fileDesc("ChJhcGkvdjEvc3RhZ2UucHJvdG8SCWRhenpsZS52MSL7AgoFU3RhZ2USCgoCaWQYASABKAkSEAoIcG9kX25hbWUYAiABKAkSDgoGcG9kX2lwGAMgASgJEhMKC2RpcmVjdF9wb3J0GAQgASgFEi4KCmNyZWF0ZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjEKDWxhc3RfYWN0aXZpdHkYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEg4KBnN0YXR1cxgHIAEoCRIVCg1vd25lcl91c2VyX2lkGAggASgJEgwKBG5hbWUYCSABKAkSFgoOZGVzdGluYXRpb25faWQYCiABKAkSKAoHcHJldmlldxgLIAEoCzIXLmRhenpsZS52MS5TdGFnZVByZXZpZXcSMQoLZGVzdGluYXRpb24YDCABKAsyHC5kYXp6bGUudjEuU3RyZWFtRGVzdGluYXRpb24SFAoMY2FwYWJpbGl0aWVzGA0gAygJEgwKBHNsdWcYDiABKAkiMgoMU3RhZ2VQcmV2aWV3EhEKCXdhdGNoX3VybBgBIAEoCRIPCgdobHNfdXJsGAIgASgJIjgKEkNyZWF0ZVN0YWdlUmVxdWVzdBIMCgRuYW1lGAEgASgJEhQKDGNhcGFiaWxpdGllcxgCIAMoCSI2ChNDcmVhdGVTdGFnZVJlc3BvbnNlEh8KBXN0YWdlGAEgASgLMhAuZGF6emxlLnYxLlN0YWdlIhMKEUxpc3RTdGFnZXNSZXF1ZXN0IjYKEkxpc3RTdGFnZXNSZXNwb25zZRIgCgZzdGFnZXMYASADKAsyEC5kYXp6bGUudjEuU3RhZ2UiHQoPR2V0U3RhZ2VSZXF1ZXN0EgoKAmlkGAEgASgJIjMKEEdldFN0YWdlUmVzcG9uc2USHwoFc3RhZ2UYASABKAsyEC5kYXp6bGUudjEuU3RhZ2UiIAoSRGVsZXRlU3RhZ2VSZXF1ZXN0EgoKAmlkGAEgASgJIhUKE0RlbGV0ZVN0YWdlUmVzcG9uc2UiRgoaU2V0U3RhZ2VEZXN0aW5hdGlvblJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSFgoOZGVzdGluYXRpb25faWQYAiABKAkiPgobU2V0U3RhZ2VEZXN0aW5hdGlvblJlc3BvbnNlEh8KBXN0YWdlGAEgASgLMhAuZGF6emxlLnYxLlN0YWdlIiIKFEFjdGl2YXRlU3RhZ2VSZXF1ZXN0EgoKAmlkGAEgASgJIjgKFUFjdGl2YXRlU3RhZ2VSZXNwb25zZRIfCgVzdGFnZRgBIAEoCzIQLmRhenpsZS52MS5TdGFnZSIkChZEZWFjdGl2YXRlU3RhZ2VSZXF1ZXN0EgoKAmlkGAEgASgJIjoKF0RlYWN0aXZhdGVTdGFnZVJlc3BvbnNlEh8KBXN0YWdlGAEgASgLMhAuZGF6emxlLnYxLlN0YWdlImYKElVwZGF0ZVN0YWdlUmVxdWVzdBIfCgVzdGFnZRgBIAEoCzIQLmRhenpsZS52MS5TdGFnZRIvCgt1cGRhdGVfbWFzaxgCIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5GaWVsZE1hc2siNgoTVXBkYXRlU3RhZ2VSZXNwb25zZRIfCgVzdGFnZRgBIAEoCzIQLmRhenpsZS52MS5TdGFnZSIrCh1SZWdlbmVyYXRlUHJldmlld1Rva2VuUmVxdWVzdBIKCgJpZBgBIAEoCSJBCh5SZWdlbmVyYXRlUHJldmlld1Rva2VuUmVzcG9uc2USHwoFc3RhZ2UYASABKAsyEC5kYXp6bGUudjEuU3RhZ2UyiwYKDFN0YWdlU2VydmljZRJMCgtDcmVhdGVTdGFnZRIdLmRhenpsZS52MS5DcmVhdGVTdGFnZVJlcXVlc3QaHi5kYXp6bGUudjEuQ3JlYXRlU3RhZ2VSZXNwb25zZRJJCgpMaXN0U3RhZ2VzEhwuZGF6emxlLnYxLkxpc3RTdGFnZXNSZXF1ZXN0Gh0uZGF6emxlLnYxLkxpc3RTdGFnZXNSZXNwb25zZRJDCghHZXRTdGFnZRIaLmRhenpsZS52MS5HZXRTdGFnZVJlcXVlc3QaGy5kYXp6bGUudjEuR2V0U3RhZ2VSZXNwb25zZRJMCgtEZWxldGVTdGFnZRIdLmRhenpsZS52MS5EZWxldGVTdGFnZVJlcXVlc3QaHi5kYXp6bGUudjEuRGVsZXRlU3RhZ2VSZXNwb25zZRJkChNTZXRTdGFnZURlc3RpbmF0aW9uEiUuZGF6emxlLnYxLlNldFN0YWdlRGVzdGluYXRpb25SZXF1ZXN0GiYuZGF6emxlLnYxLlNldFN0YWdlRGVzdGluYXRpb25SZXNwb25zZRJSCg1BY3RpdmF0ZVN0YWdlEh8uZGF6emxlLnYxLkFjdGl2YXRlU3RhZ2VSZXF1ZXN0GiAuZGF6emxlLnYxLkFjdGl2YXRlU3RhZ2VSZXNwb25zZRJYCg9EZWFjdGl2YXRlU3RhZ2USIS5kYXp6bGUudjEuRGVhY3RpdmF0ZVN0YWdlUmVxdWVzdBoiLmRhenpsZS52MS5EZWFjdGl2YXRlU3RhZ2VSZXNwb25zZRJMCgtVcGRhdGVTdGFnZRIdLmRhenpsZS52MS5VcGRhdGVTdGFnZVJlcXVlc3QaHi5kYXp6bGUudjEuVXBkYXRlU3RhZ2VSZXNwb25zZRJtChZSZWdlbmVyYXRlUHJldmlld1Rva2VuEiguZGF6emxlLnYxLlJlZ2VuZXJhdGVQcmV2aWV3VG9rZW5SZXF1ZXN0GikuZGF6emxlLnYxLlJlZ2VuZXJhdGVQcmV2aWV3VG9rZW5SZXNwb25zZUItWitnaXRodWIuY29tL2RhenpsZS1sYWJzL2NsaS9nZW4vYXBpL3YxO2FwaXYxYgZwcm90bzM", [file_api_v1_stream, file_google_protobuf_field_mask, file_google_protobuf_timestamp]);
+  fileDesc("ChJhcGkvdjEvc3RhZ2UucHJvdG8SCWRhenpsZS52MSKXAwoFU3RhZ2USCgoCaWQYASABKAkSEAoIcG9kX25hbWUYAiABKAkSDgoGcG9kX2lwGAMgASgJEhMKC2RpcmVjdF9wb3J0GAQgASgFEi4KCmNyZWF0ZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjEKDWxhc3RfYWN0aXZpdHkYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEg4KBnN0YXR1cxgHIAEoCRIVCg1vd25lcl91c2VyX2lkGAggASgJEgwKBG5hbWUYCSABKAkSFgoOZGVzdGluYXRpb25faWQYCiABKAkSMQoLZGVzdGluYXRpb24YDCABKAsyHC5kYXp6bGUudjEuU3RyZWFtRGVzdGluYXRpb24SFAoMY2FwYWJpbGl0aWVzGA0gAygJEgwKBHNsdWcYDiABKAkSMQoMZGVzdGluYXRpb25zGA8gAygLMhsuZGF6emxlLnYxLlN0YWdlRGVzdGluYXRpb24SEQoJd2F0Y2hfdXJsGBAgASgJIoIBChBTdGFnZURlc3RpbmF0aW9uEgoKAmlkGAEgASgJEhYKDmRlc3RpbmF0aW9uX2lkGAIgASgJEgwKBG5hbWUYAyABKAkSEAoIcGxhdGZvcm0YBCABKAkSGQoRcGxhdGZvcm1fdXNlcm5hbWUYBSABKAkSDwoHZW5hYmxlZBgGIAEoCCI4ChJDcmVhdGVTdGFnZVJlcXVlc3QSDAoEbmFtZRgBIAEoCRIUCgxjYXBhYmlsaXRpZXMYAiADKAkiNgoTQ3JlYXRlU3RhZ2VSZXNwb25zZRIfCgVzdGFnZRgBIAEoCzIQLmRhenpsZS52MS5TdGFnZSITChFMaXN0U3RhZ2VzUmVxdWVzdCI2ChJMaXN0U3RhZ2VzUmVzcG9uc2USIAoGc3RhZ2VzGAEgAygLMhAuZGF6emxlLnYxLlN0YWdlIh0KD0dldFN0YWdlUmVxdWVzdBIKCgJpZBgBIAEoCSIzChBHZXRTdGFnZVJlc3BvbnNlEh8KBXN0YWdlGAEgASgLMhAuZGF6emxlLnYxLlN0YWdlIiAKEkRlbGV0ZVN0YWdlUmVxdWVzdBIKCgJpZBgBIAEoCSIVChNEZWxldGVTdGFnZVJlc3BvbnNlIkYKGlNldFN0YWdlRGVzdGluYXRpb25SZXF1ZXN0EhAKCHN0YWdlX2lkGAEgASgJEhYKDmRlc3RpbmF0aW9uX2lkGAIgASgJIj4KG1NldFN0YWdlRGVzdGluYXRpb25SZXNwb25zZRIfCgVzdGFnZRgBIAEoCzIQLmRhenpsZS52MS5TdGFnZSJJCh1SZW1vdmVTdGFnZURlc3RpbmF0aW9uUmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRIWCg5kZXN0aW5hdGlvbl9pZBgCIAEoCSJBCh5SZW1vdmVTdGFnZURlc3RpbmF0aW9uUmVzcG9uc2USHwoFc3RhZ2UYASABKAsyEC5kYXp6bGUudjEuU3RhZ2UiIgoUQWN0aXZhdGVTdGFnZVJlcXVlc3QSCgoCaWQYASABKAkiOAoVQWN0aXZhdGVTdGFnZVJlc3BvbnNlEh8KBXN0YWdlGAEgASgLMhAuZGF6emxlLnYxLlN0YWdlIiQKFkRlYWN0aXZhdGVTdGFnZVJlcXVlc3QSCgoCaWQYASABKAkiOgoXRGVhY3RpdmF0ZVN0YWdlUmVzcG9uc2USHwoFc3RhZ2UYASABKAsyEC5kYXp6bGUudjEuU3RhZ2UiZgoSVXBkYXRlU3RhZ2VSZXF1ZXN0Eh8KBXN0YWdlGAEgASgLMhAuZGF6emxlLnYxLlN0YWdlEi8KC3VwZGF0ZV9tYXNrGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLkZpZWxkTWFzayI2ChNVcGRhdGVTdGFnZVJlc3BvbnNlEh8KBXN0YWdlGAEgASgLMhAuZGF6emxlLnYxLlN0YWdlMosGCgxTdGFnZVNlcnZpY2USTAoLQ3JlYXRlU3RhZ2USHS5kYXp6bGUudjEuQ3JlYXRlU3RhZ2VSZXF1ZXN0Gh4uZGF6emxlLnYxLkNyZWF0ZVN0YWdlUmVzcG9uc2USSQoKTGlzdFN0YWdlcxIcLmRhenpsZS52MS5MaXN0U3RhZ2VzUmVxdWVzdBodLmRhenpsZS52MS5MaXN0U3RhZ2VzUmVzcG9uc2USQwoIR2V0U3RhZ2USGi5kYXp6bGUudjEuR2V0U3RhZ2VSZXF1ZXN0GhsuZGF6emxlLnYxLkdldFN0YWdlUmVzcG9uc2USTAoLRGVsZXRlU3RhZ2USHS5kYXp6bGUudjEuRGVsZXRlU3RhZ2VSZXF1ZXN0Gh4uZGF6emxlLnYxLkRlbGV0ZVN0YWdlUmVzcG9uc2USZAoTU2V0U3RhZ2VEZXN0aW5hdGlvbhIlLmRhenpsZS52MS5TZXRTdGFnZURlc3RpbmF0aW9uUmVxdWVzdBomLmRhenpsZS52MS5TZXRTdGFnZURlc3RpbmF0aW9uUmVzcG9uc2USbQoWUmVtb3ZlU3RhZ2VEZXN0aW5hdGlvbhIoLmRhenpsZS52MS5SZW1vdmVTdGFnZURlc3RpbmF0aW9uUmVxdWVzdBopLmRhenpsZS52MS5SZW1vdmVTdGFnZURlc3RpbmF0aW9uUmVzcG9uc2USUgoNQWN0aXZhdGVTdGFnZRIfLmRhenpsZS52MS5BY3RpdmF0ZVN0YWdlUmVxdWVzdBogLmRhenpsZS52MS5BY3RpdmF0ZVN0YWdlUmVzcG9uc2USWAoPRGVhY3RpdmF0ZVN0YWdlEiEuZGF6emxlLnYxLkRlYWN0aXZhdGVTdGFnZVJlcXVlc3QaIi5kYXp6bGUudjEuRGVhY3RpdmF0ZVN0YWdlUmVzcG9uc2USTAoLVXBkYXRlU3RhZ2USHS5kYXp6bGUudjEuVXBkYXRlU3RhZ2VSZXF1ZXN0Gh4uZGF6emxlLnYxLlVwZGF0ZVN0YWdlUmVzcG9uc2VCLVorZ2l0aHViLmNvbS9kYXp6bGUtbGFicy9jbGkvZ2VuL2FwaS92MTthcGl2MWIGcHJvdG8z", [file_api_v1_stream, file_google_protobuf_field_mask, file_google_protobuf_timestamp]);
 
 /**
  * @generated from message dazzle.v1.Stage
@@ -68,16 +68,17 @@ export type Stage = Message<"dazzle.v1.Stage"> & {
   name: string;
 
   /**
+   * deprecated — use destinations
+   *
    * @generated from field: string destination_id = 10;
    */
   destinationId: string;
 
   /**
-   * @generated from field: dazzle.v1.StagePreview preview = 11;
-   */
-  preview?: StagePreview;
-
-  /**
+   * field 11 removed (was StagePreview preview)
+   *
+   * deprecated — use destinations
+   *
    * @generated from field: dazzle.v1.StreamDestination destination = 12;
    */
   destination?: StreamDestination;
@@ -90,11 +91,21 @@ export type Stage = Message<"dazzle.v1.Stage"> & {
   capabilities: string[];
 
   /**
-   * short URL slug for /stage/{slug} and /watch/{slug}
+   * short URL slug for /watch/{slug}
    *
    * @generated from field: string slug = 14;
    */
   slug: string;
+
+  /**
+   * @generated from field: repeated dazzle.v1.StageDestination destinations = 15;
+   */
+  destinations: StageDestination[];
+
+  /**
+   * @generated from field: string watch_url = 16;
+   */
+  watchUrl: string;
 };
 
 /**
@@ -105,25 +116,53 @@ export const StageSchema: GenMessage<Stage> = /*@__PURE__*/
   messageDesc(file_api_v1_stage, 0);
 
 /**
- * @generated from message dazzle.v1.StagePreview
+ * StageDestination represents a streaming destination linked to a stage.
+ *
+ * @generated from message dazzle.v1.StageDestination
  */
-export type StagePreview = Message<"dazzle.v1.StagePreview"> & {
+export type StageDestination = Message<"dazzle.v1.StageDestination"> & {
   /**
-   * @generated from field: string watch_url = 1;
+   * stage_destinations row ID
+   *
+   * @generated from field: string id = 1;
    */
-  watchUrl: string;
+  id: string;
 
   /**
-   * @generated from field: string hls_url = 2;
+   * FK to stream_destinations
+   *
+   * @generated from field: string destination_id = 2;
    */
-  hlsUrl: string;
+  destinationId: string;
+
+  /**
+   * @generated from field: string name = 3;
+   */
+  name: string;
+
+  /**
+   * "dazzle", "twitch", "youtube", "kick", "restream", "custom"
+   *
+   * @generated from field: string platform = 4;
+   */
+  platform: string;
+
+  /**
+   * @generated from field: string platform_username = 5;
+   */
+  platformUsername: string;
+
+  /**
+   * @generated from field: bool enabled = 6;
+   */
+  enabled: boolean;
 };
 
 /**
- * Describes the message dazzle.v1.StagePreview.
- * Use `create(StagePreviewSchema)` to create a new message.
+ * Describes the message dazzle.v1.StageDestination.
+ * Use `create(StageDestinationSchema)` to create a new message.
  */
-export const StagePreviewSchema: GenMessage<StagePreview> = /*@__PURE__*/
+export const StageDestinationSchema: GenMessage<StageDestination> = /*@__PURE__*/
   messageDesc(file_api_v1_stage, 1);
 
 /**
@@ -136,8 +175,6 @@ export type CreateStageRequest = Message<"dazzle.v1.CreateStageRequest"> & {
   name: string;
 
   /**
-   * e.g., ["gpu"]
-   *
    * @generated from field: repeated string capabilities = 2;
    */
   capabilities: string[];
@@ -202,6 +239,8 @@ export const ListStagesResponseSchema: GenMessage<ListStagesResponse> = /*@__PUR
  */
 export type GetStageRequest = Message<"dazzle.v1.GetStageRequest"> & {
   /**
+   * stage UUID or slug
+   *
    * @generated from field: string id = 1;
    */
   id: string;
@@ -236,6 +275,8 @@ export const GetStageResponseSchema: GenMessage<GetStageResponse> = /*@__PURE__*
  */
 export type DeleteStageRequest = Message<"dazzle.v1.DeleteStageRequest"> & {
   /**
+   * stage UUID or slug
+   *
    * @generated from field: string id = 1;
    */
   id: string;
@@ -262,17 +303,19 @@ export const DeleteStageResponseSchema: GenMessage<DeleteStageResponse> = /*@__P
   messageDesc(file_api_v1_stage, 9);
 
 /**
+ * SetStageDestination adds/enables a destination for a stage.
+ *
  * @generated from message dazzle.v1.SetStageDestinationRequest
  */
 export type SetStageDestinationRequest = Message<"dazzle.v1.SetStageDestinationRequest"> & {
   /**
+   * stage UUID or slug
+   *
    * @generated from field: string stage_id = 1;
    */
   stageId: string;
 
   /**
-   * empty string to clear
-   *
    * @generated from field: string destination_id = 2;
    */
   destinationId: string;
@@ -303,10 +346,55 @@ export const SetStageDestinationResponseSchema: GenMessage<SetStageDestinationRe
   messageDesc(file_api_v1_stage, 11);
 
 /**
+ * RemoveStageDestination removes a destination from a stage.
+ *
+ * @generated from message dazzle.v1.RemoveStageDestinationRequest
+ */
+export type RemoveStageDestinationRequest = Message<"dazzle.v1.RemoveStageDestinationRequest"> & {
+  /**
+   * stage UUID or slug
+   *
+   * @generated from field: string stage_id = 1;
+   */
+  stageId: string;
+
+  /**
+   * @generated from field: string destination_id = 2;
+   */
+  destinationId: string;
+};
+
+/**
+ * Describes the message dazzle.v1.RemoveStageDestinationRequest.
+ * Use `create(RemoveStageDestinationRequestSchema)` to create a new message.
+ */
+export const RemoveStageDestinationRequestSchema: GenMessage<RemoveStageDestinationRequest> = /*@__PURE__*/
+  messageDesc(file_api_v1_stage, 12);
+
+/**
+ * @generated from message dazzle.v1.RemoveStageDestinationResponse
+ */
+export type RemoveStageDestinationResponse = Message<"dazzle.v1.RemoveStageDestinationResponse"> & {
+  /**
+   * @generated from field: dazzle.v1.Stage stage = 1;
+   */
+  stage?: Stage;
+};
+
+/**
+ * Describes the message dazzle.v1.RemoveStageDestinationResponse.
+ * Use `create(RemoveStageDestinationResponseSchema)` to create a new message.
+ */
+export const RemoveStageDestinationResponseSchema: GenMessage<RemoveStageDestinationResponse> = /*@__PURE__*/
+  messageDesc(file_api_v1_stage, 13);
+
+/**
  * @generated from message dazzle.v1.ActivateStageRequest
  */
 export type ActivateStageRequest = Message<"dazzle.v1.ActivateStageRequest"> & {
   /**
+   * stage UUID or slug
+   *
    * @generated from field: string id = 1;
    */
   id: string;
@@ -317,7 +405,7 @@ export type ActivateStageRequest = Message<"dazzle.v1.ActivateStageRequest"> & {
  * Use `create(ActivateStageRequestSchema)` to create a new message.
  */
 export const ActivateStageRequestSchema: GenMessage<ActivateStageRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_stage, 12);
+  messageDesc(file_api_v1_stage, 14);
 
 /**
  * @generated from message dazzle.v1.ActivateStageResponse
@@ -334,13 +422,15 @@ export type ActivateStageResponse = Message<"dazzle.v1.ActivateStageResponse"> &
  * Use `create(ActivateStageResponseSchema)` to create a new message.
  */
 export const ActivateStageResponseSchema: GenMessage<ActivateStageResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_stage, 13);
+  messageDesc(file_api_v1_stage, 15);
 
 /**
  * @generated from message dazzle.v1.DeactivateStageRequest
  */
 export type DeactivateStageRequest = Message<"dazzle.v1.DeactivateStageRequest"> & {
   /**
+   * stage UUID or slug
+   *
    * @generated from field: string id = 1;
    */
   id: string;
@@ -351,7 +441,7 @@ export type DeactivateStageRequest = Message<"dazzle.v1.DeactivateStageRequest">
  * Use `create(DeactivateStageRequestSchema)` to create a new message.
  */
 export const DeactivateStageRequestSchema: GenMessage<DeactivateStageRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_stage, 14);
+  messageDesc(file_api_v1_stage, 16);
 
 /**
  * @generated from message dazzle.v1.DeactivateStageResponse
@@ -368,7 +458,7 @@ export type DeactivateStageResponse = Message<"dazzle.v1.DeactivateStageResponse
  * Use `create(DeactivateStageResponseSchema)` to create a new message.
  */
 export const DeactivateStageResponseSchema: GenMessage<DeactivateStageResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_stage, 15);
+  messageDesc(file_api_v1_stage, 17);
 
 /**
  * @generated from message dazzle.v1.UpdateStageRequest
@@ -390,7 +480,7 @@ export type UpdateStageRequest = Message<"dazzle.v1.UpdateStageRequest"> & {
  * Use `create(UpdateStageRequestSchema)` to create a new message.
  */
 export const UpdateStageRequestSchema: GenMessage<UpdateStageRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_stage, 16);
+  messageDesc(file_api_v1_stage, 18);
 
 /**
  * @generated from message dazzle.v1.UpdateStageResponse
@@ -407,40 +497,6 @@ export type UpdateStageResponse = Message<"dazzle.v1.UpdateStageResponse"> & {
  * Use `create(UpdateStageResponseSchema)` to create a new message.
  */
 export const UpdateStageResponseSchema: GenMessage<UpdateStageResponse> = /*@__PURE__*/
-  messageDesc(file_api_v1_stage, 17);
-
-/**
- * @generated from message dazzle.v1.RegeneratePreviewTokenRequest
- */
-export type RegeneratePreviewTokenRequest = Message<"dazzle.v1.RegeneratePreviewTokenRequest"> & {
-  /**
-   * @generated from field: string id = 1;
-   */
-  id: string;
-};
-
-/**
- * Describes the message dazzle.v1.RegeneratePreviewTokenRequest.
- * Use `create(RegeneratePreviewTokenRequestSchema)` to create a new message.
- */
-export const RegeneratePreviewTokenRequestSchema: GenMessage<RegeneratePreviewTokenRequest> = /*@__PURE__*/
-  messageDesc(file_api_v1_stage, 18);
-
-/**
- * @generated from message dazzle.v1.RegeneratePreviewTokenResponse
- */
-export type RegeneratePreviewTokenResponse = Message<"dazzle.v1.RegeneratePreviewTokenResponse"> & {
-  /**
-   * @generated from field: dazzle.v1.Stage stage = 1;
-   */
-  stage?: Stage;
-};
-
-/**
- * Describes the message dazzle.v1.RegeneratePreviewTokenResponse.
- * Use `create(RegeneratePreviewTokenResponseSchema)` to create a new message.
- */
-export const RegeneratePreviewTokenResponseSchema: GenMessage<RegeneratePreviewTokenResponse> = /*@__PURE__*/
   messageDesc(file_api_v1_stage, 19);
 
 /**
@@ -488,6 +544,14 @@ export const StageService: GenService<{
     output: typeof SetStageDestinationResponseSchema;
   },
   /**
+   * @generated from rpc dazzle.v1.StageService.RemoveStageDestination
+   */
+  removeStageDestination: {
+    methodKind: "unary";
+    input: typeof RemoveStageDestinationRequestSchema;
+    output: typeof RemoveStageDestinationResponseSchema;
+  },
+  /**
    * @generated from rpc dazzle.v1.StageService.ActivateStage
    */
   activateStage: {
@@ -510,14 +574,6 @@ export const StageService: GenService<{
     methodKind: "unary";
     input: typeof UpdateStageRequestSchema;
     output: typeof UpdateStageResponseSchema;
-  },
-  /**
-   * @generated from rpc dazzle.v1.StageService.RegeneratePreviewToken
-   */
-  regeneratePreviewToken: {
-    methodKind: "unary";
-    input: typeof RegeneratePreviewTokenRequestSchema;
-    output: typeof RegeneratePreviewTokenResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_api_v1_stage, 0);

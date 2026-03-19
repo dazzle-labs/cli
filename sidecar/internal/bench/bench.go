@@ -103,7 +103,6 @@ type Config struct {
 	CDPHost       string   // Chrome CDP host
 	CDPPort       string   // Chrome CDP port
 	SceneDuration int      // seconds per scene
-	HLSDir        string   // temp dir for HLS output
 	BenchPort     int      // port to serve scene HTML
 	Scenes        []string // scene names to run (empty = all)
 
@@ -119,7 +118,6 @@ func DefaultConfig() Config {
 		CDPHost:       "localhost",
 		CDPPort:       "9222",
 		SceneDuration: 30,
-		HLSDir:        "/tmp/bench-hls",
 		BenchPort:     9876,
 		MinBrowserFPS: 20,
 		MaxDupFrames:  500,
@@ -238,9 +236,8 @@ func runScene(cfg Config, cdpClient *cdp.Client, scene Scene) (*Result, error) {
 	// Wait for the FPS counter to produce its first sample
 	time.Sleep(2 * time.Second)
 
-	// Create and start pipeline
-	os.MkdirAll(cfg.HLSDir, 0o755)
-	p := pipeline.New(cfg.Display, cfg.ScreenSize, cfg.HLSDir)
+	// Create pipeline (starts idle — SetOutputs triggers encoding)
+	p := pipeline.New(cfg.Display, cfg.ScreenSize)
 
 	// Collect encoder FPS samples via stats callback
 	var mu sync.Mutex
@@ -273,7 +270,9 @@ func runScene(cfg Config, cdpClient *cdp.Client, scene Scene) (*Result, error) {
 	origStderr := os.Stderr
 	os.Stderr = stderrW
 
-	if err := p.Start(); err != nil {
+	// Start pipeline with a dummy local output for benchmarking
+	os.MkdirAll("/tmp/bench-hls", 0o755)
+	if err := p.SetOutputs([]pipeline.Output{{Name: "bench", RtmpURL: "rtmp://localhost:1935/bench/test"}}); err != nil {
 		os.Stderr = origStderr
 		stderrW.Close()
 		stderrR.Close()
@@ -321,8 +320,6 @@ func runScene(cfg Config, cdpClient *cdp.Client, scene Scene) (*Result, error) {
 	stderrW.Close()
 	wg.Wait()
 	stderrR.Close()
-
-	os.RemoveAll(cfg.HLSDir)
 
 	// Compute stats
 	mu.Lock()

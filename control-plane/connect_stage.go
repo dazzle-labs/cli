@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	apiv1 "github.com/dazzle-labs/cli/gen/api/v1"
@@ -39,6 +38,22 @@ func resolveStageID(mgr *Manager, idOrSlug string) (string, error) {
 // stageServer implements apiv1connect.StageServiceHandler.
 type stageServer struct {
 	mgr *Manager
+}
+
+// requireStage resolves slug/UUID, authenticates, and verifies ownership in one call.
+func requireStage(ctx context.Context, mgr *Manager, idOrSlug string) (authInfo, *stageRow, error) {
+	info := mustAuth(ctx)
+	if id, err := resolveStageID(mgr, idOrSlug); err == nil {
+		idOrSlug = id
+	}
+	row, err := dbGetStage(mgr.db, idOrSlug)
+	if err != nil {
+		return info, nil, connect.NewError(connect.CodeInternal, err)
+	}
+	if row == nil || row.UserID != info.UserID {
+		return info, nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("stage not found"))
+	}
+	return info, row, nil
 }
 
 func (s *stageServer) CreateStage(ctx context.Context, req *connect.Request[apiv1.CreateStageRequest]) (*connect.Response[apiv1.CreateStageResponse], error) {
@@ -87,19 +102,10 @@ func (s *stageServer) ListStages(ctx context.Context, req *connect.Request[apiv1
 }
 
 func (s *stageServer) GetStage(ctx context.Context, req *connect.Request[apiv1.GetStageRequest]) (*connect.Response[apiv1.GetStageResponse], error) {
-	info := mustAuth(ctx)
-
-	if id, err := resolveStageID(s.mgr, req.Msg.Id); err == nil {
-		req.Msg.Id = id
-	}
-	row, err := dbGetStage(s.mgr.db, req.Msg.Id)
+	_, row, err := requireStage(ctx, s.mgr, req.Msg.Id)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, err
 	}
-	if row == nil || row.UserID != info.UserID {
-		return nil, connect.NewError(connect.CodeNotFound, nil)
-	}
-
 	st := stageRowToStruct(row, s.mgr)
 	return connect.NewResponse(&apiv1.GetStageResponse{
 		Stage: stageToProto(st, s.mgr.publicBaseURL, s.mgr.db),
@@ -107,27 +113,20 @@ func (s *stageServer) GetStage(ctx context.Context, req *connect.Request[apiv1.G
 }
 
 func (s *stageServer) DeleteStage(ctx context.Context, req *connect.Request[apiv1.DeleteStageRequest]) (*connect.Response[apiv1.DeleteStageResponse], error) {
-	info := mustAuth(ctx)
-
-	if id, err := resolveStageID(s.mgr, req.Msg.Id); err == nil {
-		req.Msg.Id = id
-	}
-	row, err := dbGetStage(s.mgr.db, req.Msg.Id)
+	info, row, err := requireStage(ctx, s.mgr, req.Msg.Id)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, err
 	}
-	if row == nil || row.UserID != info.UserID {
-		return nil, connect.NewError(connect.CodeNotFound, nil)
-	}
+	stageID := row.ID
 
 	// Capture pod info before deletion (needed for wait)
 	var podName string
-	if live, ok := s.mgr.getStage(req.Msg.Id); ok {
+	if live, ok := s.mgr.getStage(stageID); ok {
 		podName = live.PodName
 	}
 
 	// Stop pod if active
-	s.mgr.deleteStage(req.Msg.Id)
+	s.mgr.deleteStage(stageID)
 
 	// Use background context so client cancellation doesn't skip cleanup
 	cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 45*time.Second)
@@ -141,14 +140,14 @@ func (s *stageServer) DeleteStage(ctx context.Context, req *connect.Request[apiv
 
 	// Best-effort R2 cleanup
 	if s.mgr.r2Client != nil {
-		prefix := "users/" + info.UserID + "/stages/" + req.Msg.Id + "/"
+		prefix := "users/" + info.UserID + "/stages/" + stageID + "/"
 		if err := s.mgr.r2Client.DeletePrefix(cleanupCtx, prefix); err != nil {
-			log.Printf("WARN: r2 cleanup for stage %s: %v", req.Msg.Id, err)
+			log.Printf("WARN: r2 cleanup for stage %s: %v", stageID, err)
 		}
 	}
 
 	// Remove DB record
-	if err := dbDeleteStage(s.mgr.db, req.Msg.Id, info.UserID); err != nil {
+	if err := dbDeleteStage(s.mgr.db, stageID, info.UserID); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
@@ -156,18 +155,11 @@ func (s *stageServer) DeleteStage(ctx context.Context, req *connect.Request[apiv
 }
 
 func (s *stageServer) SetStageDestination(ctx context.Context, req *connect.Request[apiv1.SetStageDestinationRequest]) (*connect.Response[apiv1.SetStageDestinationResponse], error) {
-	info := mustAuth(ctx)
-
-	if id, err := resolveStageID(s.mgr, req.Msg.StageId); err == nil {
-		req.Msg.StageId = id
-	}
-	row, err := dbGetStage(s.mgr.db, req.Msg.StageId)
+	info, row, err := requireStage(ctx, s.mgr, req.Msg.StageId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, err
 	}
-	if row == nil || row.UserID != info.UserID {
-		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("stage not found"))
-	}
+	stageID := row.ID
 
 	if req.Msg.DestinationId != "" {
 		dest, err := dbGetStreamDestForUser(s.mgr.db, req.Msg.DestinationId, info.UserID)
@@ -177,13 +169,15 @@ func (s *stageServer) SetStageDestination(ctx context.Context, req *connect.Requ
 		if dest == nil {
 			return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("destination not found"))
 		}
+		if _, err := dbAddStageDestination(s.mgr.db, stageID, req.Msg.DestinationId); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
 	}
 
-	if err := dbSetStageDestination(s.mgr.db, req.Msg.StageId, info.UserID, req.Msg.DestinationId); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
+	// Sync pipeline outputs if stage is running
+	s.mgr.syncStageOutputsIfRunning(stageID, info.UserID)
 
-	updated, err := dbGetStage(s.mgr.db, req.Msg.StageId)
+	updated, err := dbGetStage(s.mgr.db, stageID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -193,22 +187,46 @@ func (s *stageServer) SetStageDestination(ctx context.Context, req *connect.Requ
 	}), nil
 }
 
-func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[apiv1.ActivateStageRequest]) (*connect.Response[apiv1.ActivateStageResponse], error) {
-	info := mustAuth(ctx)
-
-	if id, err := resolveStageID(s.mgr, req.Msg.Id); err == nil {
-		req.Msg.Id = id
+func (s *stageServer) RemoveStageDestination(ctx context.Context, req *connect.Request[apiv1.RemoveStageDestinationRequest]) (*connect.Response[apiv1.RemoveStageDestinationResponse], error) {
+	info, row, err := requireStage(ctx, s.mgr, req.Msg.StageId)
+	if err != nil {
+		return nil, err
 	}
-	row, err := dbGetStage(s.mgr.db, req.Msg.Id)
+	stageID := row.ID
+
+	// Dazzle destinations can't be removed — disable instead
+	if dest, err := dbGetStreamDestForUser(s.mgr.db, req.Msg.DestinationId, info.UserID); err == nil && dest != nil && dest.Platform == "dazzle" {
+		if err := dbSetStageDestinationEnabled(s.mgr.db, stageID, req.Msg.DestinationId, false); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+	} else {
+		if err := dbRemoveStageDestination(s.mgr.db, stageID, req.Msg.DestinationId); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+	}
+
+	// Sync pipeline outputs if stage is running
+	s.mgr.syncStageOutputsIfRunning(stageID, info.UserID)
+
+	updated, err := dbGetStage(s.mgr.db, stageID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	if row == nil || row.UserID != info.UserID {
-		return nil, connect.NewError(connect.CodeNotFound, nil)
+	st := stageRowToStruct(updated, s.mgr)
+	return connect.NewResponse(&apiv1.RemoveStageDestinationResponse{
+		Stage: stageToProto(st, s.mgr.publicBaseURL, s.mgr.db),
+	}), nil
+}
+
+func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[apiv1.ActivateStageRequest]) (*connect.Response[apiv1.ActivateStageResponse], error) {
+	info, row, err := requireStage(ctx, s.mgr, req.Msg.Id)
+	if err != nil {
+		return nil, err
 	}
+	stageID := row.ID
 
 	// Check not already active
-	if live, ok := s.mgr.getStage(req.Msg.Id); ok && live.Status == StatusRunning {
+	if live, ok := s.mgr.getStage(stageID); ok && live.Status == StatusRunning {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("stage is already active"))
 	}
 
@@ -239,9 +257,9 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 	// Branch on capabilities: GPU stages use RunPod agent, others use k8s pods
 	var readyStage *Stage
 	if hasCapability(row.Capabilities, "gpu") {
-		readyStage, err = s.mgr.activateGPUStage(waitCtx, req.Msg.Id, info.UserID)
+		readyStage, err = s.mgr.activateGPUStage(waitCtx, stageID, info.UserID)
 	} else {
-		readyStage, err = s.mgr.activateStage(waitCtx, req.Msg.Id, info.UserID)
+		readyStage, err = s.mgr.activateStage(waitCtx, stageID, info.UserID)
 	}
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
@@ -249,7 +267,7 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 
 	// Populate fields from DB that the in-memory stage doesn't track
 	readyStage.Name = row.Name
-	if freshRow, err := dbGetStage(s.mgr.db, req.Msg.Id); err == nil && freshRow != nil {
+	if freshRow, err := dbGetStage(s.mgr.db, stageID); err == nil && freshRow != nil {
 		if freshRow.PreviewToken.Valid {
 			readyStage.PreviewToken = freshRow.PreviewToken.String
 		}
@@ -264,25 +282,18 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 }
 
 func (s *stageServer) DeactivateStage(ctx context.Context, req *connect.Request[apiv1.DeactivateStageRequest]) (*connect.Response[apiv1.DeactivateStageResponse], error) {
-	info := mustAuth(ctx)
-
-	if id, err := resolveStageID(s.mgr, req.Msg.Id); err == nil {
-		req.Msg.Id = id
-	}
-	row, err := dbGetStage(s.mgr.db, req.Msg.Id)
+	_, row, err := requireStage(ctx, s.mgr, req.Msg.Id)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, err
 	}
-	if row == nil || row.UserID != info.UserID {
-		return nil, connect.NewError(connect.CodeNotFound, nil)
-	}
+	stageID := row.ID
 
-	if err := s.mgr.deactivateStage(req.Msg.Id); err != nil {
+	if err := s.mgr.deactivateStage(stageID); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	// Return the stage from DB (now inactive)
-	updated, _ := dbGetStage(s.mgr.db, req.Msg.Id)
+	updated, _ := dbGetStage(s.mgr.db, stageID)
 	if updated == nil {
 		return connect.NewResponse(&apiv1.DeactivateStageResponse{}), nil
 	}
@@ -293,13 +304,6 @@ func (s *stageServer) DeactivateStage(ctx context.Context, req *connect.Request[
 }
 
 func (s *stageServer) UpdateStage(ctx context.Context, req *connect.Request[apiv1.UpdateStageRequest]) (*connect.Response[apiv1.UpdateStageResponse], error) {
-	info := mustAuth(ctx)
-
-	if req.Msg.Stage != nil {
-		if id, err := resolveStageID(s.mgr, req.Msg.Stage.Id); err == nil {
-			req.Msg.Stage.Id = id
-		}
-	}
 	if req.Msg.Stage == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("stage is required"))
 	}
@@ -307,13 +311,19 @@ func (s *stageServer) UpdateStage(ctx context.Context, req *connect.Request[apiv
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("update_mask is required"))
 	}
 
+	info, row, err := requireStage(ctx, s.mgr, req.Msg.Stage.Id)
+	if err != nil {
+		return nil, err
+	}
+	stageID := row.ID
+
 	for _, path := range req.Msg.UpdateMask.Paths {
 		switch path {
 		case "name":
 			if req.Msg.Stage.Name == "" {
 				return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name cannot be empty"))
 			}
-			if _, err := dbRenameStage(s.mgr.db, req.Msg.Stage.Id, info.UserID, req.Msg.Stage.Name); err != nil {
+			if _, err := dbRenameStage(s.mgr.db, stageID, info.UserID, req.Msg.Stage.Name); err != nil {
 				return nil, connect.NewError(connect.CodeNotFound, err)
 			}
 		default:
@@ -321,56 +331,12 @@ func (s *stageServer) UpdateStage(ctx context.Context, req *connect.Request[apiv
 		}
 	}
 
-	row, err := dbGetStage(s.mgr.db, req.Msg.Stage.Id)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-	if row == nil || row.UserID != info.UserID {
-		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("stage not found"))
-	}
-
-	st := stageRowToStruct(row, s.mgr)
-	return connect.NewResponse(&apiv1.UpdateStageResponse{
-		Stage: stageToProto(st, s.mgr.publicBaseURL, s.mgr.db),
-	}), nil
-}
-
-func (s *stageServer) RegeneratePreviewToken(ctx context.Context, req *connect.Request[apiv1.RegeneratePreviewTokenRequest]) (*connect.Response[apiv1.RegeneratePreviewTokenResponse], error) {
-	info := mustAuth(ctx)
-
-	if id, err := resolveStageID(s.mgr, req.Msg.Id); err == nil {
-		req.Msg.Id = id
-	}
-	row, err := dbGetStage(s.mgr.db, req.Msg.Id)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-	if row == nil || row.UserID != info.UserID {
-		return nil, connect.NewError(connect.CodeNotFound, nil)
-	}
-
-	newToken := "dpt_" + strings.ReplaceAll(uuid.Must(uuid.NewV7()).String(), "-", "")
-	if err := dbSetPreviewToken(s.mgr.db, req.Msg.Id, newToken); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
-	// Invalidate old token from cache
-	if row.PreviewToken.Valid && row.PreviewToken.String != "" {
-		s.mgr.invalidatePreviewToken(row.PreviewToken.String)
-	}
-	// Update live stage if active
-	s.mgr.mu.Lock()
-	if live, ok := s.mgr.stages[req.Msg.Id]; ok {
-		live.PreviewToken = newToken
-	}
-	s.mgr.mu.Unlock()
-
-	updated, err := dbGetStage(s.mgr.db, req.Msg.Id)
+	updated, err := dbGetStage(s.mgr.db, stageID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	st := stageRowToStruct(updated, s.mgr)
-	return connect.NewResponse(&apiv1.RegeneratePreviewTokenResponse{
+	return connect.NewResponse(&apiv1.UpdateStageResponse{
 		Stage: stageToProto(st, s.mgr.publicBaseURL, s.mgr.db),
 	}), nil
 }
@@ -382,19 +348,18 @@ func stageRowToStruct(row *stageRow, mgr *Manager) *Stage {
 		provider = "kubernetes"
 	}
 	st := &Stage{
-		ID:            row.ID,
-		Name:          row.Name,
-		PodName:       row.PodName.String,
-		PodIP:         row.PodIP.String,
-		CreatedAt:     row.CreatedAt,
-		Status:        StageStatus(row.Status),
-		OwnerUserID:   row.UserID,
-		DestinationID: row.DestinationID.String,
-		PreviewToken:  row.PreviewToken.String,
-		Provider:      provider,
-		SidecarURL:    row.SidecarURL.String,
-		Capabilities:  row.Capabilities,
-		Slug:          row.Slug.String,
+		ID:           row.ID,
+		Name:         row.Name,
+		PodName:      row.PodName.String,
+		PodIP:        row.PodIP.String,
+		CreatedAt:    row.CreatedAt,
+		Status:       StageStatus(row.Status),
+		OwnerUserID:  row.UserID,
+		PreviewToken: row.PreviewToken.String,
+		Provider:     provider,
+		SidecarURL:   row.SidecarURL.String,
+		Capabilities: row.Capabilities,
+		Slug:         row.Slug.String,
 	}
 	// Overlay live in-memory state (more up-to-date pod IP, current status)
 	if live, ok := mgr.getStage(row.ID); ok {
@@ -415,23 +380,25 @@ func stageToProto(s *Stage, publicBaseURL string, db *sql.DB) *apiv1.Stage {
 		CreatedAt:     timestamppb.New(s.CreatedAt),
 		Status:        string(s.Status),
 		OwnerUserId:   s.OwnerUserID,
-		DestinationId: s.DestinationID,
 		Capabilities:  s.Capabilities,
 		Slug:          s.Slug,
 	}
+	// Watch URL (replaces the old StagePreview)
 	if publicBaseURL != "" && s.Slug != "" {
-		pb.Preview = &apiv1.StagePreview{
-			WatchUrl: publicBaseURL + "/watch/" + s.Slug,
-			HlsUrl:   publicBaseURL + "/watch/" + s.Slug + "/hls/stream.m3u8",
-		}
+		pb.WatchUrl = publicBaseURL + "/watch/" + s.Slug
 	}
-	if db != nil && s.DestinationID != "" && s.OwnerUserID != "" {
-		if dest, err := dbGetStreamDestForUser(db, s.DestinationID, s.OwnerUserID); err == nil && dest != nil {
-			pb.Destination = &apiv1.StreamDestination{
-				Id:               dest.ID,
-				Name:             dest.Name,
-				Platform:         dest.Platform,
-				PlatformUsername: dest.PlatformUsername,
+	// Populate destinations list from stage_destinations join table.
+	if db != nil && s.OwnerUserID != "" {
+		if dests, err := dbListStageDestinations(db, s.ID); err == nil {
+			for _, sd := range dests {
+				pb.Destinations = append(pb.Destinations, &apiv1.StageDestination{
+					Id:               sd.ID,
+					DestinationId:    sd.DestinationID,
+					Name:             sd.Name,
+					Platform:         sd.Platform,
+					PlatformUsername: sd.PlatformUsername,
+					Enabled:          sd.Enabled,
+				})
 			}
 		}
 	}

@@ -1,3 +1,4 @@
+# Internal service — control-plane uses this to proxy HLS from ingest pods.
 apiVersion: v1
 kind: Service
 metadata:
@@ -7,11 +8,29 @@ spec:
   selector:
     app: ingest
   ports:
-    - name: rtmp
-      port: 1935
-      targetPort: 1935
-      protocol: TCP
     - name: http
       port: 8080
       targetPort: 8080
+      protocol: TCP
+---
+# External LB — dedicated Hetzner LB for RTMP ingest (isolated from web/API traffic).
+# Only exposes port 1935; HTTP/HLS stays internal.
+apiVersion: v1
+kind: Service
+metadata:
+  name: ingest-lb
+  namespace: browser-streamer
+  annotations:
+    load-balancer.hetzner.cloud/name: "ingest"
+    load-balancer.hetzner.cloud/location: "ash"
+    load-balancer.hetzner.cloud/type: "lb11"
+    load-balancer.hetzner.cloud/uses-proxyprotocol: "false"
+spec:
+  type: LoadBalancer
+  selector:
+    app: ingest
+  ports:
+    - name: rtmp
+      port: 1935
+      targetPort: 1935
       protocol: TCP

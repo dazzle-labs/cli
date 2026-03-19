@@ -122,14 +122,6 @@ module "kube-hetzner" {
       destination_ips = ["0.0.0.0/0", "::/0"]
     },
     {
-      description     = "Allow inbound RTMP ingest"
-      direction       = "in"
-      protocol        = "tcp"
-      port            = "1935"
-      source_ips      = ["0.0.0.0/0", "::/0"]
-      destination_ips = []
-    },
-    {
       description     = "Allow outbound to RunPod GPU nodes"
       direction       = "out"
       protocol        = "tcp"

@@ -33,7 +33,6 @@ type Config struct {
 	ScreenHeight string
 	ContentRoot  string
 	SyncDir      string
-	HLSDir       string
 	CDPHost      string
 	CDPPort      string
 	R2Bucket     string
@@ -113,7 +112,7 @@ func New(cfg Config) (*Server, error) {
 		mux:       http.NewServeMux(),
 		cdpClient: cdpClient,
 		pipeline: pipeline.New(
-			func() string { if d := os.Getenv("DISPLAY"); d != "" { return d }; return ":99" }(), cfg.ScreenSize(), cfg.HLSDir, pipelineOpts...,
+			func() string { if d := os.Getenv("DISPLAY"); d != "" { return d }; return ":99" }(), cfg.ScreenSize(), pipelineOpts...,
 		),
 		syncState:    NewSyncState(cfg.SyncDir),
 		logBuffer:    NewLogBuffer(1000),
@@ -165,20 +164,19 @@ func (s *Server) routes() {
 	// ConnectRPC services
 	syncHandler := &syncServer{s: s}
 	runtimeHandler := &runtimeServer{s: s}
-	bcHandler := &broadcastServer{s: s}
+	outputHandler := &outputServer{s: s}
 
 	syncPath, syncH := sidecarv1connect.NewSyncServiceHandler(syncHandler, interceptors)
 	runtimePath, runtimeH := sidecarv1connect.NewRuntimeServiceHandler(runtimeHandler, interceptors)
-	bcPath, bcH := sidecarv1connect.NewBroadcastPipelineServiceHandler(bcHandler, interceptors)
+	outputPath, outputH := sidecarv1connect.NewOutputPipelineServiceHandler(outputHandler, interceptors)
 
 	subMux.Handle(syncPath, syncH)
 	subMux.Handle(runtimePath, runtimeH)
-	subMux.Handle(bcPath, bcH)
+	subMux.Handle(outputPath, outputH)
 
 	// Plain HTTP routes (also behind prefix)
 	subMux.HandleFunc("/health", s.handleHealth)
 	subMux.HandleFunc("/metrics", s.authWrap(s.handleMetrics))
-	subMux.HandleFunc("/hls/", s.authWrap(s.handleHLS))
 	subMux.HandleFunc("/thumbnail.png", s.authWrap(s.handleThumbnail))
 	subMux.HandleFunc("/cdp/", s.authWrap(s.handleCDPProxy))
 
@@ -350,13 +348,12 @@ func (s *Server) startPipeline() {
 	s.pipelineStart = time.Now()
 	s.statsMu.Unlock()
 
-	if err := s.pipeline.Start(); err != nil {
-		log.Printf("FATAL: ffmpeg pipeline failed to start: %v", err)
-		return
-	}
-	log.Println("ffmpeg pipeline started (HLS preview)")
+	// Pipeline starts idle — control-plane will call SetOutputs with
+	// RTMP destinations (Dazzle ingest + any user-configured destinations)
+	// after stage activation completes.
+	log.Println("ffmpeg pipeline ready (waiting for outputs from control-plane)")
 
-	// Start browser FPS polling after pipeline is running
+	// Start browser FPS polling
 	go s.pollBrowserFPS()
 }
 

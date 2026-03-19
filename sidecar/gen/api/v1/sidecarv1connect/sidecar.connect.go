@@ -25,8 +25,8 @@ const (
 	SyncServiceName = "dazzle.sidecar.v1.SyncService"
 	// RuntimeServiceName is the fully-qualified name of the RuntimeService service.
 	RuntimeServiceName = "dazzle.sidecar.v1.RuntimeService"
-	// BroadcastPipelineServiceName is the fully-qualified name of the BroadcastPipelineService service.
-	BroadcastPipelineServiceName = "dazzle.sidecar.v1.BroadcastPipelineService"
+	// OutputPipelineServiceName is the fully-qualified name of the OutputPipelineService service.
+	OutputPipelineServiceName = "dazzle.sidecar.v1.OutputPipelineService"
 )
 
 // These constants are the fully-qualified names of the RPCs defined in this package. They're
@@ -55,12 +55,9 @@ const (
 	// RuntimeServiceScreenshotProcedure is the fully-qualified name of the RuntimeService's Screenshot
 	// RPC.
 	RuntimeServiceScreenshotProcedure = "/dazzle.sidecar.v1.RuntimeService/Screenshot"
-	// BroadcastPipelineServiceStartProcedure is the fully-qualified name of the
-	// BroadcastPipelineService's Start RPC.
-	BroadcastPipelineServiceStartProcedure = "/dazzle.sidecar.v1.BroadcastPipelineService/Start"
-	// BroadcastPipelineServiceStopProcedure is the fully-qualified name of the
-	// BroadcastPipelineService's Stop RPC.
-	BroadcastPipelineServiceStopProcedure = "/dazzle.sidecar.v1.BroadcastPipelineService/Stop"
+	// OutputPipelineServiceSetOutputsProcedure is the fully-qualified name of the
+	// OutputPipelineService's SetOutputs RPC.
+	OutputPipelineServiceSetOutputsProcedure = "/dazzle.sidecar.v1.OutputPipelineService/SetOutputs"
 )
 
 // SyncServiceClient is a client for the dazzle.sidecar.v1.SyncService service.
@@ -359,100 +356,73 @@ func (UnimplementedRuntimeServiceHandler) Screenshot(context.Context, *connect.R
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.sidecar.v1.RuntimeService.Screenshot is not implemented"))
 }
 
-// BroadcastPipelineServiceClient is a client for the dazzle.sidecar.v1.BroadcastPipelineService
-// service.
-type BroadcastPipelineServiceClient interface {
-	Start(context.Context, *connect.Request[v1.BroadcastStartRequest]) (*connect.Response[v1.BroadcastStartResponse], error)
-	Stop(context.Context, *connect.Request[v1.BroadcastStopRequest]) (*connect.Response[v1.BroadcastStopResponse], error)
+// OutputPipelineServiceClient is a client for the dazzle.sidecar.v1.OutputPipelineService service.
+type OutputPipelineServiceClient interface {
+	SetOutputs(context.Context, *connect.Request[v1.SetOutputsRequest]) (*connect.Response[v1.SetOutputsResponse], error)
 }
 
-// NewBroadcastPipelineServiceClient constructs a client for the
-// dazzle.sidecar.v1.BroadcastPipelineService service. By default, it uses the Connect protocol with
+// NewOutputPipelineServiceClient constructs a client for the
+// dazzle.sidecar.v1.OutputPipelineService service. By default, it uses the Connect protocol with
 // the binary Protobuf Codec, asks for gzipped responses, and sends uncompressed requests. To use
 // the gRPC or gRPC-Web protocols, supply the connect.WithGRPC() or connect.WithGRPCWeb() options.
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewBroadcastPipelineServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) BroadcastPipelineServiceClient {
+func NewOutputPipelineServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) OutputPipelineServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
-	broadcastPipelineServiceMethods := v1.File_api_v1_sidecar_proto.Services().ByName("BroadcastPipelineService").Methods()
-	return &broadcastPipelineServiceClient{
-		start: connect.NewClient[v1.BroadcastStartRequest, v1.BroadcastStartResponse](
+	outputPipelineServiceMethods := v1.File_api_v1_sidecar_proto.Services().ByName("OutputPipelineService").Methods()
+	return &outputPipelineServiceClient{
+		setOutputs: connect.NewClient[v1.SetOutputsRequest, v1.SetOutputsResponse](
 			httpClient,
-			baseURL+BroadcastPipelineServiceStartProcedure,
-			connect.WithSchema(broadcastPipelineServiceMethods.ByName("Start")),
-			connect.WithClientOptions(opts...),
-		),
-		stop: connect.NewClient[v1.BroadcastStopRequest, v1.BroadcastStopResponse](
-			httpClient,
-			baseURL+BroadcastPipelineServiceStopProcedure,
-			connect.WithSchema(broadcastPipelineServiceMethods.ByName("Stop")),
+			baseURL+OutputPipelineServiceSetOutputsProcedure,
+			connect.WithSchema(outputPipelineServiceMethods.ByName("SetOutputs")),
 			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
-// broadcastPipelineServiceClient implements BroadcastPipelineServiceClient.
-type broadcastPipelineServiceClient struct {
-	start *connect.Client[v1.BroadcastStartRequest, v1.BroadcastStartResponse]
-	stop  *connect.Client[v1.BroadcastStopRequest, v1.BroadcastStopResponse]
+// outputPipelineServiceClient implements OutputPipelineServiceClient.
+type outputPipelineServiceClient struct {
+	setOutputs *connect.Client[v1.SetOutputsRequest, v1.SetOutputsResponse]
 }
 
-// Start calls dazzle.sidecar.v1.BroadcastPipelineService.Start.
-func (c *broadcastPipelineServiceClient) Start(ctx context.Context, req *connect.Request[v1.BroadcastStartRequest]) (*connect.Response[v1.BroadcastStartResponse], error) {
-	return c.start.CallUnary(ctx, req)
+// SetOutputs calls dazzle.sidecar.v1.OutputPipelineService.SetOutputs.
+func (c *outputPipelineServiceClient) SetOutputs(ctx context.Context, req *connect.Request[v1.SetOutputsRequest]) (*connect.Response[v1.SetOutputsResponse], error) {
+	return c.setOutputs.CallUnary(ctx, req)
 }
 
-// Stop calls dazzle.sidecar.v1.BroadcastPipelineService.Stop.
-func (c *broadcastPipelineServiceClient) Stop(ctx context.Context, req *connect.Request[v1.BroadcastStopRequest]) (*connect.Response[v1.BroadcastStopResponse], error) {
-	return c.stop.CallUnary(ctx, req)
+// OutputPipelineServiceHandler is an implementation of the dazzle.sidecar.v1.OutputPipelineService
+// service.
+type OutputPipelineServiceHandler interface {
+	SetOutputs(context.Context, *connect.Request[v1.SetOutputsRequest]) (*connect.Response[v1.SetOutputsResponse], error)
 }
 
-// BroadcastPipelineServiceHandler is an implementation of the
-// dazzle.sidecar.v1.BroadcastPipelineService service.
-type BroadcastPipelineServiceHandler interface {
-	Start(context.Context, *connect.Request[v1.BroadcastStartRequest]) (*connect.Response[v1.BroadcastStartResponse], error)
-	Stop(context.Context, *connect.Request[v1.BroadcastStopRequest]) (*connect.Response[v1.BroadcastStopResponse], error)
-}
-
-// NewBroadcastPipelineServiceHandler builds an HTTP handler from the service implementation. It
+// NewOutputPipelineServiceHandler builds an HTTP handler from the service implementation. It
 // returns the path on which to mount the handler and the handler itself.
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewBroadcastPipelineServiceHandler(svc BroadcastPipelineServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	broadcastPipelineServiceMethods := v1.File_api_v1_sidecar_proto.Services().ByName("BroadcastPipelineService").Methods()
-	broadcastPipelineServiceStartHandler := connect.NewUnaryHandler(
-		BroadcastPipelineServiceStartProcedure,
-		svc.Start,
-		connect.WithSchema(broadcastPipelineServiceMethods.ByName("Start")),
+func NewOutputPipelineServiceHandler(svc OutputPipelineServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	outputPipelineServiceMethods := v1.File_api_v1_sidecar_proto.Services().ByName("OutputPipelineService").Methods()
+	outputPipelineServiceSetOutputsHandler := connect.NewUnaryHandler(
+		OutputPipelineServiceSetOutputsProcedure,
+		svc.SetOutputs,
+		connect.WithSchema(outputPipelineServiceMethods.ByName("SetOutputs")),
 		connect.WithHandlerOptions(opts...),
 	)
-	broadcastPipelineServiceStopHandler := connect.NewUnaryHandler(
-		BroadcastPipelineServiceStopProcedure,
-		svc.Stop,
-		connect.WithSchema(broadcastPipelineServiceMethods.ByName("Stop")),
-		connect.WithHandlerOptions(opts...),
-	)
-	return "/dazzle.sidecar.v1.BroadcastPipelineService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return "/dazzle.sidecar.v1.OutputPipelineService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case BroadcastPipelineServiceStartProcedure:
-			broadcastPipelineServiceStartHandler.ServeHTTP(w, r)
-		case BroadcastPipelineServiceStopProcedure:
-			broadcastPipelineServiceStopHandler.ServeHTTP(w, r)
+		case OutputPipelineServiceSetOutputsProcedure:
+			outputPipelineServiceSetOutputsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
 	})
 }
 
-// UnimplementedBroadcastPipelineServiceHandler returns CodeUnimplemented from all methods.
-type UnimplementedBroadcastPipelineServiceHandler struct{}
+// UnimplementedOutputPipelineServiceHandler returns CodeUnimplemented from all methods.
+type UnimplementedOutputPipelineServiceHandler struct{}
 
-func (UnimplementedBroadcastPipelineServiceHandler) Start(context.Context, *connect.Request[v1.BroadcastStartRequest]) (*connect.Response[v1.BroadcastStartResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.sidecar.v1.BroadcastPipelineService.Start is not implemented"))
-}
-
-func (UnimplementedBroadcastPipelineServiceHandler) Stop(context.Context, *connect.Request[v1.BroadcastStopRequest]) (*connect.Response[v1.BroadcastStopResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.sidecar.v1.BroadcastPipelineService.Stop is not implemented"))
+func (UnimplementedOutputPipelineServiceHandler) SetOutputs(context.Context, *connect.Request[v1.SetOutputsRequest]) (*connect.Response[v1.SetOutputsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.sidecar.v1.OutputPipelineService.SetOutputs is not implemented"))
 }

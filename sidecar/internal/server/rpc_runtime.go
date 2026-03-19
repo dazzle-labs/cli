@@ -77,9 +77,10 @@ func (h *runtimeServer) GetStats(ctx context.Context, req *connect.Request[sidec
 		DroppedFrames:          ps.DroppedFrames,
 		DroppedFramesRecent:    ps.DroppedFramesRecent,
 		TotalBytes:             ps.TotalBytes,
-		Broadcasting:           ps.Broadcasting,
+		ActiveOutputs:          int32(ps.ActiveOutputs),
 		BroadcastUptimeSeconds: broadcastUptime,
 		StageUptimeSeconds:     int64(now.Sub(h.s.stageStart).Seconds()),
+		OutputNames:            ps.OutputNames,
 	}), nil
 }
 

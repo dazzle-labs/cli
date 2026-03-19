@@ -1,19 +1,17 @@
 import { useEffect, useRef, useCallback } from "react";
 import { motion } from "motion/react";
-import { useGetToken } from "../useDevToken.js";
 import Hls from "hls.js";
 import { springs } from "@/lib/motion";
 
 interface StreamPreviewProps {
-  stageId: string;
+  slug: string;
   status: "starting" | "running" | "stopped";
 }
 
-export function StreamPreview({ stageId, status }: StreamPreviewProps) {
+export function StreamPreview({ slug, status }: StreamPreviewProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const getToken = useGetToken();
 
   const destroyHls = useCallback(() => {
     if (retryTimerRef.current) {
@@ -27,12 +25,13 @@ export function StreamPreview({ stageId, status }: StreamPreviewProps) {
   }, []);
 
   useEffect(() => {
-    if (status !== "running" || !videoRef.current) return;
+    if (status !== "running" || !videoRef.current || !slug) return;
 
-    const hlsUrl = `/stage/${stageId}/hls/stream.m3u8`;
+    // HLS from ingest (public, no auth needed)
+    const hlsUrl = `/watch/${slug}/hls/stream.m3u8`;
 
     if (!Hls.isSupported()) {
-      // Safari native HLS — no custom headers possible, best-effort
+      // Safari native HLS
       const video = videoRef.current;
       video.src = hlsUrl;
       return () => {
@@ -41,12 +40,7 @@ export function StreamPreview({ stageId, status }: StreamPreviewProps) {
       };
     }
 
-    // Pre-fetch the token so xhrSetup can use it synchronously
-    let authToken: string | null = null;
-
-    async function initHls() {
-      authToken = await getToken();
-
+    function initHls() {
       if (!videoRef.current) return;
 
       const hls = new Hls({
@@ -55,11 +49,6 @@ export function StreamPreview({ stageId, status }: StreamPreviewProps) {
         maxBufferLength: 3,
         backBufferLength: 3,
         lowLatencyMode: true,
-        xhrSetup: (xhr) => {
-          if (authToken) {
-            xhr.setRequestHeader("Authorization", `Bearer ${authToken}`);
-          }
-        },
       });
 
       hls.loadSource(hlsUrl);
@@ -71,7 +60,6 @@ export function StreamPreview({ stageId, status }: StreamPreviewProps) {
       hls.on(Hls.Events.ERROR, (_event, data) => {
         if (data.fatal) {
           destroyHls();
-          // Retry after 3s — but don't loop via state/effect
           retryTimerRef.current = setTimeout(() => {
             initHls();
           }, 3000);
@@ -84,7 +72,7 @@ export function StreamPreview({ stageId, status }: StreamPreviewProps) {
     initHls();
 
     return destroyHls;
-  }, [stageId, status, getToken, destroyHls]);
+  }, [slug, status, destroyHls]);
 
   if (status === "starting") {
     return (
@@ -100,7 +88,6 @@ export function StreamPreview({ stageId, status }: StreamPreviewProps) {
   if (status !== "running") {
     return (
       <div className="aspect-video rounded-xl bg-card border border-border flex items-center justify-center relative overflow-hidden">
-        {/* Animated gradient border hint */}
         <div className="absolute inset-0 rounded-xl ring-1 ring-inset ring-emerald-500/10 animate-live-pulse" />
         <p className="text-base text-muted-foreground text-center px-8 leading-relaxed">
           Your stage is dark.

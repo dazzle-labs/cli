@@ -1,0 +1,26 @@
+package server
+
+import (
+	"context"
+
+	"connectrpc.com/connect"
+
+	sidecarv1 "github.com/browser-streamer/sidecar/gen/api/v1"
+	"github.com/browser-streamer/sidecar/internal/pipeline"
+)
+
+// outputServer implements sidecarv1connect.OutputPipelineServiceHandler.
+type outputServer struct {
+	s *Server
+}
+
+func (h *outputServer) SetOutputs(ctx context.Context, req *connect.Request[sidecarv1.SetOutputsRequest]) (*connect.Response[sidecarv1.SetOutputsResponse], error) {
+	outputs := make([]pipeline.Output, len(req.Msg.Outputs))
+	for i, o := range req.Msg.Outputs {
+		outputs[i] = pipeline.Output{Name: o.Name, RtmpURL: o.RtmpUrl}
+	}
+	if err := h.s.pipeline.SetOutputs(outputs); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	return connect.NewResponse(&sidecarv1.SetOutputsResponse{}), nil
+}

@@ -16,8 +16,10 @@ github.com/dazzle-labs/cli v0.1.0-beta.34.0.20260318203512-76a78b780fe8 h1:zc9Mh
 github.com/dazzle-labs/cli v0.1.0-beta.34.0.20260318203512-76a78b780fe8/go.mod h1:AuphucsmRXt72WkppSaTGPmLaD+F1fJkCwkhEEsX+Hc=
 github.com/dazzle-labs/cli v0.1.0-beta.36 h1:f5rrI9F6CKMaKEae8LuormePQX5lYQ2sAfaiuGj9NyM=
 github.com/dazzle-labs/cli v0.1.0-beta.36/go.mod h1:AuphucsmRXt72WkppSaTGPmLaD+F1fJkCwkhEEsX+Hc=
-github.com/dazzle-labs/cli v0.1.0-beta.36.0.20260319171406-03fa0e5c6c0a h1:YmQjPAWiI45SGCSHDcqhoH2HEND05g83ooqahjAG8OM=
-github.com/dazzle-labs/cli v0.1.0-beta.36.0.20260319171406-03fa0e5c6c0a/go.mod h1:AuphucsmRXt72WkppSaTGPmLaD+F1fJkCwkhEEsX+Hc=
+github.com/dazzle-labs/cli v0.1.0-beta.36.0.20260319174222-9c99135bb49f h1:EpaBTDnJKJkgbYMw1fyYbPcqLuAV0jPB696piRrRhyU=
+github.com/dazzle-labs/cli v0.1.0-beta.36.0.20260319174222-9c99135bb49f/go.mod h1:AuphucsmRXt72WkppSaTGPmLaD+F1fJkCwkhEEsX+Hc=
+github.com/dazzle-labs/cli v0.1.0-beta.36.0.20260319175056-41de61511583 h1:XkeMVrWsjOEhIZXHW+rWG/roxbpDzZXJcTFvOQGu6DM=
+github.com/dazzle-labs/cli v0.1.0-beta.36.0.20260319175056-41de61511583/go.mod h1:AuphucsmRXt72WkppSaTGPmLaD+F1fJkCwkhEEsX+Hc=
 github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
 github.com/emicklei/go-restful/v3 v3.11.0 h1:rAQeMHw1c7zTmncogyy8VvRZwtkmkZ4FxERmMY4rD+g=

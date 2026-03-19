@@ -13,12 +13,6 @@ spec:
               to: websecure
               scheme: https
               permanent: true
-      rtmp:
-        port: 1935
-        protocol: TCP
-        expose:
-          default: true
-        exposedPort: 1935
       websecure:
         forwardedHeaders:
           trustedIPs:

@@ -36,85 +36,40 @@ func mapResolvePlatformError(err error) error {
 	}
 }
 
-func (s *broadcastServer) StartBroadcast(ctx context.Context, req *connect.Request[apiv1.StartBroadcastRequest]) (*connect.Response[apiv1.StartBroadcastResponse], error) {
+// requirePlatformConnection resolves stage slug, authenticates, looks up the platform
+// connection, and validates the access token. Returns a context with a 30s timeout.
+func (s *broadcastServer) requirePlatformConnection(ctx context.Context, stageID, destinationID string) (context.Context, context.CancelFunc, PlatformClient, *streamDestRow, string, error) {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	info := mustAuth(ctx)
-
-	if id, err := resolveStageID(s.mgr, req.Msg.StageId); err == nil {
-		req.Msg.StageId = id
+	if id, err := resolveStageID(s.mgr, stageID); err == nil {
+		stageID = id
 	}
-	// Look up running stage
-	row, err := dbGetStage(s.mgr.db, req.Msg.StageId)
+	client, dest, accessToken, err := s.mgr.resolvePlatformConnection(stageID, info.UserID, destinationID)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		cancel()
+		return nil, nil, nil, nil, "", mapResolvePlatformError(err)
 	}
-	if row == nil || row.UserID != info.UserID {
-		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("stage not found"))
+	if accessToken == "" {
+		cancel()
+		return nil, nil, nil, nil, "", connect.NewError(connect.CodeUnauthenticated, fmt.Errorf("platform access token is missing — try reconnecting your %s account", dest.Platform))
 	}
-	stage, ok := s.mgr.getStage(req.Msg.StageId)
-	if !ok || stage.Status != StatusRunning || (stage.PodIP == "" && stage.SidecarURL == "") {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("stage is not active"))
-	}
+	return ctx, cancel, client, dest, accessToken, nil
+}
 
-	// Resolve RTMP destination
-	dest, err := s.mgr.validateStreamDestination(req.Msg.StageId, info.UserID)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, err)
-	}
-
-	// Build full RTMP URL with stream key
-	rtmpURL := dest.RtmpURL
-	if dest.StreamKey != "" {
-		rtmpURL = strings.TrimSuffix(rtmpURL, "/") + "/" + dest.StreamKey
-	}
-
-	if err := s.mgr.pc.BroadcastStart(stage, rtmpURL); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("start broadcast: %w", err))
-	}
-
-	return connect.NewResponse(&apiv1.StartBroadcastResponse{}), nil
+func (s *broadcastServer) StartBroadcast(ctx context.Context, req *connect.Request[apiv1.StartBroadcastRequest]) (*connect.Response[apiv1.StartBroadcastResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("deprecated: streaming starts automatically when a stage activates — use stage destinations instead"))
 }
 
 func (s *broadcastServer) StopBroadcast(ctx context.Context, req *connect.Request[apiv1.StopBroadcastRequest]) (*connect.Response[apiv1.StopBroadcastResponse], error) {
-	info := mustAuth(ctx)
-
-	if id, err := resolveStageID(s.mgr, req.Msg.StageId); err == nil {
-		req.Msg.StageId = id
-	}
-	row, err := dbGetStage(s.mgr.db, req.Msg.StageId)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-	if row == nil || row.UserID != info.UserID {
-		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("stage not found"))
-	}
-	stage, ok := s.mgr.getStage(req.Msg.StageId)
-	if !ok || stage.Status != StatusRunning || (stage.PodIP == "" && stage.SidecarURL == "") {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("stage is not active"))
-	}
-
-	if err := s.mgr.pc.BroadcastStop(stage); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("stop broadcast: %w", err))
-	}
-
-	return connect.NewResponse(&apiv1.StopBroadcastResponse{}), nil
+	return nil, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("deprecated: use stage destinations to manage streaming outputs"))
 }
 
 func (s *broadcastServer) GetStreamInfo(ctx context.Context, req *connect.Request[apiv1.GetStreamInfoRequest]) (*connect.Response[apiv1.GetStreamInfoResponse], error) {
-	// 30s covers full method including DB lookup; increase if DB latency is a concern
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-
-	info := mustAuth(ctx)
-	if id, err := resolveStageID(s.mgr, req.Msg.StageId); err == nil {
-		req.Msg.StageId = id
-	}
-	client, dest, accessToken, err := s.mgr.resolvePlatformConnection(req.Msg.StageId, info.UserID)
+	ctx, cancel, client, dest, accessToken, err := s.requirePlatformConnection(ctx, req.Msg.StageId, req.Msg.DestinationId)
 	if err != nil {
-		return nil, mapResolvePlatformError(err)
+		return nil, err
 	}
-	if accessToken == "" {
-		return nil, connect.NewError(connect.CodeUnauthenticated, fmt.Errorf("platform access token is missing — try reconnecting your %s account", dest.Platform))
-	}
+	defer cancel()
 
 	title, category, err := client.GetStreamInfo(ctx, accessToken, dest.PlatformUserID)
 	if err != nil {
@@ -132,24 +87,13 @@ func (s *broadcastServer) GetStreamInfo(ctx context.Context, req *connect.Reques
 }
 
 func (s *broadcastServer) SetStreamTitle(ctx context.Context, req *connect.Request[apiv1.SetStreamTitleRequest]) (*connect.Response[apiv1.SetStreamTitleResponse], error) {
-	// 30s covers full method including DB lookup; increase if DB latency is a concern
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	ctx, cancel, client, dest, accessToken, err := s.requirePlatformConnection(ctx, req.Msg.StageId, req.Msg.DestinationId)
+	if err != nil {
+		return nil, err
+	}
 	defer cancel()
 
-	info := mustAuth(ctx)
-	if id, err := resolveStageID(s.mgr, req.Msg.StageId); err == nil {
-		req.Msg.StageId = id
-	}
-	client, dest, accessToken, err := s.mgr.resolvePlatformConnection(req.Msg.StageId, info.UserID)
-	if err != nil {
-		return nil, mapResolvePlatformError(err)
-	}
-	if accessToken == "" {
-		return nil, connect.NewError(connect.CodeUnauthenticated, fmt.Errorf("platform access token is missing — try reconnecting your %s account", dest.Platform))
-	}
-
 	// Pass "" for category — existing platform implementations skip updating a field when "" is passed.
-	// No server-side validation of non-empty title; validation lives in the CLI only.
 	if err := client.SetStreamInfo(ctx, accessToken, dest.PlatformUserID, req.Msg.Title, ""); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -163,24 +107,13 @@ func (s *broadcastServer) SetStreamTitle(ctx context.Context, req *connect.Reque
 }
 
 func (s *broadcastServer) SetStreamCategory(ctx context.Context, req *connect.Request[apiv1.SetStreamCategoryRequest]) (*connect.Response[apiv1.SetStreamCategoryResponse], error) {
-	// 30s covers full method including DB lookup; increase if DB latency is a concern
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	ctx, cancel, client, dest, accessToken, err := s.requirePlatformConnection(ctx, req.Msg.StageId, req.Msg.DestinationId)
+	if err != nil {
+		return nil, err
+	}
 	defer cancel()
 
-	info := mustAuth(ctx)
-	if id, err := resolveStageID(s.mgr, req.Msg.StageId); err == nil {
-		req.Msg.StageId = id
-	}
-	client, dest, accessToken, err := s.mgr.resolvePlatformConnection(req.Msg.StageId, info.UserID)
-	if err != nil {
-		return nil, mapResolvePlatformError(err)
-	}
-	if accessToken == "" {
-		return nil, connect.NewError(connect.CodeUnauthenticated, fmt.Errorf("platform access token is missing — try reconnecting your %s account", dest.Platform))
-	}
-
 	// Pass "" for title — existing platform implementations skip updating a field when "" is passed.
-	// No server-side validation of non-empty category; validation lives in the CLI only.
 	if err := client.SetStreamInfo(ctx, accessToken, dest.PlatformUserID, "", req.Msg.Category); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -194,21 +127,11 @@ func (s *broadcastServer) SetStreamCategory(ctx context.Context, req *connect.Re
 }
 
 func (s *broadcastServer) GetChat(ctx context.Context, req *connect.Request[apiv1.GetChatRequest]) (*connect.Response[apiv1.GetChatResponse], error) {
-	// 30s covers full method including DB lookup; increase if DB latency is a concern
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-
-	info := mustAuth(ctx)
-	if id, err := resolveStageID(s.mgr, req.Msg.StageId); err == nil {
-		req.Msg.StageId = id
-	}
-	client, dest, accessToken, err := s.mgr.resolvePlatformConnection(req.Msg.StageId, info.UserID)
+	ctx, cancel, client, dest, accessToken, err := s.requirePlatformConnection(ctx, req.Msg.StageId, req.Msg.DestinationId)
 	if err != nil {
-		return nil, mapResolvePlatformError(err)
+		return nil, err
 	}
-	if accessToken == "" {
-		return nil, connect.NewError(connect.CodeUnauthenticated, fmt.Errorf("platform access token is missing — try reconnecting your %s account", dest.Platform))
-	}
+	defer cancel()
 
 	limit := int(req.Msg.Limit)
 	if limit <= 0 {
@@ -251,21 +174,11 @@ func (s *broadcastServer) GetChat(ctx context.Context, req *connect.Request[apiv
 }
 
 func (s *broadcastServer) SendChat(ctx context.Context, req *connect.Request[apiv1.SendChatRequest]) (*connect.Response[apiv1.SendChatResponse], error) {
-	// 30s covers full method including DB lookup; increase if DB latency is a concern
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-
-	info := mustAuth(ctx)
-	if id, err := resolveStageID(s.mgr, req.Msg.StageId); err == nil {
-		req.Msg.StageId = id
-	}
-	client, dest, accessToken, err := s.mgr.resolvePlatformConnection(req.Msg.StageId, info.UserID)
+	ctx, cancel, client, dest, accessToken, err := s.requirePlatformConnection(ctx, req.Msg.StageId, req.Msg.DestinationId)
 	if err != nil {
-		return nil, mapResolvePlatformError(err)
+		return nil, err
 	}
-	if accessToken == "" {
-		return nil, connect.NewError(connect.CodeUnauthenticated, fmt.Errorf("platform access token is missing — try reconnecting your %s account", dest.Platform))
-	}
+	defer cancel()
 
 	if err := client.SendChatMessage(ctx, accessToken, dest.PlatformUserID, req.Msg.Text); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)

@@ -7,11 +7,12 @@ import type { StreamDestination } from "../gen/api/v1/stream_pb.js";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Cpu, Globe, Check, ArrowUpRight, Pencil, X as XIcon, Link2, RefreshCw, ExternalLink, Zap } from "lucide-react";
+import { Trash2, Cpu, Globe, Check, ArrowUpRight, Pencil, X as XIcon, Link2, ExternalLink, Zap } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { StreamPreview } from "@/components/StreamPreview";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -24,7 +25,7 @@ const cliCommands = [
   { label: "Start this stage", cmd: (name: string) => `${cli.stageUp.base} -s "${name}"` },
   { label: "Push content", cmd: (name: string) => `${cli.stageSync.base} ./my-app -s "${name}"` },
   { label: "Screenshot to verify", cmd: (name: string) => `${cli.stageScreenshot.base} -s "${name}"` },
-  { label: "Go live", cmd: (name: string) => `${cli.stageBroadcastOn.base} -s "${name}"` },
+  { label: "Check status", cmd: (name: string) => `${cli.stageStatus.base} -s "${name}"` },
 ];
 
 export function StageDetail() {
@@ -33,7 +34,6 @@ export function StageDetail() {
   const [stage, setStage] = useState<Stage | null>(null);
   const [destinations, setDestinations] = useState<StreamDestination[]>([]);
   const [loading, setLoading] = useState(true);
-  const [confirmingRegen, setConfirmingRegen] = useState(false);
 
   // Inline name editing
   const [editingName, setEditingName] = useState(false);
@@ -182,17 +182,17 @@ export function StageDetail() {
         {/* Main: Stream Preview */}
         <div className="flex-1 min-w-0 mb-8 3xl:mb-0">
           <StreamPreview
-            stageId={stageId!}
+            slug={stage.slug}
             status={isRunning ? "running" : isStarting ? "starting" : "stopped"}
           />
-          {stage.preview && (
+          {stage.watchUrl && (
             <div className="mt-3 rounded-xl border border-border bg-card px-3 py-2">
               <div className="flex items-center gap-1.5">
                 <Link2 className="h-3 w-3 text-muted-foreground shrink-0" />
                 <code className="flex-1 text-sm font-mono text-muted-foreground truncate">
-                  {stage.preview.watchUrl.replace(/token=.*/, "token=••••••••")}
+                  {stage.watchUrl}
                 </code>
-                <CopyButton text={stage.preview.watchUrl} tooltip="Copy preview URL" size="icon" iconSize="h-3 w-3" className="h-6 w-6" />
+                <CopyButton text={stage.watchUrl} tooltip="Copy watch URL" size="icon" iconSize="h-3 w-3" className="h-6 w-6" />
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -201,53 +201,13 @@ export function StageDetail() {
                       className="h-6 w-6 text-muted-foreground hover:text-primary shrink-0"
                       asChild
                     >
-                      <a href={stage.preview.watchUrl} target="_blank" rel="noopener noreferrer">
+                      <a href={stage.watchUrl} target="_blank" rel="noopener noreferrer">
                         <ExternalLink className="h-3 w-3" />
                       </a>
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Open preview</TooltipContent>
+                  <TooltipContent>Open watch page</TooltipContent>
                 </Tooltip>
-                {!confirmingRegen ? (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 text-muted-foreground hover:text-foreground shrink-0"
-                        onClick={() => setConfirmingRegen(true)}
-                      >
-                        <RefreshCw className="h-3 w-3" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Regenerate preview URL</TooltipContent>
-                  </Tooltip>
-                ) : (
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <Button
-                      variant="link"
-                      size="sm"
-                      className="text-xs text-primary hover:text-primary/80 h-auto p-0"
-                      onClick={async () => {
-                        try {
-                          await stageClient.regeneratePreviewToken({ id: stageId! });
-                          await refresh();
-                        } catch { /* ignore */ }
-                        setConfirmingRegen(false);
-                      }}
-                    >
-                      Confirm
-                    </Button>
-                    <Button
-                      variant="link"
-                      size="sm"
-                      className="text-xs text-muted-foreground hover:text-foreground h-auto p-0"
-                      onClick={() => setConfirmingRegen(false)}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                )}
               </div>
             </div>
           )}
@@ -289,66 +249,103 @@ export function StageDetail() {
           {/* Streaming */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-medium text-muted-foreground">Streaming</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Destinations</CardTitle>
             </CardHeader>
             <CardContent>
-              {destinations.length > 0 ? (
-                <>
-                  <Select
-                    value={stage.destinationId || undefined}
-                    onValueChange={async (val) => {
-                      try {
-                        await stageClient.setStageDestination({ stageId: stageId!, destinationId: val });
-                        await refresh();
-                      } catch {
-                        // ignore
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="w-full mb-3">
-                      <SelectValue placeholder="Select destination..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {destinations.map((d) => (
-                        <SelectItem key={d.id} value={d.id}>
-                          {d.name || d.platformUsername || d.platform} ({d.platform})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {!stage.destinationId && (
+              {stage.destinations.length > 0 && (
+                <div className="flex flex-col gap-2 mb-3">
+                  {stage.destinations.map((sd) => {
+                    const isDazzle = sd.platform === "dazzle";
+                    return (
+                      <div key={sd.id} className={cn("flex items-center justify-between gap-2 rounded-lg border px-3 py-2", sd.enabled ? "border-border" : "border-border/50 opacity-60")}>
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium text-foreground truncate">
+                            {isDazzle ? "Dazzle" : sd.name || sd.platformUsername || sd.platform}
+                          </div>
+                          {!isDazzle && <div className="text-xs text-muted-foreground">{sd.platform}</div>}
+                        </div>
+                        {isDazzle ? (
+                          <Switch
+                            checked={sd.enabled}
+                            onCheckedChange={async (checked) => {
+                              try {
+                                if (checked) {
+                                  await stageClient.setStageDestination({ stageId: stageId!, destinationId: sd.destinationId });
+                                } else {
+                                  await stageClient.removeStageDestination({ stageId: stageId!, destinationId: sd.destinationId });
+                                }
+                                await refresh();
+                              } catch { /* ignore */ }
+                            }}
+                          />
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0"
+                            onClick={async () => {
+                              try {
+                                await stageClient.removeStageDestination({ stageId: stageId!, destinationId: sd.destinationId });
+                                await refresh();
+                              } catch { /* ignore */ }
+                            }}
+                          >
+                            <XIcon className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {/* Add destination — show unlinked user destinations */}
+              {(() => {
+                const linkedIds = new Set(stage.destinations.map((sd) => sd.destinationId));
+                const unlinked = destinations.filter((d) => !linkedIds.has(d.id));
+                if (unlinked.length > 0) {
+                  return (
+                    <Select
+                      value=""
+                      onValueChange={async (val) => {
+                        try {
+                          await stageClient.setStageDestination({ stageId: stageId!, destinationId: val });
+                          await refresh();
+                        } catch { /* ignore */ }
+                      }}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Add destination..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {unlinked.map((d) => (
+                          <SelectItem key={d.id} value={d.id}>
+                            {d.name || d.platformUsername || d.platform} ({d.platform})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  );
+                }
+                if (destinations.length === 0) {
+                  return (
                     <Button size="sm" className="font-semibold text-sm" asChild>
                       <Link to="/destinations">
                         Add a streaming destination
                         <ArrowUpRight className="h-3 w-3 ml-1" />
                       </Link>
                     </Button>
-                  )}
-                  {stage.destinationId && (
-                    <div className="flex flex-col gap-1.5">
-                      <Button variant="link" size="sm" className="text-sm text-muted-foreground hover:text-primary h-auto p-0 justify-start" asChild>
-                        <Link to="/destinations">
-                          Manage destinations
-                          <ArrowUpRight className="h-3 w-3 ml-1" />
-                        </Link>
-                      </Button>
-                      <Button variant="link" size="sm" className="text-sm text-muted-foreground hover:text-primary h-auto p-0 justify-start" asChild>
-                        <Link to="/api-keys">
-                          Manage API keys
-                          <ArrowUpRight className="h-3 w-3 ml-1" />
-                        </Link>
-                      </Button>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <Button size="sm" className="font-semibold text-sm" asChild>
+                  );
+                }
+                return null;
+              })()}
+              <div className="flex flex-col gap-1.5 mt-3">
+                <Button variant="link" size="sm" className="text-sm text-muted-foreground hover:text-primary h-auto p-0 justify-start" asChild>
                   <Link to="/destinations">
-                    Add a streaming destination
+                    Manage destinations
                     <ArrowUpRight className="h-3 w-3 ml-1" />
                   </Link>
                 </Button>
-              )}
+              </div>
             </CardContent>
           </Card>
         </div>

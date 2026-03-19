@@ -43,7 +43,6 @@ func runServe() {
 		ScreenHeight: envOrDefault("SCREEN_HEIGHT", "720"),
 		ContentRoot:  envOrDefault("CONTENT_ROOT", "/data/content"),
 		SyncDir:      envOrDefault("SYNC_DIR", "/data/content/sync"),
-		HLSDir:       envOrDefault("HLS_DIR", "/tmp/hls"),
 		CDPHost:      "localhost",
 		CDPPort:      envOrDefault("CDP_PORT", "9222"),
 		R2Bucket:     os.Getenv("R2_BUCKET"),

@@ -8,50 +8,21 @@ import (
 	"net"
 	"net/http"
 	"net/http/httputil"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
-
-	"github.com/lib/pq"
 )
 
 // --- Database helpers for live streaming ---
 
-// dbLookupStageByStreamKey finds a stage by its stream key.
-func dbLookupStageByStreamKey(db *sql.DB, streamKey string) (*stageRow, error) {
-	var s stageRow
-	err := db.QueryRow(`
-		SELECT id, user_id, name, status, pod_name, pod_ip, destination_id, preview_token, provider, runpod_pod_id, sidecar_url, gpu_node_name, capabilities, created_at, updated_at, stream_key, slug, stream_title, stream_category
-		FROM stages WHERE stream_key=$1`, streamKey).Scan(
-		&s.ID, &s.UserID, &s.Name, &s.Status, &s.PodName, &s.PodIP,
-		&s.DestinationID, &s.PreviewToken, &s.Provider, &s.RunPodPodID,
-		&s.SidecarURL, &s.GPUNodeName, pq.Array(&s.Capabilities),
-		&s.CreatedAt, &s.UpdatedAt, &s.StreamKey, &s.Slug, &s.StreamTitle, &s.StreamCategory)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	return &s, nil
-}
-
 func dbLookupStageBySlug(db *sql.DB, slug string) (*stageRow, error) {
-	var s stageRow
-	err := db.QueryRow(`
-		SELECT id, user_id, name, status, pod_name, pod_ip, destination_id, preview_token, provider, runpod_pod_id, sidecar_url, gpu_node_name, capabilities, created_at, updated_at, stream_key, slug, stream_title, stream_category
-		FROM stages WHERE slug=$1`, slug).Scan(
-		&s.ID, &s.UserID, &s.Name, &s.Status, &s.PodName, &s.PodIP,
-		&s.DestinationID, &s.PreviewToken, &s.Provider, &s.RunPodPodID,
-		&s.SidecarURL, &s.GPUNodeName, pq.Array(&s.Capabilities),
-		&s.CreatedAt, &s.UpdatedAt, &s.StreamKey, &s.Slug, &s.StreamTitle, &s.StreamCategory)
+	row := db.QueryRow(`SELECT `+stageColumns+` FROM stages WHERE slug=$1`, slug)
+	s, err := scanStage(row)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
-	if err != nil {
-		return nil, err
-	}
-	return &s, nil
+	return s, err
 }
 
 func dbCreateRTMPSession(db *sql.DB, stageID, userID, streamKey, clientIP, podIP string) error {
@@ -62,10 +33,10 @@ func dbCreateRTMPSession(db *sql.DB, stageID, userID, streamKey, clientIP, podIP
 	return err
 }
 
-func dbEndRTMPSession(db *sql.DB, streamKey string) error {
+func dbEndRTMPSession(db *sql.DB, stageID string) error {
 	_, err := db.Exec(`
 		UPDATE rtmp_sessions SET ended_at=NOW()
-		WHERE stream_key=$1 AND ended_at IS NULL`, streamKey)
+		WHERE stage_id=$1 AND ended_at IS NULL`, stageID)
 	return err
 }
 
@@ -100,11 +71,12 @@ func (m *Manager) getIngestPodIP(stageID string) string {
 // --- HTTP handlers for nginx-rtmp callbacks ---
 
 // handleOnPublish is called by nginx-rtmp when a publisher connects.
-// The publisher uses the stage's stream key as the RTMP stream name:
+// The publisher uses the stage ID as the RTMP stream name and passes
+// the stream key as a query param:
 //
-//	rtmp://ingest.dazzle.fm/live/<stream_key>
+//	rtmp://ingest.dazzle.fm/live/<stage_id>?key=<stream_key>
 //
-// nginx-rtmp POSTs form-encoded: name=<stream_key>&addr=<client_ip>&app=live
+// nginx-rtmp POSTs form-encoded: name=<stage_id>&args=key=<stream_key>&addr=<client_ip>&app=live
 // Return 200 to allow, non-200 to reject.
 func (m *Manager) handleOnPublish(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -116,10 +88,25 @@ func (m *Manager) handleOnPublish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	name := r.FormValue("name")
+	stageID := r.FormValue("name")
 	addr := r.FormValue("addr")
 
-	if name == "" {
+	if stageID == "" {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	// Extract stream key from args (nginx-rtmp passes query params here)
+	args := r.FormValue("args")
+	var streamKey string
+	for _, part := range strings.Split(args, "&") {
+		if strings.HasPrefix(part, "key=") {
+			streamKey = strings.TrimPrefix(part, "key=")
+			break
+		}
+	}
+	if streamKey == "" {
+		log.Printf("INFO: rtmp on_publish rejected %s from %s (no stream key)", stageID, addr)
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -129,14 +116,15 @@ func (m *Manager) handleOnPublish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stage, err := dbLookupStageByStreamKey(m.db, name)
+	// Validate: look up the stage and verify the stream key matches
+	stage, err := dbGetStage(m.db, stageID)
 	if err != nil {
 		log.Printf("WARN: rtmp on_publish lookup error: %v", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
-	if stage == nil {
-		log.Printf("INFO: rtmp on_publish rejected unknown stream key from %s", addr)
+	if stage == nil || !stage.StreamKey.Valid || stage.StreamKey.String != streamKey {
+		log.Printf("INFO: rtmp on_publish rejected %s from %s (invalid key)", stageID, addr)
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -145,19 +133,20 @@ func (m *Manager) handleOnPublish(w http.ResponseWriter, r *http.Request) {
 	// HLS proxy can route directly to the correct pod.
 	podIP, _, _ := net.SplitHostPort(r.RemoteAddr)
 
-	if err := dbCreateRTMPSession(m.db, stage.ID, stage.UserID, name, addr, podIP); err != nil {
+	if err := dbCreateRTMPSession(m.db, stageID, stage.UserID, stageID, addr, podIP); err != nil {
 		log.Printf("WARN: rtmp on_publish failed to create session: %v", err)
 	}
 
 	// Cache the pod IP for fast HLS proxy lookups.
-	m.ingestPodCache.Add(stage.ID, podIP)
+	m.ingestPodCache.Add(stageID, podIP)
 
-	log.Printf("INFO: rtmp on_publish accepted stream for stage %s from %s (ingest pod %s)", stage.ID, addr, podIP)
+	log.Printf("INFO: rtmp on_publish accepted stream for stage %s from %s (ingest pod %s)", stageID, addr, podIP)
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprint(w, "ok")
 }
 
 // handleOnPublishDone is called by nginx-rtmp when a publisher disconnects.
+// name is the stage ID (the RTMP stream name).
 func (m *Manager) handleOnPublishDone(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -168,21 +157,18 @@ func (m *Manager) handleOnPublishDone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	name := r.FormValue("name")
-	if name == "" {
+	stageID := r.FormValue("name")
+	if stageID == "" {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 
 	if m.db != nil {
-		// Look up stage before ending session so we can evict the cache.
-		if stage, err := dbLookupStageByStreamKey(m.db, name); err == nil && stage != nil {
-			m.ingestPodCache.Remove(stage.ID)
-		}
-		if err := dbEndRTMPSession(m.db, name); err != nil {
-			log.Printf("WARN: rtmp on_publish_done failed to end session: %v", err)
+		m.ingestPodCache.Remove(stageID)
+		if err := dbEndRTMPSession(m.db, stageID); err != nil {
+			log.Printf("WARN: rtmp on_publish_done failed to end session for stage %s: %v", stageID, err)
 		} else {
-			log.Printf("INFO: rtmp on_publish_done ended session for key %s", maskStreamKey(name))
+			log.Printf("INFO: rtmp on_publish_done ended session for stage %s", stageID)
 		}
 	}
 
@@ -191,7 +177,7 @@ func (m *Manager) handleOnPublishDone(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleWatchHLS proxies HLS for the public watch page.
-// When a stage is running, its HLS is publicly viewable without auth.
+// HLS is served from the ingest pod (nginx-rtmp), not the sidecar.
 // Route: /watch/{slug}/hls/{filename}
 func (m *Manager) handleWatchHLS(w http.ResponseWriter, r *http.Request) {
 	parts := strings.SplitN(strings.TrimPrefix(r.URL.Path, "/watch/"), "/", 3)
@@ -213,7 +199,7 @@ func (m *Manager) handleWatchHLS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Resolve slug → stage ID.
+	// Resolve slug → stage.
 	if m.db == nil {
 		http.Error(w, "service unavailable", http.StatusServiceUnavailable)
 		return
@@ -230,14 +216,21 @@ func (m *Manager) handleWatchHLS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	target := stageProxyTarget(stage)
-	proxy := httputil.NewSingleHostReverseProxy(target)
-	if target.Scheme == "https" && m.agentHTTPClient != nil && m.agentHTTPClient.Transport != nil {
-		proxy.Transport = m.agentHTTPClient.Transport
+	// Get the ingest pod IP for this stage's stream
+	ingestIP := m.getIngestPodIP(row.ID)
+	if ingestIP == "" {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "stream not yet available"})
+		return
 	}
-	r.URL.Path = "/_dz_9f7a3b1c/hls/" + filename
+
+	// Proxy from ingest pod: HLS is at /hls/<stage_id>/<filename>
+	// (the RTMP stream name is the stage ID, not the stream key)
+	proxyTarget, _ := url.Parse(fmt.Sprintf("http://%s:8080", ingestIP))
+	proxy := httputil.NewSingleHostReverseProxy(proxyTarget)
+
+	r.URL.Path = "/hls/" + row.ID + "/" + filename
 	r.URL.RawQuery = ""
-	r.Host = target.Host
+	r.Host = proxyTarget.Host
 	r.Header.Del("Authorization")
 
 	if strings.HasSuffix(filename, ".m3u8") {

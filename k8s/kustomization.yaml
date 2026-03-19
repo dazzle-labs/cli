@@ -13,7 +13,6 @@ resources:
   - ingest/deployment.yaml
   - ingest/service.yaml
   - ingest/pdb.yaml
-  - ingest/ingressroutetcp.yaml
   - networking/ingress.yaml
   - networking/cloudflare-middleware.yaml
   - networking/traefik-config.yaml

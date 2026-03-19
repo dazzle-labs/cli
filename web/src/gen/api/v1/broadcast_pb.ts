@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file api/v1/broadcast.proto.
  */
 export const file_api_v1_broadcast: GenFile = /*@__PURE__*/
-  fileDesc("ChZhcGkvdjEvYnJvYWRjYXN0LnByb3RvEglkYXp6bGUudjEiKQoVU3RhcnRCcm9hZGNhc3RSZXF1ZXN0EhAKCHN0YWdlX2lkGAEgASgJIhgKFlN0YXJ0QnJvYWRjYXN0UmVzcG9uc2UiKAoUU3RvcEJyb2FkY2FzdFJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkiFwoVU3RvcEJyb2FkY2FzdFJlc3BvbnNlIigKFEdldFN0cmVhbUluZm9SZXF1ZXN0EhAKCHN0YWdlX2lkGAEgASgJIkoKFUdldFN0cmVhbUluZm9SZXNwb25zZRINCgV0aXRsZRgBIAEoCRIQCghjYXRlZ29yeRgCIAEoCRIQCghwbGF0Zm9ybRgDIAEoCSI4ChVTZXRTdHJlYW1UaXRsZVJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSDQoFdGl0bGUYAiABKAkiJwoWU2V0U3RyZWFtVGl0bGVSZXNwb25zZRINCgV0aXRsZRgBIAEoCSI+ChhTZXRTdHJlYW1DYXRlZ29yeVJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSEAoIY2F0ZWdvcnkYAiABKAkiLQoZU2V0U3RyZWFtQ2F0ZWdvcnlSZXNwb25zZRIQCghjYXRlZ29yeRgBIAEoCSIxCg5HZXRDaGF0UmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRINCgVsaW1pdBgCIAEoBSJ4CgtDaGF0TWVzc2FnZRIKCgJpZBgBIAEoCRIOCgZhdXRob3IYAiABKAkSDAoEdGV4dBgDIAEoCRItCgl0aW1lc3RhbXAYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhAKCHBsYXRmb3JtGAUgASgJIjsKD0dldENoYXRSZXNwb25zZRIoCghtZXNzYWdlcxgBIAMoCzIWLmRhenpsZS52MS5DaGF0TWVzc2FnZSIxCg9TZW5kQ2hhdFJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSDAoEdGV4dBgCIAEoCSIkChBTZW5kQ2hhdFJlc3BvbnNlEhAKCHBsYXRmb3JtGAEgASgJMs8EChBCcm9hZGNhc3RTZXJ2aWNlElUKDlN0YXJ0QnJvYWRjYXN0EiAuZGF6emxlLnYxLlN0YXJ0QnJvYWRjYXN0UmVxdWVzdBohLmRhenpsZS52MS5TdGFydEJyb2FkY2FzdFJlc3BvbnNlElIKDVN0b3BCcm9hZGNhc3QSHy5kYXp6bGUudjEuU3RvcEJyb2FkY2FzdFJlcXVlc3QaIC5kYXp6bGUudjEuU3RvcEJyb2FkY2FzdFJlc3BvbnNlElIKDUdldFN0cmVhbUluZm8SHy5kYXp6bGUudjEuR2V0U3RyZWFtSW5mb1JlcXVlc3QaIC5kYXp6bGUudjEuR2V0U3RyZWFtSW5mb1Jlc3BvbnNlElUKDlNldFN0cmVhbVRpdGxlEiAuZGF6emxlLnYxLlNldFN0cmVhbVRpdGxlUmVxdWVzdBohLmRhenpsZS52MS5TZXRTdHJlYW1UaXRsZVJlc3BvbnNlEl4KEVNldFN0cmVhbUNhdGVnb3J5EiMuZGF6emxlLnYxLlNldFN0cmVhbUNhdGVnb3J5UmVxdWVzdBokLmRhenpsZS52MS5TZXRTdHJlYW1DYXRlZ29yeVJlc3BvbnNlEkAKB0dldENoYXQSGS5kYXp6bGUudjEuR2V0Q2hhdFJlcXVlc3QaGi5kYXp6bGUudjEuR2V0Q2hhdFJlc3BvbnNlEkMKCFNlbmRDaGF0EhouZGF6emxlLnYxLlNlbmRDaGF0UmVxdWVzdBobLmRhenpsZS52MS5TZW5kQ2hhdFJlc3BvbnNlQi1aK2dpdGh1Yi5jb20vZGF6emxlLWxhYnMvY2xpL2dlbi9hcGkvdjE7YXBpdjFiBnByb3RvMw", [file_google_protobuf_timestamp]);
+  fileDesc("ChZhcGkvdjEvYnJvYWRjYXN0LnByb3RvEglkYXp6bGUudjEiKQoVU3RhcnRCcm9hZGNhc3RSZXF1ZXN0EhAKCHN0YWdlX2lkGAEgASgJIhgKFlN0YXJ0QnJvYWRjYXN0UmVzcG9uc2UiKAoUU3RvcEJyb2FkY2FzdFJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkiFwoVU3RvcEJyb2FkY2FzdFJlc3BvbnNlIkAKFEdldFN0cmVhbUluZm9SZXF1ZXN0EhAKCHN0YWdlX2lkGAEgASgJEhYKDmRlc3RpbmF0aW9uX2lkGAIgASgJIkoKFUdldFN0cmVhbUluZm9SZXNwb25zZRINCgV0aXRsZRgBIAEoCRIQCghjYXRlZ29yeRgCIAEoCRIQCghwbGF0Zm9ybRgDIAEoCSJQChVTZXRTdHJlYW1UaXRsZVJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSDQoFdGl0bGUYAiABKAkSFgoOZGVzdGluYXRpb25faWQYAyABKAkiJwoWU2V0U3RyZWFtVGl0bGVSZXNwb25zZRINCgV0aXRsZRgBIAEoCSJWChhTZXRTdHJlYW1DYXRlZ29yeVJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSEAoIY2F0ZWdvcnkYAiABKAkSFgoOZGVzdGluYXRpb25faWQYAyABKAkiLQoZU2V0U3RyZWFtQ2F0ZWdvcnlSZXNwb25zZRIQCghjYXRlZ29yeRgBIAEoCSJJCg5HZXRDaGF0UmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRINCgVsaW1pdBgCIAEoBRIWCg5kZXN0aW5hdGlvbl9pZBgDIAEoCSJ4CgtDaGF0TWVzc2FnZRIKCgJpZBgBIAEoCRIOCgZhdXRob3IYAiABKAkSDAoEdGV4dBgDIAEoCRItCgl0aW1lc3RhbXAYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhAKCHBsYXRmb3JtGAUgASgJIjsKD0dldENoYXRSZXNwb25zZRIoCghtZXNzYWdlcxgBIAMoCzIWLmRhenpsZS52MS5DaGF0TWVzc2FnZSJJCg9TZW5kQ2hhdFJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSDAoEdGV4dBgCIAEoCRIWCg5kZXN0aW5hdGlvbl9pZBgDIAEoCSIkChBTZW5kQ2hhdFJlc3BvbnNlEhAKCHBsYXRmb3JtGAEgASgJMs8EChBCcm9hZGNhc3RTZXJ2aWNlElUKDlN0YXJ0QnJvYWRjYXN0EiAuZGF6emxlLnYxLlN0YXJ0QnJvYWRjYXN0UmVxdWVzdBohLmRhenpsZS52MS5TdGFydEJyb2FkY2FzdFJlc3BvbnNlElIKDVN0b3BCcm9hZGNhc3QSHy5kYXp6bGUudjEuU3RvcEJyb2FkY2FzdFJlcXVlc3QaIC5kYXp6bGUudjEuU3RvcEJyb2FkY2FzdFJlc3BvbnNlElIKDUdldFN0cmVhbUluZm8SHy5kYXp6bGUudjEuR2V0U3RyZWFtSW5mb1JlcXVlc3QaIC5kYXp6bGUudjEuR2V0U3RyZWFtSW5mb1Jlc3BvbnNlElUKDlNldFN0cmVhbVRpdGxlEiAuZGF6emxlLnYxLlNldFN0cmVhbVRpdGxlUmVxdWVzdBohLmRhenpsZS52MS5TZXRTdHJlYW1UaXRsZVJlc3BvbnNlEl4KEVNldFN0cmVhbUNhdGVnb3J5EiMuZGF6emxlLnYxLlNldFN0cmVhbUNhdGVnb3J5UmVxdWVzdBokLmRhenpsZS52MS5TZXRTdHJlYW1DYXRlZ29yeVJlc3BvbnNlEkAKB0dldENoYXQSGS5kYXp6bGUudjEuR2V0Q2hhdFJlcXVlc3QaGi5kYXp6bGUudjEuR2V0Q2hhdFJlc3BvbnNlEkMKCFNlbmRDaGF0EhouZGF6emxlLnYxLlNlbmRDaGF0UmVxdWVzdBobLmRhenpsZS52MS5TZW5kQ2hhdFJlc3BvbnNlQi1aK2dpdGh1Yi5jb20vZGF6emxlLWxhYnMvY2xpL2dlbi9hcGkvdjE7YXBpdjFiBnByb3RvMw", [file_google_protobuf_timestamp]);
 
 /**
  * @generated from message dazzle.v1.StartBroadcastRequest
@@ -82,6 +82,11 @@ export type GetStreamInfoRequest = Message<"dazzle.v1.GetStreamInfoRequest"> & {
    * @generated from field: string stage_id = 1;
    */
   stageId: string;
+
+  /**
+   * @generated from field: string destination_id = 2;
+   */
+  destinationId: string;
 };
 
 /**
@@ -131,6 +136,11 @@ export type SetStreamTitleRequest = Message<"dazzle.v1.SetStreamTitleRequest"> &
    * @generated from field: string title = 2;
    */
   title: string;
+
+  /**
+   * @generated from field: string destination_id = 3;
+   */
+  destinationId: string;
 };
 
 /**
@@ -170,6 +180,11 @@ export type SetStreamCategoryRequest = Message<"dazzle.v1.SetStreamCategoryReque
    * @generated from field: string category = 2;
    */
   category: string;
+
+  /**
+   * @generated from field: string destination_id = 3;
+   */
+  destinationId: string;
 };
 
 /**
@@ -201,6 +216,8 @@ export const SetStreamCategoryResponseSchema: GenMessage<SetStreamCategoryRespon
  */
 export type GetChatRequest = Message<"dazzle.v1.GetChatRequest"> & {
   /**
+   * UUID or slug
+   *
    * @generated from field: string stage_id = 1;
    */
   stageId: string;
@@ -209,6 +226,11 @@ export type GetChatRequest = Message<"dazzle.v1.GetChatRequest"> & {
    * @generated from field: int32 limit = 2;
    */
   limit: number;
+
+  /**
+   * @generated from field: string destination_id = 3;
+   */
+  destinationId: string;
 };
 
 /**
@@ -233,15 +255,11 @@ export type ChatMessage = Message<"dazzle.v1.ChatMessage"> & {
   author: string;
 
   /**
-   * named 'text' not 'message' to avoid proto/Go generator ambiguity
-   *
    * @generated from field: string text = 3;
    */
   text: string;
 
   /**
-   * typed Timestamp for unambiguous watch-mode filtering
-   *
    * @generated from field: google.protobuf.Timestamp timestamp = 4;
    */
   timestamp?: Timestamp;
@@ -289,6 +307,11 @@ export type SendChatRequest = Message<"dazzle.v1.SendChatRequest"> & {
    * @generated from field: string text = 2;
    */
   text: string;
+
+  /**
+   * @generated from field: string destination_id = 3;
+   */
+  destinationId: string;
 };
 
 /**
@@ -320,6 +343,9 @@ export const SendChatResponseSchema: GenMessage<SendChatResponse> = /*@__PURE__*
  */
 export const BroadcastService: GenService<{
   /**
+   * Deprecated: streaming starts automatically when a stage activates.
+   * These RPCs return Unimplemented. Use stage destinations instead.
+   *
    * @generated from rpc dazzle.v1.BroadcastService.StartBroadcast
    */
   startBroadcast: {

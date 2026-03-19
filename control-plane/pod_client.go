@@ -116,7 +116,8 @@ type StageStats struct {
 	DroppedFrames          int64
 	DroppedFramesRecent    int64
 	TotalBytes             int64
-	Broadcasting           bool
+	ActiveOutputs          int32
+	OutputNames            []string
 	BroadcastUptimeSeconds int64
 	StageUptimeSeconds     int64
 }
@@ -133,7 +134,8 @@ func (p *podClient) GetStats(stage *Stage) (*StageStats, error) {
 		DroppedFrames:          resp.Msg.DroppedFrames,
 		DroppedFramesRecent:    resp.Msg.DroppedFramesRecent,
 		TotalBytes:             resp.Msg.TotalBytes,
-		Broadcasting:           resp.Msg.Broadcasting,
+		ActiveOutputs:          resp.Msg.ActiveOutputs,
+		OutputNames:            resp.Msg.OutputNames,
 		BroadcastUptimeSeconds: resp.Msg.BroadcastUptimeSeconds,
 		StageUptimeSeconds:     resp.Msg.StageUptimeSeconds,
 	}, nil
@@ -205,24 +207,25 @@ func (p *podClient) SyncRefresh(stage *Stage) error {
 	return nil
 }
 
-// BroadcastStart starts the ffmpeg broadcast pipeline on the sidecar.
-func (p *podClient) BroadcastStart(stage *Stage, rtmpURL string) error {
-	client := sidecarv1connect.NewBroadcastPipelineServiceClient(p.httpClientForStage(stage), sidecarURLForStage(stage), p.connectOpts()...)
-	_, err := client.Start(context.Background(), connect.NewRequest(&sidecarv1.BroadcastStartRequest{
-		RtmpUrl: rtmpURL,
-	}))
-	if err != nil {
-		return fmt.Errorf("broadcast start: %w", err)
-	}
-	return nil
+// OutputTarget represents an RTMP output destination for the sidecar pipeline.
+type OutputTarget struct {
+	Name    string
+	RtmpURL string
 }
 
-// BroadcastStop stops the ffmpeg broadcast pipeline on the sidecar.
-func (p *podClient) BroadcastStop(stage *Stage) error {
-	client := sidecarv1connect.NewBroadcastPipelineServiceClient(p.httpClientForStage(stage), sidecarURLForStage(stage), p.connectOpts()...)
-	_, err := client.Stop(context.Background(), connect.NewRequest(&sidecarv1.BroadcastStopRequest{}))
+// SetOutputs updates the sidecar pipeline's RTMP output destinations.
+// Pass an empty slice to stop all outputs.
+func (p *podClient) SetOutputs(stage *Stage, outputs []OutputTarget) error {
+	client := sidecarv1connect.NewOutputPipelineServiceClient(p.httpClientForStage(stage), sidecarURLForStage(stage), p.connectOpts()...)
+	pbOutputs := make([]*sidecarv1.OutputTarget, len(outputs))
+	for i, o := range outputs {
+		pbOutputs[i] = &sidecarv1.OutputTarget{Name: o.Name, RtmpUrl: o.RtmpURL}
+	}
+	_, err := client.SetOutputs(context.Background(), connect.NewRequest(&sidecarv1.SetOutputsRequest{
+		Outputs: pbOutputs,
+	}))
 	if err != nil {
-		return fmt.Errorf("broadcast stop: %w", err)
+		return fmt.Errorf("set outputs: %w", err)
 	}
 	return nil
 }

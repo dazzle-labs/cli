@@ -10,13 +10,15 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file api/v1/runtime.proto.
  */
 export const file_api_v1_runtime: GenFile = /*@__PURE__*/
-  fileDesc("ChRhcGkvdjEvcnVudGltZS5wcm90bxIJZGF6emxlLnYxIkEKEEVtaXRFdmVudFJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSDQoFZXZlbnQYAiABKAkSDAoEZGF0YRgDIAEoCSIfChFFbWl0RXZlbnRSZXNwb25zZRIKCgJvaxgBIAEoCCIxCg5HZXRMb2dzUmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRINCgVsaW1pdBgCIAEoBSI9CghMb2dFbnRyeRINCgVsZXZlbBgBIAEoCRIPCgdtZXNzYWdlGAIgASgJEhEKCXRpbWVzdGFtcBgDIAEoCSI3Cg9HZXRMb2dzUmVzcG9uc2USJAoHZW50cmllcxgBIAMoCzITLmRhenpsZS52MS5Mb2dFbnRyeSIlChFTY3JlZW5zaG90UmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCSIjChJTY3JlZW5zaG90UmVzcG9uc2USDQoFaW1hZ2UYASABKAwilgEKD1N5bmNEaWZmUmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRI0CgVmaWxlcxgCIAMoCzIlLmRhenpsZS52MS5TeW5jRGlmZlJlcXVlc3QuRmlsZXNFbnRyeRINCgVlbnRyeRgDIAEoCRosCgpGaWxlc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiIAoQU3luY0RpZmZSZXNwb25zZRIMCgRuZWVkGAEgAygJIjIKD1N5bmNQdXNoUmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRINCgVjaHVuaxgCIAEoDCIzChBTeW5jUHVzaFJlc3BvbnNlEg4KBnN5bmNlZBgBIAEoBRIPCgdkZWxldGVkGAIgASgFIiIKDlJlZnJlc2hSZXF1ZXN0EhAKCHN0YWdlX2lkGAEgASgJIh0KD1JlZnJlc2hSZXNwb25zZRIKCgJvaxgBIAEoCCIoChRHZXRTdGFnZVN0YXRzUmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCSLjAQoVR2V0U3RhZ2VTdGF0c1Jlc3BvbnNlEhEKCXN0YWdlX2ZwcxgBIAEoARIVCg1icm9hZGNhc3RfZnBzGAIgASgBEhYKDmRyb3BwZWRfZnJhbWVzGAMgASgDEh0KFWRyb3BwZWRfZnJhbWVzX3JlY2VudBgEIAEoAxITCgt0b3RhbF9ieXRlcxgFIAEoAxIUCgxicm9hZGNhc3RpbmcYBiABKAgSIAoYYnJvYWRjYXN0X3VwdGltZV9zZWNvbmRzGAcgASgDEhwKFHN0YWdlX3VwdGltZV9zZWNvbmRzGAggASgDMocECg5SdW50aW1lU2VydmljZRJGCglFbWl0RXZlbnQSGy5kYXp6bGUudjEuRW1pdEV2ZW50UmVxdWVzdBocLmRhenpsZS52MS5FbWl0RXZlbnRSZXNwb25zZRJACgdHZXRMb2dzEhkuZGF6emxlLnYxLkdldExvZ3NSZXF1ZXN0GhouZGF6emxlLnYxLkdldExvZ3NSZXNwb25zZRJSCg1HZXRTdGFnZVN0YXRzEh8uZGF6emxlLnYxLkdldFN0YWdlU3RhdHNSZXF1ZXN0GiAuZGF6emxlLnYxLkdldFN0YWdlU3RhdHNSZXNwb25zZRJJCgpTY3JlZW5zaG90EhwuZGF6emxlLnYxLlNjcmVlbnNob3RSZXF1ZXN0Gh0uZGF6emxlLnYxLlNjcmVlbnNob3RSZXNwb25zZRJDCghTeW5jRGlmZhIaLmRhenpsZS52MS5TeW5jRGlmZlJlcXVlc3QaGy5kYXp6bGUudjEuU3luY0RpZmZSZXNwb25zZRJFCghTeW5jUHVzaBIaLmRhenpsZS52MS5TeW5jUHVzaFJlcXVlc3QaGy5kYXp6bGUudjEuU3luY1B1c2hSZXNwb25zZSgBEkAKB1JlZnJlc2gSGS5kYXp6bGUudjEuUmVmcmVzaFJlcXVlc3QaGi5kYXp6bGUudjEuUmVmcmVzaFJlc3BvbnNlQi1aK2dpdGh1Yi5jb20vZGF6emxlLWxhYnMvY2xpL2dlbi9hcGkvdjE7YXBpdjFiBnByb3RvMw");
+  fileDesc("ChRhcGkvdjEvcnVudGltZS5wcm90bxIJZGF6emxlLnYxIkEKEEVtaXRFdmVudFJlcXVlc3QSEAoIc3RhZ2VfaWQYASABKAkSDQoFZXZlbnQYAiABKAkSDAoEZGF0YRgDIAEoCSIfChFFbWl0RXZlbnRSZXNwb25zZRIKCgJvaxgBIAEoCCIxCg5HZXRMb2dzUmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRINCgVsaW1pdBgCIAEoBSI9CghMb2dFbnRyeRINCgVsZXZlbBgBIAEoCRIPCgdtZXNzYWdlGAIgASgJEhEKCXRpbWVzdGFtcBgDIAEoCSI3Cg9HZXRMb2dzUmVzcG9uc2USJAoHZW50cmllcxgBIAMoCzITLmRhenpsZS52MS5Mb2dFbnRyeSIlChFTY3JlZW5zaG90UmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCSIjChJTY3JlZW5zaG90UmVzcG9uc2USDQoFaW1hZ2UYASABKAwilgEKD1N5bmNEaWZmUmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRI0CgVmaWxlcxgCIAMoCzIlLmRhenpsZS52MS5TeW5jRGlmZlJlcXVlc3QuRmlsZXNFbnRyeRINCgVlbnRyeRgDIAEoCRosCgpGaWxlc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiIAoQU3luY0RpZmZSZXNwb25zZRIMCgRuZWVkGAEgAygJIjIKD1N5bmNQdXNoUmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRINCgVjaHVuaxgCIAEoDCIzChBTeW5jUHVzaFJlc3BvbnNlEg4KBnN5bmNlZBgBIAEoBRIPCgdkZWxldGVkGAIgASgFIiIKDlJlZnJlc2hSZXF1ZXN0EhAKCHN0YWdlX2lkGAEgASgJIh0KD1JlZnJlc2hSZXNwb25zZRIKCgJvaxgBIAEoCCIoChRHZXRTdGFnZVN0YXRzUmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCSKRAgoVR2V0U3RhZ2VTdGF0c1Jlc3BvbnNlEhEKCXN0YWdlX2ZwcxgBIAEoARIVCg1icm9hZGNhc3RfZnBzGAIgASgBEhYKDmRyb3BwZWRfZnJhbWVzGAMgASgDEh0KFWRyb3BwZWRfZnJhbWVzX3JlY2VudBgEIAEoAxITCgt0b3RhbF9ieXRlcxgFIAEoAxIUCgxicm9hZGNhc3RpbmcYBiABKAgSIAoYYnJvYWRjYXN0X3VwdGltZV9zZWNvbmRzGAcgASgDEhwKFHN0YWdlX3VwdGltZV9zZWNvbmRzGAggASgDEhYKDmFjdGl2ZV9vdXRwdXRzGAkgASgFEhQKDG91dHB1dF9uYW1lcxgKIAMoCTKHBAoOUnVudGltZVNlcnZpY2USRgoJRW1pdEV2ZW50EhsuZGF6emxlLnYxLkVtaXRFdmVudFJlcXVlc3QaHC5kYXp6bGUudjEuRW1pdEV2ZW50UmVzcG9uc2USQAoHR2V0TG9ncxIZLmRhenpsZS52MS5HZXRMb2dzUmVxdWVzdBoaLmRhenpsZS52MS5HZXRMb2dzUmVzcG9uc2USUgoNR2V0U3RhZ2VTdGF0cxIfLmRhenpsZS52MS5HZXRTdGFnZVN0YXRzUmVxdWVzdBogLmRhenpsZS52MS5HZXRTdGFnZVN0YXRzUmVzcG9uc2USSQoKU2NyZWVuc2hvdBIcLmRhenpsZS52MS5TY3JlZW5zaG90UmVxdWVzdBodLmRhenpsZS52MS5TY3JlZW5zaG90UmVzcG9uc2USQwoIU3luY0RpZmYSGi5kYXp6bGUudjEuU3luY0RpZmZSZXF1ZXN0GhsuZGF6emxlLnYxLlN5bmNEaWZmUmVzcG9uc2USRQoIU3luY1B1c2gSGi5kYXp6bGUudjEuU3luY1B1c2hSZXF1ZXN0GhsuZGF6emxlLnYxLlN5bmNQdXNoUmVzcG9uc2UoARJACgdSZWZyZXNoEhkuZGF6emxlLnYxLlJlZnJlc2hSZXF1ZXN0GhouZGF6emxlLnYxLlJlZnJlc2hSZXNwb25zZUItWitnaXRodWIuY29tL2RhenpsZS1sYWJzL2NsaS9nZW4vYXBpL3YxO2FwaXYxYgZwcm90bzM");
 
 /**
  * @generated from message dazzle.v1.EmitEventRequest
  */
 export type EmitEventRequest = Message<"dazzle.v1.EmitEventRequest"> & {
   /**
+   * UUID or slug
+   *
    * @generated from field: string stage_id = 1;
    */
   stageId: string;
@@ -61,6 +63,8 @@ export const EmitEventResponseSchema: GenMessage<EmitEventResponse> = /*@__PURE_
  */
 export type GetLogsRequest = Message<"dazzle.v1.GetLogsRequest"> & {
   /**
+   * UUID or slug
+   *
    * @generated from field: string stage_id = 1;
    */
   stageId: string;
@@ -127,6 +131,8 @@ export const GetLogsResponseSchema: GenMessage<GetLogsResponse> = /*@__PURE__*/
  */
 export type ScreenshotRequest = Message<"dazzle.v1.ScreenshotRequest"> & {
   /**
+   * UUID or slug
+   *
    * @generated from field: string stage_id = 1;
    */
   stageId: string;
@@ -161,6 +167,8 @@ export const ScreenshotResponseSchema: GenMessage<ScreenshotResponse> = /*@__PUR
  */
 export type SyncDiffRequest = Message<"dazzle.v1.SyncDiffRequest"> & {
   /**
+   * UUID or slug
+   *
    * @generated from field: string stage_id = 1;
    */
   stageId: string;
@@ -211,6 +219,8 @@ export const SyncDiffResponseSchema: GenMessage<SyncDiffResponse> = /*@__PURE__*
  */
 export type SyncPushRequest = Message<"dazzle.v1.SyncPushRequest"> & {
   /**
+   * UUID or slug
+   *
    * @generated from field: string stage_id = 1;
    */
   stageId: string;
@@ -257,6 +267,8 @@ export const SyncPushResponseSchema: GenMessage<SyncPushResponse> = /*@__PURE__*
  */
 export type RefreshRequest = Message<"dazzle.v1.RefreshRequest"> & {
   /**
+   * UUID or slug
+   *
    * @generated from field: string stage_id = 1;
    */
   stageId: string;
@@ -291,6 +303,8 @@ export const RefreshResponseSchema: GenMessage<RefreshResponse> = /*@__PURE__*/
  */
 export type GetStageStatsRequest = Message<"dazzle.v1.GetStageStatsRequest"> & {
   /**
+   * UUID or slug
+   *
    * @generated from field: string stage_id = 1;
    */
   stageId: string;
@@ -308,15 +322,11 @@ export const GetStageStatsRequestSchema: GenMessage<GetStageStatsRequest> = /*@_
  */
 export type GetStageStatsResponse = Message<"dazzle.v1.GetStageStatsResponse"> & {
   /**
-   * Browser rendering FPS (from Chrome rAF timing)
-   *
    * @generated from field: double stage_fps = 1;
    */
   stageFps: number;
 
   /**
-   * Encoder output FPS (from ffmpeg)
-   *
    * @generated from field: double broadcast_fps = 2;
    */
   broadcastFps: number;
@@ -337,6 +347,8 @@ export type GetStageStatsResponse = Message<"dazzle.v1.GetStageStatsResponse"> &
   totalBytes: bigint;
 
   /**
+   * deprecated — true when active_outputs > 0
+   *
    * @generated from field: bool broadcasting = 6;
    */
   broadcasting: boolean;
@@ -350,6 +362,20 @@ export type GetStageStatsResponse = Message<"dazzle.v1.GetStageStatsResponse"> &
    * @generated from field: int64 stage_uptime_seconds = 8;
    */
   stageUptimeSeconds: bigint;
+
+  /**
+   * number of active RTMP destinations
+   *
+   * @generated from field: int32 active_outputs = 9;
+   */
+  activeOutputs: number;
+
+  /**
+   * names of active destinations
+   *
+   * @generated from field: repeated string output_names = 10;
+   */
+  outputNames: string[];
 };
 
 /**

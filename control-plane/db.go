@@ -366,6 +366,20 @@ type stageRow struct {
 	StreamCategory  sql.NullString
 }
 
+const stageColumns = `id, user_id, name, status, pod_name, pod_ip, destination_id, preview_token, provider, runpod_pod_id, sidecar_url, gpu_node_name, capabilities, created_at, updated_at, stream_key, slug, stream_title, stream_category`
+
+func scanStage(scanner interface{ Scan(...any) error }) (*stageRow, error) {
+	var s stageRow
+	err := scanner.Scan(&s.ID, &s.UserID, &s.Name, &s.Status, &s.PodName, &s.PodIP,
+		&s.DestinationID, &s.PreviewToken, &s.Provider, &s.RunPodPodID,
+		&s.SidecarURL, &s.GPUNodeName, pq.Array(&s.Capabilities),
+		&s.CreatedAt, &s.UpdatedAt, &s.StreamKey, &s.Slug, &s.StreamTitle, &s.StreamCategory)
+	if err != nil {
+		return nil, err
+	}
+	return &s, nil
+}
+
 func dbCreateStage(db *sql.DB, userID, name string, capabilities []string) (string, string, error) {
 	stageID := uuid.Must(uuid.NewV7()).String()
 	token := "dpt_" + strings.ReplaceAll(uuid.Must(uuid.NewV7()).String(), "-", "")
@@ -384,7 +398,7 @@ func dbCreateStage(db *sql.DB, userID, name string, capabilities []string) (stri
 
 func dbListStages(db *sql.DB, userID string) ([]stageRow, error) {
 	rows, err := db.Query(`
-		SELECT id, user_id, name, status, pod_name, pod_ip, destination_id, preview_token, provider, runpod_pod_id, sidecar_url, gpu_node_name, capabilities, created_at, updated_at, stream_key, slug, stream_title, stream_category
+		SELECT `+stageColumns+`
 		FROM stages WHERE user_id=$1 ORDER BY created_at`, userID)
 	if err != nil {
 		return nil, err
@@ -392,30 +406,32 @@ func dbListStages(db *sql.DB, userID string) ([]stageRow, error) {
 	defer rows.Close()
 	var stages []stageRow
 	for rows.Next() {
-		var s stageRow
-		if err := rows.Scan(&s.ID, &s.UserID, &s.Name, &s.Status, &s.PodName, &s.PodIP, &s.DestinationID, &s.PreviewToken, &s.Provider, &s.RunPodPodID, &s.SidecarURL, &s.GPUNodeName, pq.Array(&s.Capabilities), &s.CreatedAt, &s.UpdatedAt, &s.StreamKey, &s.Slug, &s.StreamTitle, &s.StreamCategory); err != nil {
+		s, err := scanStage(rows)
+		if err != nil {
 			return nil, err
 		}
-		stages = append(stages, s)
+		stages = append(stages, *s)
 	}
 	return stages, rows.Err()
 }
 
 func dbGetStage(db *sql.DB, id string) (*stageRow, error) {
-	var s stageRow
-	err := db.QueryRow(`
-		SELECT id, user_id, name, status, pod_name, pod_ip, destination_id, preview_token, provider, runpod_pod_id, sidecar_url, gpu_node_name, capabilities, created_at, updated_at, stream_key, slug, stream_title, stream_category
-		FROM stages WHERE id=$1`, id).Scan(&s.ID, &s.UserID, &s.Name, &s.Status, &s.PodName, &s.PodIP, &s.DestinationID, &s.PreviewToken, &s.Provider, &s.RunPodPodID, &s.SidecarURL, &s.GPUNodeName, pq.Array(&s.Capabilities), &s.CreatedAt, &s.UpdatedAt, &s.StreamKey, &s.Slug, &s.StreamTitle, &s.StreamCategory)
+	row := db.QueryRow(`
+		SELECT `+stageColumns+`
+		FROM stages WHERE id=$1`, id)
+	s, err := scanStage(row)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
-	if err != nil {
-		return nil, err
-	}
-	return &s, nil
+	return s, err
 }
 
 func dbDeleteStage(db *sql.DB, id, userID string) error {
+	// Clean up Dazzle stream_destinations before deleting the stage
+	// (stage_destinations rows are cleaned up by ON DELETE CASCADE,
+	// but the stream_destinations rows for Dazzle need explicit cleanup)
+	dbDeleteDazzleDestinationsForStage(db, id)
+
 	res, err := db.Exec("DELETE FROM stages WHERE id=$1 AND user_id=$2", id, userID)
 	if err != nil {
 		return err
@@ -434,35 +450,20 @@ func dbUpdateStageStatus(db *sql.DB, id, status, podName, podIP string) error {
 	return err
 }
 
-func dbSetStageDestination(db *sql.DB, stageID, userID, destinationID string) error {
-	destVal := sql.NullString{String: destinationID, Valid: destinationID != ""}
-	res, err := db.Exec(`
-		UPDATE stages SET destination_id=$3, updated_at=NOW()
-		WHERE id=$1 AND user_id=$2`, stageID, userID, destVal)
-	if err != nil {
-		return err
-	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
-		return fmt.Errorf("stage not found")
-	}
-	return nil
-}
-
 func dbRenameStage(db *sql.DB, id, userID, name string) (*stageRow, error) {
-	var s stageRow
-	err := db.QueryRow(`
+	row := db.QueryRow(`
 		UPDATE stages SET name=$3, updated_at=NOW()
 		WHERE id=$1 AND user_id=$2
-		RETURNING id, user_id, name, status, pod_name, pod_ip, destination_id, preview_token, provider, runpod_pod_id, sidecar_url, gpu_node_name, capabilities, created_at, updated_at, stream_key, slug, stream_title, stream_category`,
-		id, userID, name).Scan(&s.ID, &s.UserID, &s.Name, &s.Status, &s.PodName, &s.PodIP, &s.DestinationID, &s.PreviewToken, &s.Provider, &s.RunPodPodID, &s.SidecarURL, &s.GPUNodeName, pq.Array(&s.Capabilities), &s.CreatedAt, &s.UpdatedAt, &s.StreamKey, &s.Slug, &s.StreamTitle, &s.StreamCategory)
+		RETURNING `+stageColumns,
+		id, userID, name)
+	s, err := scanStage(row)
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("stage not found")
 	}
 	if err != nil {
 		return nil, err
 	}
-	return &s, nil
+	return s, nil
 }
 
 func dbUpdateStageProvider(db *sql.DB, id, provider, runpodPodID, sidecarURL string) error {
@@ -479,6 +480,98 @@ func dbUpdateStageProvider(db *sql.DB, id, provider, runpodPodID, sidecarURL str
 func dbSetPreviewToken(db *sql.DB, stageID, token string) error {
 	_, err := db.Exec(`UPDATE stages SET preview_token=$2, updated_at=NOW() WHERE id=$1`, stageID, token)
 	return err
+}
+
+// --- Stage destinations (multi-destination support) ---
+
+type stageDestJoinRow struct {
+	ID               string
+	StageID          string
+	DestinationID    string
+	Enabled          bool
+	Name             string
+	Platform         string
+	PlatformUsername string
+	RtmpURL          string
+	StreamKey        string // encrypted
+}
+
+func dbListStageDestinations(db *sql.DB, stageID string) ([]stageDestJoinRow, error) {
+	rows, err := db.Query(`
+		SELECT sd.id, sd.stage_id, sd.destination_id, sd.enabled,
+		       d.name, d.platform, d.platform_username, d.rtmp_url, d.stream_key
+		FROM stage_destinations sd
+		JOIN stream_destinations d ON sd.destination_id = d.id
+		WHERE sd.stage_id = $1
+		ORDER BY sd.created_at`, stageID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var result []stageDestJoinRow
+	for rows.Next() {
+		var r stageDestJoinRow
+		if err := rows.Scan(&r.ID, &r.StageID, &r.DestinationID, &r.Enabled,
+			&r.Name, &r.Platform, &r.PlatformUsername, &r.RtmpURL, &r.StreamKey); err != nil {
+			return nil, err
+		}
+		result = append(result, r)
+	}
+	return result, rows.Err()
+}
+
+func dbAddStageDestination(db *sql.DB, stageID, destinationID string) (string, error) {
+	id := "sd_" + strings.ReplaceAll(uuid.Must(uuid.NewV7()).String(), "-", "")
+	_, err := db.Exec(`
+		INSERT INTO stage_destinations (id, stage_id, destination_id, enabled)
+		VALUES ($1, $2, $3, true)
+		ON CONFLICT (stage_id, destination_id) DO UPDATE SET enabled = true`,
+		id, stageID, destinationID)
+	return id, err
+}
+
+func dbRemoveStageDestination(db *sql.DB, stageID, destinationID string) error {
+	_, err := db.Exec(`DELETE FROM stage_destinations WHERE stage_id = $1 AND destination_id = $2`,
+		stageID, destinationID)
+	return err
+}
+
+func dbSetStageDestinationEnabled(db *sql.DB, stageID, destinationID string, enabled bool) error {
+	_, err := db.Exec(`UPDATE stage_destinations SET enabled = $3 WHERE stage_id = $1 AND destination_id = $2`,
+		stageID, destinationID, enabled)
+	return err
+}
+
+// dbCreateDazzleDestinationForStage creates a Dazzle destination for a specific stage
+// and links it in stage_destinations. The destination is deleted when the stage is deleted
+// (via ON DELETE CASCADE on stage_destinations + explicit cleanup).
+func dbCreateDazzleDestinationForStage(db *sql.DB, stageID, userID string) error {
+	destID := "dz_" + strings.ReplaceAll(uuid.Must(uuid.NewV7()).String(), "-", "")
+	sdID := "sd_" + strings.ReplaceAll(uuid.Must(uuid.NewV7()).String(), "-", "")
+
+	_, err := db.Exec(`
+		INSERT INTO stream_destinations (id, user_id, name, platform, rtmp_url, stream_key, created_at, updated_at)
+		VALUES ($1, $2, 'Dazzle', 'dazzle', '', '', NOW(), NOW())`, destID, userID)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec(`
+		INSERT INTO stage_destinations (id, stage_id, destination_id, enabled)
+		VALUES ($1, $2, $3, true)`, sdID, stageID, destID)
+	return err
+}
+
+// dbDeleteDazzleDestinationsForStage removes the Dazzle stream_destinations rows
+// associated with a stage (the stage_destinations join rows are already cleaned
+// up by ON DELETE CASCADE when the stage is deleted).
+func dbDeleteDazzleDestinationsForStage(db *sql.DB, stageID string) {
+	db.Exec(`
+		DELETE FROM stream_destinations WHERE id IN (
+			SELECT sd.destination_id FROM stage_destinations sd
+			JOIN stream_destinations d ON sd.destination_id = d.id
+			WHERE sd.stage_id = $1 AND d.platform = 'dazzle'
+		)`, stageID)
 }
 
 // --- Encryption helpers ---

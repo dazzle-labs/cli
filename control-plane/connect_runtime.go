@@ -226,9 +226,11 @@ func (s *runtimeServer) GetStageStats(ctx context.Context, req *connect.Request[
 		DroppedFrames:          stats.DroppedFrames,
 		DroppedFramesRecent:    stats.DroppedFramesRecent,
 		TotalBytes:             stats.TotalBytes,
-		Broadcasting:           stats.Broadcasting,
+		Broadcasting:           stats.ActiveOutputs > 0, // backwards compat
 		BroadcastUptimeSeconds: stats.BroadcastUptimeSeconds,
 		StageUptimeSeconds:     stats.StageUptimeSeconds,
+		ActiveOutputs:          stats.ActiveOutputs,
+		OutputNames:            stats.OutputNames,
 	}), nil
 }
 

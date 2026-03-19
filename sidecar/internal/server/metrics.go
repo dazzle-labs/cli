@@ -19,9 +19,9 @@ var (
 		Name: "pipeline_dropped_frames_total",
 		Help: "Total dropped frames",
 	})
-	pipelineBroadcasting = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "pipeline_broadcasting",
-		Help: "Whether RTMP broadcast is active (0 or 1)",
+	pipelineActiveOutputs = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "pipeline_active_outputs",
+		Help: "Number of active RTMP output destinations",
 	})
 	pipelineOutputBytes = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "pipeline_output_bytes_total",
@@ -37,7 +37,7 @@ func init() {
 	registry.MustRegister(
 		pipelineFPS,
 		pipelineDroppedFrames,
-		pipelineBroadcasting,
+		pipelineActiveOutputs,
 		pipelineOutputBytes,
 		pipelineSpeed,
 	)
@@ -55,9 +55,5 @@ func UpdatePipelineStats(stats pipeline.Stats) {
 	pipelineDroppedFrames.Set(float64(stats.DroppedFrames))
 	pipelineOutputBytes.Set(float64(stats.TotalBytes))
 	pipelineSpeed.Set(stats.Speed)
-	if stats.Broadcasting {
-		pipelineBroadcasting.Set(1)
-	} else {
-		pipelineBroadcasting.Set(0)
-	}
+	pipelineActiveOutputs.Set(float64(stats.ActiveOutputs))
 }

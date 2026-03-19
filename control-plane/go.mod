@@ -8,7 +8,7 @@ require (
 	connectrpc.com/connect v1.19.1
 	github.com/browser-streamer/sidecar v0.0.0
 	github.com/clerk/clerk-sdk-go/v2 v2.5.1
-	github.com/dazzle-labs/cli v0.1.0-beta.36.0.20260319171406-03fa0e5c6c0a
+	github.com/dazzle-labs/cli v0.1.0-beta.36.0.20260319175056-41de61511583
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/lib/pq v1.11.2

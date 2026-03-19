@@ -27,8 +27,6 @@ export const cli: Record<string, CLICommand> = {
   stageSyncWatch:     cmd("stage sync", "./my-stage --watch"),
   stageScreenshot:    cmd("stage screenshot"),
   stageScreenshotOut: cmd("stage screenshot", "-o preview.png"),
-  stageBroadcastOn:   cmd("stage broadcast on"),
-  stageBroadcastOff:  cmd("stage broadcast off"),
   stageStatus:        cmd("stage status"),
   stageStats:         cmd("stage stats"),
   stageRefresh:       cmd("stage refresh"),
@@ -39,7 +37,7 @@ export const cli: Record<string, CLICommand> = {
   help:               cmd("--help"),
   stageHelp:          cmd("stage --help"),
   stageSyncHelp:      cmd("stage sync --help"),
-  broadcastHelp:      cmd("stage broadcast --help"),
+  broadcastHelp:      cmd("stage broadcast --help"),  // kept for info/title/category subcommands
   version:            cmd("version"),
   guide:              cmd("guide"),
 };

@@ -620,9 +620,10 @@ type GetStatsResponse struct {
 	DroppedFrames          int64                  `protobuf:"varint,3,opt,name=dropped_frames,json=droppedFrames,proto3" json:"dropped_frames,omitempty"`
 	DroppedFramesRecent    int64                  `protobuf:"varint,4,opt,name=dropped_frames_recent,json=droppedFramesRecent,proto3" json:"dropped_frames_recent,omitempty"` // Last 60 seconds
 	TotalBytes             int64                  `protobuf:"varint,5,opt,name=total_bytes,json=totalBytes,proto3" json:"total_bytes,omitempty"`
-	Broadcasting           bool                   `protobuf:"varint,6,opt,name=broadcasting,proto3" json:"broadcasting,omitempty"`
+	ActiveOutputs          int32                  `protobuf:"varint,6,opt,name=active_outputs,json=activeOutputs,proto3" json:"active_outputs,omitempty"` // Number of active RTMP output destinations
 	BroadcastUptimeSeconds int64                  `protobuf:"varint,7,opt,name=broadcast_uptime_seconds,json=broadcastUptimeSeconds,proto3" json:"broadcast_uptime_seconds,omitempty"`
 	StageUptimeSeconds     int64                  `protobuf:"varint,8,opt,name=stage_uptime_seconds,json=stageUptimeSeconds,proto3" json:"stage_uptime_seconds,omitempty"`
+	OutputNames            []string               `protobuf:"bytes,9,rep,name=output_names,json=outputNames,proto3" json:"output_names,omitempty"` // Names of active output destinations
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -692,11 +693,11 @@ func (x *GetStatsResponse) GetTotalBytes() int64 {
 	return 0
 }
 
-func (x *GetStatsResponse) GetBroadcasting() bool {
+func (x *GetStatsResponse) GetActiveOutputs() int32 {
 	if x != nil {
-		return x.Broadcasting
+		return x.ActiveOutputs
 	}
-	return false
+	return 0
 }
 
 func (x *GetStatsResponse) GetBroadcastUptimeSeconds() int64 {
@@ -711,6 +712,13 @@ func (x *GetStatsResponse) GetStageUptimeSeconds() int64 {
 		return x.StageUptimeSeconds
 	}
 	return 0
+}
+
+func (x *GetStatsResponse) GetOutputNames() []string {
+	if x != nil {
+		return x.OutputNames
+	}
+	return nil
 }
 
 type NavigateRequest struct {
@@ -881,27 +889,28 @@ func (x *ScreenshotResponse) GetImage() []byte {
 	return nil
 }
 
-type BroadcastStartRequest struct {
+type OutputTarget struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	RtmpUrl       string                 `protobuf:"bytes,1,opt,name=rtmp_url,json=rtmpUrl,proto3" json:"rtmp_url,omitempty"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`                      // e.g. "dazzle", "twitch-myuser"
+	RtmpUrl       string                 `protobuf:"bytes,2,opt,name=rtmp_url,json=rtmpUrl,proto3" json:"rtmp_url,omitempty"` // full RTMP URL including stream key
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *BroadcastStartRequest) Reset() {
-	*x = BroadcastStartRequest{}
+func (x *OutputTarget) Reset() {
+	*x = OutputTarget{}
 	mi := &file_api_v1_sidecar_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *BroadcastStartRequest) String() string {
+func (x *OutputTarget) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*BroadcastStartRequest) ProtoMessage() {}
+func (*OutputTarget) ProtoMessage() {}
 
-func (x *BroadcastStartRequest) ProtoReflect() protoreflect.Message {
+func (x *OutputTarget) ProtoReflect() protoreflect.Message {
 	mi := &file_api_v1_sidecar_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -913,38 +922,46 @@ func (x *BroadcastStartRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use BroadcastStartRequest.ProtoReflect.Descriptor instead.
-func (*BroadcastStartRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use OutputTarget.ProtoReflect.Descriptor instead.
+func (*OutputTarget) Descriptor() ([]byte, []int) {
 	return file_api_v1_sidecar_proto_rawDescGZIP(), []int{17}
 }
 
-func (x *BroadcastStartRequest) GetRtmpUrl() string {
+func (x *OutputTarget) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *OutputTarget) GetRtmpUrl() string {
 	if x != nil {
 		return x.RtmpUrl
 	}
 	return ""
 }
 
-type BroadcastStartResponse struct {
+type SetOutputsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
+	Outputs       []*OutputTarget        `protobuf:"bytes,1,rep,name=outputs,proto3" json:"outputs,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *BroadcastStartResponse) Reset() {
-	*x = BroadcastStartResponse{}
+func (x *SetOutputsRequest) Reset() {
+	*x = SetOutputsRequest{}
 	mi := &file_api_v1_sidecar_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *BroadcastStartResponse) String() string {
+func (x *SetOutputsRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*BroadcastStartResponse) ProtoMessage() {}
+func (*SetOutputsRequest) ProtoMessage() {}
 
-func (x *BroadcastStartResponse) ProtoReflect() protoreflect.Message {
+func (x *SetOutputsRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_api_v1_sidecar_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -956,31 +973,38 @@ func (x *BroadcastStartResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use BroadcastStartResponse.ProtoReflect.Descriptor instead.
-func (*BroadcastStartResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use SetOutputsRequest.ProtoReflect.Descriptor instead.
+func (*SetOutputsRequest) Descriptor() ([]byte, []int) {
 	return file_api_v1_sidecar_proto_rawDescGZIP(), []int{18}
 }
 
-type BroadcastStopRequest struct {
+func (x *SetOutputsRequest) GetOutputs() []*OutputTarget {
+	if x != nil {
+		return x.Outputs
+	}
+	return nil
+}
+
+type SetOutputsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *BroadcastStopRequest) Reset() {
-	*x = BroadcastStopRequest{}
+func (x *SetOutputsResponse) Reset() {
+	*x = SetOutputsResponse{}
 	mi := &file_api_v1_sidecar_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *BroadcastStopRequest) String() string {
+func (x *SetOutputsResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*BroadcastStopRequest) ProtoMessage() {}
+func (*SetOutputsResponse) ProtoMessage() {}
 
-func (x *BroadcastStopRequest) ProtoReflect() protoreflect.Message {
+func (x *SetOutputsResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_api_v1_sidecar_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -992,45 +1016,9 @@ func (x *BroadcastStopRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use BroadcastStopRequest.ProtoReflect.Descriptor instead.
-func (*BroadcastStopRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use SetOutputsResponse.ProtoReflect.Descriptor instead.
+func (*SetOutputsResponse) Descriptor() ([]byte, []int) {
 	return file_api_v1_sidecar_proto_rawDescGZIP(), []int{19}
-}
-
-type BroadcastStopResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *BroadcastStopResponse) Reset() {
-	*x = BroadcastStopResponse{}
-	mi := &file_api_v1_sidecar_proto_msgTypes[20]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *BroadcastStopResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*BroadcastStopResponse) ProtoMessage() {}
-
-func (x *BroadcastStopResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_sidecar_proto_msgTypes[20]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use BroadcastStopResponse.ProtoReflect.Descriptor instead.
-func (*BroadcastStopResponse) Descriptor() ([]byte, []int) {
-	return file_api_v1_sidecar_proto_rawDescGZIP(), []int{20}
 }
 
 var File_api_v1_sidecar_proto protoreflect.FileDescriptor
@@ -1073,29 +1061,31 @@ const file_api_v1_sidecar_proto_rawDesc = "" +
 	"\x05count\x18\x01 \x01(\x05R\x05count\x12\x14\n" +
 	"\x05total\x18\x02 \x01(\x05R\x05total\x125\n" +
 	"\aentries\x18\x03 \x03(\v2\x1b.dazzle.sidecar.v1.LogEntryR\aentries\"\x11\n" +
-	"\x0fGetStatsRequest\"\xe0\x02\n" +
+	"\x0fGetStatsRequest\"\x86\x03\n" +
 	"\x10GetStatsResponse\x12\x1b\n" +
 	"\tstage_fps\x18\x01 \x01(\x01R\bstageFps\x12#\n" +
 	"\rbroadcast_fps\x18\x02 \x01(\x01R\fbroadcastFps\x12%\n" +
 	"\x0edropped_frames\x18\x03 \x01(\x03R\rdroppedFrames\x122\n" +
 	"\x15dropped_frames_recent\x18\x04 \x01(\x03R\x13droppedFramesRecent\x12\x1f\n" +
 	"\vtotal_bytes\x18\x05 \x01(\x03R\n" +
-	"totalBytes\x12\"\n" +
-	"\fbroadcasting\x18\x06 \x01(\bR\fbroadcasting\x128\n" +
+	"totalBytes\x12%\n" +
+	"\x0eactive_outputs\x18\x06 \x01(\x05R\ractiveOutputs\x128\n" +
 	"\x18broadcast_uptime_seconds\x18\a \x01(\x03R\x16broadcastUptimeSeconds\x120\n" +
-	"\x14stage_uptime_seconds\x18\b \x01(\x03R\x12stageUptimeSeconds\"#\n" +
+	"\x14stage_uptime_seconds\x18\b \x01(\x03R\x12stageUptimeSeconds\x12!\n" +
+	"\foutput_names\x18\t \x03(\tR\voutputNames\"#\n" +
 	"\x0fNavigateRequest\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\"\"\n" +
 	"\x10NavigateResponse\x12\x0e\n" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\"\x13\n" +
 	"\x11ScreenshotRequest\"*\n" +
 	"\x12ScreenshotResponse\x12\x14\n" +
-	"\x05image\x18\x01 \x01(\fR\x05image\"2\n" +
-	"\x15BroadcastStartRequest\x12\x19\n" +
-	"\brtmp_url\x18\x01 \x01(\tR\artmpUrl\"\x18\n" +
-	"\x16BroadcastStartResponse\"\x16\n" +
-	"\x14BroadcastStopRequest\"\x17\n" +
-	"\x15BroadcastStopResponse2\x8b\x02\n" +
+	"\x05image\x18\x01 \x01(\fR\x05image\"=\n" +
+	"\fOutputTarget\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x19\n" +
+	"\brtmp_url\x18\x02 \x01(\tR\artmpUrl\"N\n" +
+	"\x11SetOutputsRequest\x129\n" +
+	"\aoutputs\x18\x01 \x03(\v2\x1f.dazzle.sidecar.v1.OutputTargetR\aoutputs\"\x14\n" +
+	"\x12SetOutputsResponse2\x8b\x02\n" +
 	"\vSyncService\x12O\n" +
 	"\x04Diff\x12\".dazzle.sidecar.v1.SyncDiffRequest\x1a#.dazzle.sidecar.v1.SyncDiffResponse\x12Q\n" +
 	"\x04Push\x12\".dazzle.sidecar.v1.SyncPushRequest\x1a#.dazzle.sidecar.v1.SyncPushResponse(\x01\x12X\n" +
@@ -1106,10 +1096,10 @@ const file_api_v1_sidecar_proto_rawDesc = "" +
 	"\bGetStats\x12\".dazzle.sidecar.v1.GetStatsRequest\x1a#.dazzle.sidecar.v1.GetStatsResponse\x12S\n" +
 	"\bNavigate\x12\".dazzle.sidecar.v1.NavigateRequest\x1a#.dazzle.sidecar.v1.NavigateResponse\x12Y\n" +
 	"\n" +
-	"Screenshot\x12$.dazzle.sidecar.v1.ScreenshotRequest\x1a%.dazzle.sidecar.v1.ScreenshotResponse2\xd3\x01\n" +
-	"\x18BroadcastPipelineService\x12\\\n" +
-	"\x05Start\x12(.dazzle.sidecar.v1.BroadcastStartRequest\x1a).dazzle.sidecar.v1.BroadcastStartResponse\x12Y\n" +
-	"\x04Stop\x12'.dazzle.sidecar.v1.BroadcastStopRequest\x1a(.dazzle.sidecar.v1.BroadcastStopResponseB:Z8github.com/browser-streamer/sidecar/gen/api/v1;sidecarv1b\x06proto3"
+	"Screenshot\x12$.dazzle.sidecar.v1.ScreenshotRequest\x1a%.dazzle.sidecar.v1.ScreenshotResponse2r\n" +
+	"\x15OutputPipelineService\x12Y\n" +
+	"\n" +
+	"SetOutputs\x12$.dazzle.sidecar.v1.SetOutputsRequest\x1a%.dazzle.sidecar.v1.SetOutputsResponseB:Z8github.com/browser-streamer/sidecar/gen/api/v1;sidecarv1b\x06proto3"
 
 var (
 	file_api_v1_sidecar_proto_rawDescOnce sync.Once
@@ -1123,44 +1113,43 @@ func file_api_v1_sidecar_proto_rawDescGZIP() []byte {
 	return file_api_v1_sidecar_proto_rawDescData
 }
 
-var file_api_v1_sidecar_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
+var file_api_v1_sidecar_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
 var file_api_v1_sidecar_proto_goTypes = []any{
-	(*SyncDiffRequest)(nil),        // 0: dazzle.sidecar.v1.SyncDiffRequest
-	(*SyncDiffResponse)(nil),       // 1: dazzle.sidecar.v1.SyncDiffResponse
-	(*SyncPushRequest)(nil),        // 2: dazzle.sidecar.v1.SyncPushRequest
-	(*SyncPushResponse)(nil),       // 3: dazzle.sidecar.v1.SyncPushResponse
-	(*SyncRefreshRequest)(nil),     // 4: dazzle.sidecar.v1.SyncRefreshRequest
-	(*SyncRefreshResponse)(nil),    // 5: dazzle.sidecar.v1.SyncRefreshResponse
-	(*EmitEventRequest)(nil),       // 6: dazzle.sidecar.v1.EmitEventRequest
-	(*EmitEventResponse)(nil),      // 7: dazzle.sidecar.v1.EmitEventResponse
-	(*GetLogsRequest)(nil),         // 8: dazzle.sidecar.v1.GetLogsRequest
-	(*LogEntry)(nil),               // 9: dazzle.sidecar.v1.LogEntry
-	(*GetLogsResponse)(nil),        // 10: dazzle.sidecar.v1.GetLogsResponse
-	(*GetStatsRequest)(nil),        // 11: dazzle.sidecar.v1.GetStatsRequest
-	(*GetStatsResponse)(nil),       // 12: dazzle.sidecar.v1.GetStatsResponse
-	(*NavigateRequest)(nil),        // 13: dazzle.sidecar.v1.NavigateRequest
-	(*NavigateResponse)(nil),       // 14: dazzle.sidecar.v1.NavigateResponse
-	(*ScreenshotRequest)(nil),      // 15: dazzle.sidecar.v1.ScreenshotRequest
-	(*ScreenshotResponse)(nil),     // 16: dazzle.sidecar.v1.ScreenshotResponse
-	(*BroadcastStartRequest)(nil),  // 17: dazzle.sidecar.v1.BroadcastStartRequest
-	(*BroadcastStartResponse)(nil), // 18: dazzle.sidecar.v1.BroadcastStartResponse
-	(*BroadcastStopRequest)(nil),   // 19: dazzle.sidecar.v1.BroadcastStopRequest
-	(*BroadcastStopResponse)(nil),  // 20: dazzle.sidecar.v1.BroadcastStopResponse
-	nil,                            // 21: dazzle.sidecar.v1.SyncDiffRequest.FilesEntry
+	(*SyncDiffRequest)(nil),     // 0: dazzle.sidecar.v1.SyncDiffRequest
+	(*SyncDiffResponse)(nil),    // 1: dazzle.sidecar.v1.SyncDiffResponse
+	(*SyncPushRequest)(nil),     // 2: dazzle.sidecar.v1.SyncPushRequest
+	(*SyncPushResponse)(nil),    // 3: dazzle.sidecar.v1.SyncPushResponse
+	(*SyncRefreshRequest)(nil),  // 4: dazzle.sidecar.v1.SyncRefreshRequest
+	(*SyncRefreshResponse)(nil), // 5: dazzle.sidecar.v1.SyncRefreshResponse
+	(*EmitEventRequest)(nil),    // 6: dazzle.sidecar.v1.EmitEventRequest
+	(*EmitEventResponse)(nil),   // 7: dazzle.sidecar.v1.EmitEventResponse
+	(*GetLogsRequest)(nil),      // 8: dazzle.sidecar.v1.GetLogsRequest
+	(*LogEntry)(nil),            // 9: dazzle.sidecar.v1.LogEntry
+	(*GetLogsResponse)(nil),     // 10: dazzle.sidecar.v1.GetLogsResponse
+	(*GetStatsRequest)(nil),     // 11: dazzle.sidecar.v1.GetStatsRequest
+	(*GetStatsResponse)(nil),    // 12: dazzle.sidecar.v1.GetStatsResponse
+	(*NavigateRequest)(nil),     // 13: dazzle.sidecar.v1.NavigateRequest
+	(*NavigateResponse)(nil),    // 14: dazzle.sidecar.v1.NavigateResponse
+	(*ScreenshotRequest)(nil),   // 15: dazzle.sidecar.v1.ScreenshotRequest
+	(*ScreenshotResponse)(nil),  // 16: dazzle.sidecar.v1.ScreenshotResponse
+	(*OutputTarget)(nil),        // 17: dazzle.sidecar.v1.OutputTarget
+	(*SetOutputsRequest)(nil),   // 18: dazzle.sidecar.v1.SetOutputsRequest
+	(*SetOutputsResponse)(nil),  // 19: dazzle.sidecar.v1.SetOutputsResponse
+	nil,                         // 20: dazzle.sidecar.v1.SyncDiffRequest.FilesEntry
 }
 var file_api_v1_sidecar_proto_depIdxs = []int32{
-	21, // 0: dazzle.sidecar.v1.SyncDiffRequest.files:type_name -> dazzle.sidecar.v1.SyncDiffRequest.FilesEntry
+	20, // 0: dazzle.sidecar.v1.SyncDiffRequest.files:type_name -> dazzle.sidecar.v1.SyncDiffRequest.FilesEntry
 	9,  // 1: dazzle.sidecar.v1.GetLogsResponse.entries:type_name -> dazzle.sidecar.v1.LogEntry
-	0,  // 2: dazzle.sidecar.v1.SyncService.Diff:input_type -> dazzle.sidecar.v1.SyncDiffRequest
-	2,  // 3: dazzle.sidecar.v1.SyncService.Push:input_type -> dazzle.sidecar.v1.SyncPushRequest
-	4,  // 4: dazzle.sidecar.v1.SyncService.Refresh:input_type -> dazzle.sidecar.v1.SyncRefreshRequest
-	6,  // 5: dazzle.sidecar.v1.RuntimeService.EmitEvent:input_type -> dazzle.sidecar.v1.EmitEventRequest
-	8,  // 6: dazzle.sidecar.v1.RuntimeService.GetLogs:input_type -> dazzle.sidecar.v1.GetLogsRequest
-	11, // 7: dazzle.sidecar.v1.RuntimeService.GetStats:input_type -> dazzle.sidecar.v1.GetStatsRequest
-	13, // 8: dazzle.sidecar.v1.RuntimeService.Navigate:input_type -> dazzle.sidecar.v1.NavigateRequest
-	15, // 9: dazzle.sidecar.v1.RuntimeService.Screenshot:input_type -> dazzle.sidecar.v1.ScreenshotRequest
-	17, // 10: dazzle.sidecar.v1.BroadcastPipelineService.Start:input_type -> dazzle.sidecar.v1.BroadcastStartRequest
-	19, // 11: dazzle.sidecar.v1.BroadcastPipelineService.Stop:input_type -> dazzle.sidecar.v1.BroadcastStopRequest
+	17, // 2: dazzle.sidecar.v1.SetOutputsRequest.outputs:type_name -> dazzle.sidecar.v1.OutputTarget
+	0,  // 3: dazzle.sidecar.v1.SyncService.Diff:input_type -> dazzle.sidecar.v1.SyncDiffRequest
+	2,  // 4: dazzle.sidecar.v1.SyncService.Push:input_type -> dazzle.sidecar.v1.SyncPushRequest
+	4,  // 5: dazzle.sidecar.v1.SyncService.Refresh:input_type -> dazzle.sidecar.v1.SyncRefreshRequest
+	6,  // 6: dazzle.sidecar.v1.RuntimeService.EmitEvent:input_type -> dazzle.sidecar.v1.EmitEventRequest
+	8,  // 7: dazzle.sidecar.v1.RuntimeService.GetLogs:input_type -> dazzle.sidecar.v1.GetLogsRequest
+	11, // 8: dazzle.sidecar.v1.RuntimeService.GetStats:input_type -> dazzle.sidecar.v1.GetStatsRequest
+	13, // 9: dazzle.sidecar.v1.RuntimeService.Navigate:input_type -> dazzle.sidecar.v1.NavigateRequest
+	15, // 10: dazzle.sidecar.v1.RuntimeService.Screenshot:input_type -> dazzle.sidecar.v1.ScreenshotRequest
+	18, // 11: dazzle.sidecar.v1.OutputPipelineService.SetOutputs:input_type -> dazzle.sidecar.v1.SetOutputsRequest
 	1,  // 12: dazzle.sidecar.v1.SyncService.Diff:output_type -> dazzle.sidecar.v1.SyncDiffResponse
 	3,  // 13: dazzle.sidecar.v1.SyncService.Push:output_type -> dazzle.sidecar.v1.SyncPushResponse
 	5,  // 14: dazzle.sidecar.v1.SyncService.Refresh:output_type -> dazzle.sidecar.v1.SyncRefreshResponse
@@ -1169,13 +1158,12 @@ var file_api_v1_sidecar_proto_depIdxs = []int32{
 	12, // 17: dazzle.sidecar.v1.RuntimeService.GetStats:output_type -> dazzle.sidecar.v1.GetStatsResponse
 	14, // 18: dazzle.sidecar.v1.RuntimeService.Navigate:output_type -> dazzle.sidecar.v1.NavigateResponse
 	16, // 19: dazzle.sidecar.v1.RuntimeService.Screenshot:output_type -> dazzle.sidecar.v1.ScreenshotResponse
-	18, // 20: dazzle.sidecar.v1.BroadcastPipelineService.Start:output_type -> dazzle.sidecar.v1.BroadcastStartResponse
-	20, // 21: dazzle.sidecar.v1.BroadcastPipelineService.Stop:output_type -> dazzle.sidecar.v1.BroadcastStopResponse
-	12, // [12:22] is the sub-list for method output_type
-	2,  // [2:12] is the sub-list for method input_type
-	2,  // [2:2] is the sub-list for extension type_name
-	2,  // [2:2] is the sub-list for extension extendee
-	0,  // [0:2] is the sub-list for field type_name
+	19, // 20: dazzle.sidecar.v1.OutputPipelineService.SetOutputs:output_type -> dazzle.sidecar.v1.SetOutputsResponse
+	12, // [12:21] is the sub-list for method output_type
+	3,  // [3:12] is the sub-list for method input_type
+	3,  // [3:3] is the sub-list for extension type_name
+	3,  // [3:3] is the sub-list for extension extendee
+	0,  // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_api_v1_sidecar_proto_init() }
@@ -1189,7 +1177,7 @@ func file_api_v1_sidecar_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_v1_sidecar_proto_rawDesc), len(file_api_v1_sidecar_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   22,
+			NumMessages:   21,
 			NumExtensions: 0,
 			NumServices:   3,
 		},

@@ -31,8 +31,8 @@ ${cli.stageSync.full}
 # Take a screenshot to verify
 ${cli.stageScreenshotOut.full}
 
-# Go live
-${cli.stageBroadcastOn.full}`,
+# Check status
+${cli.stageStatus.full}`,
   },
   {
     id: "openai-agents",
@@ -48,9 +48,8 @@ ${cli.login.full}
 ${cli.stageCreate.full}
 ${cli.stageUp.full}
 
-# Push content and stream
-${cli.stageSync.full}
-${cli.stageBroadcastOn.full}`,
+# Push content (streaming starts automatically)
+${cli.stageSync.full}`,
   },
   {
     id: "crewai",
@@ -66,9 +65,8 @@ ${cli.login.full}
 ${cli.stageCreate.full}
 ${cli.stageUp.full}
 
-# Push content and stream
-${cli.stageSync.full}
-${cli.stageBroadcastOn.full}`,
+# Push content (streaming starts automatically)
+${cli.stageSync.full}`,
   },
   {
     id: "langgraph",
@@ -84,9 +82,8 @@ ${cli.login.full}
 ${cli.stageCreate.full}
 ${cli.stageUp.full}
 
-# Push content and stream
-${cli.stageSync.full}
-${cli.stageBroadcastOn.full}`,
+# Push content (streaming starts automatically)
+${cli.stageSync.full}`,
   },
   {
     id: "autogen",
@@ -102,8 +99,7 @@ ${cli.login.full}
 ${cli.stageCreate.full}
 ${cli.stageUp.full}
 
-# Push content and stream
-${cli.stageSync.full}
-${cli.stageBroadcastOn.full}`,
+# Push content (streaming starts automatically)
+${cli.stageSync.full}`,
   },
 ];

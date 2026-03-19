@@ -135,7 +135,7 @@ spec:
               - 172.16.0.0/12
               - 192.168.0.0/16
 ---
-# Ingest pod: allow RTMP from Traefik and HLS requests from control-plane.
+# Ingest pod: allow RTMP from LB / local pods, HLS from control-plane.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -148,12 +148,10 @@ spec:
   policyTypes:
     - Ingress
   ingress:
-    # RTMP from Traefik (external publishers via LB)
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: traefik
-      ports:
+    # RTMP from dedicated ingest LB (external GPU sidecars)
+    # and from local streamer pods (same-cluster stages).
+    # LB traffic enters via node port so we allow all on 1935.
+    - ports:
         - protocol: TCP
           port: 1935
     # HLS from control-plane (viewer proxy)
@@ -164,14 +162,6 @@ spec:
       ports:
         - protocol: TCP
           port: 8080
-    # RTMP from streamer pods (stage → dazzle broadcast)
-    - from:
-        - podSelector:
-            matchLabels:
-              app: streamer-stage
-      ports:
-        - protocol: TCP
-          port: 1935
 ---
 # Ingest pod egress: allow DNS + control-plane (on_publish callbacks).
 apiVersion: networking.k8s.io/v1

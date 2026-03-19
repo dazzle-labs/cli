@@ -1,5 +1,5 @@
 // Package pipeline manages an ffmpeg process that captures the Xvfb display
-// and outputs HLS (always) and optionally RTMP (when broadcasting).
+// and outputs to N RTMP destinations simultaneously via the tee muxer.
 // It replaces OBS Studio, eliminating the expensive llvmpipe GL compositor.
 package pipeline
 
@@ -15,6 +15,12 @@ import (
 	"time"
 )
 
+// Output represents an RTMP output destination.
+type Output struct {
+	Name    string
+	RtmpURL string
+}
+
 // Stats holds current pipeline metrics.
 type Stats struct {
 	FPS                 float64
@@ -22,7 +28,8 @@ type Stats struct {
 	DroppedFramesRecent int64
 	TotalBytes          int64
 	Speed               float64
-	Broadcasting        bool
+	ActiveOutputs       int
+	OutputNames         []string
 	UptimeSeconds       int64
 }
 
@@ -32,20 +39,15 @@ type Pipeline struct {
 
 	display    string // e.g. ":99"
 	screenSize string // e.g. "1280x720"
-	hlsDir     string // e.g. "/tmp/hls"
 	framerate  int
 
-	// HLS settings
-	hlsBitrate int // kbps
-
-	// Broadcast settings
-	broadcasting bool
-	rtmpURL      string // full URL including stream key
+	// Output settings
+	outputs     []Output // current active RTMP outputs
+	rtmpBitrate int      // kbps
+	rtmpPreset  string   // x264 preset
 
 	// Encoding settings
-	videoCodec  string // "libx264" (default) or "h264_nvenc"
-	rtmpBitrate int    // kbps
-	rtmpPreset  string // x264 preset
+	videoCodec string // "libx264" (default) or "h264_nvenc"
 
 	cmd *exec.Cmd
 
@@ -65,11 +67,6 @@ type Pipeline struct {
 
 // Option configures the pipeline.
 type Option func(*Pipeline)
-
-// WithHLSBitrate sets the HLS bitrate in kbps (default 2500).
-func WithHLSBitrate(kbps int) Option {
-	return func(p *Pipeline) { p.hlsBitrate = kbps }
-}
 
 // WithRTMPBitrate sets the RTMP broadcast bitrate in kbps (default 2500).
 func WithRTMPBitrate(kbps int) Option {
@@ -95,15 +92,13 @@ func WithFramerate(fps int) Option {
 	return func(p *Pipeline) { p.framerate = fps }
 }
 
-// New creates a pipeline. Call Start() to begin.
-func New(display, screenSize, hlsDir string, opts ...Option) *Pipeline {
+// New creates a pipeline. Call SetOutputs() with destinations to begin encoding.
+func New(display, screenSize string, opts ...Option) *Pipeline {
 	p := &Pipeline{
 		display:     display,
 		screenSize:  screenSize,
-		hlsDir:      hlsDir,
 		framerate:   30,
 		videoCodec:  "libx264",
-		hlsBitrate:  2500,
 		rtmpBitrate: 2500,
 		rtmpPreset:  "veryfast",
 	}
@@ -120,36 +115,30 @@ func (p *Pipeline) SetStatsCallback(cb func(Stats)) {
 	p.statsCallback = cb
 }
 
-// Start begins the ffmpeg pipeline in HLS-only mode.
-func (p *Pipeline) Start() error {
+// SetOutputs updates the pipeline's RTMP output destinations.
+// If outputs changed, the pipeline is restarted with the new configuration.
+// If outputs is empty, the pipeline is stopped (no encoding when nobody is receiving).
+func (p *Pipeline) SetOutputs(outputs []Output) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	os.MkdirAll(p.hlsDir, 0o755)
-	return p.startLocked()
-}
+	// Check if outputs actually changed
+	if outputsEqual(p.outputs, outputs) {
+		return nil
+	}
 
-// StartBroadcast restarts the pipeline with both HLS and RTMP outputs.
-func (p *Pipeline) StartBroadcast(rtmpURL string) error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
+	p.outputs = make([]Output, len(outputs))
+	copy(p.outputs, outputs)
 
-	p.broadcasting = true
-	p.rtmpURL = rtmpURL
-
+	// Stop existing pipeline
 	p.stopLocked()
-	return p.startLocked()
-}
 
-// StopBroadcast restarts the pipeline in HLS-only mode.
-func (p *Pipeline) StopBroadcast() error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
+	// If no outputs, stay idle
+	if len(outputs) == 0 {
+		log.Println("ffmpeg pipeline: no outputs configured, staying idle")
+		return nil
+	}
 
-	p.broadcasting = false
-	p.rtmpURL = ""
-
-	p.stopLocked()
 	return p.startLocked()
 }
 
@@ -161,19 +150,16 @@ func (p *Pipeline) Stop() {
 	p.stopLocked()
 }
 
-// IsBroadcasting returns whether the RTMP output is active.
-func (p *Pipeline) IsBroadcasting() bool {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	return p.broadcasting
-}
-
-// Stats returns current pipeline stats.
+// GetStats returns current pipeline stats.
 func (p *Pipeline) GetStats() Stats {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	s := p.stats
-	s.Broadcasting = p.broadcasting
+	s.ActiveOutputs = len(p.outputs)
+	s.OutputNames = make([]string, len(p.outputs))
+	for i, o := range p.outputs {
+		s.OutputNames[i] = o.Name
+	}
 	if !p.startedAt.IsZero() {
 		s.UptimeSeconds = int64(time.Since(p.startedAt).Seconds())
 	}
@@ -190,19 +176,18 @@ func (p *Pipeline) startLocked() error {
 	p.dropCount = 0
 
 	args := p.buildArgs()
-	log.Printf("ffmpeg pipeline: starting [broadcasting=%v]", p.broadcasting)
+	log.Printf("ffmpeg pipeline: starting [outputs=%d: %s]", len(p.outputs), outputNamesList(p.outputs))
 
-	var cmd *exec.Cmd
-	if p.broadcasting && p.rtmpURL != "" {
-		// Pass RTMP URL via env var instead of command-line arg to prevent
-		// exposure via /proc/<pid>/cmdline on multi-tenant GPU pods.
-		// /proc/<pid>/environ is UID-protected (owner-only read).
-		shellArgs := strings.Join(quoteArgs(args), " ") + ` "$RTMP_URL"`
-		cmd = exec.Command("sh", "-c", "exec ffmpeg "+shellArgs)
-		cmd.Env = append(os.Environ(), "RTMP_URL="+p.rtmpURL)
-	} else {
-		cmd = exec.Command("ffmpeg", args...)
+	// All RTMP URLs are passed via env vars to prevent exposure
+	// via /proc/<pid>/cmdline on multi-tenant GPU pods.
+	env := os.Environ()
+	for i, o := range p.outputs {
+		env = append(env, fmt.Sprintf("RTMP_URL_%d=%s", i, o.RtmpURL))
 	}
+
+	shellArgs := strings.Join(quoteArgs(args), " ")
+	cmd := exec.Command("sh", "-c", "exec ffmpeg "+shellArgs)
+	cmd.Env = env
 	cmd.Stderr = os.Stderr // ffmpeg logs to stderr
 
 	// Use -progress pipe:1 for machine-readable stats on stdout
@@ -265,15 +250,13 @@ func (p *Pipeline) monitor(cmd *exec.Cmd) {
 
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	if !p.stopped {
+	if !p.stopped && len(p.outputs) > 0 {
 		p.startLocked()
 	}
 }
 
 func (p *Pipeline) buildArgs() []string {
-	gop := fmt.Sprintf("%d", p.framerate) // keyframe every 1 second
-	segPattern := fmt.Sprintf("%s/seg%%03d.ts", p.hlsDir)
-	hlsOut := fmt.Sprintf("%s/stream.m3u8", p.hlsDir)
+	gop := fmt.Sprintf("%d", p.framerate*2) // keyframe every 2 seconds
 	fpsStr := fmt.Sprintf("%d", p.framerate)
 
 	args := []string{
@@ -297,69 +280,36 @@ func (p *Pipeline) buildArgs() []string {
 		"-progress", "pipe:1",
 	}
 
-	if p.broadcasting {
-		// Two outputs: HLS + RTMP broadcast (both native resolution)
-		args = append(args,
-			// HLS output
-			"-map", "0:v", "-map", "1:a",
-		)
-		args = append(args, p.hlsCodecArgs(gop)...)
-		args = append(args,
-			"-c:a", "aac", "-b:a", "96k",
-			"-f", "hls",
-			"-hls_time", "1",
-			"-hls_list_size", "5",
-			"-hls_flags", "delete_segments+append_list",
-			"-hls_segment_filename", segPattern,
-			hlsOut,
+	// Video + audio mapping
+	args = append(args, "-map", "0:v", "-map", "1:a")
 
-			// RTMP output
-			"-map", "0:v", "-map", "1:a",
-		)
-		args = append(args, p.rtmpCodecArgs()...)
-		args = append(args,
-			"-c:a", "aac", "-b:a", "128k",
-			"-f", "flv",
-		)
-		// RTMP URL is appended via $RTMP_URL env var in startLocked
-		// to keep it out of /proc/<pid>/cmdline.
+	// Video codec
+	args = append(args, p.codecArgs(gop)...)
+
+	// Audio codec
+	args = append(args, "-c:a", "aac", "-b:a", "128k")
+
+	// Output: single or tee muxer for multiple destinations
+	if len(p.outputs) == 1 {
+		// Single output: simple -f flv with env var
+		args = append(args, "-f", "flv")
+		args = append(args, "$RTMP_URL_0")
 	} else {
-		// HLS only
-		args = append(args, p.hlsCodecArgs(gop)...)
-		args = append(args,
-			"-c:a", "aac", "-b:a", "96k",
-			"-f", "hls",
-			"-hls_time", "1",
-			"-hls_list_size", "5",
-			"-hls_flags", "delete_segments+append_list",
-			"-hls_segment_filename", segPattern,
-			hlsOut,
-		)
+		// Multiple outputs: tee muxer — single encode, N outputs
+		// Each output uses onfail=ignore so one destination failure
+		// doesn't crash the pipeline.
+		var teeOutputs []string
+		for i := range p.outputs {
+			teeOutputs = append(teeOutputs, fmt.Sprintf("[f=flv:onfail=ignore]$RTMP_URL_%d", i))
+		}
+		args = append(args, "-f", "tee", strings.Join(teeOutputs, "|"))
 	}
 
 	return args
 }
 
-// hlsCodecArgs returns codec args for HLS (CRF mode).
-func (p *Pipeline) hlsCodecArgs(gop string) []string {
-	switch p.videoCodec {
-	case "h264_nvenc":
-		return []string{
-			"-c:v", "h264_nvenc", "-preset", "p4", "-tune", "ll",
-			"-rc", "vbr", "-cq", "28",
-			"-g", gop,
-		}
-	default: // libx264
-		return []string{
-			"-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency", "-threads", "2",
-			"-crf", "28",
-			"-g", gop,
-		}
-	}
-}
-
-// rtmpCodecArgs returns codec args for RTMP broadcast output.
-func (p *Pipeline) rtmpCodecArgs() []string {
+// codecArgs returns video codec args for RTMP output.
+func (p *Pipeline) codecArgs(gop string) []string {
 	switch p.videoCodec {
 	case "h264_nvenc":
 		return []string{
@@ -368,7 +318,7 @@ func (p *Pipeline) rtmpCodecArgs() []string {
 			"-b:v", fmt.Sprintf("%dk", p.rtmpBitrate),
 			"-maxrate", fmt.Sprintf("%dk", p.rtmpBitrate),
 			"-bufsize", fmt.Sprintf("%dk", p.rtmpBitrate*2),
-			"-g", fmt.Sprintf("%d", p.framerate*2),
+			"-g", gop,
 		}
 	default: // libx264
 		return []string{
@@ -377,7 +327,7 @@ func (p *Pipeline) rtmpCodecArgs() []string {
 			"-b:v", fmt.Sprintf("%dk", p.rtmpBitrate),
 			"-maxrate", fmt.Sprintf("%dk", p.rtmpBitrate),
 			"-bufsize", fmt.Sprintf("%dk", p.rtmpBitrate*2),
-			"-g", fmt.Sprintf("%d", p.framerate*2),
+			"-g", gop,
 		}
 	}
 }
@@ -414,7 +364,7 @@ func (p *Pipeline) parseProgress(scanner *bufio.Scanner) {
 			// End of a stats block — fire callback
 			if p.statsCallback != nil {
 				s := p.stats
-				s.Broadcasting = p.broadcasting
+				s.ActiveOutputs = len(p.outputs)
 				p.mu.Unlock()
 				p.statsCallback(s)
 				continue
@@ -428,7 +378,34 @@ func (p *Pipeline) parseProgress(scanner *bufio.Scanner) {
 func quoteArgs(args []string) []string {
 	out := make([]string, len(args))
 	for i, a := range args {
+		// Don't quote env var references
+		if strings.HasPrefix(a, "$RTMP_URL_") || strings.Contains(a, "$RTMP_URL_") {
+			out[i] = a
+			continue
+		}
 		out[i] = "'" + strings.ReplaceAll(a, "'", `'\''`) + "'"
 	}
 	return out
+}
+
+// outputsEqual checks if two output slices are identical.
+func outputsEqual(a, b []Output) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i].Name != b[i].Name || a[i].RtmpURL != b[i].RtmpURL {
+			return false
+		}
+	}
+	return true
+}
+
+// outputNamesList returns a comma-separated list of output names for logging.
+func outputNamesList(outputs []Output) string {
+	names := make([]string, len(outputs))
+	for i, o := range outputs {
+		names[i] = o.Name
+	}
+	return strings.Join(names, ", ")
 }
