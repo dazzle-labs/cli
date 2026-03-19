@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"os/exec"
 	"strconv"
@@ -119,6 +120,12 @@ func (p *Pipeline) SetStatsCallback(cb func(Stats)) {
 // If outputs changed, the pipeline is restarted with the new configuration.
 // If outputs is empty, the pipeline is stopped (no encoding when nobody is receiving).
 func (p *Pipeline) SetOutputs(outputs []Output) error {
+	for _, o := range outputs {
+		if err := validateRTMPURL(o.RtmpURL); err != nil {
+			return fmt.Errorf("invalid output %q: %w", o.Name, err)
+		}
+	}
+
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -178,15 +185,15 @@ func (p *Pipeline) startLocked() error {
 	args := p.buildArgs()
 	log.Printf("ffmpeg pipeline: starting [outputs=%d: %s]", len(p.outputs), outputNamesList(p.outputs))
 
-	// All RTMP URLs are passed via env vars to prevent exposure
-	// via /proc/<pid>/cmdline on multi-tenant GPU pods.
+	// RTMP URLs are passed via env vars to hide stream keys from
+	// /proc/<pid>/cmdline on multi-tenant GPU pods.
 	env := os.Environ()
 	for i, o := range p.outputs {
 		env = append(env, fmt.Sprintf("RTMP_URL_%d=%s", i, o.RtmpURL))
 	}
 
-	shellArgs := strings.Join(quoteArgs(args), " ")
-	cmd := exec.Command("sh", "-c", "exec ffmpeg "+shellArgs)
+	shellCmd := "exec ffmpeg " + shellQuoteArgs(args)
+	cmd := exec.Command("sh", "-c", shellCmd)
 	cmd.Env = env
 	cmd.Stderr = os.Stderr // ffmpeg logs to stderr
 
@@ -374,18 +381,43 @@ func (p *Pipeline) parseProgress(scanner *bufio.Scanner) {
 	}
 }
 
-// quoteArgs shell-quotes each argument for safe embedding in sh -c.
-func quoteArgs(args []string) []string {
-	out := make([]string, len(args))
-	for i, a := range args {
-		// Don't quote env var references
-		if strings.HasPrefix(a, "$RTMP_URL_") || strings.Contains(a, "$RTMP_URL_") {
-			out[i] = a
-			continue
-		}
-		out[i] = "'" + strings.ReplaceAll(a, "'", `'\''`) + "'"
+// validateRTMPURL validates that the URL has a supported RTMP scheme.
+// Shell injection is not a concern because RTMP URLs are passed via env vars
+// and expanded inside double quotes ("$VAR"), which the shell does not re-parse.
+func validateRTMPURL(rawURL string) error {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return fmt.Errorf("malformed URL: %w", err)
 	}
-	return out
+	switch u.Scheme {
+	case "rtmp", "rtmps", "rtmpt", "rtmpte", "rtmpts":
+		return nil
+	default:
+		return fmt.Errorf("unsupported scheme %q (must be rtmp/rtmps)", u.Scheme)
+	}
+}
+
+// shellQuoteArgs quotes arguments for sh -c. Env var references ($RTMP_URL_N)
+// are double-quoted so the shell expands them without word-splitting or glob
+// interpretation. All other args are single-quoted.
+func shellQuoteArgs(args []string) string {
+	var parts []string
+	for _, a := range args {
+		if strings.Contains(a, "$RTMP_URL_") {
+			// The arg may mix literal text with env var refs, e.g.
+			// "[f=flv:onfail=ignore]$RTMP_URL_0|[f=flv:onfail=ignore]$RTMP_URL_1"
+			// Double-quoting the whole thing lets the shell expand the vars
+			// while protecting special chars in the expanded URLs.
+			// Escape any existing double quotes and backslashes in the literal parts.
+			escaped := strings.ReplaceAll(a, `\`, `\\`)
+			escaped = strings.ReplaceAll(escaped, `"`, `\"`)
+			escaped = strings.ReplaceAll(escaped, "`", "\\`")
+			parts = append(parts, `"`+escaped+`"`)
+		} else {
+			parts = append(parts, "'"+strings.ReplaceAll(a, "'", `'\''`)+"'")
+		}
+	}
+	return strings.Join(parts, " ")
 }
 
 // outputsEqual checks if two output slices are identical.
