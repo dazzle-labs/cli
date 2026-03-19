@@ -192,6 +192,11 @@ func (c *GPUNodeController) handleNew(ctx context.Context, node *unstructured.Un
 		"LIBGL_ALWAYS_SOFTWARE": "0",
 		"SIDECAR_VIDEO_CODEC":   "h264_nvenc",
 		"DISPLAY":               ":99",
+		// Explicitly request all NVIDIA driver capabilities so the
+		// nvidia-container-toolkit mounts video (NVENC/NVDEC) and graphics
+		// (Vulkan/EGL) libraries — not just compute+utility defaults.
+		"NVIDIA_DRIVER_CAPABILITIES": "all",
+		"NVIDIA_VISIBLE_DEVICES":     "all",
 	}
 
 	// Layer 2: Operator overrides from GPUNodeClass spec.template
