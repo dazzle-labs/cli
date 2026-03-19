@@ -79,6 +79,10 @@ RUN apt-get update && apt-get install -y \
 # RunPod hosts provide NVENC API 12.2 — pin nv-codec-headers to n12.2.72.0.
 # Using HEAD (API 13.0+) causes "Driver does not support the required nvenc
 # API version" on L40S/A40 hosts.
+#
+# TODO: If RunPod upgrades drivers, bump the nv-codec-headers tag to match.
+# Future option: ship multiple ffmpeg binaries (one per SDK version) and
+# probe at runtime which one works, to avoid coupling to a specific driver.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential git nasm pkg-config \
         libx264-dev libpulse-dev libx11-dev libxcb1-dev libxcb-shm0-dev \
