@@ -355,7 +355,7 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 	} else if _, exists := m.stages[id]; exists {
 		return nil, fmt.Errorf("stage %s already exists", id)
 	}
-	podName := "streamer-" + id[:8]
+	podName := "streamer-" + id
 
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -783,28 +783,7 @@ func (m *Manager) activateStage(ctx context.Context, id, userID string) (*Stage,
 
 	stage, err := m.createStage(id, userID)
 	if err != nil {
-		if strings.Contains(err.Error(), "already exists") {
-			// Old pod may still be terminating — wait for it to go away, then retry
-			podName := "streamer-" + id[:8]
-			log.Printf("Pod %s already exists, waiting for termination before retry...", podName)
-			for i := 0; i < 30; i++ {
-				select {
-				case <-ctx.Done():
-					return nil, fmt.Errorf("timeout waiting for old pod %s to terminate", podName)
-				case <-time.After(1 * time.Second):
-				}
-				_, getErr := m.clientset.CoreV1().Pods(m.namespace).Get(context.Background(), podName, metav1.GetOptions{})
-				if getErr != nil {
-					break // pod is gone
-				}
-			}
-			stage, err = m.createStage(id, userID)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			return nil, err
-		}
+		return nil, err
 	}
 	stage.OwnerUserID = userID
 	s, err := m.waitForStage(ctx, id)
