@@ -124,13 +124,12 @@ pull-cli: ## Pull latest cli release tag, update go.mod, and commit
 		exit 1; \
 	fi
 	$(STEP) "Fetching latest cli release tag"
-	git -C cli fetch --tags origin
-	$(eval CLI_TAG := $(shell git -C cli tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+' | head -1))
-	git -C cli checkout $(CLI_TAG)
-	$(STEP) "Updating control-plane go.mod → $(CLI_TAG)"
-	cd control-plane && go get github.com/dazzle-labs/cli@$(CLI_TAG)
-	cd control-plane && go build ./...
-	$(OK) "cli bumped to $(CLI_TAG)"
+	@git -C cli fetch --tags origin
+	@CLI_TAG=$$(git -C cli tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+' | head -1) && \
+		printf "$(_bold)$(_cyan)── Bumping cli to $$CLI_TAG ──$(_reset)\n" && \
+		git -C cli checkout $$CLI_TAG && \
+		cd control-plane && go get github.com/dazzle-labs/cli@$$CLI_TAG && go build ./... && \
+		printf "$(_bold)$(_green)✓ cli bumped to $$CLI_TAG$(_reset)\n"
 
 proto: check-cli ## Generate protobuf code (Go + TypeScript)
 	$(MAKE) -C cli proto
