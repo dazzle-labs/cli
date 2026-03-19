@@ -395,9 +395,8 @@ func stageToProto(s *Stage, publicBaseURL string, db *sql.DB) *apiv1.Stage {
 	if db != nil && s.OwnerUserID != "" {
 		if dests, err := dbListStageDestinations(db, s.ID); err == nil {
 			for _, sd := range dests {
-				pb.Destinations = append(pb.Destinations, &apiv1.StageDestination{
-					Id:               sd.ID,
-					DestinationId:    sd.DestinationID,
+				pb.Destinations = append(pb.Destinations, &apiv1.StreamDestination{
+					Id:               sd.DestinationID,
 					Name:             sd.Name,
 					Platform:         sd.Platform,
 					PlatformUsername: sd.PlatformUsername,
