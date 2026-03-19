@@ -20,6 +20,8 @@ spec:
       labels:
         app: ingest
     spec:
+      imagePullSecrets:
+        - name: dazzlefm-dockerhub-secret
       terminationGracePeriodSeconds: 120
       securityContext:
         runAsNonRoot: true
