@@ -87,6 +87,9 @@ jobs:
         with:
           go-version: '1.25'
           cache: true
+          cache-dependency-path: |
+            control-plane/go.sum
+            sidecar/go.sum
 
       - name: Regenerate llms.txt
         run: make llms-txt
@@ -121,6 +124,9 @@ jobs:
         with:
           go-version: '1.25'
           cache: true
+          cache-dependency-path: |
+            control-plane/go.sum
+            sidecar/go.sum
 
       - name: Smoke test CLI commands
         run: bash scripts/smoke-test-cli.sh
