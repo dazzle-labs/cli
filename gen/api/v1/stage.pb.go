@@ -34,11 +34,13 @@ type Stage struct {
 	Status        string                 `protobuf:"bytes,7,opt,name=status,proto3" json:"status,omitempty"` // inactive | starting | running | stopping
 	OwnerUserId   string                 `protobuf:"bytes,8,opt,name=owner_user_id,json=ownerUserId,proto3" json:"owner_user_id,omitempty"`
 	Name          string                 `protobuf:"bytes,9,opt,name=name,proto3" json:"name,omitempty"`
-	DestinationId string                 `protobuf:"bytes,10,opt,name=destination_id,json=destinationId,proto3" json:"destination_id,omitempty"`
-	Preview       *StagePreview          `protobuf:"bytes,11,opt,name=preview,proto3" json:"preview,omitempty"`
-	Destination   *StreamDestination     `protobuf:"bytes,12,opt,name=destination,proto3" json:"destination,omitempty"`
-	Capabilities  []string               `protobuf:"bytes,13,rep,name=capabilities,proto3" json:"capabilities,omitempty"` // e.g., ["gpu"]
-	Slug          string                 `protobuf:"bytes,14,opt,name=slug,proto3" json:"slug,omitempty"`                 // short URL slug for /stage/{slug} and /watch/{slug}
+	DestinationId string                 `protobuf:"bytes,10,opt,name=destination_id,json=destinationId,proto3" json:"destination_id,omitempty"` // deprecated — use destinations
+	// field 11 removed (was StagePreview preview)
+	Destination   *StreamDestination  `protobuf:"bytes,12,opt,name=destination,proto3" json:"destination,omitempty"`   // deprecated — use destinations
+	Capabilities  []string            `protobuf:"bytes,13,rep,name=capabilities,proto3" json:"capabilities,omitempty"` // e.g., ["gpu"]
+	Slug          string              `protobuf:"bytes,14,opt,name=slug,proto3" json:"slug,omitempty"`                 // short URL slug for /watch/{slug}
+	Destinations  []*StageDestination `protobuf:"bytes,15,rep,name=destinations,proto3" json:"destinations,omitempty"`
+	WatchUrl      string              `protobuf:"bytes,16,opt,name=watch_url,json=watchUrl,proto3" json:"watch_url,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -143,13 +145,6 @@ func (x *Stage) GetDestinationId() string {
 	return ""
 }
 
-func (x *Stage) GetPreview() *StagePreview {
-	if x != nil {
-		return x.Preview
-	}
-	return nil
-}
-
 func (x *Stage) GetDestination() *StreamDestination {
 	if x != nil {
 		return x.Destination
@@ -171,28 +166,47 @@ func (x *Stage) GetSlug() string {
 	return ""
 }
 
-type StagePreview struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	WatchUrl      string                 `protobuf:"bytes,1,opt,name=watch_url,json=watchUrl,proto3" json:"watch_url,omitempty"`
-	HlsUrl        string                 `protobuf:"bytes,2,opt,name=hls_url,json=hlsUrl,proto3" json:"hls_url,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+func (x *Stage) GetDestinations() []*StageDestination {
+	if x != nil {
+		return x.Destinations
+	}
+	return nil
 }
 
-func (x *StagePreview) Reset() {
-	*x = StagePreview{}
+func (x *Stage) GetWatchUrl() string {
+	if x != nil {
+		return x.WatchUrl
+	}
+	return ""
+}
+
+// StageDestination represents a streaming destination linked to a stage.
+type StageDestination struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Id               string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`                                            // stage_destinations row ID
+	DestinationId    string                 `protobuf:"bytes,2,opt,name=destination_id,json=destinationId,proto3" json:"destination_id,omitempty"` // FK to stream_destinations
+	Name             string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Platform         string                 `protobuf:"bytes,4,opt,name=platform,proto3" json:"platform,omitempty"` // "dazzle", "twitch", "youtube", "kick", "restream", "custom"
+	PlatformUsername string                 `protobuf:"bytes,5,opt,name=platform_username,json=platformUsername,proto3" json:"platform_username,omitempty"`
+	Enabled          bool                   `protobuf:"varint,6,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *StageDestination) Reset() {
+	*x = StageDestination{}
 	mi := &file_api_v1_stage_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *StagePreview) String() string {
+func (x *StageDestination) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*StagePreview) ProtoMessage() {}
+func (*StageDestination) ProtoMessage() {}
 
-func (x *StagePreview) ProtoReflect() protoreflect.Message {
+func (x *StageDestination) ProtoReflect() protoreflect.Message {
 	mi := &file_api_v1_stage_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -204,29 +218,57 @@ func (x *StagePreview) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use StagePreview.ProtoReflect.Descriptor instead.
-func (*StagePreview) Descriptor() ([]byte, []int) {
+// Deprecated: Use StageDestination.ProtoReflect.Descriptor instead.
+func (*StageDestination) Descriptor() ([]byte, []int) {
 	return file_api_v1_stage_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *StagePreview) GetWatchUrl() string {
+func (x *StageDestination) GetId() string {
 	if x != nil {
-		return x.WatchUrl
+		return x.Id
 	}
 	return ""
 }
 
-func (x *StagePreview) GetHlsUrl() string {
+func (x *StageDestination) GetDestinationId() string {
 	if x != nil {
-		return x.HlsUrl
+		return x.DestinationId
 	}
 	return ""
+}
+
+func (x *StageDestination) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *StageDestination) GetPlatform() string {
+	if x != nil {
+		return x.Platform
+	}
+	return ""
+}
+
+func (x *StageDestination) GetPlatformUsername() string {
+	if x != nil {
+		return x.PlatformUsername
+	}
+	return ""
+}
+
+func (x *StageDestination) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
 }
 
 type CreateStageRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Capabilities  []string               `protobuf:"bytes,2,rep,name=capabilities,proto3" json:"capabilities,omitempty"` // e.g., ["gpu"]
+	Capabilities  []string               `protobuf:"bytes,2,rep,name=capabilities,proto3" json:"capabilities,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -401,7 +443,7 @@ func (x *ListStagesResponse) GetStages() []*Stage {
 
 type GetStageRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"` // stage UUID or slug
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -489,7 +531,7 @@ func (x *GetStageResponse) GetStage() *Stage {
 
 type DeleteStageRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"` // stage UUID or slug
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -567,10 +609,11 @@ func (*DeleteStageResponse) Descriptor() ([]byte, []int) {
 	return file_api_v1_stage_proto_rawDescGZIP(), []int{9}
 }
 
+// SetStageDestination adds/enables a destination for a stage.
 type SetStageDestinationRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"`
-	DestinationId string                 `protobuf:"bytes,2,opt,name=destination_id,json=destinationId,proto3" json:"destination_id,omitempty"` // empty string to clear
+	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"` // stage UUID or slug
+	DestinationId string                 `protobuf:"bytes,2,opt,name=destination_id,json=destinationId,proto3" json:"destination_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -663,16 +706,113 @@ func (x *SetStageDestinationResponse) GetStage() *Stage {
 	return nil
 }
 
+// RemoveStageDestination removes a destination from a stage.
+type RemoveStageDestinationRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"` // stage UUID or slug
+	DestinationId string                 `protobuf:"bytes,2,opt,name=destination_id,json=destinationId,proto3" json:"destination_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RemoveStageDestinationRequest) Reset() {
+	*x = RemoveStageDestinationRequest{}
+	mi := &file_api_v1_stage_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RemoveStageDestinationRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RemoveStageDestinationRequest) ProtoMessage() {}
+
+func (x *RemoveStageDestinationRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_stage_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RemoveStageDestinationRequest.ProtoReflect.Descriptor instead.
+func (*RemoveStageDestinationRequest) Descriptor() ([]byte, []int) {
+	return file_api_v1_stage_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *RemoveStageDestinationRequest) GetStageId() string {
+	if x != nil {
+		return x.StageId
+	}
+	return ""
+}
+
+func (x *RemoveStageDestinationRequest) GetDestinationId() string {
+	if x != nil {
+		return x.DestinationId
+	}
+	return ""
+}
+
+type RemoveStageDestinationResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Stage         *Stage                 `protobuf:"bytes,1,opt,name=stage,proto3" json:"stage,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RemoveStageDestinationResponse) Reset() {
+	*x = RemoveStageDestinationResponse{}
+	mi := &file_api_v1_stage_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RemoveStageDestinationResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RemoveStageDestinationResponse) ProtoMessage() {}
+
+func (x *RemoveStageDestinationResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_stage_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RemoveStageDestinationResponse.ProtoReflect.Descriptor instead.
+func (*RemoveStageDestinationResponse) Descriptor() ([]byte, []int) {
+	return file_api_v1_stage_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *RemoveStageDestinationResponse) GetStage() *Stage {
+	if x != nil {
+		return x.Stage
+	}
+	return nil
+}
+
 type ActivateStageRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"` // stage UUID or slug
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ActivateStageRequest) Reset() {
 	*x = ActivateStageRequest{}
-	mi := &file_api_v1_stage_proto_msgTypes[12]
+	mi := &file_api_v1_stage_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -684,7 +824,7 @@ func (x *ActivateStageRequest) String() string {
 func (*ActivateStageRequest) ProtoMessage() {}
 
 func (x *ActivateStageRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_stage_proto_msgTypes[12]
+	mi := &file_api_v1_stage_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -697,7 +837,7 @@ func (x *ActivateStageRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActivateStageRequest.ProtoReflect.Descriptor instead.
 func (*ActivateStageRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_stage_proto_rawDescGZIP(), []int{12}
+	return file_api_v1_stage_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *ActivateStageRequest) GetId() string {
@@ -716,7 +856,7 @@ type ActivateStageResponse struct {
 
 func (x *ActivateStageResponse) Reset() {
 	*x = ActivateStageResponse{}
-	mi := &file_api_v1_stage_proto_msgTypes[13]
+	mi := &file_api_v1_stage_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -728,7 +868,7 @@ func (x *ActivateStageResponse) String() string {
 func (*ActivateStageResponse) ProtoMessage() {}
 
 func (x *ActivateStageResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_stage_proto_msgTypes[13]
+	mi := &file_api_v1_stage_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -741,7 +881,7 @@ func (x *ActivateStageResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActivateStageResponse.ProtoReflect.Descriptor instead.
 func (*ActivateStageResponse) Descriptor() ([]byte, []int) {
-	return file_api_v1_stage_proto_rawDescGZIP(), []int{13}
+	return file_api_v1_stage_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ActivateStageResponse) GetStage() *Stage {
@@ -753,14 +893,14 @@ func (x *ActivateStageResponse) GetStage() *Stage {
 
 type DeactivateStageRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"` // stage UUID or slug
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *DeactivateStageRequest) Reset() {
 	*x = DeactivateStageRequest{}
-	mi := &file_api_v1_stage_proto_msgTypes[14]
+	mi := &file_api_v1_stage_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -772,7 +912,7 @@ func (x *DeactivateStageRequest) String() string {
 func (*DeactivateStageRequest) ProtoMessage() {}
 
 func (x *DeactivateStageRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_stage_proto_msgTypes[14]
+	mi := &file_api_v1_stage_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -785,7 +925,7 @@ func (x *DeactivateStageRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeactivateStageRequest.ProtoReflect.Descriptor instead.
 func (*DeactivateStageRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_stage_proto_rawDescGZIP(), []int{14}
+	return file_api_v1_stage_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *DeactivateStageRequest) GetId() string {
@@ -804,7 +944,7 @@ type DeactivateStageResponse struct {
 
 func (x *DeactivateStageResponse) Reset() {
 	*x = DeactivateStageResponse{}
-	mi := &file_api_v1_stage_proto_msgTypes[15]
+	mi := &file_api_v1_stage_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -816,7 +956,7 @@ func (x *DeactivateStageResponse) String() string {
 func (*DeactivateStageResponse) ProtoMessage() {}
 
 func (x *DeactivateStageResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_stage_proto_msgTypes[15]
+	mi := &file_api_v1_stage_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -829,7 +969,7 @@ func (x *DeactivateStageResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeactivateStageResponse.ProtoReflect.Descriptor instead.
 func (*DeactivateStageResponse) Descriptor() ([]byte, []int) {
-	return file_api_v1_stage_proto_rawDescGZIP(), []int{15}
+	return file_api_v1_stage_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *DeactivateStageResponse) GetStage() *Stage {
@@ -849,7 +989,7 @@ type UpdateStageRequest struct {
 
 func (x *UpdateStageRequest) Reset() {
 	*x = UpdateStageRequest{}
-	mi := &file_api_v1_stage_proto_msgTypes[16]
+	mi := &file_api_v1_stage_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -861,7 +1001,7 @@ func (x *UpdateStageRequest) String() string {
 func (*UpdateStageRequest) ProtoMessage() {}
 
 func (x *UpdateStageRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_stage_proto_msgTypes[16]
+	mi := &file_api_v1_stage_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -874,7 +1014,7 @@ func (x *UpdateStageRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateStageRequest.ProtoReflect.Descriptor instead.
 func (*UpdateStageRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_stage_proto_rawDescGZIP(), []int{16}
+	return file_api_v1_stage_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *UpdateStageRequest) GetStage() *Stage {
@@ -900,7 +1040,7 @@ type UpdateStageResponse struct {
 
 func (x *UpdateStageResponse) Reset() {
 	*x = UpdateStageResponse{}
-	mi := &file_api_v1_stage_proto_msgTypes[17]
+	mi := &file_api_v1_stage_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -912,7 +1052,7 @@ func (x *UpdateStageResponse) String() string {
 func (*UpdateStageResponse) ProtoMessage() {}
 
 func (x *UpdateStageResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_stage_proto_msgTypes[17]
+	mi := &file_api_v1_stage_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -925,98 +1065,10 @@ func (x *UpdateStageResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateStageResponse.ProtoReflect.Descriptor instead.
 func (*UpdateStageResponse) Descriptor() ([]byte, []int) {
-	return file_api_v1_stage_proto_rawDescGZIP(), []int{17}
-}
-
-func (x *UpdateStageResponse) GetStage() *Stage {
-	if x != nil {
-		return x.Stage
-	}
-	return nil
-}
-
-type RegeneratePreviewTokenRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *RegeneratePreviewTokenRequest) Reset() {
-	*x = RegeneratePreviewTokenRequest{}
-	mi := &file_api_v1_stage_proto_msgTypes[18]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *RegeneratePreviewTokenRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RegeneratePreviewTokenRequest) ProtoMessage() {}
-
-func (x *RegeneratePreviewTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_stage_proto_msgTypes[18]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RegeneratePreviewTokenRequest.ProtoReflect.Descriptor instead.
-func (*RegeneratePreviewTokenRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_stage_proto_rawDescGZIP(), []int{18}
-}
-
-func (x *RegeneratePreviewTokenRequest) GetId() string {
-	if x != nil {
-		return x.Id
-	}
-	return ""
-}
-
-type RegeneratePreviewTokenResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Stage         *Stage                 `protobuf:"bytes,1,opt,name=stage,proto3" json:"stage,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *RegeneratePreviewTokenResponse) Reset() {
-	*x = RegeneratePreviewTokenResponse{}
-	mi := &file_api_v1_stage_proto_msgTypes[19]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *RegeneratePreviewTokenResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RegeneratePreviewTokenResponse) ProtoMessage() {}
-
-func (x *RegeneratePreviewTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_stage_proto_msgTypes[19]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RegeneratePreviewTokenResponse.ProtoReflect.Descriptor instead.
-func (*RegeneratePreviewTokenResponse) Descriptor() ([]byte, []int) {
 	return file_api_v1_stage_proto_rawDescGZIP(), []int{19}
 }
 
-func (x *RegeneratePreviewTokenResponse) GetStage() *Stage {
+func (x *UpdateStageResponse) GetStage() *Stage {
 	if x != nil {
 		return x.Stage
 	}
@@ -1027,7 +1079,7 @@ var File_api_v1_stage_proto protoreflect.FileDescriptor
 
 const file_api_v1_stage_proto_rawDesc = "" +
 	"\n" +
-	"\x12api/v1/stage.proto\x12\tdazzle.v1\x1a\x13api/v1/stream.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x88\x04\n" +
+	"\x12api/v1/stage.proto\x12\tdazzle.v1\x1a\x13api/v1/stream.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xb3\x04\n" +
 	"\x05Stage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
 	"\bpod_name\x18\x02 \x01(\tR\apodName\x12\x15\n" +
@@ -1041,14 +1093,19 @@ const file_api_v1_stage_proto_rawDesc = "" +
 	"\rowner_user_id\x18\b \x01(\tR\vownerUserId\x12\x12\n" +
 	"\x04name\x18\t \x01(\tR\x04name\x12%\n" +
 	"\x0edestination_id\x18\n" +
-	" \x01(\tR\rdestinationId\x121\n" +
-	"\apreview\x18\v \x01(\v2\x17.dazzle.v1.StagePreviewR\apreview\x12>\n" +
+	" \x01(\tR\rdestinationId\x12>\n" +
 	"\vdestination\x18\f \x01(\v2\x1c.dazzle.v1.StreamDestinationR\vdestination\x12\"\n" +
 	"\fcapabilities\x18\r \x03(\tR\fcapabilities\x12\x12\n" +
-	"\x04slug\x18\x0e \x01(\tR\x04slug\"D\n" +
-	"\fStagePreview\x12\x1b\n" +
-	"\twatch_url\x18\x01 \x01(\tR\bwatchUrl\x12\x17\n" +
-	"\ahls_url\x18\x02 \x01(\tR\x06hlsUrl\"L\n" +
+	"\x04slug\x18\x0e \x01(\tR\x04slug\x12?\n" +
+	"\fdestinations\x18\x0f \x03(\v2\x1b.dazzle.v1.StageDestinationR\fdestinations\x12\x1b\n" +
+	"\twatch_url\x18\x10 \x01(\tR\bwatchUrl\"\xc0\x01\n" +
+	"\x10StageDestination\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12%\n" +
+	"\x0edestination_id\x18\x02 \x01(\tR\rdestinationId\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\x12\x1a\n" +
+	"\bplatform\x18\x04 \x01(\tR\bplatform\x12+\n" +
+	"\x11platform_username\x18\x05 \x01(\tR\x10platformUsername\x12\x18\n" +
+	"\aenabled\x18\x06 \x01(\bR\aenabled\"L\n" +
 	"\x12CreateStageRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\"\n" +
 	"\fcapabilities\x18\x02 \x03(\tR\fcapabilities\"=\n" +
@@ -1068,6 +1125,11 @@ const file_api_v1_stage_proto_rawDesc = "" +
 	"\bstage_id\x18\x01 \x01(\tR\astageId\x12%\n" +
 	"\x0edestination_id\x18\x02 \x01(\tR\rdestinationId\"E\n" +
 	"\x1bSetStageDestinationResponse\x12&\n" +
+	"\x05stage\x18\x01 \x01(\v2\x10.dazzle.v1.StageR\x05stage\"a\n" +
+	"\x1dRemoveStageDestinationRequest\x12\x19\n" +
+	"\bstage_id\x18\x01 \x01(\tR\astageId\x12%\n" +
+	"\x0edestination_id\x18\x02 \x01(\tR\rdestinationId\"H\n" +
+	"\x1eRemoveStageDestinationResponse\x12&\n" +
 	"\x05stage\x18\x01 \x01(\v2\x10.dazzle.v1.StageR\x05stage\"&\n" +
 	"\x14ActivateStageRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"?\n" +
@@ -1082,10 +1144,6 @@ const file_api_v1_stage_proto_rawDesc = "" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
 	"updateMask\"=\n" +
 	"\x13UpdateStageResponse\x12&\n" +
-	"\x05stage\x18\x01 \x01(\v2\x10.dazzle.v1.StageR\x05stage\"/\n" +
-	"\x1dRegeneratePreviewTokenRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"H\n" +
-	"\x1eRegeneratePreviewTokenResponse\x12&\n" +
 	"\x05stage\x18\x01 \x01(\v2\x10.dazzle.v1.StageR\x05stage2\x8b\x06\n" +
 	"\fStageService\x12L\n" +
 	"\vCreateStage\x12\x1d.dazzle.v1.CreateStageRequest\x1a\x1e.dazzle.v1.CreateStageResponse\x12I\n" +
@@ -1093,11 +1151,11 @@ const file_api_v1_stage_proto_rawDesc = "" +
 	"ListStages\x12\x1c.dazzle.v1.ListStagesRequest\x1a\x1d.dazzle.v1.ListStagesResponse\x12C\n" +
 	"\bGetStage\x12\x1a.dazzle.v1.GetStageRequest\x1a\x1b.dazzle.v1.GetStageResponse\x12L\n" +
 	"\vDeleteStage\x12\x1d.dazzle.v1.DeleteStageRequest\x1a\x1e.dazzle.v1.DeleteStageResponse\x12d\n" +
-	"\x13SetStageDestination\x12%.dazzle.v1.SetStageDestinationRequest\x1a&.dazzle.v1.SetStageDestinationResponse\x12R\n" +
+	"\x13SetStageDestination\x12%.dazzle.v1.SetStageDestinationRequest\x1a&.dazzle.v1.SetStageDestinationResponse\x12m\n" +
+	"\x16RemoveStageDestination\x12(.dazzle.v1.RemoveStageDestinationRequest\x1a).dazzle.v1.RemoveStageDestinationResponse\x12R\n" +
 	"\rActivateStage\x12\x1f.dazzle.v1.ActivateStageRequest\x1a .dazzle.v1.ActivateStageResponse\x12X\n" +
 	"\x0fDeactivateStage\x12!.dazzle.v1.DeactivateStageRequest\x1a\".dazzle.v1.DeactivateStageResponse\x12L\n" +
-	"\vUpdateStage\x12\x1d.dazzle.v1.UpdateStageRequest\x1a\x1e.dazzle.v1.UpdateStageResponse\x12m\n" +
-	"\x16RegeneratePreviewToken\x12(.dazzle.v1.RegeneratePreviewTokenRequest\x1a).dazzle.v1.RegeneratePreviewTokenResponseB-Z+github.com/dazzle-labs/cli/gen/api/v1;apiv1b\x06proto3"
+	"\vUpdateStage\x12\x1d.dazzle.v1.UpdateStageRequest\x1a\x1e.dazzle.v1.UpdateStageResponseB-Z+github.com/dazzle-labs/cli/gen/api/v1;apiv1b\x06proto3"
 
 var (
 	file_api_v1_stage_proto_rawDescOnce sync.Once
@@ -1114,7 +1172,7 @@ func file_api_v1_stage_proto_rawDescGZIP() []byte {
 var file_api_v1_stage_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_api_v1_stage_proto_goTypes = []any{
 	(*Stage)(nil),                          // 0: dazzle.v1.Stage
-	(*StagePreview)(nil),                   // 1: dazzle.v1.StagePreview
+	(*StageDestination)(nil),               // 1: dazzle.v1.StageDestination
 	(*CreateStageRequest)(nil),             // 2: dazzle.v1.CreateStageRequest
 	(*CreateStageResponse)(nil),            // 3: dazzle.v1.CreateStageResponse
 	(*ListStagesRequest)(nil),              // 4: dazzle.v1.ListStagesRequest
@@ -1125,14 +1183,14 @@ var file_api_v1_stage_proto_goTypes = []any{
 	(*DeleteStageResponse)(nil),            // 9: dazzle.v1.DeleteStageResponse
 	(*SetStageDestinationRequest)(nil),     // 10: dazzle.v1.SetStageDestinationRequest
 	(*SetStageDestinationResponse)(nil),    // 11: dazzle.v1.SetStageDestinationResponse
-	(*ActivateStageRequest)(nil),           // 12: dazzle.v1.ActivateStageRequest
-	(*ActivateStageResponse)(nil),          // 13: dazzle.v1.ActivateStageResponse
-	(*DeactivateStageRequest)(nil),         // 14: dazzle.v1.DeactivateStageRequest
-	(*DeactivateStageResponse)(nil),        // 15: dazzle.v1.DeactivateStageResponse
-	(*UpdateStageRequest)(nil),             // 16: dazzle.v1.UpdateStageRequest
-	(*UpdateStageResponse)(nil),            // 17: dazzle.v1.UpdateStageResponse
-	(*RegeneratePreviewTokenRequest)(nil),  // 18: dazzle.v1.RegeneratePreviewTokenRequest
-	(*RegeneratePreviewTokenResponse)(nil), // 19: dazzle.v1.RegeneratePreviewTokenResponse
+	(*RemoveStageDestinationRequest)(nil),  // 12: dazzle.v1.RemoveStageDestinationRequest
+	(*RemoveStageDestinationResponse)(nil), // 13: dazzle.v1.RemoveStageDestinationResponse
+	(*ActivateStageRequest)(nil),           // 14: dazzle.v1.ActivateStageRequest
+	(*ActivateStageResponse)(nil),          // 15: dazzle.v1.ActivateStageResponse
+	(*DeactivateStageRequest)(nil),         // 16: dazzle.v1.DeactivateStageRequest
+	(*DeactivateStageResponse)(nil),        // 17: dazzle.v1.DeactivateStageResponse
+	(*UpdateStageRequest)(nil),             // 18: dazzle.v1.UpdateStageRequest
+	(*UpdateStageResponse)(nil),            // 19: dazzle.v1.UpdateStageResponse
 	(*timestamppb.Timestamp)(nil),          // 20: google.protobuf.Timestamp
 	(*StreamDestination)(nil),              // 21: dazzle.v1.StreamDestination
 	(*fieldmaskpb.FieldMask)(nil),          // 22: google.protobuf.FieldMask
@@ -1140,36 +1198,36 @@ var file_api_v1_stage_proto_goTypes = []any{
 var file_api_v1_stage_proto_depIdxs = []int32{
 	20, // 0: dazzle.v1.Stage.created_at:type_name -> google.protobuf.Timestamp
 	20, // 1: dazzle.v1.Stage.last_activity:type_name -> google.protobuf.Timestamp
-	1,  // 2: dazzle.v1.Stage.preview:type_name -> dazzle.v1.StagePreview
-	21, // 3: dazzle.v1.Stage.destination:type_name -> dazzle.v1.StreamDestination
+	21, // 2: dazzle.v1.Stage.destination:type_name -> dazzle.v1.StreamDestination
+	1,  // 3: dazzle.v1.Stage.destinations:type_name -> dazzle.v1.StageDestination
 	0,  // 4: dazzle.v1.CreateStageResponse.stage:type_name -> dazzle.v1.Stage
 	0,  // 5: dazzle.v1.ListStagesResponse.stages:type_name -> dazzle.v1.Stage
 	0,  // 6: dazzle.v1.GetStageResponse.stage:type_name -> dazzle.v1.Stage
 	0,  // 7: dazzle.v1.SetStageDestinationResponse.stage:type_name -> dazzle.v1.Stage
-	0,  // 8: dazzle.v1.ActivateStageResponse.stage:type_name -> dazzle.v1.Stage
-	0,  // 9: dazzle.v1.DeactivateStageResponse.stage:type_name -> dazzle.v1.Stage
-	0,  // 10: dazzle.v1.UpdateStageRequest.stage:type_name -> dazzle.v1.Stage
-	22, // 11: dazzle.v1.UpdateStageRequest.update_mask:type_name -> google.protobuf.FieldMask
-	0,  // 12: dazzle.v1.UpdateStageResponse.stage:type_name -> dazzle.v1.Stage
-	0,  // 13: dazzle.v1.RegeneratePreviewTokenResponse.stage:type_name -> dazzle.v1.Stage
+	0,  // 8: dazzle.v1.RemoveStageDestinationResponse.stage:type_name -> dazzle.v1.Stage
+	0,  // 9: dazzle.v1.ActivateStageResponse.stage:type_name -> dazzle.v1.Stage
+	0,  // 10: dazzle.v1.DeactivateStageResponse.stage:type_name -> dazzle.v1.Stage
+	0,  // 11: dazzle.v1.UpdateStageRequest.stage:type_name -> dazzle.v1.Stage
+	22, // 12: dazzle.v1.UpdateStageRequest.update_mask:type_name -> google.protobuf.FieldMask
+	0,  // 13: dazzle.v1.UpdateStageResponse.stage:type_name -> dazzle.v1.Stage
 	2,  // 14: dazzle.v1.StageService.CreateStage:input_type -> dazzle.v1.CreateStageRequest
 	4,  // 15: dazzle.v1.StageService.ListStages:input_type -> dazzle.v1.ListStagesRequest
 	6,  // 16: dazzle.v1.StageService.GetStage:input_type -> dazzle.v1.GetStageRequest
 	8,  // 17: dazzle.v1.StageService.DeleteStage:input_type -> dazzle.v1.DeleteStageRequest
 	10, // 18: dazzle.v1.StageService.SetStageDestination:input_type -> dazzle.v1.SetStageDestinationRequest
-	12, // 19: dazzle.v1.StageService.ActivateStage:input_type -> dazzle.v1.ActivateStageRequest
-	14, // 20: dazzle.v1.StageService.DeactivateStage:input_type -> dazzle.v1.DeactivateStageRequest
-	16, // 21: dazzle.v1.StageService.UpdateStage:input_type -> dazzle.v1.UpdateStageRequest
-	18, // 22: dazzle.v1.StageService.RegeneratePreviewToken:input_type -> dazzle.v1.RegeneratePreviewTokenRequest
+	12, // 19: dazzle.v1.StageService.RemoveStageDestination:input_type -> dazzle.v1.RemoveStageDestinationRequest
+	14, // 20: dazzle.v1.StageService.ActivateStage:input_type -> dazzle.v1.ActivateStageRequest
+	16, // 21: dazzle.v1.StageService.DeactivateStage:input_type -> dazzle.v1.DeactivateStageRequest
+	18, // 22: dazzle.v1.StageService.UpdateStage:input_type -> dazzle.v1.UpdateStageRequest
 	3,  // 23: dazzle.v1.StageService.CreateStage:output_type -> dazzle.v1.CreateStageResponse
 	5,  // 24: dazzle.v1.StageService.ListStages:output_type -> dazzle.v1.ListStagesResponse
 	7,  // 25: dazzle.v1.StageService.GetStage:output_type -> dazzle.v1.GetStageResponse
 	9,  // 26: dazzle.v1.StageService.DeleteStage:output_type -> dazzle.v1.DeleteStageResponse
 	11, // 27: dazzle.v1.StageService.SetStageDestination:output_type -> dazzle.v1.SetStageDestinationResponse
-	13, // 28: dazzle.v1.StageService.ActivateStage:output_type -> dazzle.v1.ActivateStageResponse
-	15, // 29: dazzle.v1.StageService.DeactivateStage:output_type -> dazzle.v1.DeactivateStageResponse
-	17, // 30: dazzle.v1.StageService.UpdateStage:output_type -> dazzle.v1.UpdateStageResponse
-	19, // 31: dazzle.v1.StageService.RegeneratePreviewToken:output_type -> dazzle.v1.RegeneratePreviewTokenResponse
+	13, // 28: dazzle.v1.StageService.RemoveStageDestination:output_type -> dazzle.v1.RemoveStageDestinationResponse
+	15, // 29: dazzle.v1.StageService.ActivateStage:output_type -> dazzle.v1.ActivateStageResponse
+	17, // 30: dazzle.v1.StageService.DeactivateStage:output_type -> dazzle.v1.DeactivateStageResponse
+	19, // 31: dazzle.v1.StageService.UpdateStage:output_type -> dazzle.v1.UpdateStageResponse
 	23, // [23:32] is the sub-list for method output_type
 	14, // [14:23] is the sub-list for method input_type
 	14, // [14:14] is the sub-list for extension type_name

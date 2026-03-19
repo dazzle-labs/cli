@@ -185,6 +185,7 @@ func (*StopBroadcastResponse) Descriptor() ([]byte, []int) {
 type GetStreamInfoRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"`
+	DestinationId string                 `protobuf:"bytes,2,opt,name=destination_id,json=destinationId,proto3" json:"destination_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -222,6 +223,13 @@ func (*GetStreamInfoRequest) Descriptor() ([]byte, []int) {
 func (x *GetStreamInfoRequest) GetStageId() string {
 	if x != nil {
 		return x.StageId
+	}
+	return ""
+}
+
+func (x *GetStreamInfoRequest) GetDestinationId() string {
+	if x != nil {
+		return x.DestinationId
 	}
 	return ""
 }
@@ -290,6 +298,7 @@ type SetStreamTitleRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"`
 	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	DestinationId string                 `protobuf:"bytes,3,opt,name=destination_id,json=destinationId,proto3" json:"destination_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -334,6 +343,13 @@ func (x *SetStreamTitleRequest) GetStageId() string {
 func (x *SetStreamTitleRequest) GetTitle() string {
 	if x != nil {
 		return x.Title
+	}
+	return ""
+}
+
+func (x *SetStreamTitleRequest) GetDestinationId() string {
+	if x != nil {
+		return x.DestinationId
 	}
 	return ""
 }
@@ -386,6 +402,7 @@ type SetStreamCategoryRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"`
 	Category      string                 `protobuf:"bytes,2,opt,name=category,proto3" json:"category,omitempty"`
+	DestinationId string                 `protobuf:"bytes,3,opt,name=destination_id,json=destinationId,proto3" json:"destination_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -430,6 +447,13 @@ func (x *SetStreamCategoryRequest) GetStageId() string {
 func (x *SetStreamCategoryRequest) GetCategory() string {
 	if x != nil {
 		return x.Category
+	}
+	return ""
+}
+
+func (x *SetStreamCategoryRequest) GetDestinationId() string {
+	if x != nil {
+		return x.DestinationId
 	}
 	return ""
 }
@@ -480,8 +504,9 @@ func (x *SetStreamCategoryResponse) GetCategory() string {
 
 type GetChatRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"`
+	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"` // UUID or slug
 	Limit         int32                  `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
+	DestinationId string                 `protobuf:"bytes,3,opt,name=destination_id,json=destinationId,proto3" json:"destination_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -530,12 +555,19 @@ func (x *GetChatRequest) GetLimit() int32 {
 	return 0
 }
 
+func (x *GetChatRequest) GetDestinationId() string {
+	if x != nil {
+		return x.DestinationId
+	}
+	return ""
+}
+
 type ChatMessage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Author        string                 `protobuf:"bytes,2,opt,name=author,proto3" json:"author,omitempty"`
-	Text          string                 `protobuf:"bytes,3,opt,name=text,proto3" json:"text,omitempty"`           // named 'text' not 'message' to avoid proto/Go generator ambiguity
-	Timestamp     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=timestamp,proto3" json:"timestamp,omitempty"` // typed Timestamp for unambiguous watch-mode filtering
+	Text          string                 `protobuf:"bytes,3,opt,name=text,proto3" json:"text,omitempty"`
+	Timestamp     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	Platform      string                 `protobuf:"bytes,5,opt,name=platform,proto3" json:"platform,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -654,6 +686,7 @@ type SendChatRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	StageId       string                 `protobuf:"bytes,1,opt,name=stage_id,json=stageId,proto3" json:"stage_id,omitempty"`
 	Text          string                 `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`
+	DestinationId string                 `protobuf:"bytes,3,opt,name=destination_id,json=destinationId,proto3" json:"destination_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -698,6 +731,13 @@ func (x *SendChatRequest) GetStageId() string {
 func (x *SendChatRequest) GetText() string {
 	if x != nil {
 		return x.Text
+	}
+	return ""
+}
+
+func (x *SendChatRequest) GetDestinationId() string {
+	if x != nil {
+		return x.DestinationId
 	}
 	return ""
 }
@@ -756,26 +796,30 @@ const file_api_v1_broadcast_proto_rawDesc = "" +
 	"\x16StartBroadcastResponse\"1\n" +
 	"\x14StopBroadcastRequest\x12\x19\n" +
 	"\bstage_id\x18\x01 \x01(\tR\astageId\"\x17\n" +
-	"\x15StopBroadcastResponse\"1\n" +
+	"\x15StopBroadcastResponse\"X\n" +
 	"\x14GetStreamInfoRequest\x12\x19\n" +
-	"\bstage_id\x18\x01 \x01(\tR\astageId\"e\n" +
+	"\bstage_id\x18\x01 \x01(\tR\astageId\x12%\n" +
+	"\x0edestination_id\x18\x02 \x01(\tR\rdestinationId\"e\n" +
 	"\x15GetStreamInfoResponse\x12\x14\n" +
 	"\x05title\x18\x01 \x01(\tR\x05title\x12\x1a\n" +
 	"\bcategory\x18\x02 \x01(\tR\bcategory\x12\x1a\n" +
-	"\bplatform\x18\x03 \x01(\tR\bplatform\"H\n" +
+	"\bplatform\x18\x03 \x01(\tR\bplatform\"o\n" +
 	"\x15SetStreamTitleRequest\x12\x19\n" +
 	"\bstage_id\x18\x01 \x01(\tR\astageId\x12\x14\n" +
-	"\x05title\x18\x02 \x01(\tR\x05title\".\n" +
+	"\x05title\x18\x02 \x01(\tR\x05title\x12%\n" +
+	"\x0edestination_id\x18\x03 \x01(\tR\rdestinationId\".\n" +
 	"\x16SetStreamTitleResponse\x12\x14\n" +
-	"\x05title\x18\x01 \x01(\tR\x05title\"Q\n" +
+	"\x05title\x18\x01 \x01(\tR\x05title\"x\n" +
 	"\x18SetStreamCategoryRequest\x12\x19\n" +
 	"\bstage_id\x18\x01 \x01(\tR\astageId\x12\x1a\n" +
-	"\bcategory\x18\x02 \x01(\tR\bcategory\"7\n" +
+	"\bcategory\x18\x02 \x01(\tR\bcategory\x12%\n" +
+	"\x0edestination_id\x18\x03 \x01(\tR\rdestinationId\"7\n" +
 	"\x19SetStreamCategoryResponse\x12\x1a\n" +
-	"\bcategory\x18\x01 \x01(\tR\bcategory\"A\n" +
+	"\bcategory\x18\x01 \x01(\tR\bcategory\"h\n" +
 	"\x0eGetChatRequest\x12\x19\n" +
 	"\bstage_id\x18\x01 \x01(\tR\astageId\x12\x14\n" +
-	"\x05limit\x18\x02 \x01(\x05R\x05limit\"\x9f\x01\n" +
+	"\x05limit\x18\x02 \x01(\x05R\x05limit\x12%\n" +
+	"\x0edestination_id\x18\x03 \x01(\tR\rdestinationId\"\x9f\x01\n" +
 	"\vChatMessage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
 	"\x06author\x18\x02 \x01(\tR\x06author\x12\x12\n" +
@@ -783,10 +827,11 @@ const file_api_v1_broadcast_proto_rawDesc = "" +
 	"\ttimestamp\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x12\x1a\n" +
 	"\bplatform\x18\x05 \x01(\tR\bplatform\"E\n" +
 	"\x0fGetChatResponse\x122\n" +
-	"\bmessages\x18\x01 \x03(\v2\x16.dazzle.v1.ChatMessageR\bmessages\"@\n" +
+	"\bmessages\x18\x01 \x03(\v2\x16.dazzle.v1.ChatMessageR\bmessages\"g\n" +
 	"\x0fSendChatRequest\x12\x19\n" +
 	"\bstage_id\x18\x01 \x01(\tR\astageId\x12\x12\n" +
-	"\x04text\x18\x02 \x01(\tR\x04text\".\n" +
+	"\x04text\x18\x02 \x01(\tR\x04text\x12%\n" +
+	"\x0edestination_id\x18\x03 \x01(\tR\rdestinationId\".\n" +
 	"\x10SendChatResponse\x12\x1a\n" +
 	"\bplatform\x18\x01 \x01(\tR\bplatform2\xcf\x04\n" +
 	"\x10BroadcastService\x12U\n" +
