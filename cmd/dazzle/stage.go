@@ -54,10 +54,10 @@ func resolveStageByNameOrID(ctx *Context, nameOrID string) (string, error) {
 		return "", err
 	}
 
-	// Collect all stages matching by name
+	// Collect all stages matching by name or slug
 	var matches []*apiv1.Stage
 	for _, s := range listResp.Msg.Stages {
-		if s.Name == nameOrID {
+		if s.Name == nameOrID || s.Slug == nameOrID {
 			matches = append(matches, s)
 		}
 	}
@@ -65,23 +65,13 @@ func resolveStageByNameOrID(ctx *Context, nameOrID string) (string, error) {
 		return matches[0].Id, nil
 	}
 	if len(matches) > 1 {
-		var platforms []string
+		var slugs []string
 		for _, s := range matches {
-			if s.Destination != nil && s.Destination.Platform != "" {
-				platforms = append(platforms, fmt.Sprintf("%q", s.Destination.Platform+":"+s.Name))
+			if s.Slug != "" {
+				slugs = append(slugs, s.Slug)
 			}
 		}
-		return "", fmt.Errorf("multiple stages named %q — use platform:name to disambiguate (e.g., %s)", nameOrID, strings.Join(platforms, ", "))
-	}
-
-	// Try platform:name syntax (e.g., "twitch:my-stage")
-	if parts := strings.SplitN(nameOrID, ":", 2); len(parts) == 2 {
-		platform, name := parts[0], parts[1]
-		for _, s := range listResp.Msg.Stages {
-			if s.Destination != nil && s.Destination.Platform == platform && s.Name == name {
-				return s.Id, nil
-			}
-		}
+		return "", fmt.Errorf("multiple stages named %q — use slug instead: %s", nameOrID, strings.Join(slugs, ", "))
 	}
 
 	return "", fmt.Errorf("stage %q not found", nameOrID)
@@ -108,29 +98,9 @@ func (c *StageListCmd) Run(ctx *Context) error {
 		return nil
 	}
 
-	// Show PLATFORM column only if any stage has a destination set.
-	hasPlatform := false
+	tableHeader("NAME", "SLUG", "STATUS")
 	for _, s := range resp.Msg.Stages {
-		if s.Destination != nil && s.Destination.Platform != "" {
-			hasPlatform = true
-			break
-		}
-	}
-
-	if hasPlatform {
-		tableHeader("NAME", "PLATFORM", "STATUS")
-		for _, s := range resp.Msg.Stages {
-			platform := ""
-			if s.Destination != nil {
-				platform = s.Destination.Platform
-			}
-			printText("%s", tableRow(s.Name, platform, s.Status))
-		}
-	} else {
-		tableHeader("NAME", "STATUS")
-		for _, s := range resp.Msg.Stages {
-			printText("%s", tableRow(s.Name, s.Status))
-		}
+		printText("%s", tableRow(s.Name, s.Slug, s.Status))
 	}
 	return nil
 }

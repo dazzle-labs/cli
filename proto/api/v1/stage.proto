@@ -30,23 +30,11 @@ message Stage {
   string status = 7; // inactive | starting | running | stopping
   string owner_user_id = 8;
   string name = 9;
-  string destination_id = 10;             // deprecated — use destinations
-  // field 11 removed (was StagePreview preview)
-  StreamDestination destination = 12;     // deprecated — use destinations
+  reserved 10, 11, 12;
   repeated string capabilities = 13;     // e.g., ["gpu"]
   string slug = 14;                       // short URL slug for /watch/{slug}
-  repeated StageDestination destinations = 15;
+  repeated StreamDestination destinations = 15;
   string watch_url = 16;
-}
-
-// StageDestination represents a streaming destination linked to a stage.
-message StageDestination {
-  string id = 1;                // stage_destinations row ID
-  string destination_id = 2;    // FK to stream_destinations
-  string name = 3;
-  string platform = 4;         // "dazzle", "twitch", "youtube", "kick", "restream", "custom"
-  string platform_username = 5;
-  bool enabled = 6;
 }
 
 message CreateStageRequest {
