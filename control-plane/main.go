@@ -268,9 +268,11 @@ func NewManager() (*Manager, error) {
 	return m, nil
 }
 
-// recoverStages rebuilds in-memory state from actual k8s pods on restart.
-// Any DB stage marked non-inactive that has no corresponding running pod is reset to inactive.
+// recoverStages rebuilds in-memory state from actual k8s pods and GPU stage
+// records on restart. Any DB stage marked non-inactive that has no corresponding
+// running pod or GPU stage is reset to inactive.
 func (m *Manager) recoverStages() error {
+	// 1. Recover CPU stages from k8s pods
 	pods, err := m.clientset.CoreV1().Pods(m.namespace).List(context.Background(), metav1.ListOptions{
 		LabelSelector: "app=streamer-stage",
 	})
@@ -320,7 +322,43 @@ func (m *Manager) recoverStages() error {
 		log.Printf("Recovered stage %s (pod=%s, status=%s, owner=%s)", stageID, pod.Name, status, stage.OwnerUserID)
 	}
 
-	// Reset any DB stages that appear non-inactive but have no running pod
+	// 2. Recover GPU stages from DB — these have no k8s pod but have a sidecar URL
+	if m.db != nil {
+		gpuRows, err := m.db.Query(`SELECT `+stageColumns+` FROM stages WHERE status != 'inactive' AND provider = 'gpu'`)
+		if err == nil {
+			for gpuRows.Next() {
+				row, err := scanStage(gpuRows)
+				if err != nil {
+					continue
+				}
+				if _, ok := m.stages[row.ID]; ok {
+					continue // already recovered
+				}
+				stage := &Stage{
+					ID:           row.ID,
+					Name:         row.Name,
+					Status:       StageStatus(row.Status),
+					OwnerUserID:  row.UserID,
+					Provider:     "gpu",
+					SidecarURL:   row.SidecarURL.String,
+					Capabilities: row.Capabilities,
+					CreatedAt:    row.CreatedAt,
+				}
+				if row.PreviewToken.Valid {
+					stage.PreviewToken = row.PreviewToken.String
+				}
+				if row.Slug.Valid {
+					stage.Slug = row.Slug.String
+				}
+				m.stages[row.ID] = stage
+				log.Printf("Recovered GPU stage %s (status=%s, sidecar=%s, owner=%s)", row.ID, row.Status, row.SidecarURL.String, row.UserID)
+			}
+			gpuRows.Close()
+		}
+	}
+
+	// 3. Reset any DB stages that appear non-inactive but have no corresponding
+	// in-memory state (no pod and not a GPU stage we just recovered)
 	if m.db != nil {
 		rows, err := m.db.Query(`SELECT id FROM stages WHERE status != 'inactive'`)
 		if err == nil {
@@ -330,7 +368,7 @@ func (m *Manager) recoverStages() error {
 				if rows.Scan(&id) == nil {
 					if _, ok := m.stages[id]; !ok {
 						dbUpdateStageStatus(m.db, id, "inactive", "", "")
-						log.Printf("Reset stale stage %s to inactive (no pod found)", id)
+						log.Printf("Reset stale stage %s to inactive (no pod or GPU stage found)", id)
 					}
 				}
 			}
@@ -930,6 +968,29 @@ func (m *Manager) createStageRecord(userID, name string, capabilities []string) 
 
 // activateGPUStage creates a GPUStage CR and waits for the controller to assign it to a node.
 func (m *Manager) activateGPUStage(ctx context.Context, id, userID string) (*Stage, error) {
+	// Per-stage lock prevents concurrent activations from racing
+	val, _ := m.activateMu.LoadOrStore(id, &sync.Mutex{})
+	mu := val.(*sync.Mutex)
+	mu.Lock()
+	defer mu.Unlock()
+
+	// Check if already active (under lock, so no race)
+	if stage, ok := m.getStage(id); ok {
+		if stage.Status == StatusRunning && stage.SidecarURL != "" {
+			return stage, nil
+		}
+		if stage.Status == StatusStarting {
+			// Already being activated by another goroutine — wait for it
+			sidecarURL, err := m.gpuStageController.WaitForRunning(ctx, "stage-"+id)
+			if err != nil {
+				return nil, err
+			}
+			stage.Status = StatusRunning
+			stage.SidecarURL = sidecarURL
+			return stage, nil
+		}
+	}
+
 	if m.gpuStageController == nil {
 		return nil, fmt.Errorf("GPU provisioning not configured")
 	}

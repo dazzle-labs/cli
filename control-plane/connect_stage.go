@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
 	"time"
 
 	"connectrpc.com/connect"
@@ -230,9 +231,17 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 	stageID := row.ID
 	isGPU := hasCapability(row.Capabilities, "gpu")
 
+	// Per-stage lock: prevents concurrent activate/deactivate from racing.
+	// Hold through the check + DB update + goroutine launch so two concurrent
+	// ActivateStage calls can't both pass the "already running" check.
+	val, _ := s.mgr.activateMu.LoadOrStore(stageID, &sync.Mutex{})
+	stageMu := val.(*sync.Mutex)
+	stageMu.Lock()
+
 	// Already running or starting — return current state
 	if live, ok := s.mgr.getStage(stageID); ok {
 		if live.Status == StatusRunning || live.Status == StatusStarting {
+			stageMu.Unlock()
 			st := stageRowToStruct(row, s.mgr)
 			return connect.NewResponse(&apiv1.ActivateStageResponse{
 				Stage: stageToProto(st, s.mgr.publicBaseURL, s.mgr.db),
@@ -240,9 +249,19 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 		}
 	}
 
+	// Also check DB status — covers recovered GPU stages not yet in memory
+	if row.Status == "running" || row.Status == "starting" {
+		stageMu.Unlock()
+		st := stageRowToStruct(row, s.mgr)
+		return connect.NewResponse(&apiv1.ActivateStageResponse{
+			Stage: stageToProto(st, s.mgr.publicBaseURL, s.mgr.db),
+		}), nil
+	}
+
 	// Enforce per-user active stage limits: 3 total, 1 GPU.
 	allStages, listErr := dbListStages(s.mgr.db, info.UserID)
 	if listErr != nil {
+		stageMu.Unlock()
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to check stage limits"))
 	}
 	activeCount, activeGPU := 0, 0
@@ -255,17 +274,22 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 		}
 	}
 	if activeCount >= 3 {
+		stageMu.Unlock()
 		return nil, connect.NewError(connect.CodeResourceExhausted, fmt.Errorf("active stage limit reached (max 3)"))
 	}
 	if isGPU && activeGPU >= 1 {
+		stageMu.Unlock()
 		return nil, connect.NewError(connect.CodeResourceExhausted, fmt.Errorf("active GPU stage limit reached (max 1)"))
 	}
 
 	// Set DB status to starting before spawning goroutine so GetStage reflects it immediately
 	dbUpdateStageStatus(s.mgr.db, stageID, "starting", "", "")
 
-	// Activate asynchronously — return immediately with starting status
+	// Activate asynchronously — return immediately with starting status.
+	// Unlock after goroutine starts; the inner activateStage/activateGPUStage
+	// re-acquires the per-stage lock for the actual provisioning.
 	go s.mgr.activateStageAsync(stageID, info.UserID, isGPU)
+	stageMu.Unlock()
 
 	// Return stage in starting state
 	st := stageRowToStruct(row, s.mgr)
