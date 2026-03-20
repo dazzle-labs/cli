@@ -67,6 +67,22 @@ func (s *broadcastServer) StopBroadcast(ctx context.Context, req *connect.Reques
 func (s *broadcastServer) GetStreamInfo(ctx context.Context, req *connect.Request[apiv1.GetStreamInfoRequest]) (*connect.Response[apiv1.GetStreamInfoResponse], error) {
 	ctx, cancel, client, dest, accessToken, err := s.requirePlatformConnection(ctx, req.Msg.StageId, req.Msg.DestinationId)
 	if err != nil {
+		// No external platform — return title/category from DB
+		stageID := req.Msg.StageId
+		if id, resolveErr := resolveStageID(s.mgr, stageID); resolveErr == nil {
+			stageID = id
+		}
+		if s.mgr.db != nil {
+			var title, category string
+			row := s.mgr.db.QueryRow("SELECT COALESCE(stream_title,''), COALESCE(stream_category,'') FROM stages WHERE id=$1", stageID)
+			if scanErr := row.Scan(&title, &category); scanErr == nil {
+				return connect.NewResponse(&apiv1.GetStreamInfoResponse{
+					Title:    title,
+					Category: category,
+					Platform: "dazzle",
+				}), nil
+			}
+		}
 		return nil, err
 	}
 	defer cancel()
@@ -87,40 +103,50 @@ func (s *broadcastServer) GetStreamInfo(ctx context.Context, req *connect.Reques
 }
 
 func (s *broadcastServer) SetStreamTitle(ctx context.Context, req *connect.Request[apiv1.SetStreamTitleRequest]) (*connect.Response[apiv1.SetStreamTitleResponse], error) {
-	ctx, cancel, client, dest, accessToken, err := s.requirePlatformConnection(ctx, req.Msg.StageId, req.Msg.DestinationId)
-	if err != nil {
-		return nil, err
-	}
-	defer cancel()
-
-	// Pass "" for category — existing platform implementations skip updating a field when "" is passed.
-	if err := client.SetStreamInfo(ctx, accessToken, dest.PlatformUserID, req.Msg.Title, ""); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+	stageID := req.Msg.StageId
+	info := mustAuth(ctx)
+	if id, err := resolveStageID(s.mgr, stageID); err == nil {
+		stageID = id
 	}
 
-	// Persist stream title for OG metadata on public watch pages
+	// Try to update the external platform if one is connected
+	client, dest, accessToken, err := s.mgr.resolvePlatformConnection(stageID, info.UserID, req.Msg.DestinationId)
+	if err == nil && accessToken != "" {
+		pctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		defer cancel()
+		if err := client.SetStreamInfo(pctx, accessToken, dest.PlatformUserID, req.Msg.Title, ""); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+	}
+
+	// Always persist stream title for OG metadata on public watch pages
 	if s.mgr.db != nil {
-		s.mgr.db.Exec("UPDATE stages SET stream_title=$1, updated_at=NOW() WHERE id=$2", req.Msg.Title, req.Msg.StageId)
+		s.mgr.db.Exec("UPDATE stages SET stream_title=$1, updated_at=NOW() WHERE id=$2", req.Msg.Title, stageID)
 	}
 
 	return connect.NewResponse(&apiv1.SetStreamTitleResponse{Title: req.Msg.Title}), nil
 }
 
 func (s *broadcastServer) SetStreamCategory(ctx context.Context, req *connect.Request[apiv1.SetStreamCategoryRequest]) (*connect.Response[apiv1.SetStreamCategoryResponse], error) {
-	ctx, cancel, client, dest, accessToken, err := s.requirePlatformConnection(ctx, req.Msg.StageId, req.Msg.DestinationId)
-	if err != nil {
-		return nil, err
-	}
-	defer cancel()
-
-	// Pass "" for title — existing platform implementations skip updating a field when "" is passed.
-	if err := client.SetStreamInfo(ctx, accessToken, dest.PlatformUserID, "", req.Msg.Category); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+	stageID := req.Msg.StageId
+	info := mustAuth(ctx)
+	if id, err := resolveStageID(s.mgr, stageID); err == nil {
+		stageID = id
 	}
 
-	// Persist stream category for OG metadata on public watch pages
+	// Try to update the external platform if one is connected
+	client, dest, accessToken, err := s.mgr.resolvePlatformConnection(stageID, info.UserID, req.Msg.DestinationId)
+	if err == nil && accessToken != "" {
+		pctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		defer cancel()
+		if err := client.SetStreamInfo(pctx, accessToken, dest.PlatformUserID, "", req.Msg.Category); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+	}
+
+	// Always persist stream category for OG metadata on public watch pages
 	if s.mgr.db != nil {
-		s.mgr.db.Exec("UPDATE stages SET stream_category=$1, updated_at=NOW() WHERE id=$2", req.Msg.Category, req.Msg.StageId)
+		s.mgr.db.Exec("UPDATE stages SET stream_category=$1, updated_at=NOW() WHERE id=$2", req.Msg.Category, stageID)
 	}
 
 	return connect.NewResponse(&apiv1.SetStreamCategoryResponse{Category: req.Msg.Category}), nil
