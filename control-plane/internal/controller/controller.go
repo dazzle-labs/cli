@@ -195,7 +195,7 @@ func (c *GPUNodeController) handleNew(ctx context.Context, node *unstructured.Un
 		// Explicitly request all NVIDIA driver capabilities so the
 		// nvidia-container-toolkit mounts video (NVENC/NVDEC) and graphics
 		// (Vulkan/EGL) libraries — not just compute+utility defaults.
-		"NVIDIA_DRIVER_CAPABILITIES": "all",
+		"NVIDIA_DRIVER_CAPABILITIES": "compute,video,graphics,utility",
 		"NVIDIA_VISIBLE_DEVICES":     "all",
 	}
 
