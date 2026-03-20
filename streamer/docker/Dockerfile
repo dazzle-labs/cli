@@ -117,10 +117,12 @@ RUN chmod +x /entrypoint.sh /scripts/prestop.sh /stage-start.sh
 
 ENV DISPLAY=:99
 ENV PULSE_SERVER=unix:/tmp/pulse/native
-# NVIDIA container runtime: request all driver capabilities so that
-# libGL/libEGL/libvulkan are bind-mounted from the host GPU driver.
+# NVIDIA container runtime: request specific driver capabilities.
+# "video" is required for NVENC/NVDEC — without it, libnvidia-encode
+# is not bind-mounted and h264_nvenc fails with "No NVENC capable devices".
+# "all" should include video but some runtimes don't honor it.
 ENV NVIDIA_VISIBLE_DEVICES=all
-ENV NVIDIA_DRIVER_CAPABILITIES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,video,graphics,utility
 
 ENTRYPOINT ["/entrypoint.sh"]
 
