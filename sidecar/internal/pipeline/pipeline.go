@@ -275,9 +275,6 @@ func (p *Pipeline) buildArgs() []string {
 	args := []string{
 		"-loglevel", "warning",
 		"-nostdin",
-		// Use wall clock for all input timestamps — prevents x11grab's
-		// internal clock from drifting when input threads stall.
-		"-use_wallclock_as_timestamps", "1",
 		// Video input: X11 grab
 		// Large thread queue absorbs Chrome's bursty software rendering
 		// without blocking the input thread (default 8 is ~250ms at 30fps).
@@ -301,6 +298,10 @@ func (p *Pipeline) buildArgs() []string {
 
 	// Audio codec
 	args = append(args, "-c:a", "aac", "-b:a", "128k")
+
+	// Global header: puts codec params in extradata, required by tee muxer
+	// with FLV and expected by most RTMP ingest servers.
+	args = append(args, "-flags", "+global_header")
 
 	// Output: single or tee muxer for multiple destinations
 	if len(p.outputs) == 1 {
@@ -330,6 +331,8 @@ func (p *Pipeline) codecArgs(gop string) []string {
 		return []string{
 			"-c:v", "h264_nvenc", "-preset", "p4", "-tune", "ll",
 			"-rc", "cbr",
+			"-profile:v", "high", "-level:v", "4.1",
+			"-pix_fmt", "yuv420p",
 			"-b:v", fmt.Sprintf("%dk", p.rtmpBitrate),
 			"-maxrate", fmt.Sprintf("%dk", p.rtmpBitrate),
 			"-bufsize", fmt.Sprintf("%dk", p.rtmpBitrate*2),
