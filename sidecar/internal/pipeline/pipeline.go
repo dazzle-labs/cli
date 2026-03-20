@@ -434,7 +434,7 @@ func shellQuoteArgs(args []string) string {
 func ProbeCodec(codec string) error {
 	args := []string{
 		"-loglevel", "error",
-		"-f", "lavfi", "-i", "nullsrc=s=64x64:d=0.04",
+		"-f", "lavfi", "-i", "nullsrc=s=256x256:d=0.04",
 		"-frames:v", "1",
 		"-c:v", codec,
 	}
