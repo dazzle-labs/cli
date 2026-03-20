@@ -106,7 +106,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && git clone --depth 1 --branch n12.2.72.0 https://github.com/FFmpeg/nv-codec-headers /tmp/nv-codec-headers \
     && make -C /tmp/nv-codec-headers install \
     && git init /tmp/ffmpeg && cd /tmp/ffmpeg \
-    && git fetch --depth 1 https://github.com/FFmpeg/FFmpeg 313e776f5e93ed328fe1cf72e1a08ee0ef19cf21 \
+    && git fetch --depth 1 https://git.ffmpeg.org/ffmpeg.git 313e776f5e93ed328fe1cf72e1a08ee0ef19cf21 \
     && git checkout FETCH_HEAD \
     && ./configure \
         --enable-gpl --enable-nonfree \
