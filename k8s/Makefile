@@ -18,7 +18,7 @@ STEP    = @printf "$(_bold)$(_cyan)── %s ──$(_reset)\n"
 OK      = @printf "$(_bold)$(_green)✓ %s$(_reset)\n"
 
 .PHONY: apply-secrets prometheus/install prometheus/uninstall trimaran/install trimaran/uninstall deploy \
-       current-cp-image set-streamer-env verify
+       current-cp-image verify
 
 apply-secrets: ## Decrypt SOPS secrets and apply them to the cluster
 	$(STEP) "Applying secrets"
@@ -68,10 +68,6 @@ deploy: apply-secrets prometheus/install ## Apply secrets, install Helm charts, 
 current-cp-image: ## Print current control-plane image tag (read-only)
 	@$(KUBECTL) get deployment control-plane -n browser-streamer \
 		-o jsonpath='{.spec.template.spec.containers[?(@.name=="control-plane")].image}' 2>/dev/null || true
-
-set-streamer-env: ## Update STREAMER_IMAGE env var on control-plane deployment (triggers rollout)
-	$(KUBECTL) set env deployment/control-plane -n browser-streamer \
-		STREAMER_IMAGE=$(STREAMER_IMAGE)
 
 verify: ## Wait for control-plane rollout to complete and show recent logs (read-only)
 	@$(KUBECTL) rollout status deployment/control-plane -n browser-streamer --timeout=300s || { \

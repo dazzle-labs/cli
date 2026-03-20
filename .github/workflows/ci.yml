@@ -505,18 +505,31 @@ jobs:
           kustomize edit set image ${{ env.STREAMER_REPO }}:${{ needs.streamer.outputs.image_tag }}
           kustomize edit set image ${{ env.SIDECAR_REPO }}:${{ needs.sidecar.outputs.image_tag }}
           kustomize edit set image ${{ env.INGEST_REPO }}:${{ needs.ingest.outputs.image_tag }}
+
+          # Patch env vars into deployment so everything deploys in a single rollout
+          cat > ci-env-patch.yaml <<PATCH
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: control-plane
+            namespace: browser-streamer
+          spec:
+            template:
+              spec:
+                containers:
+                  - name: control-plane
+                    env:
+                      - name: STREAMER_IMAGE
+                        value: "${{ env.STREAMER_REPO }}:${{ needs.streamer.outputs.image_tag }}"
+                      - name: SIDECAR_IMAGE
+                        value: "${{ env.SIDECAR_REPO }}:${{ needs.sidecar.outputs.image_tag }}"
+                      - name: GPU_NODE_IMAGE
+                        value: "${{ env.GPU_NODE_REPO }}:${{ needs.sidecar.outputs.image_tag }}"
+          PATCH
+          kustomize edit add patch --path ci-env-patch.yaml
+
           cd ..
           make prod/k8s/deploy
-
-      - name: Wait for kustomize rollout
-        run: make prod/k8s/verify
-
-      - name: Update image env vars on control-plane
-        run: |
-          make prod/kubectl ARGS="set env deployment/control-plane -n browser-streamer \
-            STREAMER_IMAGE=${{ env.STREAMER_REPO }}:${{ needs.streamer.outputs.image_tag }} \
-            SIDECAR_IMAGE=${{ env.SIDECAR_REPO }}:${{ needs.sidecar.outputs.image_tag }} \
-            GPU_NODE_IMAGE=${{ env.GPU_NODE_REPO }}:${{ needs.sidecar.outputs.image_tag }}"
 
       - name: Verify Deployment
         if: steps.compare.outputs.changed == 'true'
