@@ -100,7 +100,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/lunarg.gpg] https://packages.lunarg.com/vulkan/1.3.283 jammy main" \
         > /etc/apt/sources.list.d/lunarg-vulkan.list \
     && apt-get update && apt-get install -y --no-install-recommends \
-        libvulkan-dev shaderc \
+        libvulkan1 libvulkan-dev shaderc \
     # nv-codec-headers for NVENC
     && git clone --depth 1 --branch n12.2.72.0 https://github.com/FFmpeg/nv-codec-headers /tmp/nv-codec-headers \
     && make -C /tmp/nv-codec-headers install \
