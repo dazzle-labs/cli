@@ -59,6 +59,13 @@ export function StageDetail() {
     refresh();
   }, [stageId]);
 
+  // Auto-poll while stage is starting
+  useEffect(() => {
+    if (stage?.status !== "starting") return;
+    const interval = setInterval(() => refresh(), 3000);
+    return () => clearInterval(interval);
+  }, [stage?.status]);
+
   async function handleDelete() {
     if (!stageId) return;
     try {

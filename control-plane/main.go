@@ -765,6 +765,27 @@ func (m *Manager) doDeactivateStage(id string) error {
 	return nil
 }
 
+// activateStageAsync runs stage activation in a background goroutine.
+// On failure it cleans up and resets the stage to inactive.
+func (m *Manager) activateStageAsync(stageID, userID string, isGPU bool) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	var err error
+	if isGPU {
+		_, err = m.activateGPUStage(ctx, stageID, userID)
+	} else {
+		_, err = m.activateStage(ctx, stageID, userID)
+	}
+	if err != nil {
+		log.Printf("ERROR: async activation failed for stage %s: %v", stageID, err)
+		if isGPU {
+			m.deactivateStage(stageID)
+		}
+		// K8s path already calls doDeactivateStage on failure inside activateStage
+	}
+}
+
 // activateStage creates a pod for an existing inactive stage record.
 // On failure (timeout, pod crash, etc.), it cleans up and resets the stage to inactive.
 func (m *Manager) activateStage(ctx context.Context, id, userID string) (*Stage, error) {
@@ -912,6 +933,17 @@ func (m *Manager) activateGPUStage(ctx context.Context, id, userID string) (*Sta
 	if m.gpuStageController == nil {
 		return nil, fmt.Errorf("GPU provisioning not configured")
 	}
+
+	// Set in-memory stage to starting so GetStage reflects status immediately
+	m.mu.Lock()
+	m.stages[id] = &Stage{
+		ID:          id,
+		Status:      StatusStarting,
+		OwnerUserID: userID,
+		Provider:    "gpu",
+		CreatedAt:   time.Now(),
+	}
+	m.mu.Unlock()
 
 	stageCRName := "stage-" + id
 	cr := &unstructured.Unstructured{

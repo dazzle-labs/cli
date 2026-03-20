@@ -228,10 +228,16 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 		return nil, err
 	}
 	stageID := row.ID
+	isGPU := hasCapability(row.Capabilities, "gpu")
 
-	// Check not already active
-	if live, ok := s.mgr.getStage(stageID); ok && live.Status == StatusRunning {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("stage is already active"))
+	// Already running or starting — return current state
+	if live, ok := s.mgr.getStage(stageID); ok {
+		if live.Status == StatusRunning || live.Status == StatusStarting {
+			st := stageRowToStruct(row, s.mgr)
+			return connect.NewResponse(&apiv1.ActivateStageResponse{
+				Stage: stageToProto(st, s.mgr.publicBaseURL, s.mgr.db),
+			}), nil
+		}
 	}
 
 	// Enforce per-user active stage limits: 3 total, 1 GPU.
@@ -251,37 +257,21 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 	if activeCount >= 3 {
 		return nil, connect.NewError(connect.CodeResourceExhausted, fmt.Errorf("active stage limit reached (max 3)"))
 	}
-	if hasCapability(row.Capabilities, "gpu") && activeGPU >= 1 {
+	if isGPU && activeGPU >= 1 {
 		return nil, connect.NewError(connect.CodeResourceExhausted, fmt.Errorf("active GPU stage limit reached (max 1)"))
 	}
 
-	waitCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
-	defer cancel()
+	// Set DB status to starting before spawning goroutine so GetStage reflects it immediately
+	dbUpdateStageStatus(s.mgr.db, stageID, "starting", "", "")
 
-	// Branch on capabilities: GPU stages use RunPod agent, others use k8s pods
-	var readyStage *Stage
-	if hasCapability(row.Capabilities, "gpu") {
-		readyStage, err = s.mgr.activateGPUStage(waitCtx, stageID, info.UserID)
-	} else {
-		readyStage, err = s.mgr.activateStage(waitCtx, stageID, info.UserID)
-	}
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
+	// Activate asynchronously — return immediately with starting status
+	go s.mgr.activateStageAsync(stageID, info.UserID, isGPU)
 
-	// Populate fields from DB that the in-memory stage doesn't track
-	readyStage.Name = row.Name
-	if freshRow, err := dbGetStage(s.mgr.db, stageID); err == nil && freshRow != nil {
-		if freshRow.PreviewToken.Valid {
-			readyStage.PreviewToken = freshRow.PreviewToken.String
-		}
-		if freshRow.Slug.Valid {
-			readyStage.Slug = freshRow.Slug.String
-		}
-	}
-
+	// Return stage in starting state
+	st := stageRowToStruct(row, s.mgr)
+	st.Status = StatusStarting
 	return connect.NewResponse(&apiv1.ActivateStageResponse{
-		Stage: stageToProto(readyStage, s.mgr.publicBaseURL, s.mgr.db),
+		Stage: stageToProto(st, s.mgr.publicBaseURL, s.mgr.db),
 	}), nil
 }
 
