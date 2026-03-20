@@ -104,10 +104,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # nv-codec-headers for NVENC
     && git clone --depth 1 --branch n12.2.72.0 https://github.com/FFmpeg/nv-codec-headers /tmp/nv-codec-headers \
     && make -C /tmp/nv-codec-headers install \
-    # ffmpeg — pinned via GitHub tarball (git servers block fetch-by-SHA)
-    && wget -qO /tmp/ffmpeg.tar.gz https://github.com/FFmpeg/FFmpeg/archive/313e776f5e93ed328fe1cf72e1a08ee0ef19cf21.tar.gz \
-    && mkdir /tmp/ffmpeg && tar xf /tmp/ffmpeg.tar.gz -C /tmp/ffmpeg --strip-components=1 \
-    && cd /tmp/ffmpeg \
+    # ffmpeg — pinned to 313e776 (2026-03-20, post-n7.1 Vulkan Video fix).
+    # Clone from git.ffmpeg.org with enough depth to reach the commit.
+    && git clone --depth 100 https://git.ffmpeg.org/ffmpeg.git /tmp/ffmpeg \
+    && cd /tmp/ffmpeg && git checkout 313e776 \
     && ./configure \
         --enable-gpl --enable-nonfree \
         --enable-vulkan --enable-libshaderc --enable-libdrm \
