@@ -1,20 +1,29 @@
 # Dazzle Content Authoring Guide
 
-Your content runs in a cloud browser captured at 1280x720 @ 30 fps. There is no
-hardware GPU — rendering is done in software on shared CPU. This guide helps you
-write content that looks great within these constraints.
+Your content runs in a cloud browser captured at 1280x720 @ 30 fps and streamed
+to platforms like Twitch, Kick, and YouTube. This guide helps you write content
+that looks great on stream.
+
+Dazzle stages come in two tiers:
+
+- **GPU stages** — NVIDIA RTX with hardware-accelerated WebGL and video encoding.
+  Shaders, raymarching, complex post-processing — all 60 FPS.
+- **CPU stages** — Software-rendered OpenGL on shared CPU. Lighter content only.
+
+Most of this guide applies to both. Sections marked **(CPU only)** note
+constraints that don't apply on GPU.
 
 ## Environment at a Glance
 
-| Setting     | Value                                          |
-|-------------|------------------------------------------------|
-| Resolution  | 1280x720 (fixed)                               |
-| Frame rate  | 30 fps (captured via x11grab → x264)           |
-| Renderer    | Software OpenGL (no hardware GPU)                |
-| CPU budget  | ~50% used by capture/encode; your content gets the rest |
-| Browser     | Headless Chrome, kiosk mode, full viewport      |
-| Audio       | PulseAudio capture (Web Audio API works)        |
-| Persistence | localStorage and IndexedDB survive restarts     |
+| Setting     | GPU Stage                                      | CPU Stage                          |
+|-------------|------------------------------------------------|------------------------------------|
+| Resolution  | 1280x720 (fixed)                               | 1280x720 (fixed)                   |
+| Frame rate  | 60 fps rendering, 30 fps capture               | 30 fps rendering, 30 fps capture   |
+| Renderer    | NVIDIA RTX (hardware WebGL via ANGLE)           | Software OpenGL (no hardware GPU)  |
+| Encoder     | Vulkan Video / NVENC, CBR 2500k                | x264 (CPU), CBR 2500k             |
+| Browser     | Chrome, kiosk mode, full viewport               | Chrome, kiosk mode, full viewport  |
+| Audio       | PulseAudio capture (Web Audio API works)        | PulseAudio capture                 |
+| Persistence | localStorage and IndexedDB survive restarts     | Same                               |
 
 ## Page Setup
 
@@ -45,74 +54,132 @@ const H = canvas.height = window.innerHeight;  // 720
 
 Do NOT hardcode 1920x1080 — the viewport is 1280x720.
 
-## What Works Well (60 FPS)
+## Prefer Declarative Over Imperative
 
-**CSS animations & transitions**
+Write content as **declarative HTML/CSS/SVG** rather than imperative canvas
+drawing code whenever possible. Declarative approaches are:
+
+- **Easier to maintain** — structure is visible in the markup
+- **Better for streaming** — CSS animations are GPU-composited and silky smooth
+- **More resilient** — no frame-loop bugs, no state management issues
+- **Easier to update** — change a CSS variable, not a draw function
+
+**Good: declarative**
+```html
+<div class="particle" style="--x: 50%; --y: 30%; --hue: 200;"></div>
+<style>
+  .particle {
+    position: absolute;
+    left: var(--x); top: var(--y);
+    background: hsl(var(--hue), 80%, 60%);
+    animation: float 3s ease-in-out infinite;
+  }
+</style>
+```
+
+**Avoid: imperative canvas for things CSS can do**
+```js
+// Don't do this for simple animations
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  particles.forEach(p => {
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x, p.y, 4, 4);
+    p.y += Math.sin(p.t) * 0.5;
+  });
+  requestAnimationFrame(draw);
+}
+```
+
+Use canvas/WebGL when you genuinely need it: complex generative art, shader
+effects, data visualizations with thousands of data points, or anything that
+requires per-pixel control.
+
+## What Works Well
+
+**CSS animations & transitions** (both tiers)
 - `@keyframes`, `transition`, `transform`, `opacity` — all smooth at 60 fps
 - CSS is the cheapest way to animate; prefer it over JS when possible
 
-**Canvas 2D**
+**SVG** (both tiers)
+- Vector graphics scale perfectly and animate smoothly via CSS
+- Good for logos, icons, diagrams, and data visualizations
+
+**Canvas 2D** (both tiers)
 - Drawing, compositing, particle effects — efficient even with 1000+ particles
 - Good for dashboards, visualizations, generative art, text rendering
 
-**DOM-heavy animation**
+**DOM-heavy animation** (both tiers)
 - 200+ elements repositioned every frame via JS — still 59 fps
-- `requestAnimationFrame`-driven layouts work well
 
-**WebGL geometry**
-- 500K+ triangles with per-pixel Phong lighting — still 60 fps
-- Three.js, p5.js, custom WebGL — all perform well
-- Use mesh complexity (more triangles) instead of shader complexity (noise, raymarching)
+**WebGL shaders** (GPU: unlimited | CPU: geometry only)
+- **GPU stages**: Full fragment shader support — raymarching, SDF, FBM noise,
+  multi-pass rendering, bloom, post-processing — all 60 FPS. Go wild.
+- **CPU stages**: Geometry-based WebGL (500K+ triangles with per-pixel lighting)
+  works at 60 fps. But fragment-heavy shaders (noise, raymarching) drop to
+  1-11 fps. Use mesh complexity instead of shader complexity.
 
-**Web Audio API**
+**Web Audio API** (both tiers)
 - Oscillators, gain nodes, audio buffers — captured by PulseAudio
 - Good for music visualizers, sound effects, generative audio
 
-**CDN libraries**
+**CDN libraries** (both tiers)
 - Load via `<script>` or `<link>` from CDNs (unpkg, cdnjs, etc.)
 - Three.js, D3, GSAP, Tone.js, p5.js — all work
 
 ## Performance Tiers
 
-Results from our benchmark suite at 1280x720. Use these to calibrate your content:
+### GPU stages
+
+Almost everything runs at 60 FPS. The bottleneck is JavaScript, not rendering:
 
 | Tier | What | FPS |
 |------|-------|-----|
-| Smooth (60 fps) | HTML/CSS animations, Canvas 2D (1000 particles), DOM animation, WebGL geometry (even 500K+ tris) | 55–60 |
-| Good (30+ fps) | Simple full-screen SDF raymarcher (48 steps, no noise), `backdrop-filter` with few panels | 30–36 |
-| Too heavy (<15) | Fragment shaders with noise, multi-pass rendering, complex raymarching | 1–11 |
+| Smooth (60) | Everything: CSS, Canvas 2D, WebGL (any shader complexity), SVG, DOM | 55-60 |
+| Good (30+) | Heavy JS computation + rendering, large DOM trees (1000+ nodes) | 30-60 |
+| Risky (<30) | Main thread blocking (large JSON parse, crypto), layout thrashing | varies |
 
-### What works
-- **Geometry-based WebGL is the sweet spot** — 500K+ triangles with per-pixel Phong lighting still hits 60 fps. Use mesh complexity instead of shader complexity.
-- Canvas 2D scales well (1000 particles with connection lines at 55+ fps)
-- CSS animations are essentially free
-- Simple vertex shaders with per-pixel lighting — no problem
+### CPU stages
 
-### What to avoid
-- **Fragment shaders with noise** — even 2-octave noise in a raymarcher drops to ~11 fps. Any per-pixel noise function is expensive.
-- **Multi-pass rendering** — render-to-texture + post-process (bloom, blur) costs ~11 fps
-- **Complex raymarching** — multi-octave FBM terrain drops to ~1 fps
-- **`backdrop-filter`** is borderline (~30 fps) — usable for 1–2 small panels, avoid stacking
-- Monitor with `dazzle s stats` — if Stage FPS drops below 30, simplify
+Rendering is the bottleneck. Shader complexity is expensive:
+
+| Tier | What | FPS |
+|------|-------|-----|
+| Smooth (60) | HTML/CSS, Canvas 2D (1000 particles), DOM animation, WebGL geometry (500K+ tris) | 55-60 |
+| Good (30+) | Simple full-screen SDF raymarcher (48 steps, no noise), `backdrop-filter` with few panels | 30-36 |
+| Too heavy (<15) | Fragment shaders with noise, multi-pass rendering, complex raymarching | 1-11 |
 
 ## What to Avoid
 
-**`backdrop-filter` (blur, brightness, etc.)**
-- Very expensive in software rendering — avoid entirely
-- Use pre-blurred background images or solid overlays instead
-
-**Large assets**
+**Large assets** (both tiers)
 - Keep images under 2 MB each; use compressed formats (WebP, AVIF)
 - Sprite sheets over many individual images
 - Avoid loading video files — you ARE the video output
 
-**`box-shadow` with large spread/blur**
-- Multiple stacked shadows are expensive in software rendering
-- Use 1–2 subtle shadows max, or fake with border/gradient
-
-**Main thread blocking**
+**Main thread blocking** (both tiers)
 - No long-running synchronous JS (large JSON parse, crypto, etc.)
 - Dropped frames are visible in the stream — keep the main thread clear
+- Use Web Workers for heavy computation
+
+**Unnecessary canvas when CSS suffices** (both tiers)
+- Animating colored boxes? Use `div` + CSS transforms
+- Progress bars, counters, text overlays? Use HTML elements
+- Particle effects with <50 particles? CSS animations work fine
+- Save canvas/WebGL for when you need per-pixel control
+
+**Fragment-heavy shaders (CPU only)**
+- Per-pixel noise functions, raymarching, multi-pass rendering
+- Even 2-octave noise in a raymarcher drops to ~11 fps on CPU
+- On GPU stages these are fine — no restriction
+
+**`backdrop-filter` (CPU only)**
+- Very expensive in software rendering
+- Use pre-blurred background images or solid overlays instead
+- On GPU stages `backdrop-filter` works fine
+
+**`box-shadow` with large spread/blur (CPU only)**
+- Multiple stacked shadows are expensive in software rendering
+- Use 1-2 subtle shadows max, or fake with border/gradient
 
 ## Design Tips for 720p Streaming
 
@@ -121,12 +188,12 @@ Results from our benchmark suite at 1280x720. Use these to calibrate your conten
 - High contrast: light text on dark background (or vice versa)
 - Sans-serif fonts render more cleanly at this resolution
 - Google Fonts via `<link>` work fine
-- Avoid thin font weights (100–300) — they disappear at 720p
+- Avoid thin font weights (100-300) — they disappear at 720p
 
 **Colors & contrast**
 - Dark backgrounds (`#000` or near-black) are the stage default
 - Use bold, saturated colors — subtlety gets lost in compression
-- Avoid fine gradients that may band in x264 encoding
+- Avoid fine gradients that may band in video encoding
 
 **Layout**
 - Design for 16:9 (1280x720) — no scrolling, no overflow
@@ -134,9 +201,9 @@ Results from our benchmark suite at 1280x720. Use these to calibrate your conten
 - Larger UI elements read better on stream than small detailed ones
 
 **Animation**
-- Target 30 fps or below — anything faster is wasted (capture is 30 fps)
+- Target 30 fps or below for animation design — capture is 30 fps
 - Ease-in-out curves look smoother than linear at low frame rates
-- Avoid very fast motion that causes x264 motion blur artifacts
+- Avoid very fast motion that causes compression artifacts
 
 ## Performance Monitoring
 
@@ -148,16 +215,17 @@ dazzle s stats
 
 Output:
 ```
-Stage FPS:       59.8
+Stage FPS:       60.0
 Broadcast FPS:   30.0
 Dropped Frames:  0 (0 last 60s)
 Data:            142.50 MB
-Broadcasting:    no
+Broadcasting:    yes
 Uptime:          2h 15m
 ```
 
-- **Stage FPS** — how fast Chrome is rendering your content. This is the real
-  quality metric. If this drops below 30, your content is too heavy.
+- **Stage FPS** — how fast Chrome is rendering your content. On GPU stages this
+  should be near 60. On CPU stages, 30+ is good. Below 30, your content needs
+  to be simplified (or moved to a GPU stage).
 - **Broadcast FPS** — the encoder output rate. Should stay at 30.0.
 
 Take screenshots to verify your content looks correct:
@@ -179,4 +247,4 @@ dazzle s ss -o check.png
 
 **Sync auto-refresh**
 - Every `dazzle s sync` reloads the browser automatically
-- Use `--watch` for live development (edit → auto-sync → auto-reload)
+- Use `--watch` for live development (edit -> auto-sync -> auto-reload)
