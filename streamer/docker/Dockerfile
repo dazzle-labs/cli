@@ -108,6 +108,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Clone from git.ffmpeg.org with enough depth to reach the commit.
     && git clone --depth 100 https://git.ffmpeg.org/ffmpeg.git /tmp/ffmpeg \
     && cd /tmp/ffmpeg && git checkout 313e776 \
+    && pkg-config --modversion vulkan && pkg-config --modversion shaderc \
     && ./configure \
         --enable-gpl --enable-nonfree \
         --enable-vulkan --enable-libshaderc --enable-libdrm \
