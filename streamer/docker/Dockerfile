@@ -3,7 +3,7 @@ ARG SIDECAR_IMAGE=dazzlefm/agent-streamer-sidecar:main
 
 # --- Base images per variant ---
 FROM ubuntu:24.04                        AS base-cpu
-FROM nvidia/cuda:13.0.0-base-ubuntu24.04 AS base-gpu
+FROM nvidia/cuda:12.6.0-base-ubuntu24.04 AS base-gpu
 
 # --- Common packages (no GL libs here) ---
 FROM base-${VARIANT} AS base
@@ -83,7 +83,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential git nasm pkg-config \
         libx264-dev libpulse-dev libx11-dev libxcb1-dev libxcb-shm0-dev \
         libxcb-xfixes0-dev \
-    && git clone --depth 1 https://github.com/FFmpeg/nv-codec-headers /tmp/nv-codec-headers \
+    && git clone --depth 1 --branch n13.0.0.0 https://github.com/FFmpeg/nv-codec-headers /tmp/nv-codec-headers \
     && make -C /tmp/nv-codec-headers install \
     && git clone --depth 1 --branch n7.1 https://github.com/FFmpeg/FFmpeg /tmp/ffmpeg \
     && cd /tmp/ffmpeg \
