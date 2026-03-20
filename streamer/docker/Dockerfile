@@ -3,7 +3,7 @@ ARG SIDECAR_IMAGE=dazzlefm/agent-streamer-sidecar:main
 
 # --- Base images per variant ---
 FROM ubuntu:24.04                        AS base-cpu
-FROM nvidia/cuda:12.2.0-base-ubuntu22.04 AS base-gpu
+FROM nvidia/cuda:13.0.0-base-ubuntu24.04 AS base-gpu
 
 # --- Common packages (no GL libs here) ---
 FROM base-${VARIANT} AS base
@@ -13,8 +13,6 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Install system dependencies
 # Note: Ubuntu 22.04's chromium-browser is a snap stub that doesn't work in containers.
 # We install Chromium from the Playwright team's PPA which provides a real .deb package.
-# Package names differ between 22.04 and 24.04 (t64 transition).
-# Use apt-get with fallbacks for cross-version compat.
 RUN apt-get update && apt-get install -y \
     xvfb \
     xauth \
@@ -23,12 +21,14 @@ RUN apt-get update && apt-get install -y \
     curl \
     fonts-liberation \
     fonts-noto-color-emoji \
+    libasound2t64 \
     libatk-bridge2.0-0 \
     libatk1.0-0 \
     libcups2 \
     libdbus-1-3 \
     libdrm2 \
     libgbm1 \
+    libgtk-3-0t64 \
     libnspr4 \
     libnss3 \
     libxcomposite1 \
@@ -37,8 +37,6 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
     wget \
     unclutter \
-    && (apt-get install -y libasound2t64 2>/dev/null || apt-get install -y libasound2) \
-    && (apt-get install -y libgtk-3-0t64 2>/dev/null || apt-get install -y libgtk-3-0) \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Chromium from the official Google Chrome stable channel (real .deb, not snap)

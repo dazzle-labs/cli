@@ -266,14 +266,15 @@ func (c *GPUNodeController) handleNew(ctx context.Context, node *unstructured.Un
 
 	// Create RunPod pod with agent entrypoint
 	podInput := runpod.PodInput{
-		Name:              fmt.Sprintf("dazzle-gpu-%s", name),
-		ImageName:         gpuImage,
-		GpuTypeIds:        []string{gpuTypeId},
-		GpuCount:          1,
-		CloudType:         cloudType,
-		ContainerDiskInGb: int(containerDisk),
-		Ports:             ports,
-		Env:               env,
+		Name:                fmt.Sprintf("dazzle-gpu-%s", name),
+		ImageName:           gpuImage,
+		GpuTypeIds:          []string{gpuTypeId},
+		GpuCount:            1,
+		CloudType:           cloudType,
+		ContainerDiskInGb:   int(containerDisk),
+		Ports:               ports,
+		Env:                 env,
+		AllowedCudaVersions: []string{"13.0"},
 	}
 	if regAuth := os.Getenv("RUNPOD_REGISTRY_AUTH_ID"); regAuth != "" {
 		podInput.ContainerRegistryAuthId = regAuth

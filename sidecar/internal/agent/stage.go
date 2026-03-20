@@ -157,6 +157,7 @@ func (a *Agent) CreateStage(stageID, userID string, r2Endpoint, r2AccessKey, r2S
 		fmt.Sprintf("HOME=%s", homeDir),
 		fmt.Sprintf("XAUTHORITY=%s", xauthPath),
 		fmt.Sprintf("SIDECAR_VIDEO_CODEC=%s", envOrDefault("SIDECAR_VIDEO_CODEC", "h264_nvenc")),
+		fmt.Sprintf("GPU_DEVICE_INDEX=%s", a.gpuDeviceIndex),
 		fmt.Sprintf("SCREEN_WIDTH=%s", envOrDefault("SCREEN_WIDTH", "1280")),
 		fmt.Sprintf("SCREEN_HEIGHT=%s", envOrDefault("SCREEN_HEIGHT", "720")),
 		fmt.Sprintf("PULSE_SERVER=unix:/tmp/pulse-%d/native", slot.slotIndex),

@@ -48,7 +48,8 @@ type Pipeline struct {
 	rtmpPreset  string   // x264 preset
 
 	// Encoding settings
-	videoCodec string // "libx264" (default) or "h264_nvenc"
+	videoCodec     string // "libx264" (default) or "h264_nvenc"
+	gpuDeviceIndex string // GPU device index for -hwaccel_device (e.g. "4")
 
 	cmd *exec.Cmd
 
@@ -91,6 +92,11 @@ func WithVideoCodec(codec string) Option {
 // WithFramerate sets the capture framerate (default 30).
 func WithFramerate(fps int) Option {
 	return func(p *Pipeline) { p.framerate = fps }
+}
+
+// WithGPUDeviceIndex sets the GPU device index for NVENC (e.g. "4" for /dev/nvidia4).
+func WithGPUDeviceIndex(idx string) Option {
+	return func(p *Pipeline) { p.gpuDeviceIndex = idx }
 }
 
 // New creates a pipeline. Call SetOutputs() with destinations to begin encoding.
@@ -319,7 +325,7 @@ func (p *Pipeline) buildArgs() []string {
 func (p *Pipeline) codecArgs(gop string) []string {
 	switch p.videoCodec {
 	case "h264_nvenc":
-		return []string{
+		args := []string{
 			"-c:v", "h264_nvenc", "-preset", "p4", "-tune", "ll",
 			"-rc", "cbr",
 			"-b:v", fmt.Sprintf("%dk", p.rtmpBitrate),
@@ -327,6 +333,13 @@ func (p *Pipeline) codecArgs(gop string) []string {
 			"-bufsize", fmt.Sprintf("%dk", p.rtmpBitrate*2),
 			"-g", gop,
 		}
+		// On multi-GPU hosts, the container may get /dev/nvidia4 instead of
+		// /dev/nvidia0. Pass the detected device index so NVENC opens the
+		// correct GPU (workaround for nvidia-container-toolkit #1249).
+		if p.gpuDeviceIndex != "" && p.gpuDeviceIndex != "0" {
+			args = append(args, "-gpu", p.gpuDeviceIndex)
+		}
+		return args
 	default: // libx264
 		return []string{
 			"-c:v", "libx264", "-preset", p.rtmpPreset, "-tune", "zerolatency", "-threads", "2",
@@ -424,13 +437,21 @@ func shellQuoteArgs(args []string) string {
 // short ffmpeg encode. Returns nil if the codec works, or an error with
 // ffmpeg's stderr output explaining why it failed.
 func ProbeCodec(codec string) error {
-	cmd := exec.Command("ffmpeg",
+	args := []string{
 		"-loglevel", "error",
 		"-f", "lavfi", "-i", "nullsrc=s=64x64:d=0.04",
 		"-frames:v", "1",
 		"-c:v", codec,
-		"-f", "null", "-",
-	)
+	}
+	// For NVENC, try the detected GPU device index (workaround for
+	// multi-GPU device mismatch in nvidia-container-toolkit).
+	if strings.Contains(codec, "nvenc") {
+		if idx := os.Getenv("GPU_DEVICE_INDEX"); idx != "" && idx != "0" {
+			args = append(args, "-gpu", idx)
+		}
+	}
+	args = append(args, "-f", "null", "-")
+	cmd := exec.Command("ffmpeg", args...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%v: %s", err, strings.TrimSpace(string(out)))

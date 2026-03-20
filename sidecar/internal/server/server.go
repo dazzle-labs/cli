@@ -93,6 +93,9 @@ func New(cfg Config) (*Server, error) {
 	now := time.Now()
 	// Pipeline options
 	var pipelineOpts []pipeline.Option
+	if gpuIdx := os.Getenv("GPU_DEVICE_INDEX"); gpuIdx != "" {
+		pipelineOpts = append(pipelineOpts, pipeline.WithGPUDeviceIndex(gpuIdx))
+	}
 	if codec := os.Getenv("SIDECAR_VIDEO_CODEC"); codec != "" && codec != "libx264" {
 		if probeErr := pipeline.ProbeCodec(codec); probeErr == nil {
 			log.Printf("Video codec: %s (probe passed)", codec)

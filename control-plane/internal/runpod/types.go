@@ -11,6 +11,7 @@ type PodInput struct {
 	Ports                   []string          `json:"ports,omitempty"`
 	Env                     map[string]string `json:"env,omitempty"`
 	ContainerRegistryAuthId string            `json:"containerRegistryAuthId,omitempty"`
+	AllowedCudaVersions     []string          `json:"allowedCudaVersions,omitempty"`
 }
 
 // Pod is the response from the RunPod API.

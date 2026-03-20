@@ -41,6 +41,8 @@ type Agent struct {
 	tlsConfig *tls.Config
 	// Supplementary GIDs for GPU device access (discovered at startup)
 	gpuGIDs []uint32
+	// GPU device index (e.g. "4" for /dev/nvidia4) for NVENC hwaccel_device
+	gpuDeviceIndex string
 }
 
 // stageSlot tracks a stage occupying a particular slot.
@@ -81,6 +83,23 @@ func fixGPUDevicePermissions() {
 	}
 }
 
+// detectGPUDeviceIndex returns the NVIDIA device index visible in the container.
+// On multi-GPU RunPod hosts, the container may get /dev/nvidia4 instead of
+// /dev/nvidia0. NVENC needs the correct device index passed via -hwaccel_device.
+// Returns "0" as fallback if no device is found.
+func detectGPUDeviceIndex() string {
+	matches, _ := filepath.Glob("/dev/nvidia[0-9]*")
+	for _, dev := range matches {
+		name := filepath.Base(dev)
+		idx := strings.TrimPrefix(name, "nvidia")
+		if idx != "" && idx != "ctl" {
+			log.Printf("Detected GPU device index: %s (%s)", idx, dev)
+			return idx
+		}
+	}
+	return "0"
+}
+
 // gpuDeviceGIDs returns the set of unique group IDs that own GPU device files.
 // Stage processes are launched with these as supplementary groups so non-root
 // UIDs can access the GPU.
@@ -115,6 +134,8 @@ func (a *Agent) Run() error {
 	fixGPUDevicePermissions()
 	// Discover GPU device group IDs for supplementary groups on stage processes
 	a.gpuGIDs = gpuDeviceGIDs()
+	// Detect GPU device index for NVENC (workaround for multi-GPU device mismatch)
+	a.gpuDeviceIndex = detectGPUDeviceIndex()
 
 	mux := http.NewServeMux()
 
