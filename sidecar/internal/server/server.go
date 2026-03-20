@@ -94,11 +94,11 @@ func New(cfg Config) (*Server, error) {
 	// Pipeline options
 	var pipelineOpts []pipeline.Option
 	if codec := os.Getenv("SIDECAR_VIDEO_CODEC"); codec != "" && codec != "libx264" {
-		if pipeline.ProbeCodec(codec) {
+		if probeErr := pipeline.ProbeCodec(codec); probeErr == nil {
 			log.Printf("Video codec: %s (probe passed)", codec)
 			pipelineOpts = append(pipelineOpts, pipeline.WithVideoCodec(codec))
 		} else {
-			log.Printf("Video codec: %s probe failed, falling back to libx264", codec)
+			log.Printf("Video codec: %s probe failed: %v", codec, probeErr)
 		}
 	}
 
