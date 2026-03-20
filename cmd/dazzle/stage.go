@@ -190,17 +190,50 @@ func (c *StageStartCmd) Run(ctx *Context) error {
 		return err
 	}
 
+	stage := resp.Msg.Stage
+
+	// If not yet running, poll GetStage until ready
+	if stage.Status != "running" && stage.Status != "inactive" {
+		stop := startSpinner("Starting stage")
+		stage, err = pollStageUntilReady(ctx, client, ctx.StageID, 5*time.Minute)
+		stop()
+		if err != nil {
+			return err
+		}
+	}
+
 	if ctx.JSON {
-		printJSON(resp.Msg.Stage)
+		printJSON(stage)
 		return nil
 	}
 
-	printText("Stage %q activated (status: %s)", resp.Msg.Stage.Name, resp.Msg.Stage.Status)
-	if resp.Msg.Stage.WatchUrl != "" {
-		printText("Watch:  %s", resp.Msg.Stage.WatchUrl)
-		openBrowser(resp.Msg.Stage.WatchUrl)
+	printText("Stage %q activated (status: %s)", stage.Name, stage.Status)
+	if stage.WatchUrl != "" {
+		printText("Watch:  %s", stage.WatchUrl)
+		openBrowser(stage.WatchUrl)
 	}
 	return nil
+}
+
+// pollStageUntilReady polls GetStage every 2s until the stage reaches running or inactive (failure).
+func pollStageUntilReady(ctx *Context, client apiv1connect.StageServiceClient, stageID string, timeout time.Duration) (*apiv1.Stage, error) {
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		time.Sleep(2 * time.Second)
+		req := connect.NewRequest(&apiv1.GetStageRequest{Id: stageID})
+		req.Header().Set("Authorization", ctx.authHeader())
+		resp, err := client.GetStage(context.Background(), req)
+		if err != nil {
+			return nil, err
+		}
+		switch resp.Msg.Stage.Status {
+		case "running":
+			return resp.Msg.Stage, nil
+		case "inactive":
+			return nil, fmt.Errorf("stage activation failed")
+		}
+	}
+	return nil, fmt.Errorf("timed out waiting for stage to start")
 }
 
 // StageStopCmd deactivates a stage.
