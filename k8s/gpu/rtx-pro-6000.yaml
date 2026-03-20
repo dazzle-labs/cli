@@ -4,7 +4,7 @@ metadata:
   name: rtx-pro-6000
 spec:
   provider: runpod
-  gpuTypeId: "NVIDIA RTX PRO 6000"
+  gpuTypeId: "NVIDIA RTX PRO 6000 Blackwell Server Edition"
   cloudType: SECURE
   containerDiskInGb: 50
   maxStages: 12
