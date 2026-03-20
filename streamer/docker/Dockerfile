@@ -109,12 +109,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && git clone --depth 100 https://git.ffmpeg.org/ffmpeg.git /tmp/ffmpeg \
     && cd /tmp/ffmpeg && git checkout 313e776 \
     && pkg-config --modversion vulkan && pkg-config --modversion shaderc \
-    && ./configure \
+    && grep VK_HEADER_VERSION /usr/include/vulkan/vulkan_core.h | head -2 \
+    && (./configure \
         --enable-gpl --enable-nonfree \
         --enable-vulkan --enable-libshaderc --enable-libdrm \
         --enable-nvenc --enable-libx264 --enable-libpulse \
         --enable-libxcb --enable-libxcb-shm --enable-libxcb-xfixes \
         --disable-doc --disable-debug --disable-static --enable-shared \
+    || (grep -A5 "vulkan" ffbuild/config.log | head -30 && false)) \
     && make -j$(nproc) \
     && make install \
     && ldconfig \
