@@ -201,7 +201,7 @@ Take screenshots to verify your content looks correct:
 
   Events (real-time data channel)
     - Push data without reloading: dazzle s ev e <name> '<json>'
-    - Listen: window.addEventListener('event', e => { ... })
+    - Listen: window.addEventListener('<name>', e => e.detail)
     - Good for scores, alerts, chat messages, external data feeds
 
   Sync auto-refresh
