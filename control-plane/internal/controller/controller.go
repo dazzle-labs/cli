@@ -274,7 +274,7 @@ func (c *GPUNodeController) handleNew(ctx context.Context, node *unstructured.Un
 		ContainerDiskInGb:   int(containerDisk),
 		Ports:               ports,
 		Env:                 env,
-		AllowedCudaVersions: []string{"12.5", "12.6"},
+		AllowedCudaVersions: []string{"12.4", "12.5", "12.6"},
 	}
 	if regAuth := os.Getenv("RUNPOD_REGISTRY_AUTH_ID"); regAuth != "" {
 		podInput.ContainerRegistryAuthId = regAuth

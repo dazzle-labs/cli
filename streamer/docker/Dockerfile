@@ -3,7 +3,7 @@ ARG SIDECAR_IMAGE=dazzlefm/agent-streamer-sidecar:main
 
 # --- Base images per variant ---
 FROM ubuntu:24.04                        AS base-cpu
-FROM nvidia/cuda:12.5.1-base-ubuntu24.04 AS base-gpu
+FROM nvidia/cuda:12.4.1-base-ubuntu22.04 AS base-gpu
 
 # --- Common packages (no GL libs here) ---
 FROM base-${VARIANT} AS base
@@ -13,7 +13,13 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Install system dependencies
 # Note: Ubuntu 22.04's chromium-browser is a snap stub that doesn't work in containers.
 # We install Chromium from the Playwright team's PPA which provides a real .deb package.
-RUN apt-get update && apt-get install -y \
+RUN apt-get update \
+    && if dpkg --compare-versions "$(. /etc/os-release && echo "$VERSION_ID")" ge 24.04; then \
+         LIBASOUND=libasound2t64; LIBGTK=libgtk-3-0t64; \
+       else \
+         LIBASOUND=libasound2; LIBGTK=libgtk-3-0; \
+       fi \
+    && apt-get install -y \
     xvfb \
     xauth \
     pulseaudio \
@@ -21,14 +27,14 @@ RUN apt-get update && apt-get install -y \
     curl \
     fonts-liberation \
     fonts-noto-color-emoji \
-    libasound2t64 \
+    $LIBASOUND \
     libatk-bridge2.0-0 \
     libatk1.0-0 \
     libcups2 \
     libdbus-1-3 \
     libdrm2 \
     libgbm1 \
-    libgtk-3-0t64 \
+    $LIBGTK \
     libnspr4 \
     libnss3 \
     libxcomposite1 \
