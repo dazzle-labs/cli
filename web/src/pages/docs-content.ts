@@ -68,15 +68,12 @@ export const EVENTS_HTML_SNIPPET = `<!-- my-stage/index.html -->
     if (saved) document.getElementById('score').textContent = saved;
 
     // Listen for live events from \`dazzle stage event emit\`
-    window.addEventListener('event', (e) => {
-      const { event, data } = e.detail;
-      if (event === 'score') {
-        const el = document.getElementById('score');
-        el.textContent = data.points;
-        localStorage.setItem('score', data.points);
-        el.classList.add('bump');
-        setTimeout(() => el.classList.remove('bump'), 200);
-      }
+    window.addEventListener('score', (e) => {
+      const el = document.getElementById('score');
+      el.textContent = e.detail.points;
+      localStorage.setItem('score', e.detail.points);
+      el.classList.add('bump');
+      setTimeout(() => el.classList.remove('bump'), 200);
     });
   </script>
 </body>

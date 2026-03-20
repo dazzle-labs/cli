@@ -17,11 +17,9 @@
     if (s) score.textContent = s;
 
     // Live events from `dazzle stage event emit`
-    addEventListener('event', (e) => {
-      if (e.detail.event === 'score') {
-        score.textContent = e.detail.data.points;
-        localStorage.setItem('score', e.detail.data.points);
-      }
+    addEventListener('score', (e) => {
+      score.textContent = e.detail.points;
+      localStorage.setItem('score', e.detail.points);
     });
   </script>
 </body>

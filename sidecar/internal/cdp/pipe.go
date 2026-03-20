@@ -566,8 +566,14 @@ func (c *PipeClient) DispatchEvent(eventName string, data any) bool {
 		return false
 	}
 
-	payload, _ := json.Marshal(map[string]any{"event": eventName, "data": data})
-	js := fmt.Sprintf(`window.dispatchEvent(new CustomEvent('event', { detail: %s }));`, string(payload))
+	// If data is a JSON string, embed as raw JSON so the browser gets a parsed object.
+	var detail any = data
+	if s, ok := data.(string); ok && len(s) > 0 && (s[0] == '{' || s[0] == '[' || s[0] == '"') {
+		detail = json.RawMessage(s)
+	}
+	detailJSON, _ := json.Marshal(detail)
+	nameJSON, _ := json.Marshal(eventName)
+	js := fmt.Sprintf(`window.dispatchEvent(new CustomEvent(%s, { detail: %s }));`, string(nameJSON), string(detailJSON))
 	c.sendSessionCommand("Runtime.evaluate", map[string]any{"expression": js})
 	return true
 }

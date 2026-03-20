@@ -219,9 +219,8 @@ dazzle s ev e score '{"points": 42}'
 ```
 
 ```js
-window.addEventListener('event', (e) => {
-  const { event, data } = e.detail;
-  if (event === 'score') el.textContent = data.points;
+window.addEventListener('score', (e) => {
+  el.textContent = e.detail.points;
 });
 ```
 
