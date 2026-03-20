@@ -282,6 +282,12 @@ func (p *Pipeline) buildArgs() []string {
 	args = append(args,
 		"-loglevel", "warning",
 		"-nostdin",
+		// Preserve original capture timestamps. Without this, GPU encoders
+		// (NVENC, h264_vulkan) desync with PulseAudio input — the muxer
+		// blocks waiting for interleaved packets, dropping to ~3 FPS.
+		// CPU encoders (libx264) are unaffected because they encode
+		// synchronously, but -copyts is harmless for them.
+		"-copyts",
 		// Video input: X11 grab
 		// Large thread queue absorbs Chrome's bursty software rendering
 		// without blocking the input thread (default 8 is ~250ms at 30fps).
