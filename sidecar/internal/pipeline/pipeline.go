@@ -325,7 +325,9 @@ func (p *Pipeline) buildArgs() []string {
 func (p *Pipeline) codecArgs(gop string) []string {
 	switch p.videoCodec {
 	case "h264_nvenc":
-		args := []string{
+		// CUDA_VISIBLE_DEVICES=0 is set at process startup (server.go) to
+		// remap the physical GPU to logical device 0, so no -gpu flag needed.
+		return []string{
 			"-c:v", "h264_nvenc", "-preset", "p4", "-tune", "ll",
 			"-rc", "cbr",
 			"-b:v", fmt.Sprintf("%dk", p.rtmpBitrate),
@@ -333,13 +335,6 @@ func (p *Pipeline) codecArgs(gop string) []string {
 			"-bufsize", fmt.Sprintf("%dk", p.rtmpBitrate*2),
 			"-g", gop,
 		}
-		// On multi-GPU hosts, the container may get /dev/nvidia4 instead of
-		// /dev/nvidia0. Pass the detected device index so NVENC opens the
-		// correct GPU (workaround for nvidia-container-toolkit #1249).
-		if p.gpuDeviceIndex != "" && p.gpuDeviceIndex != "0" {
-			args = append(args, "-gpu", p.gpuDeviceIndex)
-		}
-		return args
 	default: // libx264
 		return []string{
 			"-c:v", "libx264", "-preset", p.rtmpPreset, "-tune", "zerolatency", "-threads", "2",
@@ -443,15 +438,14 @@ func ProbeCodec(codec string) error {
 		"-frames:v", "1",
 		"-c:v", codec,
 	}
-	// For NVENC, try the detected GPU device index (workaround for
-	// multi-GPU device mismatch in nvidia-container-toolkit).
-	if strings.Contains(codec, "nvenc") {
-		if idx := os.Getenv("GPU_DEVICE_INDEX"); idx != "" && idx != "0" {
-			args = append(args, "-gpu", idx)
-		}
-	}
 	args = append(args, "-f", "null", "-")
 	cmd := exec.Command("ffmpeg", args...)
+	// On multi-GPU RunPod hosts, the container gets /dev/nvidiaN where N>0.
+	// NVENC enumerates from device 0 and fails with "No capable devices found".
+	// CUDA_VISIBLE_DEVICES=0 remaps the physical GPU to logical device 0.
+	if strings.Contains(codec, "nvenc") {
+		cmd.Env = append(os.Environ(), "CUDA_VISIBLE_DEVICES=0")
+	}
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%v: %s", err, strings.TrimSpace(string(out)))

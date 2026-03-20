@@ -93,8 +93,12 @@ func New(cfg Config) (*Server, error) {
 	now := time.Now()
 	// Pipeline options
 	var pipelineOpts []pipeline.Option
-	if gpuIdx := os.Getenv("GPU_DEVICE_INDEX"); gpuIdx != "" {
-		pipelineOpts = append(pipelineOpts, pipeline.WithGPUDeviceIndex(gpuIdx))
+	// On multi-GPU RunPod hosts, the container gets /dev/nvidiaN where N>0.
+	// NVENC enumerates from device 0 and fails with "No capable devices found".
+	// Set CUDA_VISIBLE_DEVICES=0 to remap the physical GPU to logical device 0
+	// for the sidecar process (affects both probe and ffmpeg pipeline).
+	if idx := os.Getenv("GPU_DEVICE_INDEX"); idx != "" && idx != "0" {
+		os.Setenv("CUDA_VISIBLE_DEVICES", "0")
 	}
 	if codec := os.Getenv("SIDECAR_VIDEO_CODEC"); codec != "" && codec != "libx264" {
 		if probeErr := pipeline.ProbeCodec(codec); probeErr == nil {
