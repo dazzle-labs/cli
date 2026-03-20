@@ -3,7 +3,7 @@ ARG SIDECAR_IMAGE=dazzlefm/agent-streamer-sidecar:main
 
 # --- Base images per variant ---
 FROM ubuntu:24.04                        AS base-cpu
-FROM nvidia/cuda:12.8.0-base-ubuntu24.04 AS base-gpu
+FROM nvidia/cuda:12.4.1-base-ubuntu24.04 AS base-gpu
 
 # --- Common packages (no GL libs here) ---
 FROM base-${VARIANT} AS base
@@ -76,14 +76,16 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Build ffmpeg from source with PulseAudio input + NVENC.
-# Use latest nv-codec-headers (n12.2 was too old for RTX 5090 Blackwell).
+# nv-codec-headers n12.2.72.0 works with driver 550+ (CUDA 12.4).
+# n13.0 requires driver 570+ which has a container toolkit bug (#1249)
+# that breaks NVENC device enumeration on multi-GPU hosts.
 # The actual NVENC library (libnvidia-encode) is bind-mounted at runtime
 # by nvidia-container-toolkit, so it always matches the host driver.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential git nasm pkg-config \
         libx264-dev libpulse-dev libx11-dev libxcb1-dev libxcb-shm0-dev \
         libxcb-xfixes0-dev \
-    && git clone --depth 1 --branch n13.0.19.0 https://github.com/FFmpeg/nv-codec-headers /tmp/nv-codec-headers \
+    && git clone --depth 1 --branch n12.2.72.0 https://github.com/FFmpeg/nv-codec-headers /tmp/nv-codec-headers \
     && make -C /tmp/nv-codec-headers install \
     && git clone --depth 1 --branch n7.1 https://github.com/FFmpeg/FFmpeg /tmp/ffmpeg \
     && cd /tmp/ffmpeg \
