@@ -100,7 +100,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/lunarg.gpg] https://packages.lunarg.com/vulkan/1.3.283 jammy main" \
         > /etc/apt/sources.list.d/lunarg-vulkan.list \
     && apt-get update && apt-get install -y --no-install-recommends \
-        libvulkan1 libvulkan-dev shaderc \
+        libvulkan1 libvulkan-dev vulkan-headers shaderc \
     # nv-codec-headers for NVENC
     && git clone --depth 1 --branch n12.2.72.0 https://github.com/FFmpeg/nv-codec-headers /tmp/nv-codec-headers \
     && make -C /tmp/nv-codec-headers install \
@@ -108,15 +108,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Clone from git.ffmpeg.org with enough depth to reach the commit.
     && git clone --depth 100 https://git.ffmpeg.org/ffmpeg.git /tmp/ffmpeg \
     && cd /tmp/ffmpeg && git checkout 313e776 \
-    && pkg-config --modversion vulkan && pkg-config --modversion shaderc \
-    && grep VK_HEADER_VERSION /usr/include/vulkan/vulkan_core.h | head -2 \
-    && (./configure \
+    && ./configure \
         --enable-gpl --enable-nonfree \
         --enable-vulkan --enable-libshaderc --enable-libdrm \
         --enable-nvenc --enable-libx264 --enable-libpulse \
         --enable-libxcb --enable-libxcb-shm --enable-libxcb-xfixes \
         --disable-doc --disable-debug --disable-static --enable-shared \
-    || (grep -A5 "vulkan" ffbuild/config.log | head -30 && false)) \
     && make -j$(nproc) \
     && make install \
     && ldconfig \
