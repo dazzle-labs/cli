@@ -1,10 +1,12 @@
 import {
   Show,
   useAuth,
+  useUser,
 } from "@clerk/react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import { setTokenGetter } from "./client.js";
+import { PostHog } from "./PostHog.js";
 import { Layout } from "./components/Layout.js";
 import { Dashboard } from "./pages/Dashboard.js";
 import { StageDetail } from "./pages/StageDetail.js";
@@ -19,9 +21,26 @@ import { TooltipProvider } from "./components/ui/tooltip.js";
 
 function AuthSetup() {
   const { getToken } = useAuth();
+  const { user } = useUser();
+  const posthog = PostHog.use();
+
   useEffect(() => {
     setTokenGetter(getToken);
   }, [getToken]);
+
+  useEffect(() => {
+    if (!user) return;
+    posthog?.identify(user.id, {
+      userID: user.id,
+      ...(user.username && { handle: user.username }),
+      ...(user.fullName && { displayName: user.fullName }),
+      ...(user.imageUrl && { avatar: user.imageUrl }),
+      ...(user.primaryEmailAddress?.emailAddress && {
+        email: user.primaryEmailAddress.emailAddress,
+      }),
+    });
+  }, [posthog, user]);
+
   return null;
 }
 
