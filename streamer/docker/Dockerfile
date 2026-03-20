@@ -81,22 +81,36 @@ RUN apt-get update && apt-get install -y \
     mesa-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Build ffmpeg from source with PulseAudio input + NVENC.
+# Install Vulkan SDK 1.3.283 for Vulkan Video encode support.
+# Ubuntu 22.04's libvulkan-dev is 1.3.204 — too old for ffmpeg's h264_vulkan
+# encoder which requires >= 1.3.277. LunarG provides the newer SDK.
+RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg2 \
+    && wget -qO- https://packages.lunarg.com/lunarg-signing-key-pub.asc \
+        | gpg --dearmor -o /usr/share/keyrings/lunarg.gpg \
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/lunarg.gpg] https://packages.lunarg.com/vulkan/1.3.283 jammy main" \
+        > /etc/apt/sources.list.d/lunarg-vulkan.list \
+    && apt-get update && apt-get install -y --no-install-recommends \
+        libvulkan-dev libshaderc-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Build ffmpeg from source with Vulkan Video + NVENC + PulseAudio.
+# Pinned to ffmpeg master (313e776, 2026-03-20) for h264_vulkan support —
+# n7.1 had a vkCreateDevice bug on NVIDIA 550 drivers.
 # nv-codec-headers n12.2.72.0 works with driver 550+ (CUDA 12.4).
-# n13.0 requires driver 570+ which has a container toolkit bug (#1249)
-# that breaks NVENC device enumeration on multi-GPU hosts.
-# The actual NVENC library (libnvidia-encode) is bind-mounted at runtime
-# by nvidia-container-toolkit, so it always matches the host driver.
+# The actual NVENC/Vulkan libraries are bind-mounted at runtime
+# by nvidia-container-toolkit, so they always match the host driver.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential git nasm pkg-config \
         libx264-dev libpulse-dev libx11-dev libxcb1-dev libxcb-shm0-dev \
-        libxcb-xfixes0-dev \
+        libxcb-xfixes0-dev libdrm-dev \
     && git clone --depth 1 --branch n12.2.72.0 https://github.com/FFmpeg/nv-codec-headers /tmp/nv-codec-headers \
     && make -C /tmp/nv-codec-headers install \
-    && git clone --depth 1 --branch n7.1 https://github.com/FFmpeg/FFmpeg /tmp/ffmpeg \
-    && cd /tmp/ffmpeg \
+    && git init /tmp/ffmpeg && cd /tmp/ffmpeg \
+    && git fetch --depth 1 https://github.com/FFmpeg/FFmpeg 313e776f5e93ed328fe1cf72e1a08ee0ef19cf21 \
+    && git checkout FETCH_HEAD \
     && ./configure \
         --enable-gpl --enable-nonfree \
+        --enable-vulkan --enable-libshaderc --enable-libdrm \
         --enable-nvenc --enable-libx264 --enable-libpulse \
         --enable-libxcb --enable-libxcb-shm --enable-libxcb-xfixes \
         --disable-doc --disable-debug --disable-static --enable-shared \
@@ -104,9 +118,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && make install \
     && ldconfig \
     && cd / && rm -rf /tmp/ffmpeg /tmp/nv-codec-headers \
+    # Purge build-time deps but keep Vulkan SDK runtime libs (shaderc,
+    # libvulkan). Mark shaderc as manual so autoremove doesn't remove it.
+    && apt-mark manual shaderc libvulkan1 \
     && apt-get purge -y build-essential git nasm pkg-config \
         libx264-dev libpulse-dev libx11-dev libxcb1-dev libxcb-shm0-dev \
-        libxcb-xfixes0-dev \
+        libxcb-xfixes0-dev libdrm-dev libvulkan-dev libshaderc-dev \
     && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
 
 # --- Streamer image (CPU stages) ---

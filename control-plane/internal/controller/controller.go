@@ -190,7 +190,7 @@ func (c *GPUNodeController) handleNew(ctx context.Context, node *unstructured.Un
 	env := map[string]string{
 		"CHROME_FLAGS":          DefaultChromeFlags,
 		"LIBGL_ALWAYS_SOFTWARE": "0",
-		"SIDECAR_VIDEO_CODEC":   "h264_nvenc",
+		"SIDECAR_VIDEO_CODEC":   "h264_vulkan",
 		"DISPLAY":               ":99",
 		// Explicitly request all NVIDIA driver capabilities so the
 		// nvidia-container-toolkit mounts video (NVENC/NVDEC) and graphics
