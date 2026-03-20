@@ -94,8 +94,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg2 \
     && rm -rf /var/lib/apt/lists/*
 
 # Build ffmpeg from source with Vulkan Video + NVENC + PulseAudio.
-# Pinned to ffmpeg master (313e776, 2026-03-20) for h264_vulkan support —
-# n7.1 had a vkCreateDevice bug on NVIDIA 550 drivers.
+# Uses ffmpeg master for h264_vulkan support — n7.1 had a vkCreateDevice
+# bug on NVIDIA 550 drivers.
 # nv-codec-headers n12.2.72.0 works with driver 550+ (CUDA 12.4).
 # The actual NVENC/Vulkan libraries are bind-mounted at runtime
 # by nvidia-container-toolkit, so they always match the host driver.
@@ -105,9 +105,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libxcb-xfixes0-dev libdrm-dev \
     && git clone --depth 1 --branch n12.2.72.0 https://github.com/FFmpeg/nv-codec-headers /tmp/nv-codec-headers \
     && make -C /tmp/nv-codec-headers install \
-    && git init /tmp/ffmpeg && cd /tmp/ffmpeg \
-    && git fetch --depth 1 https://git.ffmpeg.org/ffmpeg.git 313e776f5e93ed328fe1cf72e1a08ee0ef19cf21 \
-    && git checkout FETCH_HEAD \
+    && git clone --depth 1 https://git.ffmpeg.org/ffmpeg.git /tmp/ffmpeg \
+    && cd /tmp/ffmpeg \
     && ./configure \
         --enable-gpl --enable-nonfree \
         --enable-vulkan --enable-libshaderc --enable-libdrm \
