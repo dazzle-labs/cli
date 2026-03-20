@@ -90,7 +90,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg2 \
     && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/lunarg.gpg] https://packages.lunarg.com/vulkan/1.3.283 jammy main" \
         > /etc/apt/sources.list.d/lunarg-vulkan.list \
     && apt-get update && apt-get install -y --no-install-recommends \
-        libvulkan-dev libshaderc-dev \
+        libvulkan-dev shaderc \
     && rm -rf /var/lib/apt/lists/*
 
 # Build ffmpeg from source with Vulkan Video + NVENC + PulseAudio.
@@ -118,12 +118,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && make install \
     && ldconfig \
     && cd / && rm -rf /tmp/ffmpeg /tmp/nv-codec-headers \
-    # Purge build-time deps but keep Vulkan SDK runtime libs (shaderc,
-    # libvulkan). Mark shaderc as manual so autoremove doesn't remove it.
-    && apt-mark manual shaderc libvulkan1 \
+    # Purge build-time deps but keep runtime libs (libvulkan1 for Vulkan
+    # Video, shaderc for SPIR-V compilation). shaderc is directly installed
+    # from LunarG so it stays; libvulkan1 needs apt-mark to survive autoremove.
+    && apt-mark manual libvulkan1 \
     && apt-get purge -y build-essential git nasm pkg-config \
         libx264-dev libpulse-dev libx11-dev libxcb1-dev libxcb-shm0-dev \
-        libxcb-xfixes0-dev libdrm-dev libvulkan-dev libshaderc-dev \
+        libxcb-xfixes0-dev libdrm-dev libvulkan-dev \
     && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
 
 # --- Streamer image (CPU stages) ---
