@@ -508,11 +508,13 @@ jobs:
           cd ..
           make prod/k8s/deploy
 
+      - name: Wait for kustomize rollout
+        run: make prod/k8s/verify
+
       - name: Update image env vars on control-plane
         run: |
-          make prod/k8s/set-streamer-env \
-            STREAMER_IMAGE=${{ env.STREAMER_REPO }}:${{ needs.streamer.outputs.image_tag }}
           make prod/kubectl ARGS="set env deployment/control-plane -n browser-streamer \
+            STREAMER_IMAGE=${{ env.STREAMER_REPO }}:${{ needs.streamer.outputs.image_tag }} \
             SIDECAR_IMAGE=${{ env.SIDECAR_REPO }}:${{ needs.sidecar.outputs.image_tag }} \
             GPU_NODE_IMAGE=${{ env.GPU_NODE_REPO }}:${{ needs.sidecar.outputs.image_tag }}"
 
