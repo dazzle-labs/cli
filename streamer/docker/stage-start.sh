@@ -103,10 +103,22 @@ PULSE_DIR="$(dirname "${PULSE_SERVER#unix:}")"
 # PulseAudio needs a unique runtime dir per instance to avoid conflicts.
 export XDG_RUNTIME_DIR="/tmp/pulse-runtime-$SLOT"
 mkdir -p "$XDG_RUNTIME_DIR" "$PULSE_DIR"
+if [ -n "${STAGE_UID:-}" ] && [ "$STAGE_UID" != "0" ]; then
+    chown "$STAGE_UID:${STAGE_GID:-$STAGE_UID}" "$XDG_RUNTIME_DIR" "$PULSE_DIR"
+fi
 echo "[stage $STAGE_ID] Starting PulseAudio (socket: $PULSE_DIR)..."
-pulseaudio --daemonize --no-cpu-limit \
-    --exit-idle-time=-1 \
-    --load="module-native-protocol-unix auth-anonymous=1 socket=$PULSE_DIR/native" 2>/dev/null || true
+# PulseAudio refuses to run as root. Drop to stage UID (like Chrome)
+# since it doesn't need GPU device access.
+if [ -n "${STAGE_UID:-}" ] && [ "$STAGE_UID" != "0" ]; then
+    setpriv --reuid="$STAGE_UID" --regid="${STAGE_GID:-$STAGE_UID}" --clear-groups \
+        pulseaudio --daemonize --no-cpu-limit \
+        --exit-idle-time=-1 \
+        --load="module-native-protocol-unix auth-anonymous=1 socket=$PULSE_DIR/native" 2>/dev/null || true
+else
+    pulseaudio --daemonize --no-cpu-limit \
+        --exit-idle-time=-1 \
+        --load="module-native-protocol-unix auth-anonymous=1 socket=$PULSE_DIR/native" 2>/dev/null || true
+fi
 PULSE_PID=$(pgrep -n -f "socket=$PULSE_DIR/native" || true)
 
 sleep 0.3
