@@ -81,31 +81,32 @@ RUN apt-get update && apt-get install -y \
     mesa-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Vulkan SDK 1.3.283 for Vulkan Video encode support.
-# Ubuntu 22.04's libvulkan-dev is 1.3.204 — too old for ffmpeg's h264_vulkan
-# encoder which requires >= 1.3.277. LunarG provides the newer SDK.
-RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg2 \
+# Build ffmpeg from source with Vulkan Video + NVENC + PulseAudio.
+# Pinned to ffmpeg commit 313e776 (2026-03-20) for h264_vulkan support —
+# n7.1 had a vkCreateDevice bug on NVIDIA 550 drivers.
+# nv-codec-headers n12.2.72.0 works with driver 550+ (CUDA 12.4).
+# The actual NVENC/Vulkan libraries are bind-mounted at runtime
+# by nvidia-container-toolkit, so they always match the host driver.
+#
+# Vulkan SDK 1.3.283 from LunarG is required — Ubuntu 22.04's
+# libvulkan-dev is 1.3.204, too old for ffmpeg's h264_vulkan (needs >= 1.3.277).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        wget gnupg2 build-essential git nasm pkg-config \
+        libx264-dev libpulse-dev libx11-dev libxcb1-dev libxcb-shm0-dev \
+        libxcb-xfixes0-dev libdrm-dev \
+    # Install Vulkan SDK 1.3.283 from LunarG
     && wget -qO- https://packages.lunarg.com/lunarg-signing-key-pub.asc \
         | gpg --dearmor -o /usr/share/keyrings/lunarg.gpg \
     && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/lunarg.gpg] https://packages.lunarg.com/vulkan/1.3.283 jammy main" \
         > /etc/apt/sources.list.d/lunarg-vulkan.list \
     && apt-get update && apt-get install -y --no-install-recommends \
         libvulkan-dev shaderc \
-    && rm -rf /var/lib/apt/lists/*
-
-# Build ffmpeg from source with Vulkan Video + NVENC + PulseAudio.
-# Uses ffmpeg master for h264_vulkan support — n7.1 had a vkCreateDevice
-# bug on NVIDIA 550 drivers.
-# nv-codec-headers n12.2.72.0 works with driver 550+ (CUDA 12.4).
-# The actual NVENC/Vulkan libraries are bind-mounted at runtime
-# by nvidia-container-toolkit, so they always match the host driver.
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        build-essential git nasm pkg-config \
-        libx264-dev libpulse-dev libx11-dev libxcb1-dev libxcb-shm0-dev \
-        libxcb-xfixes0-dev libdrm-dev \
+    # nv-codec-headers for NVENC
     && git clone --depth 1 --branch n12.2.72.0 https://github.com/FFmpeg/nv-codec-headers /tmp/nv-codec-headers \
     && make -C /tmp/nv-codec-headers install \
-    && git clone --depth 1 https://git.ffmpeg.org/ffmpeg.git /tmp/ffmpeg \
+    # ffmpeg — pinned via GitHub tarball (git servers block fetch-by-SHA)
+    && wget -qO /tmp/ffmpeg.tar.gz https://github.com/FFmpeg/FFmpeg/archive/313e776f5e93ed328fe1cf72e1a08ee0ef19cf21.tar.gz \
+    && mkdir /tmp/ffmpeg && tar xf /tmp/ffmpeg.tar.gz -C /tmp/ffmpeg --strip-components=1 \
     && cd /tmp/ffmpeg \
     && ./configure \
         --enable-gpl --enable-nonfree \
@@ -116,12 +117,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && make -j$(nproc) \
     && make install \
     && ldconfig \
-    && cd / && rm -rf /tmp/ffmpeg /tmp/nv-codec-headers \
+    && cd / && rm -rf /tmp/ffmpeg /tmp/ffmpeg.tar.gz /tmp/nv-codec-headers \
     # Purge build-time deps but keep runtime libs (libvulkan1 for Vulkan
-    # Video, shaderc for SPIR-V compilation). shaderc is directly installed
-    # from LunarG so it stays; libvulkan1 needs apt-mark to survive autoremove.
-    && apt-mark manual libvulkan1 \
-    && apt-get purge -y build-essential git nasm pkg-config \
+    # Video, shaderc for SPIR-V compilation).
+    && apt-mark manual libvulkan1 shaderc \
+    && apt-get purge -y wget gnupg2 build-essential git nasm pkg-config \
         libx264-dev libpulse-dev libx11-dev libxcb1-dev libxcb-shm0-dev \
         libxcb-xfixes0-dev libdrm-dev libvulkan-dev \
     && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
