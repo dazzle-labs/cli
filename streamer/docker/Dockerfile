@@ -121,10 +121,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Purge build-time deps but keep runtime libs (libvulkan1 for Vulkan
     # Video, shaderc for SPIR-V compilation).
     && apt-mark manual libvulkan1 shaderc \
-    && apt-get purge -y wget gnupg2 build-essential git nasm pkg-config \
+    && apt-get purge -y build-essential git nasm pkg-config \
         libx264-dev libpulse-dev libx11-dev libxcb1-dev libxcb-shm0-dev \
         libxcb-xfixes0-dev libdrm-dev libvulkan-dev \
-    && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
+    && apt-get autoremove -y && rm -rf /var/lib/apt/lists/* \
+    # Smoke test: verify nothing critical was removed by autoremove
+    && google-chrome-stable --version \
+    && ffmpeg -encoders 2>/dev/null | grep -q h264_vulkan \
+    && ffmpeg -encoders 2>/dev/null | grep -q h264_nvenc \
+    && ldconfig -p | grep -q libshaderc \
+    && echo "GPU image smoke test passed"
 
 # --- Streamer image (CPU stages) ---
 FROM gl-${VARIANT} AS streamer
