@@ -48,7 +48,7 @@ type Pipeline struct {
 	rtmpPreset  string   // x264 preset
 
 	// Encoding settings
-	videoCodec     string // "libx264" (default), "h264_nvenc", or "h264_vulkan"
+	videoCodec     string // "libx264" (default) or "h264_nvenc"
 	gpuDeviceIndex string // GPU device index for -hwaccel_device (e.g. "4")
 
 	cmd *exec.Cmd
@@ -80,7 +80,7 @@ func WithRTMPPreset(preset string) Option {
 	return func(p *Pipeline) { p.rtmpPreset = preset }
 }
 
-// WithVideoCodec sets the video codec (default "libx264", alternatives "h264_nvenc", "h264_vulkan").
+// WithVideoCodec sets the video codec (default "libx264", alternative "h264_nvenc").
 func WithVideoCodec(codec string) Option {
 	return func(p *Pipeline) {
 		if codec != "" {
@@ -274,11 +274,6 @@ func (p *Pipeline) buildArgs() []string {
 
 	var args []string
 
-	// Vulkan encoder needs a hardware device for GPU-side encode.
-	if p.videoCodec == "h264_vulkan" {
-		args = append(args, "-init_hw_device", "vulkan=vk")
-	}
-
 	args = append(args,
 		"-loglevel", "warning",
 		"-nostdin",
@@ -305,12 +300,6 @@ func (p *Pipeline) buildArgs() []string {
 
 	// Video + audio mapping
 	args = append(args, "-map", "0:v", "-map", "1:a")
-
-	// Vulkan encode: upload frames from CPU to GPU via filter chain.
-	// x11grab produces bgr0 → convert to nv12 → hwupload to Vulkan device.
-	if p.videoCodec == "h264_vulkan" {
-		args = append(args, "-filter_hw_device", "vk", "-vf", "format=nv12,hwupload")
-	}
 
 	// Video codec
 	args = append(args, p.codecArgs(gop)...)
@@ -344,17 +333,6 @@ func (p *Pipeline) buildArgs() []string {
 // codecArgs returns video codec args for RTMP output.
 func (p *Pipeline) codecArgs(gop string) []string {
 	switch p.videoCodec {
-	case "h264_vulkan":
-		// Vulkan Video encode: frames are already on GPU via hwupload filter
-		// (set up in buildArgs). Uses the GPU's dedicated video encode queue.
-		return []string{
-			"-c:v", "h264_vulkan",
-			"-profile:v", "high",
-			"-b:v", fmt.Sprintf("%dk", p.rtmpBitrate),
-			"-maxrate", fmt.Sprintf("%dk", p.rtmpBitrate),
-			"-bufsize", fmt.Sprintf("%dk", p.rtmpBitrate*2),
-			"-g", gop,
-		}
 	case "h264_nvenc":
 		// CUDA_VISIBLE_DEVICES=0 is set at process startup (server.go) to
 		// remap the physical GPU to logical device 0, so no -gpu flag needed.
@@ -465,26 +443,11 @@ func shellQuoteArgs(args []string) string {
 // short ffmpeg encode. Returns nil if the codec works, or an error with
 // ffmpeg's stderr output explaining why it failed.
 func ProbeCodec(codec string) error {
-	var args []string
-	switch {
-	case codec == "h264_vulkan":
-		// Vulkan encode requires hardware device init and hwupload filter.
-		args = []string{
-			"-loglevel", "error",
-			"-init_hw_device", "vulkan=vk",
-			"-f", "lavfi", "-i", "color=c=black:s=256x256:d=0.04:r=30,format=nv12",
-			"-filter_hw_device", "vk",
-			"-vf", "hwupload",
-			"-frames:v", "1",
-			"-c:v", codec,
-		}
-	default:
-		args = []string{
-			"-loglevel", "error",
-			"-f", "lavfi", "-i", "nullsrc=s=256x256:d=0.04",
-			"-frames:v", "1",
-			"-c:v", codec,
-		}
+	args := []string{
+		"-loglevel", "error",
+		"-f", "lavfi", "-i", "nullsrc=s=256x256:d=0.04",
+		"-frames:v", "1",
+		"-c:v", codec,
 	}
 	args = append(args, "-f", "null", "-")
 	cmd := exec.Command("ffmpeg", args...)

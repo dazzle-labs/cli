@@ -21,6 +21,8 @@ RUN apt-get update \
        fi \
     && apt-get install -y \
     xvfb \
+    xserver-xorg-core \
+    xserver-xorg-video-dummy \
     xauth \
     pulseaudio \
     ffmpeg \
@@ -81,36 +83,22 @@ RUN apt-get update && apt-get install -y \
     mesa-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Build ffmpeg from source with Vulkan Video + NVENC + PulseAudio.
-# Pinned to ffmpeg commit 313e776 (2026-03-20) for h264_vulkan support —
-# n7.1 had a vkCreateDevice bug on NVIDIA 550 drivers.
+# Build ffmpeg from source with NVENC + PulseAudio.
 # nv-codec-headers n12.2.72.0 works with driver 550+ (CUDA 12.4).
-# The actual NVENC/Vulkan libraries are bind-mounted at runtime
+# The actual NVENC libraries are bind-mounted at runtime
 # by nvidia-container-toolkit, so they always match the host driver.
-#
-# Vulkan SDK 1.3.283 from LunarG is required — Ubuntu 22.04's
-# libvulkan-dev is 1.3.204, too old for ffmpeg's h264_vulkan (needs >= 1.3.277).
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        wget gnupg2 build-essential git nasm pkg-config \
+        build-essential git nasm pkg-config \
         libx264-dev libpulse-dev libx11-dev libxcb1-dev libxcb-shm0-dev \
-        libxcb-xfixes0-dev libdrm-dev \
-    # Install Vulkan SDK 1.3.283 from LunarG
-    && wget -qO- https://packages.lunarg.com/lunarg-signing-key-pub.asc \
-        | gpg --dearmor -o /usr/share/keyrings/lunarg.gpg \
-    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/lunarg.gpg] https://packages.lunarg.com/vulkan/1.3.283 jammy main" \
-        > /etc/apt/sources.list.d/lunarg-vulkan.list \
-    && apt-get update && apt-get install -y --no-install-recommends \
-        libvulkan1 libvulkan-dev vulkan-headers shaderc \
+        libxcb-xfixes0-dev \
     # nv-codec-headers for NVENC
     && git clone --depth 1 --branch n12.2.72.0 https://github.com/FFmpeg/nv-codec-headers /tmp/nv-codec-headers \
     && make -C /tmp/nv-codec-headers install \
-    # ffmpeg — pinned to 313e776 (2026-03-20, post-n7.1 Vulkan Video fix).
-    # Clone from git.ffmpeg.org with enough depth to reach the commit.
+    # ffmpeg — pinned to 313e776 (2026-03-20).
     && git clone --depth 100 https://git.ffmpeg.org/ffmpeg.git /tmp/ffmpeg \
     && cd /tmp/ffmpeg && git checkout 313e776 \
     && ./configure \
         --enable-gpl --enable-nonfree \
-        --enable-vulkan --enable-libshaderc --enable-libdrm \
         --enable-nvenc --enable-libx264 --enable-libpulse \
         --enable-libxcb --enable-libxcb-shm --enable-libxcb-xfixes \
         --disable-doc --disable-debug --disable-static --enable-shared \
@@ -118,18 +106,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && make install \
     && ldconfig \
     && cd / && rm -rf /tmp/ffmpeg /tmp/ffmpeg.tar.gz /tmp/nv-codec-headers \
-    # Purge build-time deps but keep runtime libs (libvulkan1 for Vulkan
-    # Video, shaderc for SPIR-V compilation).
-    && apt-mark manual libvulkan1 shaderc \
     && apt-get purge -y build-essential git nasm pkg-config \
         libx264-dev libpulse-dev libx11-dev libxcb1-dev libxcb-shm0-dev \
-        libxcb-xfixes0-dev libdrm-dev libvulkan-dev \
+        libxcb-xfixes0-dev \
     && apt-get autoremove -y && rm -rf /var/lib/apt/lists/* \
     # Smoke test: verify nothing critical was removed by autoremove
     && google-chrome-stable --version \
-    && ffmpeg -encoders 2>/dev/null | grep -q h264_vulkan \
     && ffmpeg -encoders 2>/dev/null | grep -q h264_nvenc \
-    && ldconfig -p | grep -q libshaderc \
     && echo "GPU image smoke test passed"
 
 # --- Streamer image (CPU stages) ---
@@ -137,6 +120,9 @@ FROM gl-${VARIANT} AS streamer
 
 # Copy PulseAudio config
 COPY docker/pulse-default.pa /etc/pulse/default.pa
+
+# Copy Xorg dummy driver config (30Hz display — halves Chrome rendering vs Xvfb's 60fps)
+COPY docker/xorg-dummy.conf /etc/X11/xorg-dummy.conf
 
 # Copy entrypoint, prestop hook, and multi-tenant stage-start script
 COPY docker/entrypoint.sh /entrypoint.sh

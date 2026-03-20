@@ -82,21 +82,27 @@ fi
 CHROME_FLAGS="$CHROME_FLAGS --display=$DISPLAY --user-data-dir=$DATA_DIR/chrome"
 CHROME_FLAGS="$CHROME_FLAGS --window-size=${SCREEN_WIDTH},${SCREEN_HEIGHT} --window-position=0,0"
 
-echo "[stage $STAGE_ID] Starting Xvfb ($DISPLAY, ${SCREEN_WIDTH}x${SCREEN_HEIGHT})..."
 DISPLAY_NUM="${DISPLAY#:}"
-# Use -auth instead of -ac to require XAUTHORITY cookie for display access.
-# This prevents other stages from capturing our screen via xdpyinfo/xwd.
-XVFB_AUTH_ARGS=""
+AUTH_FLAG="-ac"
 if [ -n "${XAUTHORITY:-}" ] && [ -f "$XAUTHORITY" ]; then
-    XVFB_AUTH_ARGS="-auth $XAUTHORITY"
-    echo "[stage $STAGE_ID] Xvfb auth enabled (cookie: $XAUTHORITY)"
-else
-    # Fallback to open access if no xauth cookie (non-hardened mode)
-    XVFB_AUTH_ARGS="-ac"
-    echo "[stage $STAGE_ID] WARN: No XAUTHORITY set, Xvfb running without auth"
+    AUTH_FLAG="-auth $XAUTHORITY"
+    echo "[stage $STAGE_ID] X auth enabled (cookie: $XAUTHORITY)"
 fi
-Xvfb ":$DISPLAY_NUM" -screen 0 "${SCREEN_WIDTH}x${SCREEN_HEIGHT}x24" $XVFB_AUTH_ARGS +extension GLX +render -noreset &
-XVFB_PID=$!
+
+# Prefer Xorg with dummy driver (30Hz refresh — Chrome syncs rAF to display rate,
+# halving rendering work vs Xvfb's uncapped 60fps). Fall back to Xvfb if unavailable.
+if [ -x /usr/bin/Xorg ] && [ -f /etc/X11/xorg-dummy.conf ]; then
+    echo "[stage $STAGE_ID] Starting Xdummy ($DISPLAY, ${SCREEN_WIDTH}x${SCREEN_HEIGHT} @ 30Hz)..."
+    Xorg ":$DISPLAY_NUM" -noreset +extension GLX +extension RANDR \
+        -config /etc/X11/xorg-dummy.conf $AUTH_FLAG \
+        -nolisten tcp vt1 2>/dev/null &
+    XVFB_PID=$!
+else
+    echo "[stage $STAGE_ID] Starting Xvfb ($DISPLAY, ${SCREEN_WIDTH}x${SCREEN_HEIGHT})..."
+    Xvfb ":$DISPLAY_NUM" -screen 0 "${SCREEN_WIDTH}x${SCREEN_HEIGHT}x24" \
+        $AUTH_FLAG +extension GLX +render -noreset &
+    XVFB_PID=$!
+fi
 
 # PulseAudio — each stage gets its own socket directory
 PULSE_DIR="$(dirname "${PULSE_SERVER#unix:}")"

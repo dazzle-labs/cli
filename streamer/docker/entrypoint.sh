@@ -47,10 +47,18 @@ mkdir -p /data/chrome
 echo "Renderer config:"
 cat /data/chrome/SwiftShader.ini 2>/dev/null || echo "  (not mounted — using defaults)"
 
-# 1. Start Xvfb
-echo "Starting Xvfb (${SCREEN_WIDTH}x${SCREEN_HEIGHT})..."
-Xvfb :99 -screen 0 ${SCREEN_WIDTH}x${SCREEN_HEIGHT}x24 -ac +extension GLX +render -noreset &
-XVFB_PID=$!
+# 1. Start display server — prefer Xorg dummy driver at 30Hz (Chrome syncs rAF to
+# display refresh rate, halving rendering work). Fall back to Xvfb if unavailable.
+if [ -x /usr/bin/Xorg ] && [ -f /etc/X11/xorg-dummy.conf ]; then
+    echo "Starting Xdummy (${SCREEN_WIDTH}x${SCREEN_HEIGHT} @ 30Hz)..."
+    Xorg :99 -noreset +extension GLX +extension RANDR \
+        -config /etc/X11/xorg-dummy.conf -nolisten tcp -ac vt1 2>/dev/null &
+    XVFB_PID=$!
+else
+    echo "Starting Xvfb (${SCREEN_WIDTH}x${SCREEN_HEIGHT})..."
+    Xvfb :99 -screen 0 ${SCREEN_WIDTH}x${SCREEN_HEIGHT}x24 -ac +extension GLX +render -noreset &
+    XVFB_PID=$!
+fi
 
 # 2. Start PulseAudio (can start in parallel with Xvfb settling)
 echo "Starting PulseAudio..."

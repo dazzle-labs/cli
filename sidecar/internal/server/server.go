@@ -100,11 +100,6 @@ func New(cfg Config) (*Server, error) {
 	if idx := os.Getenv("GPU_DEVICE_INDEX"); idx != "" && idx != "0" {
 		os.Setenv("CUDA_VISIBLE_DEVICES", "0")
 	}
-	// Ensure NVIDIA Vulkan ICD is used (bypasses Mesa ICDs that may be
-	// installed but can't access the GPU in container environments).
-	if _, err := os.Stat("/etc/vulkan/icd.d/nvidia_icd.json"); err == nil {
-		os.Setenv("VK_ICD_FILENAMES", "/etc/vulkan/icd.d/nvidia_icd.json")
-	}
 	if codec := os.Getenv("SIDECAR_VIDEO_CODEC"); codec != "" && codec != "libx264" {
 		chosen := probeCodecWithFallback(codec)
 		if chosen != "" {
@@ -485,26 +480,15 @@ func buildSidecarTLSConfig() *tls.Config {
 	}
 }
 
-// probeCodecWithFallback tries the requested codec, then falls back through
-// the preference chain: h264_vulkan → h264_nvenc → libx264. Returns the
-// chosen codec name (empty string means use default libx264).
+// probeCodecWithFallback tries the requested codec, falling back to libx264
+// if it fails. Returns the chosen codec name (empty string means use default libx264).
 func probeCodecWithFallback(codec string) string {
-	// Build the fallback chain starting from the requested codec.
-	chain := []string{codec}
-	switch codec {
-	case "h264_vulkan":
-		chain = append(chain, "h264_nvenc")
+	if err := pipeline.ProbeCodec(codec); err == nil {
+		log.Printf("Video codec: %s (probe passed)", codec)
+		return codec
+	} else {
+		log.Printf("Video codec: %s probe failed: %v, using libx264", codec, err)
 	}
-
-	for _, c := range chain {
-		if err := pipeline.ProbeCodec(c); err == nil {
-			log.Printf("Video codec: %s (probe passed)", c)
-			return c
-		} else {
-			log.Printf("Video codec: %s probe failed: %v", c, err)
-		}
-	}
-	log.Println("Video codec: all GPU codecs failed, using libx264")
 	return ""
 }
 

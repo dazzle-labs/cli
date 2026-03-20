@@ -67,22 +67,6 @@ func New(maxStages int) *Agent {
 	}
 }
 
-// fixGPUDevicePermissions ensures non-root stage UIDs can access GPU devices.
-// On RunPod, /dev/nvidia* and /dev/dri/* are often owned by root:root with
-// mode 0660, making them inaccessible to stage processes (UID 10000+).
-// The agent runs as root, so it can chmod these to 0666 at startup.
-func fixGPUDevicePermissions() {
-	patterns := []string{"/dev/nvidia*", "/dev/dri/*"}
-	for _, pattern := range patterns {
-		matches, _ := filepath.Glob(pattern)
-		for _, dev := range matches {
-			if err := os.Chmod(dev, 0o666); err != nil {
-				log.Printf("warning: chmod 0666 %s: %v", dev, err)
-			}
-		}
-	}
-}
-
 // detectGPUDeviceIndex returns the NVIDIA device index visible in the container.
 // On multi-GPU RunPod hosts, the container may get /dev/nvidia4 instead of
 // /dev/nvidia0. NVENC needs the correct device index passed via -hwaccel_device.
@@ -130,8 +114,6 @@ func gpuDeviceGIDs() []uint32 {
 
 // Run starts the agent management API server. Blocks until the server exits.
 func (a *Agent) Run() error {
-	// Fix GPU device permissions so non-root stage UIDs can access CUDA/NVENC
-	fixGPUDevicePermissions()
 	// Discover GPU device group IDs for supplementary groups on stage processes
 	a.gpuGIDs = gpuDeviceGIDs()
 	// Detect GPU device index for NVENC (workaround for multi-GPU device mismatch)
