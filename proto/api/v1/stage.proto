@@ -46,7 +46,15 @@ message CreateStageResponse {
   Stage stage = 1;
 }
 
-message ListStagesRequest {}
+enum StageFilter {
+  STAGE_FILTER_UNSPECIFIED = 0;
+  STAGE_FILTER_OWNED = 1;       // Stages owned by the authenticated user (requires auth)
+  STAGE_FILTER_LIVE = 2;        // Currently broadcasting (public, no auth required)
+}
+
+message ListStagesRequest {
+  repeated StageFilter filters = 1;  // Combined with AND. Empty = OWNED (backward compat)
+}
 
 message ListStagesResponse {
   repeated Stage stages = 1;
