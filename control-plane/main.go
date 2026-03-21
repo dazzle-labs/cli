@@ -393,14 +393,21 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 	defer m.mu.Unlock()
 
 	// Per-user stage limit
+	maxStages := m.maxStages // fallback to global default
+	if m.db != nil {
+		var userMax int
+		if err := m.db.QueryRow("SELECT max_stages FROM users WHERE id=$1", userID).Scan(&userMax); err == nil && userMax > 0 {
+			maxStages = userMax
+		}
+	}
 	userCount := 0
 	for _, s := range m.stages {
 		if s.OwnerUserID == userID {
 			userCount++
 		}
 	}
-	if userCount >= m.maxStages {
-		return nil, fmt.Errorf("max stages (%d) reached", m.maxStages)
+	if userCount >= maxStages {
+		return nil, fmt.Errorf("max stages (%d) reached", maxStages)
 	}
 
 	id := requestedID
