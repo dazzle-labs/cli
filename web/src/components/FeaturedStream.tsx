@@ -10,11 +10,8 @@ interface FeaturedData {
   category: string;
 }
 
-export function FeaturedStream() {
+export function useFeaturedStream() {
   const [data, setData] = useState<FeaturedData | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const hlsRef = useRef<Hls | null>(null);
-  const [playing, setPlaying] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -26,8 +23,16 @@ export function FeaturedStream() {
     return () => { cancelled = true; };
   }, []);
 
+  return data;
+}
+
+export function FeaturedStreamCard({ data }: { data: FeaturedData }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
+  const [playing, setPlaying] = useState(false);
+
   const initHls = useCallback(() => {
-    if (!data || !videoRef.current) return;
+    if (!videoRef.current) return;
     const hlsUrl = `/watch/${data.slug}/index.m3u8`;
 
     if (!Hls.isSupported()) {
@@ -61,52 +66,47 @@ export function FeaturedStream() {
   }, [data]);
 
   useEffect(() => {
-    if (data) initHls();
+    initHls();
     return () => {
       hlsRef.current?.destroy();
       hlsRef.current = null;
     };
-  }, [data, initHls]);
-
-  if (!data) return null;
+  }, [initHls]);
 
   return (
-    <section className="relative z-10 px-6 pb-16 md:pb-20">
-      <div className="mx-auto max-w-3xl">
-        <Link
-          to={`/watch/${data.slug}`}
-          className="block group rounded-2xl border border-white/[0.06] overflow-hidden transition-all duration-300 hover:border-emerald-500/20"
-        >
-          <div className="relative aspect-video bg-black">
-            <video
-              ref={videoRef}
-              className={`w-full h-full object-contain ${!playing ? "opacity-0" : ""}`}
-              autoPlay
-              muted
-              playsInline
-            />
-            {!playing && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="size-8 rounded-full border-2 border-zinc-700 border-t-zinc-400 animate-spin" />
-              </div>
-            )}
+    <Link
+      to={`/watch/${data.slug}`}
+      className="block group rounded-xl border border-white/[0.08] overflow-hidden transition-all duration-500 hover:border-emerald-500/15"
+    >
+      <div className="relative aspect-video bg-black">
+        <video
+          ref={videoRef}
+          className={`w-full h-full object-contain ${!playing ? "opacity-0" : ""}`}
+          autoPlay
+          muted
+          playsInline
+        />
+        {!playing && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="size-6 rounded-full border-2 border-zinc-700 border-t-zinc-400 animate-spin" />
           </div>
-          <div className="flex items-center gap-3 px-5 py-3 bg-white/[0.02]">
-            <div className="flex items-center gap-1.5 text-red-400">
-              <Radio className="h-3.5 w-3.5" />
-              <span className="text-xs font-medium uppercase tracking-wide">Live</span>
-            </div>
-            <span className="text-sm text-white font-medium truncate">
-              {data.title}
-            </span>
-            {data.category && (
-              <span className="text-xs text-zinc-500 ml-auto shrink-0">
-                {data.category}
-              </span>
-            )}
-          </div>
-        </Link>
+        )}
       </div>
-    </section>
+      <div className="flex items-center gap-2.5 px-4 py-2.5 bg-white/[0.02]">
+        <span className="relative flex items-center gap-1.5 text-red-400">
+          <span className="absolute -left-0.5 size-2.5 rounded-full bg-red-400/40 animate-ping" />
+          <Radio className="relative h-3.5 w-3.5" />
+          <span className="text-xs font-medium uppercase tracking-wide">Live</span>
+        </span>
+        <span className="text-sm text-white font-medium truncate">
+          {data.title}
+        </span>
+        {data.category && (
+          <span className="text-xs text-zinc-500 ml-auto shrink-0">
+            {data.category}
+          </span>
+        )}
+      </div>
+    </Link>
   );
 }

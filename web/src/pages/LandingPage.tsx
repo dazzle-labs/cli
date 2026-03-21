@@ -18,7 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { FeaturedStream } from "@/components/FeaturedStream";
+import { useFeaturedStream, FeaturedStreamCard } from "@/components/FeaturedStream";
 
 const STEPS = [
   {
@@ -135,6 +135,7 @@ function LlmsTxtCallout() {
 export function LandingPage() {
   const [signInOpen, setSignInOpen] = useState(false);
   const openSignIn = () => setSignInOpen(true);
+  const featured = useFeaturedStream();
 
   return (
     <div className="relative min-h-screen bg-zinc-950 overflow-hidden selection:bg-emerald-500/30">
@@ -249,31 +250,34 @@ export function LandingPage() {
         </motion.div>
       </section>
 
-      {/* ── Terminal demo ── */}
+      {/* ── Terminal demo + live stream ── */}
       <section className="relative z-10 px-6 pb-28 md:pb-36">
         <motion.div
-          className="relative mx-auto max-w-3xl"
+          className={`relative mx-auto ${featured ? "max-w-6xl" : "max-w-3xl"}`}
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.6, ease }}
         >
-          <div className="rounded-xl border border-white/[0.08] overflow-hidden transition-all duration-500 hover:border-emerald-500/15">
-            <video
-              src="/static/demo.webm"
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="w-full"
-            />
+          <div className={featured ? "grid grid-cols-1 lg:grid-cols-2 gap-4" : ""}>
+            {/* CLI demo */}
+            <div className="rounded-xl border border-white/[0.08] overflow-hidden transition-all duration-500 hover:border-emerald-500/15">
+              <video
+                src="/static/demo.webm"
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full"
+              />
+            </div>
+
+            {/* Live stream output */}
+            {featured && <FeaturedStreamCard data={featured} />}
           </div>
-          {/* Glow reflection beneath terminal */}
+          {/* Glow reflection beneath */}
           <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-2/3 h-12 bg-emerald-500/[0.04] blur-2xl rounded-full pointer-events-none" />
         </motion.div>
       </section>
-
-      {/* ── Featured live stream ── */}
-      <FeaturedStream />
 
       {/* ── llms.txt callout ── */}
       <section className="relative z-10 px-6 pb-16 md:pb-20">
