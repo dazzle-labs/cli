@@ -80,7 +80,7 @@ export function LivePage() {
                 >
                   <Card className="transition-colors duration-200 hover:border-red-500/20 hover:bg-red-500/[0.02] overflow-hidden border-l-2 border-l-red-500/40">
                     <div className="relative aspect-video bg-black overflow-hidden">
-                      <StageThumbnail stageId={stage.id} />
+                      <StageThumbnail slug={stage.slug} />
                       <div className="absolute top-2.5 left-2.5">
                         <Badge className="bg-red-500/90 text-white border-0 gap-1 text-[11px]">
                           <Radio className="h-3 w-3" />

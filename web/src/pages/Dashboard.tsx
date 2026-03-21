@@ -258,7 +258,7 @@ export function Dashboard() {
                     <Card className={cn("transition-colors duration-200 hover:border-primary/15 hover:bg-primary/[0.02] overflow-hidden", isRunning && "border-l-2 border-l-emerald-500/40")}>
                       <div className="relative aspect-video bg-black/60 overflow-hidden">
                         {isRunning ? (
-                          <StageThumbnail stageId={stage.id} />
+                          <StageThumbnail slug={stage.slug} />
                         ) : (
                           <div className="absolute inset-0 flex items-center justify-center">
                             <div className="text-zinc-700 text-xs uppercase tracking-widest">

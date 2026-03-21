@@ -1,31 +1,25 @@
 import { useEffect, useRef, useState } from "react";
-import { useGetToken } from "../useDevToken.js";
 
 interface StageThumbnailProps {
-  stageId: string;
+  slug: string;
   refreshInterval?: number;
   className?: string;
 }
 
 export function StageThumbnail({
-  stageId,
+  slug,
   refreshInterval = 30_000,
   className = "w-full h-full object-cover",
 }: StageThumbnailProps) {
   const [src, setSrc] = useState<string | null>(null);
   const prevUrl = useRef<string | null>(null);
-  const getToken = useGetToken();
 
   useEffect(() => {
     let cancelled = false;
 
     async function fetchThumbnail() {
-      const token = await getToken();
-      if (!token || cancelled) return;
       try {
-        const resp = await fetch(`/stage/${stageId}/thumbnail`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const resp = await fetch(`/watch/${slug}/thumbnail`);
         if (!resp.ok || cancelled) return;
         const blob = await resp.blob();
         if (cancelled) return;
@@ -34,7 +28,7 @@ export function StageThumbnail({
         prevUrl.current = url;
         setSrc(url);
       } catch {
-        // ignore fetch errors
+        // ignore
       }
     }
 
@@ -45,7 +39,7 @@ export function StageThumbnail({
       cancelled = true;
       clearInterval(id);
     };
-  }, [stageId, refreshInterval, getToken]);
+  }, [slug, refreshInterval]);
 
   useEffect(() => {
     return () => {
