@@ -1,24 +1,21 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { Radio } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { motion } from "motion/react";
 import { stageClient } from "@/client";
 import { StageFilter } from "@/gen/api/v1/stage_pb";
+import { cn } from "@/lib/utils";
+import { springs } from "@/lib/motion";
 import {
   SidebarGroup,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
 } from "@/components/ui/sidebar";
 
-interface LiveStage {
-  slug: string;
-  name: string;
-  watchUrl: string;
-}
-
 export function LiveNow() {
-  const [streams, setStreams] = useState<LiveStage[]>([]);
+  const [count, setCount] = useState(0);
+  const location = useLocation();
+  const active = location.pathname === "/live";
 
   useEffect(() => {
     let cancelled = false;
@@ -27,12 +24,7 @@ export function LiveNow() {
       stageClient
         .listStages({ filters: [StageFilter.LIVE] })
         .then((res) => {
-          if (cancelled) return;
-          setStreams(
-            (res.stages ?? [])
-              .filter((s) => s.slug)
-              .map((s) => ({ slug: s.slug, name: s.name, watchUrl: s.watchUrl }))
-          );
+          if (!cancelled) setCount(res.stages.filter((s) => s.slug).length);
         })
         .catch(() => {});
     }
@@ -45,28 +37,38 @@ export function LiveNow() {
     };
   }, []);
 
-  if (streams.length === 0) return null;
+  if (count === 0) return null;
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel className="flex items-center gap-1.5">
-        <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
-        </span>
-        Live Now
-      </SidebarGroupLabel>
       <SidebarMenu>
-        {streams.map((s) => (
-          <SidebarMenuItem key={s.slug}>
-            <SidebarMenuButton asChild className="text-muted-foreground hover:text-primary hover:bg-primary/[0.06]">
-              <Link to={`/watch/${s.slug}`} target="_blank">
-                <Radio className="h-3.5 w-3.5 text-red-400 shrink-0" />
-                <span className="truncate">{s.name}</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        ))}
+        <SidebarMenuItem className="relative">
+          {active && (
+            <motion.div
+              layoutId="nav-indicator"
+              className="absolute left-0 top-1 bottom-1 w-[2px] rounded-full bg-primary"
+              transition={springs.snappy}
+            />
+          )}
+          <SidebarMenuButton
+            asChild
+            isActive={active}
+            className={cn(
+              active
+                ? "bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary active:bg-primary/15 active:text-primary"
+                : "text-muted-foreground hover:text-primary hover:bg-primary/[0.06]"
+            )}
+          >
+            <Link to="/live">
+              <span className="relative flex h-2 w-2 mr-0.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+              </span>
+              <span>Live Now</span>
+              <span className="ml-auto text-xs text-muted-foreground">{count}</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
       </SidebarMenu>
     </SidebarGroup>
   );
