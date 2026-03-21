@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { FeaturedStream } from "@/components/FeaturedStream";
 
 const STEPS = [
   {
@@ -270,6 +271,9 @@ export function LandingPage() {
           <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-2/3 h-12 bg-emerald-500/[0.04] blur-2xl rounded-full pointer-events-none" />
         </motion.div>
       </section>
+
+      {/* ── Featured live stream ── */}
+      <FeaturedStream />
 
       {/* ── llms.txt callout ── */}
       <section className="relative z-10 px-6 pb-16 md:pb-20">

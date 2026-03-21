@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package dazzle.internal.v1;
+
+option go_package = "github.com/browser-streamer/control-plane/internal/gen/api/v1;apiv1internal";
+
+// FeaturedService provides public (unauthenticated) discovery endpoints.
+service FeaturedService {
+  rpc GetFeatured(GetFeaturedRequest) returns (GetFeaturedResponse);
+}
+
+message GetFeaturedRequest {}
+
+message GetFeaturedResponse {
+  bool live = 1;           // true if a stream is currently live
+  string slug = 2;         // watch page slug
+  string title = 3;        // stream title or stage name
+  string category = 4;     // stream category (may be empty)
+}

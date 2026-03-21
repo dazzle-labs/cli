@@ -51,6 +51,7 @@ var (
 	_ apiv1connect.RtmpDestinationServiceHandler  = (*rtmpDestinationServer)(nil)
 	_ apiv1connect.UserServiceHandler             = (*userServer)(nil)
 	_ apiv1connect.RuntimeServiceHandler          = (*runtimeServer)(nil)
+	_ apiv1internalconnect.FeaturedServiceHandler  = (*featuredServer)(nil)
 )
 
 type StageStatus string
@@ -1712,6 +1713,12 @@ func main() {
 		connect.WithInterceptors(authInterceptor),
 	)
 	mux.Handle(stagePath, corsMiddleware(stageHandler))
+
+	// FeaturedService — public (no auth)
+	featuredPath, featuredHandler := apiv1internalconnect.NewFeaturedServiceHandler(
+		&featuredServer{mgr: mgr},
+	)
+	mux.Handle(featuredPath, corsMiddleware(featuredHandler))
 
 	// ApiKeyService — Clerk JWT only
 	apiKeyPath, apiKeyHandler := apiv1internalconnect.NewApiKeyServiceHandler(
