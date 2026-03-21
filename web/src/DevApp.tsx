@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { setTokenGetter } from "./client.js";
 import { Layout } from "./components/Layout.js";
+import { LivePage } from "./pages/LivePage.js";
 import { Dashboard } from "./pages/Dashboard.js";
 import { StageDetail } from "./pages/StageDetail.js";
 import { StreamConfig } from "./pages/StreamConfig.js";
@@ -20,7 +21,8 @@ export function DevApp({ devToken }: { devToken: string }) {
       <TooltipProvider>
         <Layout>
           <Routes>
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/" element={<LivePage />} />
+            <Route path="/stages" element={<Dashboard />} />
             <Route path="/stage/:stageId" element={<StageDetail />} />
             <Route path="/destinations" element={<StreamConfig />} />
             <Route path="/api-keys" element={<ApiKeys />} />

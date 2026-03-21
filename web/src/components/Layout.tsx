@@ -7,12 +7,11 @@ function UserButton() {
 }
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Monitor, Radio, Key, Rocket, BookOpen } from "lucide-react";
+import { Monitor, Radio, Cast, Key, Rocket, BookOpen } from "lucide-react";
 import { useEffect, useState, useCallback, memo } from "react";
 import type { ReactNode } from "react";
 import { motion } from "motion/react";
 import { OnboardingWizard } from "./onboarding/OnboardingWizard";
-import { LiveNow } from "./LiveNow";
 import { springs } from "@/lib/motion";
 import {
   Sidebar,
@@ -31,8 +30,9 @@ import {
 import { Separator } from "@/components/ui/separator";
 
 const navItems = [
-  { path: "/", label: "Stages", icon: Monitor },
-  { path: "/destinations", label: "Destinations", icon: Radio },
+  { path: "/", label: "Live Now", icon: Radio },
+  { path: "/stages", label: "Stages", icon: Monitor },
+  { path: "/destinations", label: "Destinations", icon: Cast },
   { path: "/api-keys", label: "API Keys", icon: Key },
 ];
 
@@ -125,7 +125,6 @@ const SidebarNav = memo(function SidebarNav({ onGetStarted }: { onGetStarted: ()
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroup>
-        <LiveNow />
       </SidebarContent>
     </Sidebar>
   );

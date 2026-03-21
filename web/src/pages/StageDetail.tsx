@@ -108,7 +108,7 @@ export function StageDetail() {
       {/* Breadcrumb */}
       <Breadcrumb className="mb-6">
         <BreadcrumbList>
-          <BreadcrumbItem><BreadcrumbLink asChild><Link to="/">Stages</Link></BreadcrumbLink></BreadcrumbItem>
+          <BreadcrumbItem><BreadcrumbLink asChild><Link to="/stages">Stages</Link></BreadcrumbLink></BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem><BreadcrumbPage>{displayName}</BreadcrumbPage></BreadcrumbItem>
         </BreadcrumbList>
@@ -121,7 +121,7 @@ export function StageDetail() {
       ) : !stage ? (
         <div className="pt-12 text-center">
           <p className="text-muted-foreground text-base mb-4">Stage not found.</p>
-          <Link to="/" className="text-primary hover:text-primary/80 text-base">
+          <Link to="/stages" className="text-primary hover:text-primary/80 text-base">
             Back to stages
           </Link>
         </div>

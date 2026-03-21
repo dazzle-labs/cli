@@ -14,8 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
-import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
-import { Trash2, Radio, ChevronDown, Eye } from "lucide-react";
+import { Trash2, ChevronDown, Eye, Check } from "lucide-react";
 import { CopyButton } from "@/components/CopyButton";
 import { PlatformIcon, PLATFORM_LIST, PLATFORM_HOVER_COLORS } from "@/components/PlatformIcon";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
@@ -220,7 +219,7 @@ export function StreamConfig() {
           Stream Destinations
         </h1>
         <p className="text-base text-muted-foreground">
-          The platforms your agents can stream to.
+          Connect platforms and attach them to your stages. Each stage can stream to multiple destinations simultaneously.
         </p>
       </div>
 
@@ -313,15 +312,6 @@ export function StreamConfig() {
       />
 
       {/* Destinations table */}
-      {destinations.length === 0 ? (
-        <Empty>
-          <EmptyHeader>
-            <EmptyMedia variant="icon"><Radio className="h-7 w-7" /></EmptyMedia>
-            <EmptyTitle>No stream destinations</EmptyTitle>
-            <EmptyDescription>Add one above to start streaming.</EmptyDescription>
-          </EmptyHeader>
-        </Empty>
-      ) : (
         <>
           {/* Desktop table */}
           <div className="rounded-xl border overflow-x-auto hidden sm:block">
@@ -335,6 +325,19 @@ export function StreamConfig() {
                 </TableRow>
               </TableHeader>
               <TableBody>
+                <TableRow className="bg-primary/[0.03]">
+                  <TableCell className="text-left text-foreground font-medium">Dazzle</TableCell>
+                  <TableCell className="text-left">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-500">
+                        <Check className="h-3 w-3" />
+                      </span>
+                      <span className="text-sm text-emerald-500">Always enabled</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-left"><span className="text-sm text-muted-foreground">dazzle.fm</span></TableCell>
+                  <TableCell />
+                </TableRow>
                 <AnimatePresence>
                   {destinations.map((d) => (
                     <motion.tr
@@ -382,6 +385,19 @@ export function StreamConfig() {
 
           {/* Mobile cards */}
           <div className="flex flex-col gap-2 sm:hidden">
+            <Card size="sm" className="bg-primary/[0.03]">
+              <CardContent>
+                <div className="flex items-center gap-3">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-500 shrink-0">
+                    <Check className="h-4 w-4" />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-medium text-foreground block">Dazzle</span>
+                    <span className="text-xs text-emerald-500">Always enabled</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
             <AnimatePresence>
               {destinations.map((d) => (
                 <MobileDestinationCard key={d.id} d={d} onDelete={handleDelete} />
@@ -389,7 +405,6 @@ export function StreamConfig() {
             </AnimatePresence>
           </div>
         </>
-      )}
       </>
       )}
     </AnimatedPage>
