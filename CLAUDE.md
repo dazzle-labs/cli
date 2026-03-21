@@ -108,14 +108,20 @@ All `dazzle` commands shown in the web UI come from `web/src/lib/cli-commands.ts
 
 ## llms.txt
 
-`llms.txt` is a static heredoc in `scripts/generate-llms-txt.sh`. Run `make llms-txt` to regenerate. Edit the shell script directly to update content.
+Follows the [llms.txt spec](https://llmstxt.org/). Three files:
+
+- **`/llms.txt`** — lean navigation index linking to guide.md and llms-full.txt. Edit `llms.txt.tmpl`.
+- **`/llms-full.txt`** — complete reference (getting started, CLI help, content guide). Edit `llms-full.txt.tmpl`.
+- **`/guide.md`** — detailed content authoring guide (GPU vs CPU tiers, performance, design tips). Edit `web/public/guide.md`.
+
+Both `.tmpl` files use `{{ .CLIHelp }}` to embed live CLI help output. Run `make llms-txt` to regenerate from templates. CI verifies generation is clean.
 
 ## Proto / API types
 
 Proto interfaces are split into public and internal:
 
 - **Public** (`dazzle.v1`) — Stage, Runtime, Stream, User. Proto source + generated Go live in `cli/` (git submodule → `github.com/dazzle-labs/cli`). These are the client-facing APIs.
-- **Internal** (`dazzle.internal.v1`) — ApiKey. Proto source in `control-plane/proto/api/v1/`, generated Go in `control-plane/internal/gen/`. Go's `internal/` directory enforces access restriction.
+- **Internal** (`dazzle.internal.v1`) — ApiKey, Featured. Proto source in `control-plane/proto/api/v1/`, generated Go in `control-plane/internal/gen/`. Go's `internal/` directory enforces access restriction. FeaturedService is public (no auth interceptor). Both generate TypeScript into `web/src/gen/` via `protoc-gen-es`.
 
 A `go.work` file at the repo root wires up `./control-plane`, `./cli`, and `./sidecar` so local builds always use the local submodule — no tagging needed during development.
 
