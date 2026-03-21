@@ -310,7 +310,9 @@ func (x *CreateStageResponse) GetStage() *Stage {
 
 type ListStagesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Filters       []StageFilter          `protobuf:"varint,1,rep,packed,name=filters,proto3,enum=dazzle.v1.StageFilter" json:"filters,omitempty"` // Combined with AND. Empty = OWNED (backward compat)
+	PageSize      int32                  `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`                 // Max results per page (default 50, max 100)
+	PageToken     string                 `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`               // Opaque token for next page; empty for first page
+	Filters       []StageFilter          `protobuf:"varint,3,rep,packed,name=filters,proto3,enum=dazzle.v1.StageFilter" json:"filters,omitempty"` // Combined with AND. Empty = OWNED (backward compat)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -345,6 +347,20 @@ func (*ListStagesRequest) Descriptor() ([]byte, []int) {
 	return file_api_v1_stage_proto_rawDescGZIP(), []int{3}
 }
 
+func (x *ListStagesRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *ListStagesRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
+}
+
 func (x *ListStagesRequest) GetFilters() []StageFilter {
 	if x != nil {
 		return x.Filters
@@ -355,6 +371,7 @@ func (x *ListStagesRequest) GetFilters() []StageFilter {
 type ListStagesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Stages        []*Stage               `protobuf:"bytes,1,rep,name=stages,proto3" json:"stages,omitempty"`
+	NextPageToken string                 `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"` // Empty when no more results
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -394,6 +411,13 @@ func (x *ListStagesResponse) GetStages() []*Stage {
 		return x.Stages
 	}
 	return nil
+}
+
+func (x *ListStagesResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
 }
 
 type GetStageRequest struct {
@@ -1056,11 +1080,15 @@ const file_api_v1_stage_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\"\n" +
 	"\fcapabilities\x18\x02 \x03(\tR\fcapabilities\"=\n" +
 	"\x13CreateStageResponse\x12&\n" +
-	"\x05stage\x18\x01 \x01(\v2\x10.dazzle.v1.StageR\x05stage\"E\n" +
-	"\x11ListStagesRequest\x120\n" +
-	"\afilters\x18\x01 \x03(\x0e2\x16.dazzle.v1.StageFilterR\afilters\">\n" +
+	"\x05stage\x18\x01 \x01(\v2\x10.dazzle.v1.StageR\x05stage\"\x81\x01\n" +
+	"\x11ListStagesRequest\x12\x1b\n" +
+	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
+	"\n" +
+	"page_token\x18\x02 \x01(\tR\tpageToken\x120\n" +
+	"\afilters\x18\x03 \x03(\x0e2\x16.dazzle.v1.StageFilterR\afilters\"f\n" +
 	"\x12ListStagesResponse\x12(\n" +
-	"\x06stages\x18\x01 \x03(\v2\x10.dazzle.v1.StageR\x06stages\"!\n" +
+	"\x06stages\x18\x01 \x03(\v2\x10.dazzle.v1.StageR\x06stages\x12&\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"!\n" +
 	"\x0fGetStageRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\":\n" +
 	"\x10GetStageResponse\x12&\n" +

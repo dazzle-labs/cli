@@ -53,11 +53,14 @@ enum StageFilter {
 }
 
 message ListStagesRequest {
-  repeated StageFilter filters = 1;  // Combined with AND. Empty = OWNED (backward compat)
+  int32 page_size = 1;               // Max results per page (default 50, max 100)
+  string page_token = 2;             // Opaque token for next page; empty for first page
+  repeated StageFilter filters = 3;  // Combined with AND. Empty = OWNED (backward compat)
 }
 
 message ListStagesResponse {
   repeated Stage stages = 1;
+  string next_page_token = 2;        // Empty when no more results
 }
 
 message GetStageRequest {
