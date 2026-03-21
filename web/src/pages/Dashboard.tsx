@@ -5,11 +5,10 @@ import { motion, AnimatePresence } from "motion/react";
 import { stageClient, streamClient } from "../client.js";
 import type { Stage } from "../gen/api/v1/stage_pb.js";
 import type { StreamDestination } from "../gen/api/v1/stream_pb.js";
-import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Radio, X, Loader2, ArrowRight, Rocket, Plus, Zap } from "lucide-react";
+import { Radio, X, Loader2, Rocket, Plus, Zap } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 import { toast } from "sonner";
@@ -257,55 +256,42 @@ export function Dashboard() {
                     transition={springs.quick}
                   >
                     <Card className={cn("transition-colors duration-200 hover:border-primary/15 hover:bg-primary/[0.02] overflow-hidden", isRunning && "border-l-2 border-l-emerald-500/40")}>
-                      {isRunning && (
-                        <div className="aspect-video bg-black max-h-32 sm:max-h-none overflow-hidden">
+                      <div className="relative aspect-video bg-black/60 overflow-hidden">
+                        {isRunning ? (
                           <StageThumbnail stageId={stage.id} />
-                        </div>
-                      )}
-                      <CardContent className="p-5">
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-base font-medium text-foreground">
-                            {stage.name || "Untitled Stage"}
-                          </span>
-                          <div className="flex items-center gap-2">
-                            {stage.capabilities.includes("gpu") && (
-                              <Badge variant="outline" className="text-amber-500 border-amber-500/30 gap-1 px-1.5">
-                                <Zap className="h-3 w-3" />
-                                GPU
-                              </Badge>
-                            )}
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="text-zinc-700 text-xs uppercase tracking-widest">
+                              {isStarting ? "Starting..." : "Offline"}
+                            </div>
+                          </div>
+                        )}
+                        {/* Badges overlay */}
+                        <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
+                          {stage.capabilities.includes("gpu") && (
+                            <Badge variant="outline" className="text-amber-500 border-amber-500/30 bg-black/60 backdrop-blur-sm gap-1 px-1.5 text-[11px]">
+                              <Zap className="h-3 w-3" />
+                              GPU
+                            </Badge>
+                          )}
+                          <Badge
+                            variant={isRunning ? "success" : isStarting ? "warning" : "secondary"}
+                            className="bg-black/60 backdrop-blur-sm text-[11px]"
+                          >
                             {(isRunning || isStarting) && (
-                              <span className="relative flex h-2.5 w-2.5">
+                              <span className="relative flex h-1.5 w-1.5 mr-1">
                                 <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", isRunning ? "bg-emerald-400" : "bg-amber-400")} />
-                                <span className={cn("relative inline-flex rounded-full h-2.5 w-2.5", isRunning ? "bg-emerald-500" : "bg-amber-500")} />
+                                <span className={cn("relative inline-flex rounded-full h-1.5 w-1.5", isRunning ? "bg-emerald-500" : "bg-amber-500")} />
                               </span>
                             )}
-                            <Badge
-                              variant={
-                                isRunning
-                                  ? "success"
-                                  : isStarting
-                                    ? "warning"
-                                    : "secondary"
-                              }
-                            >
-                              {isRunning
-                                ? "active"
-                                : stage.status || "inactive"}
-                            </Badge>
-                          </div>
+                            {isRunning ? "active" : stage.status || "inactive"}
+                          </Badge>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">
-                            {stage.createdAt
-                              ? timestampDate(stage.createdAt).toLocaleDateString()
-                              : ""}
-                          </span>
-                          <span className="flex items-center gap-1 text-sm text-muted-foreground group-hover:text-primary transition-colors">
-                            View details
-                            <ArrowRight className="h-3 w-3" />
-                          </span>
-                        </div>
+                      </div>
+                      <CardContent className="px-4 py-3">
+                        <span className="text-sm font-medium text-foreground truncate block">
+                          {stage.name || "Untitled Stage"}
+                        </span>
                       </CardContent>
                     </Card>
                   </motion.div>
