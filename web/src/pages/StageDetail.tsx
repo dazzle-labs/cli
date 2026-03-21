@@ -177,7 +177,7 @@ export function StageDetail() {
             </span>
           )}
           <Badge variant={isRunning ? "success" : isStarting ? "warning" : "secondary"}>
-            {isRunning ? "active" : stage.status || "inactive"}
+            {isRunning ? "live" : stage.status || "inactive"}
           </Badge>
         </div>
       </div>

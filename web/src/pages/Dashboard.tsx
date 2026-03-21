@@ -255,7 +255,7 @@ export function Dashboard() {
                     whileTap={{ scale: 0.98 }}
                     transition={springs.quick}
                   >
-                    <Card className={cn("transition-colors duration-200 hover:border-primary/15 hover:bg-primary/[0.02] overflow-hidden", isRunning && "border-l-2 border-l-emerald-500/40")}>
+                    <Card className="transition-colors duration-200 hover:border-primary/15 hover:bg-primary/[0.02] overflow-hidden">
                       <div className="relative aspect-video bg-black/60 overflow-hidden">
                         {isRunning ? (
                           <StageThumbnail slug={stage.slug} />
@@ -284,7 +284,7 @@ export function Dashboard() {
                                 <span className={cn("relative inline-flex rounded-full h-1.5 w-1.5", isRunning ? "bg-emerald-500" : "bg-amber-500")} />
                               </span>
                             )}
-                            {isRunning ? "active" : stage.status || "inactive"}
+                            {isRunning ? "live" : stage.status || "inactive"}
                           </Badge>
                         </div>
                       </div>
