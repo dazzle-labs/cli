@@ -172,9 +172,27 @@ func newAuthInterceptor(auth *authenticator) *authInterceptor {
 	return &authInterceptor{auth: auth}
 }
 
+// publicProcedures lists RPC procedures that allow unauthenticated access.
+// Auth is still attempted if a token is present, but missing/invalid tokens
+// are not rejected — the handler checks authInfoFromCtx to decide what to return.
+var publicProcedures = map[string]bool{
+	"/dazzle.v1.StageService/GetStage": true,
+}
+
 func (i *authInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
 	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
 		token := strings.TrimPrefix(req.Header().Get("Authorization"), "Bearer ")
+
+		// Public procedures: attempt auth if token present, but allow through regardless
+		if publicProcedures[req.Spec().Procedure] {
+			if token != "" {
+				if info, err := i.auth.authenticate(ctx, token); err == nil && info != nil {
+					ctx = context.WithValue(ctx, authInfoKey, *info)
+				}
+			}
+			return next(ctx, req)
+		}
+
 		if token == "" {
 			return nil, connect.NewError(connect.CodeUnauthenticated, nil)
 		}

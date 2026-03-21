@@ -104,14 +104,39 @@ func (s *stageServer) ListStages(ctx context.Context, req *connect.Request[apiv1
 }
 
 func (s *stageServer) GetStage(ctx context.Context, req *connect.Request[apiv1.GetStageRequest]) (*connect.Response[apiv1.GetStageResponse], error) {
-	_, row, err := requireStage(ctx, s.mgr, req.Msg.Id)
-	if err != nil {
-		return nil, err
+	idOrSlug := req.Msg.Id
+	if id, err := resolveStageID(s.mgr, idOrSlug); err == nil {
+		idOrSlug = id
 	}
-	st := stageRowToStruct(row, s.mgr)
-	return connect.NewResponse(&apiv1.GetStageResponse{
-		Stage: stageToProto(st, s.mgr.publicBaseURL, s.mgr.db),
-	}), nil
+	row, err := dbGetStage(s.mgr.db, idOrSlug)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	if row == nil {
+		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("stage not found"))
+	}
+
+	// Owner gets full info
+	if info, ok := authInfoFromCtx(ctx); ok && info.UserID == row.UserID {
+		st := stageRowToStruct(row, s.mgr)
+		return connect.NewResponse(&apiv1.GetStageResponse{
+			Stage: stageToProto(st, s.mgr.publicBaseURL, s.mgr.db),
+		}), nil
+	}
+
+	// Everyone else gets public info
+	pb := &apiv1.Stage{
+		Name:   row.Name,
+		Status: row.Status,
+		Slug:   row.Slug.String,
+	}
+	if row.StreamTitle.Valid && row.StreamTitle.String != "" {
+		pb.Name = row.StreamTitle.String
+	}
+	if s.mgr.publicBaseURL != "" && row.Slug.Valid {
+		pb.WatchUrl = s.mgr.publicBaseURL + "/watch/" + row.Slug.String
+	}
+	return connect.NewResponse(&apiv1.GetStageResponse{Stage: pb}), nil
 }
 
 func (s *stageServer) DeleteStage(ctx context.Context, req *connect.Request[apiv1.DeleteStageRequest]) (*connect.Response[apiv1.DeleteStageResponse], error) {
