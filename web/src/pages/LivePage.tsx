@@ -88,10 +88,10 @@ export function LivePage() {
                         </Badge>
                       </div>
                     </div>
-                    <div className="px-1 py-2">
-                      <span className="text-sm font-medium text-foreground truncate block">
+                    <div className="px-1 pt-2.5 pb-1">
+                      <h3 className="text-base font-semibold text-foreground truncate">
                         {stage.name}
-                      </span>
+                      </h3>
                     </div>
                   </div>
                 </motion.div>
