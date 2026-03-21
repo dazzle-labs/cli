@@ -7,7 +7,6 @@ import type { Stage } from "../gen/api/v1/stage_pb.js";
 import type { StreamDestination } from "../gen/api/v1/stream_pb.js";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { Radio, X, Loader2, Rocket, Plus, Zap } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
@@ -255,8 +254,8 @@ export function Dashboard() {
                     whileTap={{ scale: 0.98 }}
                     transition={springs.quick}
                   >
-                    <Card className="transition-colors duration-200 hover:border-primary/15 hover:bg-primary/[0.02] overflow-hidden">
-                      <div className="relative aspect-video bg-black/60 overflow-hidden">
+                    <div className="rounded-lg overflow-hidden">
+                      <div className="relative aspect-video bg-black">
                         {isRunning ? (
                           <StageThumbnail slug={stage.slug} />
                         ) : (
@@ -266,34 +265,27 @@ export function Dashboard() {
                             </div>
                           </div>
                         )}
-                        {/* Badges overlay */}
-                        <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
+                        <div className="absolute top-2 left-2 flex items-center gap-1.5">
+                          {(isRunning || isStarting) && (
+                            <Badge className={cn("border-0 gap-1 text-[11px] text-white", isRunning ? "bg-red-500/90" : "bg-amber-500/90")}>
+                              <Radio className="h-3 w-3" />
+                              {isRunning ? "LIVE" : "STARTING"}
+                            </Badge>
+                          )}
                           {stage.capabilities.includes("gpu") && (
                             <Badge variant="outline" className="text-amber-500 border-amber-500/30 bg-black/60 backdrop-blur-sm gap-1 px-1.5 text-[11px]">
                               <Zap className="h-3 w-3" />
                               GPU
                             </Badge>
                           )}
-                          <Badge
-                            variant={isRunning ? "success" : isStarting ? "warning" : "secondary"}
-                            className="bg-black/60 backdrop-blur-sm text-[11px]"
-                          >
-                            {(isRunning || isStarting) && (
-                              <span className="relative flex h-1.5 w-1.5 mr-1">
-                                <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", isRunning ? "bg-emerald-400" : "bg-amber-400")} />
-                                <span className={cn("relative inline-flex rounded-full h-1.5 w-1.5", isRunning ? "bg-emerald-500" : "bg-amber-500")} />
-                              </span>
-                            )}
-                            {isRunning ? "live" : stage.status || "inactive"}
-                          </Badge>
                         </div>
                       </div>
-                      <CardContent className="px-4 py-3">
-                        <span className="text-sm font-medium text-foreground truncate block">
+                      <div className="px-1 pt-2.5 pb-1">
+                        <h3 className="text-base font-semibold text-foreground truncate">
                           {stage.name || "Untitled Stage"}
-                        </span>
-                      </CardContent>
-                    </Card>
+                        </h3>
+                      </div>
+                    </div>
                   </motion.div>
                 </Link>
               </AnimatedListItem>
