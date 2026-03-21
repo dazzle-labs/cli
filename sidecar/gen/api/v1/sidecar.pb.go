@@ -944,6 +944,7 @@ func (x *OutputTarget) GetRtmpUrl() string {
 type SetOutputsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Outputs       []*OutputTarget        `protobuf:"bytes,1,rep,name=outputs,proto3" json:"outputs,omitempty"`
+	Watermarked   bool                   `protobuf:"varint,2,opt,name=watermarked,proto3" json:"watermarked,omitempty"` // When true, apply dazzle.fm watermark on external outputs
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -983,6 +984,13 @@ func (x *SetOutputsRequest) GetOutputs() []*OutputTarget {
 		return x.Outputs
 	}
 	return nil
+}
+
+func (x *SetOutputsRequest) GetWatermarked() bool {
+	if x != nil {
+		return x.Watermarked
+	}
+	return false
 }
 
 type SetOutputsResponse struct {
@@ -1082,9 +1090,10 @@ const file_api_v1_sidecar_proto_rawDesc = "" +
 	"\x05image\x18\x01 \x01(\fR\x05image\"=\n" +
 	"\fOutputTarget\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x19\n" +
-	"\brtmp_url\x18\x02 \x01(\tR\artmpUrl\"N\n" +
+	"\brtmp_url\x18\x02 \x01(\tR\artmpUrl\"p\n" +
 	"\x11SetOutputsRequest\x129\n" +
-	"\aoutputs\x18\x01 \x03(\v2\x1f.dazzle.sidecar.v1.OutputTargetR\aoutputs\"\x14\n" +
+	"\aoutputs\x18\x01 \x03(\v2\x1f.dazzle.sidecar.v1.OutputTargetR\aoutputs\x12 \n" +
+	"\vwatermarked\x18\x02 \x01(\bR\vwatermarked\"\x14\n" +
 	"\x12SetOutputsResponse2\x8b\x02\n" +
 	"\vSyncService\x12O\n" +
 	"\x04Diff\x12\".dazzle.sidecar.v1.SyncDiffRequest\x1a#.dazzle.sidecar.v1.SyncDiffResponse\x12Q\n" +

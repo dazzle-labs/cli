@@ -11,5 +11,6 @@ FROM alpine:3.19
 RUN apk add --no-cache ca-certificates ffmpeg \
     libva mesa-va-gallium
 WORKDIR /app
+COPY assets/DMSerifDisplay-Regular.ttf /usr/share/fonts/dazzle.ttf
 COPY --from=builder /app/sidecar /sidecar
 ENTRYPOINT ["/sidecar"]

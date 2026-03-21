@@ -19,7 +19,7 @@ func (h *outputServer) SetOutputs(ctx context.Context, req *connect.Request[side
 	for i, o := range req.Msg.Outputs {
 		outputs[i] = pipeline.Output{Name: o.Name, RtmpURL: o.RtmpUrl}
 	}
-	if err := h.s.pipeline.SetOutputs(outputs); err != nil {
+	if err := h.s.pipeline.SetOutputs(outputs, req.Msg.Watermarked); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	return connect.NewResponse(&sidecarv1.SetOutputsResponse{}), nil

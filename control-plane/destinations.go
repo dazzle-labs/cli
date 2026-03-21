@@ -63,7 +63,7 @@ func (m *Manager) syncStageOutputs(stageID, userID string) error {
 		outputs = append(outputs, OutputTarget{Name: d.Platform + "-" + d.PlatformUsername, RtmpURL: rtmpURL})
 	}
 
-	if err := m.pc.SetOutputs(stage, outputs); err != nil {
+	if err := m.pc.SetOutputs(stage, outputs, row.Watermarked); err != nil {
 		log.Printf("WARN: failed to set outputs for stage %s: %v", stageID, err)
 		return err
 	}

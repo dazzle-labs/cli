@@ -362,18 +362,20 @@ type stageRow struct {
 	UpdatedAt     time.Time
 	StreamKey       sql.NullString // RTMP ingest stream key (auto-generated)
 	Slug            sql.NullString // Short slug for public watch URLs
-	StreamTitle     sql.NullString
-	StreamCategory  sql.NullString
+	StreamTitle        sql.NullString
+	StreamCategory     sql.NullString
+	Watermarked  bool
 }
 
-const stageColumns = `id, user_id, name, status, pod_name, pod_ip, destination_id, preview_token, provider, runpod_pod_id, sidecar_url, gpu_node_name, capabilities, created_at, updated_at, stream_key, slug, stream_title, stream_category`
+const stageColumns = `id, user_id, name, status, pod_name, pod_ip, destination_id, preview_token, provider, runpod_pod_id, sidecar_url, gpu_node_name, capabilities, created_at, updated_at, stream_key, slug, stream_title, stream_category, watermarked`
 
 func scanStage(scanner interface{ Scan(...any) error }) (*stageRow, error) {
 	var s stageRow
 	err := scanner.Scan(&s.ID, &s.UserID, &s.Name, &s.Status, &s.PodName, &s.PodIP,
 		&s.DestinationID, &s.PreviewToken, &s.Provider, &s.RunPodPodID,
 		&s.SidecarURL, &s.GPUNodeName, pq.Array(&s.Capabilities),
-		&s.CreatedAt, &s.UpdatedAt, &s.StreamKey, &s.Slug, &s.StreamTitle, &s.StreamCategory)
+		&s.CreatedAt, &s.UpdatedAt, &s.StreamKey, &s.Slug, &s.StreamTitle, &s.StreamCategory,
+		&s.Watermarked)
 	if err != nil {
 		return nil, err
 	}
