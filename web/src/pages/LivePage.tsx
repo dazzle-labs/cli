@@ -78,22 +78,22 @@ export function LivePage() {
                   whileTap={{ scale: 0.98 }}
                   transition={springs.quick}
                 >
-                  <Card className="transition-colors duration-200 hover:border-red-500/20 hover:bg-red-500/[0.02] overflow-hidden border-l-2 border-l-red-500/40">
-                    <div className="relative aspect-video bg-black overflow-hidden">
+                  <div className="rounded-lg overflow-hidden">
+                    <div className="relative aspect-video bg-black">
                       <StageThumbnail slug={stage.slug} />
-                      <div className="absolute top-2.5 left-2.5">
+                      <div className="absolute top-2 left-2">
                         <Badge className="bg-red-500/90 text-white border-0 gap-1 text-[11px]">
                           <Radio className="h-3 w-3" />
                           LIVE
                         </Badge>
                       </div>
                     </div>
-                    <CardContent className="px-4 py-3">
+                    <div className="px-1 py-2">
                       <span className="text-sm font-medium text-foreground truncate block">
                         {stage.name}
                       </span>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 </motion.div>
               </Link>
             </AnimatedListItem>
