@@ -129,6 +129,18 @@ PULSE_PID=$(pgrep -n -f "socket=$PULSE_DIR/native" || true)
 
 sleep 0.3
 
+# Restore content + Chrome state from R2 before starting sidecar.
+# On CPU stages this happens in a K8s init container; on GPU stages
+# the agent spawns stage-start.sh directly so we do it here.
+if [ -n "${R2_ENDPOINT:-}" ] && [ -n "${R2_ACCESS_KEY_ID:-}" ]; then
+    echo "[stage $STAGE_ID] Restoring content from R2..."
+    /sidecar restore || echo "[stage $STAGE_ID] WARN: R2 restore failed, continuing with empty stage"
+    # Fix ownership after restore (files were created as root)
+    if [ -n "${STAGE_UID:-}" ] && [ "$STAGE_UID" != "0" ]; then
+        chown -R "$STAGE_UID:${STAGE_GID:-$STAGE_UID}" "$DATA_DIR"
+    fi
+fi
+
 echo "[stage $STAGE_ID] Starting sidecar (port $PORT, CDP via pipe)..."
 export CONTENT_ROOT="$DATA_DIR/content"
 export SYNC_DIR="$DATA_DIR/content/sync"

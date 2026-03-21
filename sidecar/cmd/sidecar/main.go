@@ -75,16 +75,21 @@ func runRestore() {
 		return
 	}
 
+	// DATA_DIR is set by the GPU agent to /data/stages/<stageID>;
+	// CPU init containers use the default /data/.
+	dataDir := envOrDefault("DATA_DIR", "/data")
+
 	prefix := fmt.Sprintf("users/%s/stages/%s/", userID, stageID)
-	if err := r2.Restore(endpoint, accessKey, secretKey, bucket, prefix, "/data/"); err != nil {
+	if err := r2.Restore(endpoint, accessKey, secretKey, bucket, prefix, dataDir); err != nil {
 		log.Printf("WARN: restore failed: %v", err)
 	}
 	ensureDirs()
 }
 
 func ensureDirs() {
-	os.MkdirAll("/data/content", 0o755)
-	os.MkdirAll("/data/chrome", 0o755)
+	dataDir := envOrDefault("DATA_DIR", "/data")
+	os.MkdirAll(dataDir+"/content", 0o755)
+	os.MkdirAll(dataDir+"/chrome", 0o755)
 }
 
 func runBench() {
