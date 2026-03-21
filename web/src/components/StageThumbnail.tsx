@@ -19,7 +19,7 @@ export function StageThumbnail({
 
     async function fetchThumbnail() {
       try {
-        const resp = await fetch(`/watch/${slug}/thumbnail`);
+        const resp = await fetch(`/watch/${slug}/thumbnail.png`);
         if (!resp.ok || cancelled) return;
         const blob = await resp.blob();
         if (cancelled) return;

@@ -1840,8 +1840,8 @@ func main() {
 	mux.HandleFunc("/watch/", func(w http.ResponseWriter, r *http.Request) {
 		parts := strings.SplitN(strings.TrimPrefix(r.URL.Path, "/watch/"), "/", 3)
 
-		// Public thumbnail: /watch/<slug>/thumbnail.png or /watch/<slug>/thumbnail
-		if len(parts) >= 2 && (parts[1] == "thumbnail.png" || parts[1] == "thumbnail") {
+		// Public thumbnail for OG images
+		if len(parts) >= 2 && parts[1] == "thumbnail.png" {
 			mgr.handleWatchThumbnail(w, r, parts[0])
 			return
 		}
