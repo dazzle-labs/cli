@@ -36,7 +36,7 @@ interface PlatformConfig {
 }
 
 const PLATFORMS: Record<string, PlatformConfig> = {
-  dazzle: { icon: Zap, bg: "bg-amber-500/15 text-amber-400", label: "Dazzle" },
+  dazzle: { icon: Zap, bg: "bg-emerald-500/15 text-emerald-400", label: "Dazzle" },
   twitch: { icon: Twitch, bg: "bg-purple-500/15 text-purple-400", label: "Twitch" },
   youtube: { icon: Youtube, bg: "bg-red-500/15 text-red-400", label: "YouTube", comingSoon: true },
   kick: { icon: KickIcon, bg: "bg-green-500/15 text-green-400", label: "Kick" },
@@ -51,7 +51,7 @@ export const PLATFORM_LIST = Object.entries(PLATFORMS).map(([value, config]) => 
 
 /** Per-platform brand-color hover classes for buttons/cards */
 export const PLATFORM_HOVER_COLORS: Record<string, string> = {
-  dazzle: "hover:border-amber-500/20 hover:bg-amber-500/[0.03]",
+  dazzle: "hover:border-emerald-500/20 hover:bg-emerald-500/[0.03]",
   twitch: "hover:border-purple-500/20 hover:bg-purple-500/[0.03]",
   youtube: "hover:border-red-500/20 hover:bg-red-500/[0.03]",
   kick: "hover:border-green-500/20 hover:bg-green-500/[0.03]",

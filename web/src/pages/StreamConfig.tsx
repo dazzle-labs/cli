@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
-import { Trash2, ChevronDown, Eye, Check } from "lucide-react";
+import { Trash2, ChevronDown, Eye } from "lucide-react";
 import { CopyButton } from "@/components/CopyButton";
 import { PlatformIcon, PLATFORM_LIST, PLATFORM_HOVER_COLORS } from "@/components/PlatformIcon";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
@@ -233,6 +233,17 @@ export function StreamConfig() {
       <div className="mb-8">
         <p className="text-sm font-medium text-muted-foreground mb-3">Platforms</p>
         <AnimatedList className="flex flex-wrap gap-3" delay={0.05}>
+          {/* Dazzle — always on */}
+          <AnimatedListItem>
+            <Button
+              variant="outline"
+              disabled
+              className="rounded-xl h-auto px-2 py-2 sm:px-4 sm:py-3 border-emerald-500/20 bg-emerald-500/[0.03] opacity-100 cursor-default"
+            >
+              <PlatformIcon platform="dazzle" size="sm" />
+              <span className="hidden sm:inline text-sm text-emerald-400">Dazzle</span>
+            </Button>
+          </AnimatedListItem>
           {OAUTH_PLATFORMS.filter(p => availablePlatforms.includes(p) || PLATFORM_LIST.find(pl => pl.value === p)?.comingSoon).map((platform) => {
             const info = PLATFORM_LIST.find((p) => p.value === platform);
             const label = info?.label ?? platform;
@@ -312,8 +323,8 @@ export function StreamConfig() {
       />
 
       {/* Destinations table */}
+      {destinations.length > 0 && (
         <>
-          {/* Desktop table */}
           <div className="rounded-xl border overflow-x-auto hidden sm:block">
             <Table className="table-fixed">
               <TableHeader>
@@ -325,19 +336,6 @@ export function StreamConfig() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <TableRow className="bg-primary/[0.03]">
-                  <TableCell className="text-left text-foreground font-medium">Dazzle</TableCell>
-                  <TableCell className="text-left">
-                    <div className="flex items-center gap-2">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-500">
-                        <Check className="h-3 w-3" />
-                      </span>
-                      <span className="text-sm text-emerald-500">Always enabled</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-left"><span className="text-sm text-muted-foreground">dazzle.fm</span></TableCell>
-                  <TableCell />
-                </TableRow>
                 <AnimatePresence>
                   {destinations.map((d) => (
                     <motion.tr
@@ -385,19 +383,6 @@ export function StreamConfig() {
 
           {/* Mobile cards */}
           <div className="flex flex-col gap-2 sm:hidden">
-            <Card size="sm" className="bg-primary/[0.03]">
-              <CardContent>
-                <div className="flex items-center gap-3">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-500 shrink-0">
-                    <Check className="h-4 w-4" />
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <span className="text-sm font-medium text-foreground block">Dazzle</span>
-                    <span className="text-xs text-emerald-500">Always enabled</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
             <AnimatePresence>
               {destinations.map((d) => (
                 <MobileDestinationCard key={d.id} d={d} onDelete={handleDelete} />
@@ -405,6 +390,7 @@ export function StreamConfig() {
             </AnimatePresence>
           </div>
         </>
+      )}
       </>
       )}
     </AnimatedPage>

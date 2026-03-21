@@ -30,7 +30,6 @@ import {
 import { Separator } from "@/components/ui/separator";
 
 const navItems = [
-  { path: "/", label: "Live Now", icon: Radio },
   { path: "/stages", label: "Stages", icon: Monitor },
   { path: "/destinations", label: "Destinations", icon: Cast },
   { path: "/api-keys", label: "API Keys", icon: Key },
@@ -63,6 +62,32 @@ const SidebarNav = memo(function SidebarNav({ onGetStarted }: { onGetStarted: ()
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
+          <SidebarMenu>
+            <SidebarMenuItem className="relative">
+              {location.pathname === "/" && (
+                <motion.div
+                  layoutId="nav-indicator"
+                  className="absolute left-0 top-1 bottom-1 w-[2px] rounded-full bg-red-500"
+                  transition={springs.snappy}
+                />
+              )}
+              <SidebarMenuButton
+                asChild
+                isActive={location.pathname === "/"}
+                className={cn(
+                  location.pathname === "/"
+                    ? "bg-red-500/10 text-red-400 hover:bg-red-500/15 hover:text-red-400 active:bg-red-500/15 active:text-red-400"
+                    : "text-muted-foreground hover:text-red-400 hover:bg-red-500/[0.06]"
+                )}
+              >
+                <Link to="/">
+                  <Radio className="h-4 w-4" />
+                  <span>Live Now</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+          <SidebarSeparator className="my-2" />
           <SidebarMenu>
             {navItems.map((item) => {
               const active = location.pathname === item.path;
