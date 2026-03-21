@@ -4,7 +4,6 @@ import { motion } from "motion/react";
 import { stageClient } from "@/client";
 import type { Stage } from "@/gen/api/v1/stage_pb";
 import { StageFilter } from "@/gen/api/v1/stage_pb";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Radio } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
