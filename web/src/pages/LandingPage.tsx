@@ -1,68 +1,143 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { SignIn } from "@clerk/react";
-import { motion } from "motion/react";
+import { motion, useInView } from "motion/react";
 import {
   ArrowRight,
   Check,
   ChevronDown,
-  Command,
   Copy,
   Globe,
-  Layers,
-  Monitor,
   Radio,
   Sparkles,
-  Terminal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useFeaturedStream, FeaturedStreamCard } from "@/components/FeaturedStream";
 
-const STEPS = [
-  {
-    num: "01",
-    title: "Create a stage",
-    desc: "A cloud environment that renders and streams your content. Ready in seconds.",
-    icon: Layers,
-  },
-  {
-    num: "02",
-    title: "Push your content",
-    desc: "Sync a directory — HTML, scripts, anything. Your agent builds it, Dazzle renders it.",
-    icon: Terminal,
-  },
-  {
-    num: "03",
-    title: "Go live",
-    desc: "Your stage is already live at its own URL on dazzle.fm. Add Twitch, YouTube, or any RTMP destination.",
-    icon: Radio,
-  },
+/** Green "live" text with pulsing dot — used across landing page headings. */
+function LiveText({ children = "live" }: { children?: string }) {
+  return (
+    <span className="text-emerald-400 inline-flex items-baseline gap-0">
+      <span className="relative flex h-[0.3em] w-[0.3em] self-center mr-[0.08em]">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+        <span className="relative inline-flex rounded-full h-full w-full bg-emerald-400" />
+      </span>
+      {children}
+    </span>
+  );
+}
+
+const TERMINAL_LINES: { type: "cmd" | "out"; text: string }[] = [
+  { type: "cmd", text: "dazzle stage create my-stage" },
+  { type: "out", text: 'Stage "my-stage" created.' },
+  { type: "out", text: "" },
+  { type: "cmd", text: "dazzle stage sync ./my-content" },
+  { type: "out", text: "3 files synced." },
+  { type: "out", text: "" },
+  { type: "cmd", text: "dazzle stage up" },
+  { type: "out", text: "Stage is live at https://dazzle.fm/s/my-stage" },
 ];
 
-const FEATURES = [
-  {
-    title: "Built on web standards",
-    desc: "HTML, CSS, Canvas, WebGL, Web Audio — standard web technologies, no proprietary APIs to learn.",
-    icon: Globe,
-  },
-  {
-    title: "Watch your agent work",
-    desc: "Live screenshots, console output, and stream health. Monitor from anywhere.",
-    icon: Monitor,
-  },
-  {
-    title: "Stream everywhere",
-    desc: "Twitch, YouTube, Kick, Restream, or custom RTMP. Multiple destinations at once.",
-    icon: Radio,
-  },
-  {
-    title: "Built for automation",
-    desc: "Every action is a CLI command. Script it, automate it, hand it to your agent.",
-    icon: Command,
-  },
-];
+function TerminalAnimation() {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-20px" });
+  const [visibleLines, setVisibleLines] = useState(0);
+  const [typedChars, setTypedChars] = useState(0);
+  const [cursorVisible, setCursorVisible] = useState(true);
+
+  // Cursor blink — only when in view
+  useEffect(() => {
+    if (!inView) return;
+    const id = setInterval(() => setCursorVisible((v) => !v), 530);
+    return () => clearInterval(id);
+  }, [inView]);
+
+  // Typing animation
+  useEffect(() => {
+    if (!inView) return;
+
+    const currentLine = TERMINAL_LINES[visibleLines];
+    if (!currentLine) return;
+
+    if (currentLine.type === "out" || (currentLine.type === "cmd" && typedChars >= currentLine.text.length)) {
+      // Line complete — pause then advance
+      const delay = currentLine.type === "cmd" ? 400 : currentLine.text === "" ? 200 : 300;
+      const timer = setTimeout(() => {
+        setVisibleLines((v) => v + 1);
+        setTypedChars(0);
+      }, delay);
+      return () => clearTimeout(timer);
+    }
+
+    // Type next character
+    const speed = 30 + Math.random() * 40;
+    const timer = setTimeout(() => setTypedChars((c) => c + 1), speed);
+    return () => clearTimeout(timer);
+  }, [inView, visibleLines, typedChars]);
+
+  return (
+    <div ref={ref} className="mx-auto max-w-2xl">
+      <div className="rounded-xl border border-white/[0.08] bg-black overflow-hidden">
+        {/* Title bar */}
+        <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-white/[0.06]">
+          <div className="h-2.5 w-2.5 rounded-full bg-red-500/70" />
+          <div className="h-2.5 w-2.5 rounded-full bg-yellow-500/70" />
+          <div className="h-2.5 w-2.5 rounded-full bg-green-500/70" />
+        </div>
+        {/* Terminal body */}
+        <div className="px-5 py-4 font-mono text-sm leading-relaxed min-h-[180px]">
+          {TERMINAL_LINES.slice(0, visibleLines + 1).map((line, i) => {
+            const isCurrentLine = i === visibleLines;
+            if (line.text === "" && !isCurrentLine) return <div key={i} className="h-4" />;
+
+            if (line.type === "out" && i < visibleLines) {
+              return (
+                <div key={i} className="text-zinc-500">
+                  {line.text}
+                </div>
+              );
+            }
+
+            if (line.type === "cmd") {
+              const chars = isCurrentLine ? typedChars : line.text.length;
+              const typed = line.text.slice(0, chars);
+              const showCursor = isCurrentLine && chars < line.text.length;
+              return (
+                <div key={i}>
+                  <span className="text-emerald-400">$ </span>
+                  <span className="text-zinc-200">{typed}</span>
+                  {showCursor && (
+                    <span className={`inline-block w-[8px] h-[14px] -mb-[2px] ml-px ${cursorVisible ? "bg-emerald-400" : "bg-transparent"}`} />
+                  )}
+                </div>
+              );
+            }
+
+            // Current output line — fade in
+            if (isCurrentLine && line.type === "out") {
+              return (
+                <div key={i} className="text-zinc-500 animate-in fade-in duration-200">
+                  {line.text}
+                </div>
+              );
+            }
+
+            return null;
+          })}
+          {/* Final cursor after all lines */}
+          {visibleLines >= TERMINAL_LINES.length && (
+            <div>
+              <span className="text-emerald-400">$ </span>
+              <span className={`inline-block w-[8px] h-[14px] -mb-[2px] ${cursorVisible ? "bg-emerald-400" : "bg-transparent"}`} />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const FRAMEWORKS = [
   "Claude Code",
@@ -197,19 +272,17 @@ export function LandingPage() {
             variant="outline"
             className="border-emerald-500/30 text-emerald-400 mb-8 text-xs px-3 py-1 h-auto"
           >
-            Free during beta
+            Free during beta — stages are limited
           </Badge>
         </motion.div>
 
         <motion.h1
-          className="font-display text-[clamp(2.8rem,7vw,5.5rem)] leading-[1.05] tracking-[-0.02em] text-white max-w-4xl"
+          className="font-display text-[clamp(2.2rem,5.5vw,4.5rem)] leading-[1.08] tracking-[-0.03em] text-white"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.1, ease }}
         >
-          Your agent writes the code.
-          <br />
-          <span className="text-emerald-400">Dazzle streams it live.</span>
+          Your AI agent, <LiveText>live.</LiveText>
         </motion.h1>
 
         <motion.p
@@ -218,9 +291,7 @@ export function LandingPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.25, ease }}
         >
-          A cloud stage that renders your agent's output and streams it — to
-          Twitch, YouTube, or anyone with a link. Sync a directory. The stage
-          updates. The stream keeps going.
+          A cloud stage for your agent — live on Twitch, YouTube, or a shareable link.
         </motion.p>
 
         <motion.div
@@ -234,7 +305,7 @@ export function LandingPage() {
             className="bg-emerald-500 text-zinc-950 hover:bg-emerald-400 font-semibold text-base px-8 h-12"
             onClick={openSignIn}
           >
-            Get Started
+            Try it free
             <ArrowRight className="ml-1.5 h-4 w-4" />
           </Button>
           <button
@@ -251,36 +322,21 @@ export function LandingPage() {
         </motion.div>
       </section>
 
-      {/* ── Terminal demo + live stream ── */}
-      <section className="relative z-10 px-6 pb-28 md:pb-36">
-        <motion.div
-          className={`relative mx-auto ${featured ? "max-w-6xl" : "max-w-3xl"}`}
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 0.6, ease }}
-        >
-          <div className={featured ? "grid grid-cols-1 lg:grid-cols-2 gap-4" : ""}>
-            {/* CLI demo */}
-            <div className="rounded-xl border border-white/[0.08] overflow-hidden transition-all duration-500 hover:border-emerald-500/15 bg-black">
-              <div className={featured ? "aspect-video flex items-center" : ""}>
-                <video
-                  src="/static/demo.webm"
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  className="w-full"
-                />
-              </div>
-            </div>
-
-            {/* Live stream output */}
-            {featured && <FeaturedStreamCard data={featured} />}
-          </div>
-          {/* Glow reflection beneath */}
-          <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-2/3 h-12 bg-emerald-500/[0.04] blur-2xl rounded-full pointer-events-none" />
-        </motion.div>
-      </section>
+      {/* ── Demo — featured live stream ── */}
+      {featured && (
+        <section className="relative z-10 px-6 pb-28 md:pb-36">
+          <motion.div
+            className="relative mx-auto max-w-3xl"
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 0.55, ease }}
+          >
+            <FeaturedStreamCard data={featured} />
+            {/* Glow reflection beneath */}
+            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-2/3 h-12 bg-emerald-500/[0.04] blur-2xl rounded-full pointer-events-none" />
+          </motion.div>
+        </section>
+      )}
 
       {/* ── How It Works ── */}
       <section id="how-it-works" className="relative z-10 px-6 py-24 md:py-32">
@@ -293,15 +349,34 @@ export function LandingPage() {
             transition={{ duration: 0.4 }}
           >
             <h2 className="font-display text-3xl md:text-4xl text-white tracking-[-0.01em]">
-              Three commands to live
+              Three commands to <LiveText />
             </h2>
             <p className="mt-3 text-zinc-500 text-sm">
-              Install the CLI, push a directory, you're live.
+              From zero to broadcasting in under a minute.
             </p>
           </motion.div>
 
-          <div className="grid gap-6 md:grid-cols-3">
-            {STEPS.map((step, i) => (
+          <div className="grid gap-6 md:grid-cols-3 mb-16">
+            {[
+              {
+                num: "01",
+                icon: Globe,
+                title: "Create a stage",
+                desc: "Your agent gets its own browser in the cloud — with full graphics, audio, and a 30 FPS stream.",
+              },
+              {
+                num: "02",
+                icon: ArrowRight,
+                title: "Sync content",
+                desc: "Push a folder from your agent or the CLI. Your stage renders it instantly.",
+              },
+              {
+                num: "03",
+                icon: Radio,
+                title: "Go live",
+                desc: "Stream to Twitch, YouTube, or share a dazzle.fm link. Your agent, live to the world.",
+              },
+            ].map((step, i) => (
               <motion.div
                 key={step.num}
                 className="group relative rounded-2xl border border-white/[0.06] bg-white/[0.015] p-8 transition-all duration-300 hover:border-emerald-500/20 hover:bg-emerald-500/[0.02]"
@@ -327,11 +402,40 @@ export function LandingPage() {
               </motion.div>
             ))}
           </div>
+
+          <TerminalAnimation />
+
+          {/* Framework pills */}
+          <motion.div
+            className="mt-14 text-center"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true, margin: "-40px" }}
+            transition={{ duration: 0.4 }}
+          >
+            <p className="text-sm text-zinc-500 mb-4">
+              Works with any agent. If it can run code, it can use Dazzle.
+            </p>
+            <div className="flex flex-wrap justify-center gap-3">
+              {FRAMEWORKS.map((name, i) => (
+                <motion.span
+                  key={name}
+                  className="rounded-full border border-white/[0.08] bg-white/[0.02] px-5 py-2 text-sm text-zinc-400 transition-colors hover:border-emerald-500/20 hover:text-zinc-300"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.3, delay: i * 0.04 }}
+                >
+                  {name}
+                </motion.span>
+              ))}
+            </div>
+          </motion.div>
         </div>
       </section>
 
       {/* ── llms.txt callout ── */}
-      <section className="relative z-10 px-6 py-16 md:py-20">
+      <section className="relative z-10 px-6 pb-20 md:pb-28">
         <motion.div
           className="mx-auto max-w-2xl"
           initial={{ opacity: 0, y: 30 }}
@@ -340,83 +444,6 @@ export function LandingPage() {
           transition={{ duration: 0.7 }}
         >
           <LlmsTxtCallout />
-        </motion.div>
-      </section>
-
-      {/* ── Section divider ── */}
-      <div className="relative z-10 flex justify-center">
-        <div className="w-24 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-      </div>
-
-      {/* ── Features ── */}
-      <section className="relative z-10 px-6 py-24 md:py-32">
-        <div className="mx-auto max-w-5xl">
-          <motion.div
-            className="text-center mb-16"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.4 }}
-          >
-            <h2 className="font-display text-3xl md:text-4xl text-white tracking-[-0.01em]">
-              Everything your agent needs
-            </h2>
-            <p className="mt-3 text-zinc-500 text-sm">
-              Everything your agent needs to go live.
-            </p>
-          </motion.div>
-
-          <div className="grid gap-6 sm:grid-cols-2">
-            {FEATURES.map((feat, i) => (
-              <motion.div
-                key={feat.title}
-                className="group rounded-2xl border border-white/[0.06] bg-white/[0.015] p-8 transition-all duration-300 hover:border-white/[0.1]"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                viewport={{ once: true, margin: "-60px" }}
-                transition={{ duration: 0.4, delay: i * 0.06 }}
-              >
-                <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-lg bg-white/[0.04] text-zinc-400 transition-colors group-hover:text-emerald-400 group-hover:bg-emerald-500/10">
-                  <feat.icon className="h-5 w-5" />
-                </div>
-                <h3 className="text-base font-semibold text-white mb-2">
-                  {feat.title}
-                </h3>
-                <p className="text-sm leading-relaxed text-zinc-400 font-light">
-                  {feat.desc}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Frameworks ── */}
-      <section className="relative z-10 px-6 py-20 md:py-28">
-        <motion.div
-          className="mx-auto max-w-3xl text-center"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.4 }}
-        >
-          <h3 className="font-display text-2xl md:text-3xl text-white mb-3">
-            Any agent with shell access can go live.
-          </h3>
-          <div className="flex flex-wrap justify-center gap-3">
-            {FRAMEWORKS.map((name, i) => (
-              <motion.span
-                key={name}
-                className="rounded-full border border-white/[0.08] bg-white/[0.02] px-5 py-2 text-sm text-zinc-400 transition-colors hover:border-emerald-500/20 hover:text-zinc-300"
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.3, delay: i * 0.04 }}
-              >
-                {name}
-              </motion.span>
-            ))}
-          </div>
         </motion.div>
       </section>
 
@@ -429,7 +456,7 @@ export function LandingPage() {
           transition={{ duration: 0.4 }}
         >
           <h2 className="font-display text-[clamp(1.8rem,4vw,3rem)] leading-[1.1] tracking-[-0.02em] text-white max-w-2xl mx-auto">
-            Ready to go <span className="text-emerald-400">live?</span>
+            Ready to go <LiveText>live?</LiveText>
           </h2>
           <p className="mt-4 text-zinc-500 text-sm">
             Free during beta. No credit card required.

@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"sync"
 	"time"
 
 	"connectrpc.com/connect"
@@ -15,6 +17,11 @@ import (
 // runtimeServer implements apiv1connect.RuntimeServiceHandler.
 type runtimeServer struct {
 	mgr *Manager
+
+	// pendingR2Sync stores the full client manifest from SyncDiff for use in SyncPush
+	// when syncing directly to R2 (stage not running). Keyed by stageID.
+	pendingR2SyncMu sync.Mutex
+	pendingR2Sync   map[string]map[string]string // stageID -> {path: sha256}
 }
 
 var _ apiv1connect.RuntimeServiceHandler = (*runtimeServer)(nil)
@@ -36,6 +43,31 @@ func (s *runtimeServer) requireRunningStageForUser(stageID, userID string) (*Sta
 		return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("stage is not active"))
 	}
 	return stage, nil
+}
+
+// requireStageForUser looks up a stage by ID or slug and verifies it belongs to the user.
+// Does NOT require the stage to be running. Returns the DB row.
+func (s *runtimeServer) requireStageForUser(stageID, userID string) (*stageRow, error) {
+	if id, err := resolveStageID(s.mgr, stageID); err == nil {
+		stageID = id
+	}
+	row, err := dbGetStage(s.mgr.db, stageID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	if row == nil || row.UserID != userID {
+		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("stage not found"))
+	}
+	return row, nil
+}
+
+// isStageRunning checks if a stage is currently running with an active sidecar.
+func (s *runtimeServer) isStageRunning(stageID string) (*Stage, bool) {
+	stage, ok := s.mgr.getStage(stageID)
+	if !ok || stage.Status != StatusRunning || (stage.PodIP == "" && stage.SidecarURL == "") {
+		return nil, false
+	}
+	return stage, true
 }
 
 func (s *runtimeServer) EmitEvent(ctx context.Context, req *connect.Request[apiv1.EmitEventRequest]) (*connect.Response[apiv1.EmitEventResponse], error) {
@@ -111,17 +143,39 @@ func (s *runtimeServer) Screenshot(ctx context.Context, req *connect.Request[api
 func (s *runtimeServer) SyncDiff(ctx context.Context, req *connect.Request[apiv1.SyncDiffRequest]) (*connect.Response[apiv1.SyncDiffResponse], error) {
 	info := mustAuth(ctx)
 
-	stage, err := s.requireRunningStageForUser(req.Msg.StageId, info.UserID)
+	row, err := s.requireStageForUser(req.Msg.StageId, info.UserID)
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := s.mgr.pc.SyncDiff(stage, req.Msg.Files, req.Msg.Entry)
+	// If stage is running, proxy to sidecar
+	if stage, ok := s.isStageRunning(row.ID); ok {
+		result, err := s.mgr.pc.SyncDiff(stage, req.Msg.Files, req.Msg.Entry)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+		return connect.NewResponse(&apiv1.SyncDiffResponse{Need: result.Need}), nil
+	}
+
+	// Stage not running — diff against R2 directly
+	if s.mgr.r2Client == nil {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("stage is not active and R2 storage is not configured"))
+	}
+
+	need, err := s.mgr.r2Client.ContentDiff(ctx, info.UserID, row.ID, req.Msg.Files)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	return connect.NewResponse(&apiv1.SyncDiffResponse{Need: result.Need}), nil
+	// Store the full client manifest for use in the subsequent SyncPush
+	s.pendingR2SyncMu.Lock()
+	if s.pendingR2Sync == nil {
+		s.pendingR2Sync = map[string]map[string]string{}
+	}
+	s.pendingR2Sync[row.ID] = req.Msg.Files
+	s.pendingR2SyncMu.Unlock()
+
+	return connect.NewResponse(&apiv1.SyncDiffResponse{Need: need}), nil
 }
 
 func (s *runtimeServer) SyncPush(ctx context.Context, stream *connect.ClientStream[apiv1.SyncPushRequest]) (*connect.Response[apiv1.SyncPushResponse], error) {
@@ -142,17 +196,30 @@ func (s *runtimeServer) SyncPush(ctx context.Context, stream *connect.ClientStre
 	}
 
 	info := mustAuth(ctx)
-	stage, err := s.requireRunningStageForUser(first.StageId, info.UserID)
+	row, err := s.requireStageForUser(first.StageId, info.UserID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Stream chunks directly to the pod via io.Pipe — no buffering.
-	// A counting writer enforces the 256MB limit without accumulating data.
 	const maxSize = 256 * 1024 * 1024 // 256MB
+
+	// If stage is running, proxy to sidecar (existing streaming path)
+	if stage, ok := s.isStageRunning(row.ID); ok {
+		return s.syncPushToSidecar(ctx, stage, stream, first, maxSize)
+	}
+
+	// Stage not running — push directly to R2
+	if s.mgr.r2Client == nil {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("stage is not active and R2 storage is not configured"))
+	}
+
+	return s.syncPushToR2(ctx, info.UserID, row.ID, stream, first, maxSize)
+}
+
+// syncPushToSidecar streams tar chunks to the sidecar via io.Pipe.
+func (s *runtimeServer) syncPushToSidecar(ctx context.Context, stage *Stage, stream *connect.ClientStream[apiv1.SyncPushRequest], first *apiv1.SyncPushRequest, maxSize int) (*connect.Response[apiv1.SyncPushResponse], error) {
 	pr, pw := io.Pipe()
 
-	// Forward pod HTTP response back through this channel
 	type pushResult struct {
 		result *SyncPushResult
 		err    error
@@ -164,7 +231,6 @@ func (s *runtimeServer) SyncPush(ctx context.Context, stream *connect.ClientStre
 		resultCh <- pushResult{res, err}
 	}()
 
-	// Write chunks into the pipe
 	var written int64
 	writeChunk := func(chunk []byte) error {
 		if len(chunk) == 0 {
@@ -198,13 +264,62 @@ func (s *runtimeServer) SyncPush(ctx context.Context, stream *connect.ClientStre
 	}
 	pw.Close()
 
-	// Wait for pod response
 	res := <-resultCh
 	if res.err != nil {
 		return nil, connect.NewError(connect.CodeInternal, res.err)
 	}
 
 	return connect.NewResponse(&apiv1.SyncPushResponse{Synced: res.result.Synced, Deleted: res.result.Deleted}), nil
+}
+
+// syncPushToR2 buffers the tar stream and uploads files directly to R2.
+func (s *runtimeServer) syncPushToR2(ctx context.Context, userID, stageID string, stream *connect.ClientStream[apiv1.SyncPushRequest], first *apiv1.SyncPushRequest, maxSize int) (*connect.Response[apiv1.SyncPushResponse], error) {
+	// Buffer the tar — R2 uploads need seekable data per file, and the total
+	// is already capped at 256MB by the CLI.
+	var buf bytes.Buffer
+	var written int64
+
+	writeChunk := func(chunk []byte) error {
+		if len(chunk) == 0 {
+			return nil
+		}
+		written += int64(len(chunk))
+		if written > int64(maxSize) {
+			return fmt.Errorf("tar payload exceeds 256MB limit")
+		}
+		_, err := buf.Write(chunk)
+		return err
+	}
+
+	if err := writeChunk(first.Chunk); err != nil {
+		return nil, connect.NewError(connect.CodeResourceExhausted, err)
+	}
+	for stream.Receive() {
+		if err := writeChunk(stream.Msg().Chunk); err != nil {
+			return nil, connect.NewError(connect.CodeResourceExhausted, err)
+		}
+	}
+	if err := stream.Err(); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	// Use the full client manifest from the preceding SyncDiff for stale cleanup.
+	// This is the authoritative set of files the client has.
+	s.pendingR2SyncMu.Lock()
+	clientManifest := s.pendingR2Sync[stageID]
+	delete(s.pendingR2Sync, stageID)
+	s.pendingR2SyncMu.Unlock()
+
+	if clientManifest == nil {
+		clientManifest = map[string]string{}
+	}
+
+	synced, deleted, err := s.mgr.r2Client.ContentPushFromTar(ctx, userID, stageID, &buf, clientManifest)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&apiv1.SyncPushResponse{Synced: synced, Deleted: deleted}), nil
 }
 
 func (s *runtimeServer) GetStageStats(ctx context.Context, req *connect.Request[apiv1.GetStageStatsRequest]) (*connect.Response[apiv1.GetStageStatsResponse], error) {

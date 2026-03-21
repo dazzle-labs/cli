@@ -81,7 +81,7 @@ export function LivePage() {
                     <div className="relative aspect-video bg-black">
                       <StageThumbnail slug={stage.slug} />
                       <div className="absolute top-2 left-2">
-                        <Badge className="bg-red-500/90 text-white border-0 gap-1 text-[11px]">
+                        <Badge className="bg-emerald-500/90 text-white border-0 gap-1 text-[11px]">
                           <Radio className="h-3 w-3" />
                           LIVE
                         </Badge>

@@ -1,14 +1,12 @@
 package server
 
 import (
-	"archive/tar"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -16,6 +14,7 @@ import (
 	"connectrpc.com/connect"
 
 	sidecarv1 "github.com/browser-streamer/sidecar/gen/api/v1"
+	"github.com/browser-streamer/sidecar/syncutil"
 )
 
 type SyncState struct {
@@ -52,7 +51,7 @@ func (h *syncServer) Diff(ctx context.Context, req *connect.Request[sidecarv1.Sy
 
 	// Validate all paths
 	for filePath := range files {
-		if !validateSyncPath(syncDir, filePath) {
+		if !syncutil.ValidatePath(filePath) {
 			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid path: %s", filePath))
 		}
 	}
@@ -61,7 +60,7 @@ func (h *syncServer) Diff(ctx context.Context, req *connect.Request[sidecarv1.Sy
 	defer state.mu.Unlock()
 
 	if req.Msg.Entry != "" {
-		if !validateSyncPath(syncDir, req.Msg.Entry) {
+		if !syncutil.ValidatePath(req.Msg.Entry) {
 			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid entry point path: %s", req.Msg.Entry))
 		}
 		state.entryPoint = req.Msg.Entry
@@ -78,13 +77,7 @@ func (h *syncServer) Diff(ctx context.Context, req *connect.Request[sidecarv1.Sy
 		state.manifestCache = diskManifest
 	}
 
-	// Compute diff
-	var need []string
-	for filePath, hash := range files {
-		if diskManifest[filePath] != hash {
-			need = append(need, filePath)
-		}
-	}
+	need := syncutil.DiffManifest(files, diskManifest)
 
 	return connect.NewResponse(&sidecarv1.SyncDiffResponse{Need: need}), nil
 }
@@ -117,48 +110,23 @@ func (h *syncServer) Push(ctx context.Context, stream *connect.ClientStream[side
 		pw.Close()
 	}()
 
-	tr := tar.NewReader(pr)
-	synced := 0
+	entries, err := syncutil.ExtractTar(pr, 10000)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	// Write extracted files to disk and compute hashes
 	newHashes := make(map[string]string)
-	const maxFiles = 10000
-
-	for {
-		header, err := tr.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, err)
-		}
-
-		if header.Typeflag != tar.TypeReg {
-			continue
-		}
-
-		if synced >= maxFiles {
-			return nil, connect.NewError(connect.CodeResourceExhausted, fmt.Errorf("too many files (max %d)", maxFiles))
-		}
-
-		filePath := header.Name
-		if !validateSyncPath(syncDir, filePath) {
-			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid path: %s", filePath))
-		}
-
-		fullPath := filepath.Join(syncDir, filePath)
+	for _, entry := range entries {
+		fullPath := filepath.Join(syncDir, entry.Path)
 		os.MkdirAll(filepath.Dir(fullPath), 0o755)
 
-		content, err := io.ReadAll(tr)
-		if err != nil {
+		if err := os.WriteFile(fullPath, entry.Data, 0o644); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
 
-		if err := os.WriteFile(fullPath, content, 0o644); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
-
-		hash := sha256.Sum256(content)
-		newHashes[filePath] = hex.EncodeToString(hash[:])
-		synced++
+		hash := sha256.Sum256(entry.Data)
+		newHashes[entry.Path] = hex.EncodeToString(hash[:])
 	}
 
 	state.mu.Lock()
@@ -174,16 +142,16 @@ func (h *syncServer) Push(ctx context.Context, stream *connect.ClientStream[side
 		deleted = int32(cleanStaleFiles(syncDir, state.pendingSync))
 		state.manifestCache = walkDir(syncDir, "")
 	}
-	entry := state.entryPoint
+	entryPoint := state.entryPoint
 	state.mu.Unlock()
 
 	// Auto-refresh Chrome after every successful sync
-	if entry != "" && synced > 0 {
-		h.s.cdpClient.Navigate(h.s.cfg.ContentURL(entry)) // best-effort; don't fail the sync if refresh fails
+	if entryPoint != "" && len(entries) > 0 {
+		h.s.cdpClient.Navigate(h.s.cfg.ContentURL(entryPoint))
 	}
 
 	return connect.NewResponse(&sidecarv1.SyncPushResponse{
-		Synced:  int32(synced),
+		Synced:  int32(len(entries)),
 		Deleted: deleted,
 	}), nil
 }
@@ -202,26 +170,7 @@ func (h *syncServer) Refresh(ctx context.Context, req *connect.Request[sidecarv1
 	return connect.NewResponse(&sidecarv1.SyncRefreshResponse{Ok: true}), nil
 }
 
-// --- Path validation and file helpers ---
-
-func validateSyncPath(syncDir, filePath string) bool {
-	if path.IsAbs(filePath) {
-		return false
-	}
-	if strings.Contains(filePath, "..") {
-		return false
-	}
-	if strings.HasPrefix(filePath, "_dz_") || strings.Contains(filePath, "/_dz_") {
-		return false
-	}
-	resolved := filepath.Join(syncDir, filePath)
-	abs, err := filepath.Abs(resolved)
-	if err != nil {
-		return false
-	}
-	absSync, _ := filepath.Abs(syncDir)
-	return strings.HasPrefix(abs, absSync+string(filepath.Separator)) || abs == absSync
-}
+// --- File helpers ---
 
 func hashFile(filePath string) string {
 	content, err := os.ReadFile(filePath)

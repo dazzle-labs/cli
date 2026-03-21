@@ -267,7 +267,7 @@ export function Dashboard() {
                         )}
                         <div className="absolute top-2 left-2 flex items-center gap-1.5">
                           {(isRunning || isStarting) && (
-                            <Badge className={cn("border-0 gap-1 text-[11px] text-white", isRunning ? "bg-red-500/90" : "bg-amber-500/90")}>
+                            <Badge className={cn("border-0 gap-1 text-[11px] text-white", isRunning ? "bg-emerald-500/90" : "bg-amber-500/90")}>
                               <Radio className="h-3 w-3" />
                               {isRunning ? "LIVE" : "STARTING"}
                             </Badge>

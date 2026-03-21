@@ -61,8 +61,8 @@ export function LiveNow() {
           >
             <Link to="/live">
               <span className="relative flex h-2 w-2 mr-0.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
               </span>
               <span>Live Now</span>
               <span className="ml-auto text-xs text-muted-foreground">{count}</span>

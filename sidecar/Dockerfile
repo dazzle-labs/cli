@@ -5,6 +5,7 @@ RUN go mod download
 COPY cmd/ ./cmd/
 COPY gen/ ./gen/
 COPY internal/ ./internal/
+COPY syncutil/ ./syncutil/
 RUN CGO_ENABLED=0 GOOS=linux go build -o sidecar ./cmd/sidecar/
 
 FROM alpine:3.19

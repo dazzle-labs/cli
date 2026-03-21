@@ -17,6 +17,7 @@ COPY sidecar/go.mod sidecar/go.sum ./sidecar/
 COPY sidecar/cmd/ ./sidecar/cmd/
 COPY sidecar/gen/ ./sidecar/gen/
 COPY sidecar/internal/ ./sidecar/internal/
+COPY sidecar/syncutil/ ./sidecar/syncutil/
 
 # Copy control-plane module
 COPY control-plane/go.mod control-plane/go.sum ./control-plane/
