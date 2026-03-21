@@ -66,13 +66,20 @@ func (s *stageServer) CreateStage(ctx context.Context, req *connect.Request[apiv
 		name = "default"
 	}
 
-	// Enforce per-user total stage limit.
+	// Enforce per-user total stage limit (created, regardless of state).
+	maxStages := 10
+	if s.mgr.db != nil {
+		var userMax int
+		if err := s.mgr.db.QueryRow("SELECT max_stages FROM users WHERE id=$1", info.UserID).Scan(&userMax); err == nil && userMax > 0 {
+			maxStages = userMax
+		}
+	}
 	existing, err := dbListStages(s.mgr.db, info.UserID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to check stage limits"))
 	}
-	if len(existing) >= 50 {
-		return nil, connect.NewError(connect.CodeResourceExhausted, fmt.Errorf("stage limit reached (max 50)"))
+	if len(existing) >= maxStages {
+		return nil, connect.NewError(connect.CodeResourceExhausted, fmt.Errorf("stage limit reached (max %d)", maxStages))
 	}
 
 	stage, err := s.mgr.createStageRecord(info.UserID, name, req.Msg.Capabilities)

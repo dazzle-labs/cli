@@ -392,22 +392,22 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	// Per-user stage limit
-	maxStages := m.maxStages // fallback to global default
+	// Per-user active CPU stage limit (only counts running/starting, not inactive)
+	maxActiveCPU := m.maxStages
 	if m.db != nil {
-		var userMax int
-		if err := m.db.QueryRow("SELECT max_stages FROM users WHERE id=$1", userID).Scan(&userMax); err == nil && userMax > 0 {
-			maxStages = userMax
+		var limit int
+		if err := m.db.QueryRow("SELECT max_active_cpu_stages FROM users WHERE id=$1", userID).Scan(&limit); err == nil {
+			maxActiveCPU = limit
 		}
 	}
-	userCount := 0
+	cpuCount := 0
 	for _, s := range m.stages {
-		if s.OwnerUserID == userID {
-			userCount++
+		if s.OwnerUserID == userID && s.Provider != "gpu" {
+			cpuCount++
 		}
 	}
-	if userCount >= maxStages {
-		return nil, fmt.Errorf("max stages (%d) reached", maxStages)
+	if cpuCount >= maxActiveCPU {
+		return nil, fmt.Errorf("max active CPU stages (%d) reached", maxActiveCPU)
 	}
 
 	id := requestedID
@@ -1008,6 +1008,26 @@ func (m *Manager) activateGPUStage(ctx context.Context, id, userID string) (*Sta
 
 	if m.gpuStageController == nil {
 		return nil, fmt.Errorf("GPU provisioning not configured")
+	}
+
+	// Per-user active GPU stage limit (only counts running/starting, not inactive)
+	maxActiveGPU := 1
+	if m.db != nil {
+		var limit int
+		if err := m.db.QueryRow("SELECT max_active_gpu_stages FROM users WHERE id=$1", userID).Scan(&limit); err == nil {
+			maxActiveGPU = limit
+		}
+	}
+	m.mu.RLock()
+	gpuCount := 0
+	for _, s := range m.stages {
+		if s.OwnerUserID == userID && s.Provider == "gpu" {
+			gpuCount++
+		}
+	}
+	m.mu.RUnlock()
+	if gpuCount >= maxActiveGPU {
+		return nil, fmt.Errorf("max active GPU stages (%d) reached", maxActiveGPU)
 	}
 
 	// Set in-memory stage to starting so GetStage reflects status immediately

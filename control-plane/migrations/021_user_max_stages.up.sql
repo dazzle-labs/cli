@@ -1,3 +1,5 @@
--- Per-user stage limit. Defaults to 3 (matches MAX_STAGES env var).
+-- Per-user stage limits.
 ALTER TABLE users
-  ADD COLUMN IF NOT EXISTS max_stages INTEGER NOT NULL DEFAULT 3;
+  ADD COLUMN IF NOT EXISTS max_stages INTEGER NOT NULL DEFAULT 10,
+  ADD COLUMN IF NOT EXISTS max_active_cpu_stages INTEGER NOT NULL DEFAULT 2,
+  ADD COLUMN IF NOT EXISTS max_active_gpu_stages INTEGER NOT NULL DEFAULT 1;
