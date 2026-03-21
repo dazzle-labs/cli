@@ -2,8 +2,8 @@
 // @generated from file api/v1/stage.proto (package dazzle.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { StreamDestination } from "./stream_pb";
 import { file_api_v1_stream } from "./stream_pb";
 import type { FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file api/v1/stage.proto.
  */
 export const file_api_v1_stage: GenFile = /*@__PURE__*/
-  fileDesc("ChJhcGkvdjEvc3RhZ2UucHJvdG8SCWRhenpsZS52MSLfAgoFU3RhZ2USCgoCaWQYASABKAkSEAoIcG9kX25hbWUYAiABKAkSDgoGcG9kX2lwGAMgASgJEhMKC2RpcmVjdF9wb3J0GAQgASgFEi4KCmNyZWF0ZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjEKDWxhc3RfYWN0aXZpdHkYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEg4KBnN0YXR1cxgHIAEoCRIVCg1vd25lcl91c2VyX2lkGAggASgJEgwKBG5hbWUYCSABKAkSFAoMY2FwYWJpbGl0aWVzGA0gAygJEgwKBHNsdWcYDiABKAkSMgoMZGVzdGluYXRpb25zGA8gAygLMhwuZGF6emxlLnYxLlN0cmVhbURlc3RpbmF0aW9uEhEKCXdhdGNoX3VybBgQIAEoCUoECAoQC0oECAsQDEoECAwQDSI4ChJDcmVhdGVTdGFnZVJlcXVlc3QSDAoEbmFtZRgBIAEoCRIUCgxjYXBhYmlsaXRpZXMYAiADKAkiNgoTQ3JlYXRlU3RhZ2VSZXNwb25zZRIfCgVzdGFnZRgBIAEoCzIQLmRhenpsZS52MS5TdGFnZSITChFMaXN0U3RhZ2VzUmVxdWVzdCI2ChJMaXN0U3RhZ2VzUmVzcG9uc2USIAoGc3RhZ2VzGAEgAygLMhAuZGF6emxlLnYxLlN0YWdlIh0KD0dldFN0YWdlUmVxdWVzdBIKCgJpZBgBIAEoCSIzChBHZXRTdGFnZVJlc3BvbnNlEh8KBXN0YWdlGAEgASgLMhAuZGF6emxlLnYxLlN0YWdlIiAKEkRlbGV0ZVN0YWdlUmVxdWVzdBIKCgJpZBgBIAEoCSIVChNEZWxldGVTdGFnZVJlc3BvbnNlIkYKGlNldFN0YWdlRGVzdGluYXRpb25SZXF1ZXN0EhAKCHN0YWdlX2lkGAEgASgJEhYKDmRlc3RpbmF0aW9uX2lkGAIgASgJIj4KG1NldFN0YWdlRGVzdGluYXRpb25SZXNwb25zZRIfCgVzdGFnZRgBIAEoCzIQLmRhenpsZS52MS5TdGFnZSJJCh1SZW1vdmVTdGFnZURlc3RpbmF0aW9uUmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRIWCg5kZXN0aW5hdGlvbl9pZBgCIAEoCSJBCh5SZW1vdmVTdGFnZURlc3RpbmF0aW9uUmVzcG9uc2USHwoFc3RhZ2UYASABKAsyEC5kYXp6bGUudjEuU3RhZ2UiIgoUQWN0aXZhdGVTdGFnZVJlcXVlc3QSCgoCaWQYASABKAkiOAoVQWN0aXZhdGVTdGFnZVJlc3BvbnNlEh8KBXN0YWdlGAEgASgLMhAuZGF6emxlLnYxLlN0YWdlIiQKFkRlYWN0aXZhdGVTdGFnZVJlcXVlc3QSCgoCaWQYASABKAkiOgoXRGVhY3RpdmF0ZVN0YWdlUmVzcG9uc2USHwoFc3RhZ2UYASABKAsyEC5kYXp6bGUudjEuU3RhZ2UiZgoSVXBkYXRlU3RhZ2VSZXF1ZXN0Eh8KBXN0YWdlGAEgASgLMhAuZGF6emxlLnYxLlN0YWdlEi8KC3VwZGF0ZV9tYXNrGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLkZpZWxkTWFzayI2ChNVcGRhdGVTdGFnZVJlc3BvbnNlEh8KBXN0YWdlGAEgASgLMhAuZGF6emxlLnYxLlN0YWdlMosGCgxTdGFnZVNlcnZpY2USTAoLQ3JlYXRlU3RhZ2USHS5kYXp6bGUudjEuQ3JlYXRlU3RhZ2VSZXF1ZXN0Gh4uZGF6emxlLnYxLkNyZWF0ZVN0YWdlUmVzcG9uc2USSQoKTGlzdFN0YWdlcxIcLmRhenpsZS52MS5MaXN0U3RhZ2VzUmVxdWVzdBodLmRhenpsZS52MS5MaXN0U3RhZ2VzUmVzcG9uc2USQwoIR2V0U3RhZ2USGi5kYXp6bGUudjEuR2V0U3RhZ2VSZXF1ZXN0GhsuZGF6emxlLnYxLkdldFN0YWdlUmVzcG9uc2USTAoLRGVsZXRlU3RhZ2USHS5kYXp6bGUudjEuRGVsZXRlU3RhZ2VSZXF1ZXN0Gh4uZGF6emxlLnYxLkRlbGV0ZVN0YWdlUmVzcG9uc2USZAoTU2V0U3RhZ2VEZXN0aW5hdGlvbhIlLmRhenpsZS52MS5TZXRTdGFnZURlc3RpbmF0aW9uUmVxdWVzdBomLmRhenpsZS52MS5TZXRTdGFnZURlc3RpbmF0aW9uUmVzcG9uc2USbQoWUmVtb3ZlU3RhZ2VEZXN0aW5hdGlvbhIoLmRhenpsZS52MS5SZW1vdmVTdGFnZURlc3RpbmF0aW9uUmVxdWVzdBopLmRhenpsZS52MS5SZW1vdmVTdGFnZURlc3RpbmF0aW9uUmVzcG9uc2USUgoNQWN0aXZhdGVTdGFnZRIfLmRhenpsZS52MS5BY3RpdmF0ZVN0YWdlUmVxdWVzdBogLmRhenpsZS52MS5BY3RpdmF0ZVN0YWdlUmVzcG9uc2USWAoPRGVhY3RpdmF0ZVN0YWdlEiEuZGF6emxlLnYxLkRlYWN0aXZhdGVTdGFnZVJlcXVlc3QaIi5kYXp6bGUudjEuRGVhY3RpdmF0ZVN0YWdlUmVzcG9uc2USTAoLVXBkYXRlU3RhZ2USHS5kYXp6bGUudjEuVXBkYXRlU3RhZ2VSZXF1ZXN0Gh4uZGF6emxlLnYxLlVwZGF0ZVN0YWdlUmVzcG9uc2VCLVorZ2l0aHViLmNvbS9kYXp6bGUtbGFicy9jbGkvZ2VuL2FwaS92MTthcGl2MWIGcHJvdG8z", [file_api_v1_stream, file_google_protobuf_field_mask, file_google_protobuf_timestamp]);
+  fileDesc("ChJhcGkvdjEvc3RhZ2UucHJvdG8SCWRhenpsZS52MSLfAgoFU3RhZ2USCgoCaWQYASABKAkSEAoIcG9kX25hbWUYAiABKAkSDgoGcG9kX2lwGAMgASgJEhMKC2RpcmVjdF9wb3J0GAQgASgFEi4KCmNyZWF0ZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjEKDWxhc3RfYWN0aXZpdHkYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEg4KBnN0YXR1cxgHIAEoCRIVCg1vd25lcl91c2VyX2lkGAggASgJEgwKBG5hbWUYCSABKAkSFAoMY2FwYWJpbGl0aWVzGA0gAygJEgwKBHNsdWcYDiABKAkSMgoMZGVzdGluYXRpb25zGA8gAygLMhwuZGF6emxlLnYxLlN0cmVhbURlc3RpbmF0aW9uEhEKCXdhdGNoX3VybBgQIAEoCUoECAoQC0oECAsQDEoECAwQDSI4ChJDcmVhdGVTdGFnZVJlcXVlc3QSDAoEbmFtZRgBIAEoCRIUCgxjYXBhYmlsaXRpZXMYAiADKAkiNgoTQ3JlYXRlU3RhZ2VSZXNwb25zZRIfCgVzdGFnZRgBIAEoCzIQLmRhenpsZS52MS5TdGFnZSJjChFMaXN0U3RhZ2VzUmVxdWVzdBIRCglwYWdlX3NpemUYASABKAUSEgoKcGFnZV90b2tlbhgCIAEoCRInCgdmaWx0ZXJzGAMgAygOMhYuZGF6emxlLnYxLlN0YWdlRmlsdGVyIk8KEkxpc3RTdGFnZXNSZXNwb25zZRIgCgZzdGFnZXMYASADKAsyEC5kYXp6bGUudjEuU3RhZ2USFwoPbmV4dF9wYWdlX3Rva2VuGAIgASgJIh0KD0dldFN0YWdlUmVxdWVzdBIKCgJpZBgBIAEoCSIzChBHZXRTdGFnZVJlc3BvbnNlEh8KBXN0YWdlGAEgASgLMhAuZGF6emxlLnYxLlN0YWdlIiAKEkRlbGV0ZVN0YWdlUmVxdWVzdBIKCgJpZBgBIAEoCSIVChNEZWxldGVTdGFnZVJlc3BvbnNlIkYKGlNldFN0YWdlRGVzdGluYXRpb25SZXF1ZXN0EhAKCHN0YWdlX2lkGAEgASgJEhYKDmRlc3RpbmF0aW9uX2lkGAIgASgJIj4KG1NldFN0YWdlRGVzdGluYXRpb25SZXNwb25zZRIfCgVzdGFnZRgBIAEoCzIQLmRhenpsZS52MS5TdGFnZSJJCh1SZW1vdmVTdGFnZURlc3RpbmF0aW9uUmVxdWVzdBIQCghzdGFnZV9pZBgBIAEoCRIWCg5kZXN0aW5hdGlvbl9pZBgCIAEoCSJBCh5SZW1vdmVTdGFnZURlc3RpbmF0aW9uUmVzcG9uc2USHwoFc3RhZ2UYASABKAsyEC5kYXp6bGUudjEuU3RhZ2UiIgoUQWN0aXZhdGVTdGFnZVJlcXVlc3QSCgoCaWQYASABKAkiOAoVQWN0aXZhdGVTdGFnZVJlc3BvbnNlEh8KBXN0YWdlGAEgASgLMhAuZGF6emxlLnYxLlN0YWdlIiQKFkRlYWN0aXZhdGVTdGFnZVJlcXVlc3QSCgoCaWQYASABKAkiOgoXRGVhY3RpdmF0ZVN0YWdlUmVzcG9uc2USHwoFc3RhZ2UYASABKAsyEC5kYXp6bGUudjEuU3RhZ2UiZgoSVXBkYXRlU3RhZ2VSZXF1ZXN0Eh8KBXN0YWdlGAEgASgLMhAuZGF6emxlLnYxLlN0YWdlEi8KC3VwZGF0ZV9tYXNrGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLkZpZWxkTWFzayI2ChNVcGRhdGVTdGFnZVJlc3BvbnNlEh8KBXN0YWdlGAEgASgLMhAuZGF6emxlLnYxLlN0YWdlKloKC1N0YWdlRmlsdGVyEhwKGFNUQUdFX0ZJTFRFUl9VTlNQRUNJRklFRBAAEhYKElNUQUdFX0ZJTFRFUl9PV05FRBABEhUKEVNUQUdFX0ZJTFRFUl9MSVZFEAIyiwYKDFN0YWdlU2VydmljZRJMCgtDcmVhdGVTdGFnZRIdLmRhenpsZS52MS5DcmVhdGVTdGFnZVJlcXVlc3QaHi5kYXp6bGUudjEuQ3JlYXRlU3RhZ2VSZXNwb25zZRJJCgpMaXN0U3RhZ2VzEhwuZGF6emxlLnYxLkxpc3RTdGFnZXNSZXF1ZXN0Gh0uZGF6emxlLnYxLkxpc3RTdGFnZXNSZXNwb25zZRJDCghHZXRTdGFnZRIaLmRhenpsZS52MS5HZXRTdGFnZVJlcXVlc3QaGy5kYXp6bGUudjEuR2V0U3RhZ2VSZXNwb25zZRJMCgtEZWxldGVTdGFnZRIdLmRhenpsZS52MS5EZWxldGVTdGFnZVJlcXVlc3QaHi5kYXp6bGUudjEuRGVsZXRlU3RhZ2VSZXNwb25zZRJkChNTZXRTdGFnZURlc3RpbmF0aW9uEiUuZGF6emxlLnYxLlNldFN0YWdlRGVzdGluYXRpb25SZXF1ZXN0GiYuZGF6emxlLnYxLlNldFN0YWdlRGVzdGluYXRpb25SZXNwb25zZRJtChZSZW1vdmVTdGFnZURlc3RpbmF0aW9uEiguZGF6emxlLnYxLlJlbW92ZVN0YWdlRGVzdGluYXRpb25SZXF1ZXN0GikuZGF6emxlLnYxLlJlbW92ZVN0YWdlRGVzdGluYXRpb25SZXNwb25zZRJSCg1BY3RpdmF0ZVN0YWdlEh8uZGF6emxlLnYxLkFjdGl2YXRlU3RhZ2VSZXF1ZXN0GiAuZGF6emxlLnYxLkFjdGl2YXRlU3RhZ2VSZXNwb25zZRJYCg9EZWFjdGl2YXRlU3RhZ2USIS5kYXp6bGUudjEuRGVhY3RpdmF0ZVN0YWdlUmVxdWVzdBoiLmRhenpsZS52MS5EZWFjdGl2YXRlU3RhZ2VSZXNwb25zZRJMCgtVcGRhdGVTdGFnZRIdLmRhenpsZS52MS5VcGRhdGVTdGFnZVJlcXVlc3QaHi5kYXp6bGUudjEuVXBkYXRlU3RhZ2VSZXNwb25zZUItWitnaXRodWIuY29tL2RhenpsZS1sYWJzL2NsaS9nZW4vYXBpL3YxO2FwaXYxYgZwcm90bzM", [file_api_v1_stream, file_google_protobuf_field_mask, file_google_protobuf_timestamp]);
 
 /**
  * @generated from message dazzle.v1.Stage
@@ -142,6 +142,26 @@ export const CreateStageResponseSchema: GenMessage<CreateStageResponse> = /*@__P
  * @generated from message dazzle.v1.ListStagesRequest
  */
 export type ListStagesRequest = Message<"dazzle.v1.ListStagesRequest"> & {
+  /**
+   * Max results per page (default 50, max 100)
+   *
+   * @generated from field: int32 page_size = 1;
+   */
+  pageSize: number;
+
+  /**
+   * Opaque token for next page; empty for first page
+   *
+   * @generated from field: string page_token = 2;
+   */
+  pageToken: string;
+
+  /**
+   * Combined with AND. Empty = OWNED (backward compat)
+   *
+   * @generated from field: repeated dazzle.v1.StageFilter filters = 3;
+   */
+  filters: StageFilter[];
 };
 
 /**
@@ -159,6 +179,13 @@ export type ListStagesResponse = Message<"dazzle.v1.ListStagesResponse"> & {
    * @generated from field: repeated dazzle.v1.Stage stages = 1;
    */
   stages: Stage[];
+
+  /**
+   * Empty when no more results
+   *
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken: string;
 };
 
 /**
@@ -432,6 +459,36 @@ export type UpdateStageResponse = Message<"dazzle.v1.UpdateStageResponse"> & {
  */
 export const UpdateStageResponseSchema: GenMessage<UpdateStageResponse> = /*@__PURE__*/
   messageDesc(file_api_v1_stage, 18);
+
+/**
+ * @generated from enum dazzle.v1.StageFilter
+ */
+export enum StageFilter {
+  /**
+   * @generated from enum value: STAGE_FILTER_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * Stages owned by the authenticated user (requires auth)
+   *
+   * @generated from enum value: STAGE_FILTER_OWNED = 1;
+   */
+  OWNED = 1,
+
+  /**
+   * Currently broadcasting (public, no auth required)
+   *
+   * @generated from enum value: STAGE_FILTER_LIVE = 2;
+   */
+  LIVE = 2,
+}
+
+/**
+ * Describes the enum dazzle.v1.StageFilter.
+ */
+export const StageFilterSchema: GenEnum<StageFilter> = /*@__PURE__*/
+  enumDesc(file_api_v1_stage, 0);
 
 /**
  * @generated from service dazzle.v1.StageService

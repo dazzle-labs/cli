@@ -12,6 +12,7 @@ import { useEffect, useState, useCallback, memo } from "react";
 import type { ReactNode } from "react";
 import { motion } from "motion/react";
 import { OnboardingWizard } from "./onboarding/OnboardingWizard";
+import { LiveNow } from "./LiveNow";
 import { springs } from "@/lib/motion";
 import {
   Sidebar,
@@ -124,6 +125,7 @@ const SidebarNav = memo(function SidebarNav({ onGetStarted }: { onGetStarted: ()
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroup>
+        <LiveNow />
       </SidebarContent>
     </Sidebar>
   );

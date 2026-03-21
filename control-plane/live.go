@@ -12,6 +12,40 @@ import (
 	"strings"
 )
 
+// --- Live stage queries ---
+
+// dbListLiveStages returns all stages that currently have an active RTMP session.
+func dbListLiveStages(db *sql.DB) ([]stageRow, error) {
+	rows, err := db.Query(`
+		SELECT `+stageColumns+`
+		FROM stages s
+		WHERE EXISTS (
+			SELECT 1 FROM rtmp_sessions rs
+			WHERE rs.stage_id = s.id AND rs.ended_at IS NULL
+		)
+		ORDER BY s.created_at`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var stages []stageRow
+	for rows.Next() {
+		s, err := scanStage(rows)
+		if err != nil {
+			return nil, err
+		}
+		stages = append(stages, *s)
+	}
+	return stages, rows.Err()
+}
+
+// dbStageIsLive returns true if a stage has an active RTMP session.
+func dbStageIsLive(db *sql.DB, stageID string) bool {
+	var exists bool
+	db.QueryRow(`SELECT EXISTS(SELECT 1 FROM rtmp_sessions WHERE stage_id=$1 AND ended_at IS NULL)`, stageID).Scan(&exists)
+	return exists
+}
+
 // --- Database helpers for live streaming ---
 
 func dbLookupStageBySlug(db *sql.DB, slug string) (*stageRow, error) {

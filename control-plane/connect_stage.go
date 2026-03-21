@@ -86,8 +86,54 @@ func (s *stageServer) CreateStage(ctx context.Context, req *connect.Request[apiv
 }
 
 func (s *stageServer) ListStages(ctx context.Context, req *connect.Request[apiv1.ListStagesRequest]) (*connect.Response[apiv1.ListStagesResponse], error) {
-	info := mustAuth(ctx)
+	filters := req.Msg.Filters
+	info, authed := authInfoFromCtx(ctx)
 
+	// Parse filter set
+	wantLive := false
+	wantOwned := false
+	for _, f := range filters {
+		switch f {
+		case apiv1.StageFilter_STAGE_FILTER_LIVE:
+			wantLive = true
+		case apiv1.StageFilter_STAGE_FILTER_OWNED:
+			wantOwned = true
+		}
+	}
+	// Default (no filters): owned stages for backward compat
+	if !wantLive && !wantOwned {
+		wantOwned = true
+	}
+
+	if wantOwned && !authed {
+		return nil, connect.NewError(connect.CodeUnauthenticated, fmt.Errorf("authentication required for owned stages"))
+	}
+
+	if wantLive && !wantOwned {
+		// Public: list live stages with limited fields
+		rows, err := dbListLiveStages(s.mgr.db)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+		var pbStages []*apiv1.Stage
+		for _, row := range rows {
+			pb := &apiv1.Stage{
+				Name:   row.Name,
+				Status: "running",
+				Slug:   row.Slug.String,
+			}
+			if row.StreamTitle.Valid && row.StreamTitle.String != "" {
+				pb.Name = row.StreamTitle.String
+			}
+			if s.mgr.publicBaseURL != "" && row.Slug.Valid {
+				pb.WatchUrl = s.mgr.publicBaseURL + "/watch/" + row.Slug.String
+			}
+			pbStages = append(pbStages, pb)
+		}
+		return connect.NewResponse(&apiv1.ListStagesResponse{Stages: pbStages}), nil
+	}
+
+	// Owned (possibly filtered to live)
 	rows, err := dbListStages(s.mgr.db, info.UserID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
@@ -95,12 +141,16 @@ func (s *stageServer) ListStages(ctx context.Context, req *connect.Request[apiv1
 
 	var pbStages []*apiv1.Stage
 	for _, row := range rows {
+		if wantLive {
+			// Filter to only stages with active RTMP sessions
+			if !dbStageIsLive(s.mgr.db, row.ID) {
+				continue
+			}
+		}
 		st := stageRowToStruct(&row, s.mgr)
 		pbStages = append(pbStages, stageToProto(st, s.mgr.publicBaseURL, s.mgr.db))
 	}
-	return connect.NewResponse(&apiv1.ListStagesResponse{
-		Stages: pbStages,
-	}), nil
+	return connect.NewResponse(&apiv1.ListStagesResponse{Stages: pbStages}), nil
 }
 
 func (s *stageServer) GetStage(ctx context.Context, req *connect.Request[apiv1.GetStageRequest]) (*connect.Response[apiv1.GetStageResponse], error) {

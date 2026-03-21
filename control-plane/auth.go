@@ -176,7 +176,8 @@ func newAuthInterceptor(auth *authenticator) *authInterceptor {
 // Auth is still attempted if a token is present, but missing/invalid tokens
 // are not rejected — the handler checks authInfoFromCtx to decide what to return.
 var publicProcedures = map[string]bool{
-	"/dazzle.v1.StageService/GetStage": true,
+	"/dazzle.v1.StageService/GetStage":   true,
+	"/dazzle.v1.StageService/ListStages": true,
 }
 
 func (i *authInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
