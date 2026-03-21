@@ -82,7 +82,7 @@ export const EVENTS_HTML_SNIPPET = `<!-- my-stage/index.html -->
 export const EVENTS_CLI_SNIPPET = `# Push a live event — no re-sync needed
 ${cli.stageEventEmit.full}
 
-# The score updates instantly in the browser
+# The score updates instantly on your stage
 # localStorage persists it across stage restarts`;
 
 export const PERSISTENCE_SNIPPET = `# Deactivate and reactivate — localStorage survives

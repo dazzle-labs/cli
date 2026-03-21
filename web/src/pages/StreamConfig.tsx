@@ -87,13 +87,13 @@ function MobileDestinationCard({ d, onDelete }: { d: StreamDestination; onDelete
               )}
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10" aria-label="Delete destination">
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10" aria-label="Delete integration">
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Delete destination?</AlertDialogTitle>
+                    <AlertDialogTitle>Delete integration?</AlertDialogTitle>
                     <AlertDialogDescription>This will unlink it from any stages using it.</AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -153,18 +153,18 @@ export function StreamConfig() {
     const onboarding = searchParams.get("onboarding") || hashParams.get("onboarding");
     if (connected) {
       toast.success(`Connected to ${connected.charAt(0).toUpperCase() + connected.slice(1)}!`);
-      const cleanUrl = onboarding ? "/destinations?onboarding=true" : "/destinations";
+      const cleanUrl = onboarding ? "/integrations?onboarding=true" : "/integrations";
       window.history.replaceState(null, "", cleanUrl);
     }
     if (error) {
       showErrorToast(error);
-      window.history.replaceState(null, "", "/destinations");
+      window.history.replaceState(null, "", "/integrations");
     }
     if (onboarding === "true") {
       setWizardSkipIntro(!!connected);
       setWizardOpen(true);
       if (!connected) {
-        window.history.replaceState(null, "", "/destinations");
+        window.history.replaceState(null, "", "/integrations");
       }
     }
   }, []);
@@ -216,10 +216,10 @@ export function StreamConfig() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl tracking-[-0.02em] text-foreground mb-1 font-display">
-          Stream Destinations
+          Integrations
         </h1>
         <p className="text-base text-muted-foreground">
-          Connect platforms and attach them to your stages. Each stage can stream to multiple destinations simultaneously.
+          Connect platforms and attach them to your stages. Each stage can stream to multiple integrations simultaneously.
         </p>
       </div>
 
@@ -233,17 +233,6 @@ export function StreamConfig() {
       <div className="mb-8">
         <p className="text-sm font-medium text-muted-foreground mb-3">Platforms</p>
         <AnimatedList className="flex flex-wrap gap-3" delay={0.05}>
-          {/* Dazzle — always on */}
-          <AnimatedListItem>
-            <Button
-              variant="outline"
-              disabled
-              className="rounded-xl h-auto px-2 py-2 sm:px-4 sm:py-3 border-emerald-500/20 bg-emerald-500/[0.03] opacity-100 cursor-default"
-            >
-              <PlatformIcon platform="dazzle" size="sm" />
-              <span className="hidden sm:inline text-sm text-emerald-400">Dazzle</span>
-            </Button>
-          </AnimatedListItem>
           {OAUTH_PLATFORMS.filter(p => availablePlatforms.includes(p) || PLATFORM_LIST.find(pl => pl.value === p)?.comingSoon).map((platform) => {
             const info = PLATFORM_LIST.find((p) => p.value === platform);
             const label = info?.label ?? platform;
@@ -297,13 +286,13 @@ export function StreamConfig() {
       <Dialog open={showCustomModal} onOpenChange={setShowCustomModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Custom Destination</DialogTitle>
-            <DialogDescription>Add a custom RTMP streaming destination.</DialogDescription>
+            <DialogTitle>Custom RTMP</DialogTitle>
+            <DialogDescription>Add a custom RTMP streaming integration.</DialogDescription>
           </DialogHeader>
           <StreamDestinationForm
             compact
             hideSkip
-            submitLabel="Add Destination"
+            submitLabel="Add Integration"
             onNext={(data) => {
               if (data) handleCreate(data);
             }}
@@ -358,13 +347,13 @@ export function StreamConfig() {
                       <TableCell className="text-right">
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10" aria-label="Delete destination">
+                            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10" aria-label="Delete integration">
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Delete destination?</AlertDialogTitle>
+                              <AlertDialogTitle>Delete integration?</AlertDialogTitle>
                               <AlertDialogDescription>This will unlink it from any stages using it.</AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>

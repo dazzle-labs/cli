@@ -24,42 +24,42 @@ const STEPS = [
   {
     num: "01",
     title: "Create a stage",
-    desc: "Spin up a cloud Chrome instance in seconds. Each stage is a full, isolated browser environment.",
+    desc: "A cloud environment that renders and streams your content. Ready in seconds.",
     icon: Layers,
   },
   {
     num: "02",
-    title: "Connect your agent",
-    desc: "Push scripts, sync files, or let your AI agent drive the browser directly — all via CLI.",
+    title: "Push your content",
+    desc: "Sync a directory — HTML, scripts, anything. Your agent builds it, Dazzle renders it.",
     icon: Terminal,
   },
   {
     num: "03",
     title: "Go live",
-    desc: "Broadcast to Twitch, YouTube, Kick, or any RTMP destination. Share preview links with anyone.",
+    desc: "Your stage is already live at its own URL on dazzle.fm. Add Twitch, YouTube, or any RTMP destination.",
     icon: Radio,
   },
 ];
 
 const FEATURES = [
   {
-    title: "Cloud Browsers",
-    desc: "Full Chrome instances in the cloud. Your agent gets its own isolated environment — no local resources.",
+    title: "Built on web standards",
+    desc: "HTML, CSS, Canvas, WebGL, Web Audio — standard web technologies, no proprietary APIs to learn.",
     icon: Globe,
   },
   {
-    title: "Real-time Dashboard",
-    desc: "Screenshots, console output, and stream status. Watch your agent work from anywhere.",
+    title: "Watch your agent work",
+    desc: "Live screenshots, console output, and stream health. Monitor from anywhere.",
     icon: Monitor,
   },
   {
-    title: "Multi-platform Streaming",
-    desc: "Twitch, YouTube, Kick, Restream, or custom RTMP. Stream to multiple destinations simultaneously.",
+    title: "Stream everywhere",
+    desc: "Twitch, YouTube, Kick, Restream, or custom RTMP. Multiple destinations at once.",
     icon: Radio,
   },
   {
-    title: "CLI-First",
-    desc: "Create stages, deploy content, manage broadcasts — entirely from your terminal. No GUI needed.",
+    title: "Built for automation",
+    desc: "Every action is a CLI command. Script it, automate it, hand it to your agent.",
     icon: Command,
   },
 ];
@@ -207,9 +207,9 @@ export function LandingPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.1, ease }}
         >
-          Put your AI agent
+          Your agent writes the code.
           <br />
-          <span className="text-emerald-400">on stage.</span>
+          <span className="text-emerald-400">Dazzle streams it live.</span>
         </motion.h1>
 
         <motion.p
@@ -218,8 +218,9 @@ export function LandingPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.25, ease }}
         >
-          Cloud browser environments for AI agents. Watch from your dashboard,
-          stream to Twitch and YouTube, control everything from your terminal.
+          A cloud stage that renders your agent's output and streams it — to
+          Twitch, YouTube, or anyone with a link. Sync a directory. The stage
+          updates. The stream keeps going.
         </motion.p>
 
         <motion.div
@@ -281,19 +282,6 @@ export function LandingPage() {
         </motion.div>
       </section>
 
-      {/* ── llms.txt callout ── */}
-      <section className="relative z-10 px-6 pb-16 md:pb-20">
-        <motion.div
-          className="mx-auto max-w-2xl"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-60px" }}
-          transition={{ duration: 0.7 }}
-        >
-          <LlmsTxtCallout />
-        </motion.div>
-      </section>
-
       {/* ── How It Works ── */}
       <section id="how-it-works" className="relative z-10 px-6 py-24 md:py-32">
         <div className="mx-auto max-w-5xl">
@@ -308,7 +296,7 @@ export function LandingPage() {
               Three commands to live
             </h2>
             <p className="mt-3 text-zinc-500 text-sm">
-              From zero to broadcasting in under a minute.
+              Install the CLI, push a directory, you're live.
             </p>
           </motion.div>
 
@@ -342,6 +330,19 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* ── llms.txt callout ── */}
+      <section className="relative z-10 px-6 py-16 md:py-20">
+        <motion.div
+          className="mx-auto max-w-2xl"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.7 }}
+        >
+          <LlmsTxtCallout />
+        </motion.div>
+      </section>
+
       {/* ── Section divider ── */}
       <div className="relative z-10 flex justify-center">
         <div className="w-24 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
@@ -358,10 +359,10 @@ export function LandingPage() {
             transition={{ duration: 0.4 }}
           >
             <h2 className="font-display text-3xl md:text-4xl text-white tracking-[-0.01em]">
-              Everything you need
+              Everything your agent needs
             </h2>
             <p className="mt-3 text-zinc-500 text-sm">
-              A complete platform for AI agent streaming.
+              Everything your agent needs to go live.
             </p>
           </motion.div>
 
@@ -400,11 +401,8 @@ export function LandingPage() {
           transition={{ duration: 0.4 }}
         >
           <h3 className="font-display text-2xl md:text-3xl text-white mb-3">
-            Works with your stack
+            Any agent with shell access can go live.
           </h3>
-          <p className="text-sm text-zinc-500 mb-8">
-            Framework agnostic. If your agent can run code, it can use Dazzle.
-          </p>
           <div className="flex flex-wrap justify-center gap-3">
             {FRAMEWORKS.map((name, i) => (
               <motion.span

@@ -31,7 +31,7 @@ import { Separator } from "@/components/ui/separator";
 
 const navItems = [
   { path: "/stages", label: "Stages", icon: Monitor },
-  { path: "/destinations", label: "Destinations", icon: Cast },
+  { path: "/integrations", label: "Integrations", icon: Cast },
   { path: "/api-keys", label: "API Keys", icon: Key },
 ];
 

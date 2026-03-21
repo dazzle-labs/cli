@@ -126,7 +126,7 @@ export function Dashboard() {
                     className="font-semibold text-sm"
                     asChild
                   >
-                    <Link to="/destinations">Set up streaming</Link>
+                    <Link to="/integrations">Set up streaming</Link>
                   </Button>
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={dismissBanner} aria-label="Dismiss">
                     <X className="h-4 w-4" />

@@ -149,10 +149,10 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
       return (
         <div className="flex flex-col items-center">
           <h2 className="text-2xl tracking-[-0.02em] text-foreground mb-2 font-display text-center">
-            Where do you want to stream?
+            Stream to other platforms?
           </h2>
           <p className="text-sm sm:text-base text-muted-foreground mb-5 sm:mb-6 text-center max-w-md">
-            Pick a connected platform, or add a new one.
+            Your stage always streams to Dazzle. Optionally connect other platforms too.
           </p>
 
           {/* Compact add-platform row */}
@@ -272,10 +272,10 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
     return (
       <div className="flex flex-col items-center">
         <h2 className="text-2xl tracking-[-0.02em] text-foreground mb-2 font-display text-center">
-          Where do you want to stream?
+          Stream to other platforms?
         </h2>
         <p className="text-sm sm:text-base text-muted-foreground mb-5 sm:mb-6 text-center max-w-md">
-          Connect a platform to get started.
+          Your stage always streams to Dazzle. Optionally connect Twitch, YouTube, or others.
         </p>
 
         {/* Platform OAuth buttons */}

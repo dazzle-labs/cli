@@ -24,7 +24,7 @@ export function DevApp({ devToken }: { devToken: string }) {
             <Route path="/" element={<LivePage />} />
             <Route path="/stages" element={<Dashboard />} />
             <Route path="/stage/:stageId" element={<StageDetail />} />
-            <Route path="/destinations" element={<StreamConfig />} />
+            <Route path="/integrations" element={<StreamConfig />} />
             <Route path="/api-keys" element={<ApiKeys />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
