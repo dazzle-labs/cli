@@ -392,7 +392,14 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if len(m.stages) >= m.maxStages {
+	// Per-user stage limit
+	userCount := 0
+	for _, s := range m.stages {
+		if s.OwnerUserID == userID {
+			userCount++
+		}
+	}
+	if userCount >= m.maxStages {
 		return nil, fmt.Errorf("max stages (%d) reached", m.maxStages)
 	}
 
