@@ -4,10 +4,9 @@ import { cn } from "@/lib/utils";
 import { stageClient, streamClient } from "../client.js";
 import type { Stage } from "../gen/api/v1/stage_pb.js";
 import type { StreamDestination } from "../gen/api/v1/stream_pb.js";
-import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Cpu, Globe, Check, ArrowUpRight, Pencil, X as XIcon, Link2, ExternalLink, Zap } from "lucide-react";
+import { Trash2, Check, ArrowUpRight, Pencil, X as XIcon, Link2, ExternalLink, Zap } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { StreamPreview } from "@/components/StreamPreview";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -229,7 +228,33 @@ export function StageDetail() {
             <CardContent>
               <div className="flex flex-col gap-2.5">
                 {stage.slug && (
-                  <SlugField stageId={stageId!} slug={stage.slug} onUpdate={(s) => setStage(prev => prev ? { ...prev, slug: s } : prev)} />
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-muted-foreground shrink-0">Slug</span>
+                    <code className="font-mono text-muted-foreground truncate">{stage.slug}</code>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-muted-foreground hover:text-foreground shrink-0"
+                          onClick={() => {
+                            const newSlug = prompt("Enter new slug:", stage.slug);
+                            if (newSlug && newSlug !== stage.slug) {
+                              stageClient.updateStage({
+                                stage: { id: stageId!, slug: newSlug.trim() },
+                                updateMask: { paths: ["slug"] },
+                              }).then((resp) => {
+                                if (resp.stage) setStage(resp.stage);
+                              }).catch(() => {});
+                            }
+                          }}
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Edit slug</TooltipContent>
+                    </Tooltip>
+                  </div>
                 )}
               </div>
             </CardContent>
