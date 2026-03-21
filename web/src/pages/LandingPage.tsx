@@ -260,15 +260,17 @@ export function LandingPage() {
         >
           <div className={featured ? "grid grid-cols-1 lg:grid-cols-2 gap-4" : ""}>
             {/* CLI demo */}
-            <div className="rounded-xl border border-white/[0.08] overflow-hidden transition-all duration-500 hover:border-emerald-500/15">
-              <video
-                src="/static/demo.webm"
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="w-full"
-              />
+            <div className="rounded-xl border border-white/[0.08] overflow-hidden transition-all duration-500 hover:border-emerald-500/15 bg-black">
+              <div className={featured ? "aspect-video flex items-center" : ""}>
+                <video
+                  src="/static/demo.webm"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="w-full"
+                />
+              </div>
             </div>
 
             {/* Live stream output */}
