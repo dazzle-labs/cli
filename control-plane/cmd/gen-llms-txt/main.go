@@ -1,5 +1,5 @@
-// gen-llms-txt generates llms.txt from llms.txt.tmpl by embedding actual
-// CLI help output. Run via: make llms-txt (from repo root)
+// gen-llms-txt generates llms.txt and llms-full.txt from templates by
+// embedding actual CLI help output. Run via: make llms-txt (from repo root)
 package main
 
 import (
@@ -18,8 +18,33 @@ func help(bin string, args ...string) string {
 	return strings.TrimRight(string(out), "\n")
 }
 
+func generate(tmplFile, outFile, webFile string, d data) {
+	tmpl, err := template.ParseFiles(tmplFile)
+	if err != nil {
+		panic(err)
+	}
+
+	out, err := os.Create(outFile)
+	if err != nil {
+		panic(err)
+	}
+	defer out.Close()
+
+	if err := tmpl.Execute(out, d); err != nil {
+		panic(err)
+	}
+
+	content, err := os.ReadFile(outFile)
+	if err != nil {
+		panic(err)
+	}
+	if err := os.WriteFile(webFile, content, 0644); err != nil {
+		panic(err)
+	}
+}
+
 func main() {
-	// Must be run from repo root (where go.work and llms.txt.tmpl live).
+	// Must be run from repo root (where go.work and templates live).
 	bin, err := os.CreateTemp("", "dazzle-*")
 	if err != nil {
 		panic(err)
@@ -35,27 +60,6 @@ func main() {
 		CLIHelp: help(bin.Name()),
 	}
 
-	tmpl, err := template.ParseFiles("llms.txt.tmpl")
-	if err != nil {
-		panic(err)
-	}
-
-	out, err := os.Create("llms.txt")
-	if err != nil {
-		panic(err)
-	}
-	defer out.Close()
-
-	if err := tmpl.Execute(out, d); err != nil {
-		panic(err)
-	}
-
-	// Also copy to web/public/llms.txt
-	content, err := os.ReadFile("llms.txt")
-	if err != nil {
-		panic(err)
-	}
-	if err := os.WriteFile("web/public/llms.txt", content, 0644); err != nil {
-		panic(err)
-	}
+	generate("llms.txt.tmpl", "llms.txt", "web/public/llms.txt", d)
+	generate("llms-full.txt.tmpl", "llms-full.txt", "web/public/llms-full.txt", d)
 }

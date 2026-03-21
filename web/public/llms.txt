@@ -1,0 +1,122 @@
+# Dazzle
+
+> Cloud stages for AI agents and live streaming.
+> https://dazzle.fm
+
+Dazzle gives you cloud stages — isolated browser environments that render and broadcast your content. Control everything from the `dazzle` CLI. Two stage tiers: GPU (NVIDIA RTX, hardware WebGL, 60 FPS shaders) and CPU (software OpenGL, lighter content).
+
+## Docs
+
+- [Content Authoring Guide](https://dazzle.fm/guide.md): Environment specs, page setup, performance tiers (GPU vs CPU), what works at 60 FPS, what to avoid, design tips for 720p streaming, persistence, live events.
+- [Full LLM Reference](https://dazzle.fm/llms-full.txt): Complete getting started walkthrough, CLI reference, authentication, content guide, and typical workflow — all in one file.
+
+## Quick Start
+
+```bash
+curl -sSL https://dazzle.fm/install.sh | sh   # install CLI
+dazzle login                                    # authenticate
+dazzle s new my-stage                           # create a stage
+dazzle s up                                     # activate it
+dazzle s sync ./my-app --watch                  # push content (auto-refresh)
+dazzle s ss -o preview.png                      # screenshot to verify
+```
+
+## Stage Tiers
+
+- **GPU stages**: NVIDIA RTX with hardware-accelerated WebGL and NVENC encoding. Shaders, raymarching, complex post-processing — all 60 FPS.
+- **CPU stages**: Software-rendered OpenGL on shared CPU. CSS animations, Canvas 2D, DOM, WebGL geometry all 60 FPS. Fragment-heavy shaders limited.
+
+## CLI Reference
+
+```
+Usage: dazzle <command> [flags]
+
+Dazzle — cloud stages for streaming.
+
+A stage is a cloud browser environment that renders and streams your content.
+Sync a local directory (must contain an index.html) and everything visible in
+the browser window is what gets streamed to viewers.
+
+Your content runs in a real browser with full access to standard web APIs (DOM,
+Canvas, WebGL, Web Audio, fetch, etc.). localStorage is persisted across stage
+restarts — use it to store app state that should survive between sessions.
+
+Workflow:
+ 1. dazzle login # authenticate (one-time)
+ 2. dazzle s new my-stage # create a stage
+ 3. dazzle s up # bring it up — starts streaming to Dazzle
+ 4. dazzle s sync ./my-app -w # sync + auto-refresh on changes
+ 5. dazzle s ss -o preview.png # take a screenshot to verify
+ 6. dazzle s down # stop streaming and shut down
+
+Stage selection: use -s <name>, DAZZLE_STAGE env, or auto-selected if only one.
+
+https://dazzle.fm
+
+Flags:
+  -h, --help              Show context-sensitive help.
+  -j, --json              Output as JSON.
+  -s, --stage=STRING      Stage name or ID ($DAZZLE_STAGE).
+      --api-url=STRING    API URL ($DAZZLE_API_URL).
+
+Commands:
+  version                          Print version information.
+  update                           Update dazzle to the latest release.
+  guide                            Show content authoring guide (rendering tips,
+                                   performance, best practices).
+  login                            Authenticate with Dazzle (opens browser).
+  logout                           Clear stored credentials.
+  whoami                           Show current user.
+  stage (s) list (ls)              List stages.
+  stage (s) create (new)           Create a stage.
+  stage (s) delete (rm)            Delete a stage.
+  stage (s) up                     Activate a stage.
+  stage (s) down                   Deactivate a stage.
+  stage (s) status (st)            Show stage status.
+  stage (s) stats                  Show live pipeline stats.
+  stage (s) preview                Show the shareable preview URL for a running
+                                   stage.
+  stage (s) sync (sy)              Sync a local directory to the stage. This is
+                                   the primary way to push content — use --watch
+                                   for live development.
+  stage (s) refresh (r)            Reload the stage entry point.
+  stage (s) event (ev) emit (e)    Push a named event with JSON data to
+                                   the running page — dispatched as a DOM
+                                   CustomEvent. Use this to send real-time data
+                                   from external processes (other agents, APIs,
+                                   etc.) without re-syncing or reloading.
+  stage (s) logs (l)               Retrieve stage console logs.
+  stage (s) screenshot (ss)        Capture a screenshot of the stage.
+  stage (s) broadcast (bc) status (st)
+                                   Check streaming status.
+  stage (s) broadcast (bc) info    Get current stream title and category.
+  stage (s) broadcast (bc) title
+                                   Set the stream title (not supported for
+                                   Restream).
+  stage (s) broadcast (bc) category
+                                   Set the stream category or game (not
+                                   supported for Restream).
+  stage (s) chat send              Send a message to live chat (not supported
+                                   for Restream).
+  destination (dest) list (ls)     List broadcast destinations.
+  destination (dest) add (create,new)
+                                   Add a broadcast destination.
+  destination (dest) delete (rm)
+                                   Remove a broadcast destination.
+  destination (dest) set           Assign a broadcast destination to the active
+                                   stage.
+
+Run "dazzle <command> --help" for more information on a command.
+```
+
+## Key Concepts
+
+- [Content Sync](https://dazzle.fm/guide.md#page-setup): Sync a local directory with `index.html` to your stage. `--watch` for live dev. Browser auto-refreshes on sync.
+- [Live Events](https://dazzle.fm/guide.md#persistence--live-updates): Push real-time data to running pages via `dazzle s ev e <name> '<json>'` — dispatched as DOM CustomEvents.
+- [Persistence](https://dazzle.fm/guide.md#persistence--live-updates): localStorage survives stage restarts via cloud storage.
+- [Performance Monitoring](https://dazzle.fm/guide.md#performance-monitoring): `dazzle s stats` for FPS, dropped frames, encoder health. `dazzle s ss` for screenshots.
+- [Streaming Destinations](https://dazzle.fm/guide.md): Twitch, YouTube, Kick, Restream, or custom RTMP. Multi-destination simultaneous output.
+
+## Authentication
+
+`dazzle login` opens browser OAuth — no API key needed. For headless/CI use: `export DAZZLE_API_KEY=dzl_your_key_here` (create in dashboard Settings > API Keys).

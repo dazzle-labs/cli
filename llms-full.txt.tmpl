@@ -1,0 +1,216 @@
+# Dazzle
+
+> Cloud stages for AI agents and live streaming.
+> https://dazzle.fm
+
+## Overview
+
+Dazzle gives you cloud stages — isolated environments that render and broadcast your content. Control everything from the `dazzle` CLI.
+
+Primary use cases: AI agents that need a persistent visual environment, live streaming to Twitch/YouTube/Kick/Restream or any custom RTMP server, and programmatic automation.
+
+## Getting Started
+
+### 1. Install the CLI
+
+```bash
+curl -sSL https://dazzle.fm/install.sh | sh
+```
+
+Or `go install github.com/dazzle-labs/cli/cmd/dazzle@latest`, or download a binary from the [releases page](https://github.com/dazzle-labs/cli/releases). Source: https://github.com/dazzle-labs/cli
+
+### 2. Authenticate
+
+```bash
+dazzle login
+# Opens your browser to sign in with your Dazzle account
+```
+
+### 3. Create a stage
+
+```bash
+dazzle s new my-stage
+```
+
+If you have multiple stages, specify which one with `--stage` or `DAZZLE_STAGE`:
+
+```bash
+dazzle s ls                                # list all stages
+dazzle s up --stage my-stage               # bring up a specific stage
+
+# Or set for your session
+export DAZZLE_STAGE=my-stage
+```
+
+If you only have one stage, it's auto-selected.
+
+### 4. Create content
+
+Create a directory with an `index.html` entry point:
+
+```bash
+mkdir my-stage && cat > my-stage/index.html << 'EOF'
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    * { margin: 0; box-sizing: border-box; }
+    body { width: 100vw; height: 100vh; overflow: hidden;
+           display: grid; place-items: center; background: #000; }
+    h1 { color: #fff; font: bold 4rem system-ui; }
+  </style>
+</head>
+<body><h1>Hello, Dazzle</h1></body>
+</html>
+EOF
+```
+
+### 5. Push content
+
+Sync a local directory to your stage:
+
+```bash
+dazzle s sync ./my-stage                  # one-time sync (auto-refreshes browser)
+dazzle s sync ./my-stage --watch          # watch for changes, re-sync, and auto-refresh
+```
+
+Every sync is a full snapshot — files deleted locally are automatically removed from the stage. The browser automatically reloads after every successful sync. The directory must contain an `index.html` entry point (customizable with `--entry`).
+
+```bash
+# Take a screenshot to verify
+dazzle s ss -o preview.png
+
+# Start streaming (requires a configured destination)
+dazzle s bc on
+```
+
+### 6. Update content live
+
+```bash
+# Push live data without rewriting code
+dazzle s ev e score '{"points": 42}'
+
+# Manual browser reload (rarely needed — sync auto-refreshes)
+dazzle s refresh
+```
+
+### 7. (Optional) Add a stream destination
+
+```bash
+dazzle dest new
+```
+
+Destinations are linked to stages and configured automatically in OBS.
+
+## CLI Reference
+
+```
+{{ .CLIHelp }}
+```
+
+## Authentication
+
+`dazzle login` opens your browser for OAuth sign-in — no API key needed. The CLI stores credentials locally after login.
+
+For programmatic/headless use (CI, automation), create an API key in the dashboard (Settings > API Keys) and set:
+```bash
+export DAZZLE_API_KEY=dzl_your_key_here
+```
+
+## Content Guide
+
+Full guide with GPU vs CPU details: https://dazzle.fm/guide.md (also via `dazzle guide`).
+
+### Stage tiers
+
+- **GPU stages** — NVIDIA RTX with hardware-accelerated WebGL and NVENC encoding. Shaders, raymarching, complex post-processing — all 60 FPS. Go wild.
+- **CPU stages** — Software-rendered OpenGL on shared CPU. CSS, Canvas 2D, DOM, WebGL geometry all 60 FPS. Fragment-heavy shaders limited.
+
+### Environment
+
+| Setting     | GPU Stage                                      | CPU Stage                          |
+|-------------|------------------------------------------------|------------------------------------|
+| Resolution  | 1280×720 (fixed)                               | 1280×720 (fixed)                   |
+| Frame rate  | 60 fps rendering, 30 fps capture               | 30 fps rendering, 30 fps capture   |
+| Renderer    | NVIDIA RTX (hardware WebGL)                    | Software OpenGL (no hardware GPU)  |
+| Encoder     | NVENC, CBR 2500k                               | x264 (CPU), CBR 2500k             |
+| Browser     | Chrome, kiosk mode, full viewport              | Chrome, kiosk mode, full viewport  |
+| Audio       | PulseAudio capture (Web Audio API works)       | PulseAudio capture                 |
+| Persistence | localStorage and IndexedDB survive restarts    | Same                               |
+
+### Page setup
+
+Always use a full-viewport, no-scroll layout:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+  </style>
+</head>
+<body><!-- your content --></body>
+</html>
+```
+
+For canvas, size to the window (`canvas.width = window.innerWidth`) — do NOT hardcode 1920×1080.
+
+### What works well (60 fps)
+
+- **CSS animations & transitions** — `@keyframes`, `transform`, `opacity`. Cheapest animation path.
+- **Canvas 2D** — Drawing, compositing, particle effects. Efficient even with 1000+ particles.
+- **DOM-heavy animation** — 200+ elements repositioned per frame via JS.
+- **WebGL shaders** — GPU: unlimited (raymarching, SDF, noise, bloom — all 60 FPS). CPU: geometry-only (500K+ tris at 60 fps, fragment shaders limited).
+- **Web Audio** — Oscillators, buffers, Tone.js. Audio captured by PulseAudio.
+- **CDN libraries** — Three.js, D3, GSAP, p5.js, Tone.js all work via `<script>` tags.
+
+### Performance tiers (GPU stages)
+
+| Tier | What | FPS |
+|------|-------|-----|
+| Smooth (60) | Everything: CSS, Canvas 2D, WebGL (any shader complexity), SVG, DOM | 55–60 |
+| Good (30+) | Heavy JS computation + rendering, large DOM trees (1000+ nodes) | 30–60 |
+| Risky (<30) | Main thread blocking (large JSON parse, crypto), layout thrashing | varies |
+
+### Performance tiers (CPU stages)
+
+| Tier | What | FPS |
+|------|-------|-----|
+| Smooth (60) | HTML/CSS, Canvas 2D, DOM animation, WebGL geometry (500K+ tris) | 55–60 |
+| Good (30+) | Simple full-screen SDF raymarcher (48 steps, no noise), `backdrop-filter` | 30–36 |
+| Too heavy (<15) | Fragment shaders with noise, multi-pass rendering, complex raymarching | 1–11 |
+
+### What to avoid
+
+- **Large assets** — keep images under 2 MB. Use WebP/AVIF. No video files (you ARE the video).
+- **Main thread blocking** — long synchronous JS causes visible dropped frames. Use Web Workers.
+- **Fragment-heavy shaders (CPU only)** — noise, raymarching, multi-pass. Use GPU stages for these.
+- **`backdrop-filter` (CPU only)** — very expensive in software rendering.
+
+### Design tips for 720p
+
+- **Text**: 16px+ body, 24px+ headings, high contrast, sans-serif. Avoid thin font weights (100–300).
+- **Colors**: bold, saturated colors. Subtle gradients may band in encoding.
+- **Layout**: design for 16:9, no scrolling. Keep content 40px from edges (safe area).
+
+### Persistence & live events
+
+- `localStorage` persisted across stage restarts via cloud storage.
+- Events: `dazzle s ev e score '{"points": 42}'` → `addEventListener('score', e => e.detail.points)`
+- Sync auto-refreshes the browser. Use `--watch` for live dev.
+
+## Typical Workflow
+
+```
+1. dazzle s up                     → Bring up a stage
+2. dazzle s sync ./my-stage -w       → Sync a directory (watch + auto-refresh)
+3. dazzle s ss                     → Verify output looks correct
+4. dazzle s stats                  → Check rendering FPS and pipeline health
+5. dazzle s bc on                  → Go live on configured destination
+6. (edit files locally)            → Changes auto-sync via --watch
+7. dazzle s bc off                 → Stop streaming
+8. dazzle s down                   → Shut down stage
+```

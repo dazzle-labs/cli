@@ -3,104 +3,28 @@
 > Cloud stages for AI agents and live streaming.
 > https://dazzle.fm
 
-## Overview
+Dazzle gives you cloud stages — isolated browser environments that render and broadcast your content. Control everything from the `dazzle` CLI. Two stage tiers: GPU (NVIDIA RTX, hardware WebGL, 60 FPS shaders) and CPU (software OpenGL, lighter content).
 
-Dazzle gives you cloud stages — isolated environments that render and broadcast your content. Control everything from the `dazzle` CLI.
+## Docs
 
-Primary use cases: AI agents that need a persistent visual environment, live streaming to Twitch/YouTube/Kick/Restream or any custom RTMP server, and programmatic automation.
+- [Content Authoring Guide](https://dazzle.fm/guide.md): Environment specs, page setup, performance tiers (GPU vs CPU), what works at 60 FPS, what to avoid, design tips for 720p streaming, persistence, live events.
+- [Full LLM Reference](https://dazzle.fm/llms-full.txt): Complete getting started walkthrough, CLI reference, authentication, content guide, and typical workflow — all in one file.
 
-## Getting Started
-
-### 1. Install the CLI
-
-```bash
-curl -sSL https://dazzle.fm/install.sh | sh
-```
-
-Or `go install github.com/dazzle-labs/cli/cmd/dazzle@latest`, or download a binary from the [releases page](https://github.com/dazzle-labs/cli/releases). Source: https://github.com/dazzle-labs/cli
-
-### 2. Authenticate
+## Quick Start
 
 ```bash
-dazzle login
-# Opens your browser to sign in with your Dazzle account
+curl -sSL https://dazzle.fm/install.sh | sh   # install CLI
+dazzle login                                    # authenticate
+dazzle s new my-stage                           # create a stage
+dazzle s up                                     # activate it
+dazzle s sync ./my-app --watch                  # push content (auto-refresh)
+dazzle s ss -o preview.png                      # screenshot to verify
 ```
 
-### 3. Create a stage
+## Stage Tiers
 
-```bash
-dazzle s new my-stage
-```
-
-If you have multiple stages, specify which one with `--stage` or `DAZZLE_STAGE`:
-
-```bash
-dazzle s ls                                # list all stages
-dazzle s up --stage my-stage               # bring up a specific stage
-
-# Or set for your session
-export DAZZLE_STAGE=my-stage
-```
-
-If you only have one stage, it's auto-selected.
-
-### 4. Create content
-
-Create a directory with an `index.html` entry point:
-
-```bash
-mkdir my-stage && cat > my-stage/index.html << 'EOF'
-<!DOCTYPE html>
-<html>
-<head>
-  <style>
-    * { margin: 0; box-sizing: border-box; }
-    body { width: 100vw; height: 100vh; overflow: hidden;
-           display: grid; place-items: center; background: #000; }
-    h1 { color: #fff; font: bold 4rem system-ui; }
-  </style>
-</head>
-<body><h1>Hello, Dazzle</h1></body>
-</html>
-EOF
-```
-
-### 5. Push content
-
-Sync a local directory to your stage:
-
-```bash
-dazzle s sync ./my-stage                  # one-time sync (auto-refreshes browser)
-dazzle s sync ./my-stage --watch          # watch for changes, re-sync, and auto-refresh
-```
-
-Every sync is a full snapshot — files deleted locally are automatically removed from the stage. The browser automatically reloads after every successful sync. The directory must contain an `index.html` entry point (customizable with `--entry`).
-
-```bash
-# Take a screenshot to verify
-dazzle s ss -o preview.png
-
-# Start streaming (requires a configured destination)
-dazzle s bc on
-```
-
-### 6. Update content live
-
-```bash
-# Push live data without rewriting code
-dazzle s ev e score '{"points": 42}'
-
-# Manual browser reload (rarely needed — sync auto-refreshes)
-dazzle s refresh
-```
-
-### 7. (Optional) Add a stream destination
-
-```bash
-dazzle dest new
-```
-
-Destinations are linked to stages and configured automatically in OBS.
+- **GPU stages**: NVIDIA RTX with hardware-accelerated WebGL and NVENC encoding. Shaders, raymarching, complex post-processing — all 60 FPS.
+- **CPU stages**: Software-rendered OpenGL on shared CPU. CSS animations, Canvas 2D, DOM, WebGL geometry all 60 FPS. Fragment-heavy shaders limited.
 
 ## CLI Reference
 
@@ -108,131 +32,14 @@ Destinations are linked to stages and configured automatically in OBS.
 {{ .CLIHelp }}
 ```
 
+## Key Concepts
+
+- [Content Sync](https://dazzle.fm/guide.md#page-setup): Sync a local directory with `index.html` to your stage. `--watch` for live dev. Browser auto-refreshes on sync.
+- [Live Events](https://dazzle.fm/guide.md#persistence--live-updates): Push real-time data to running pages via `dazzle s ev e <name> '<json>'` — dispatched as DOM CustomEvents.
+- [Persistence](https://dazzle.fm/guide.md#persistence--live-updates): localStorage survives stage restarts via cloud storage.
+- [Performance Monitoring](https://dazzle.fm/guide.md#performance-monitoring): `dazzle s stats` for FPS, dropped frames, encoder health. `dazzle s ss` for screenshots.
+- [Streaming Destinations](https://dazzle.fm/guide.md): Twitch, YouTube, Kick, Restream, or custom RTMP. Multi-destination simultaneous output.
+
 ## Authentication
 
-`dazzle login` opens your browser for OAuth sign-in — no API key needed. The CLI stores credentials locally after login.
-
-For programmatic/headless use (CI, automation), create an API key in the dashboard (Settings > API Keys) and set:
-```bash
-export DAZZLE_API_KEY=dzl_your_key_here
-```
-
-## Content Guide
-
-Also available at https://dazzle.fm/guide.md and via `dazzle guide`.
-
-### Authoring basics
-
-Sync a local directory to your stage with `dazzle s sync`. The directory must contain an `index.html` entry point. The stage renders full-viewport with a black background. The browser automatically reloads after every successful sync.
-
-You author standard HTML/CSS/JS — the stage serves your directory as static files. Use whatever framework or libraries you want (e.g. CDN links in your HTML, or bundled JS). To update content, edit files locally and re-sync (use `--watch` / `-w` for automatic re-sync on file changes).
-
-### Environment
-
-Your content runs in a cloud browser captured at **1280×720 @ 30 fps**.
-
-| Setting     | Value                                          |
-|-------------|------------------------------------------------|
-| Resolution  | 1280×720 (fixed)                               |
-| Frame rate  | 30 fps (captured via x11grab → x264)           |
-| Renderer    | Software OpenGL (no hardware GPU)                |
-| CPU budget  | ~50% used by capture/encode; your content gets the rest (~1.5–2 cores) |
-| Browser     | Headless Chrome, kiosk mode, full viewport      |
-| Audio       | PulseAudio capture (Web Audio API works)        |
-| Persistence | localStorage and IndexedDB survive restarts     |
-
-### Page setup
-
-Always use a full-viewport, no-scroll layout:
-
-```html
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
-  </style>
-</head>
-<body><!-- your content --></body>
-</html>
-```
-
-For canvas, size to the window (`canvas.width = window.innerWidth`) — do NOT hardcode 1920×1080.
-
-### What works well (60 fps)
-
-- **CSS animations & transitions** — `@keyframes`, `transform`, `opacity`. Cheapest animation path.
-- **Canvas 2D** — Drawing, compositing, particle effects. Efficient even with 1000+ particles (55+ fps).
-- **DOM-heavy animation** — 200+ elements repositioned per frame via JS — still 59 fps.
-- **WebGL geometry** — 500K+ triangles with per-pixel Phong lighting at 60 fps. Use mesh complexity instead of shader complexity.
-- **Web Audio** — Oscillators, buffers, Tone.js. Audio is captured by PulseAudio.
-- **CDN libraries** — Three.js, D3, GSAP, p5.js, Tone.js all work via `<script>` tags.
-
-### Performance tiers
-
-| Tier | What | FPS |
-|------|-------|-----|
-| Smooth (60 fps) | HTML/CSS animations, Canvas 2D, DOM, WebGL geometry (even 500K+ tris) | 55–60 |
-| Good (30+ fps) | Simple full-screen SDF raymarcher (48 steps, no noise), `backdrop-filter` | 30–36 |
-| Too heavy (<15) | Fragment shaders with noise, multi-pass rendering, complex raymarching | 1–11 |
-
-Geometry-based WebGL is the sweet spot — even 100 separate draw calls with 512K total triangles runs at 60 fps. The bottleneck is per-pixel fragment work: noise functions, raymarching, and post-processing. Use `dazzle s stats` to monitor.
-
-### What to avoid
-
-- **Fragment shaders with noise** — even 2-octave noise in a raymarcher drops to ~11 fps. Per-pixel noise is expensive.
-- **Multi-pass rendering** — render-to-texture + post-process (bloom, blur) costs ~11 fps.
-- **Complex raymarching** — multi-octave FBM terrain drops to ~1 fps.
-- **`backdrop-filter`** — borderline (~30 fps). Usable for 1–2 small panels, avoid stacking.
-- **Large assets** — keep images under 2 MB. Use WebP/AVIF. No video files (you ARE the video).
-- **Heavy `box-shadow`** — multiple stacked shadows are expensive. Use 1–2 subtle shadows max.
-- **Main thread blocking** — long synchronous JS (large JSON parse, crypto) causes visible dropped frames.
-
-### Design tips for 720p
-
-- **Text**: 16px+ body, 24px+ headings, high contrast, sans-serif. Avoid thin font weights (100–300).
-- **Colors**: bold, saturated colors. Subtle gradients may band in x264 encoding.
-- **Layout**: design for 16:9, no scrolling. Keep content 40px from edges (safe area).
-- **Animation**: target 30 fps or below — anything faster is wasted. Ease-in-out curves look smoother than linear.
-
-### Performance monitoring
-
-```bash
-dazzle s stats       # Stage FPS (rendering) + Broadcast FPS (encoder) + dropped frames
-dazzle s ss -o check.png   # Screenshot to verify visual output
-```
-
-If Stage FPS drops below 30, your content is too heavy for the software renderer — simplify shaders or switch to geometry.
-
-### Persistence
-
-`localStorage` is persisted across stage sessions. Your app can use it to store state that survives stage restarts (deactivate → activate).
-
-### Live events
-
-Events are an async data channel — send real-time data from external processes to your running page without re-syncing or reloading.
-
-```bash
-dazzle s ev e score '{"points": 42}'
-```
-
-```js
-window.addEventListener('score', (e) => {
-  el.textContent = e.detail.points;
-});
-```
-
-## Typical Workflow
-
-```
-1. dazzle s up                     → Bring up a stage
-2. dazzle s sync ./my-stage -w       → Sync a directory (watch + auto-refresh)
-3. dazzle s ss                     → Verify output looks correct
-4. dazzle s stats                  → Check rendering FPS and pipeline health
-5. dazzle s bc on                  → Go live on configured destination
-6. (edit files locally)            → Changes auto-sync via --watch
-7. dazzle s bc off                 → Stop streaming
-8. dazzle s down                   → Shut down stage
-```
+`dazzle login` opens browser OAuth — no API key needed. For headless/CI use: `export DAZZLE_API_KEY=dzl_your_key_here` (create in dashboard Settings > API Keys).
