@@ -322,11 +322,13 @@ export function LandingPage() {
                 viewport={{ once: true, margin: "-60px" }}
                 transition={{ duration: 0.4, delay: i * 0.08 }}
               >
-                <span className="font-display text-5xl text-emerald-500/[0.12] block mb-5 leading-none">
-                  {step.num}
-                </span>
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 transition-colors group-hover:bg-emerald-500/15">
-                  <step.icon className="h-5 w-5" />
+                <div className="flex items-center justify-between mb-5">
+                  <span className="font-display text-5xl text-emerald-500/[0.12] leading-none">
+                    {step.num}
+                  </span>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 transition-colors group-hover:bg-emerald-500/15">
+                    <step.icon className="h-5 w-5" />
+                  </div>
                 </div>
                 <h3 className="text-lg font-semibold text-white mb-2">
                   {step.title}
