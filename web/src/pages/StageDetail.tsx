@@ -228,26 +228,9 @@ export function StageDetail() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-col gap-2.5">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span className="text-muted-foreground">ID</span>
-                  <code className="font-mono text-muted-foreground">{stage.id}</code>
-                </div>
-                {stage.podName && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Cpu className="h-3.5 w-3.5 shrink-0" />
-                    <span className="font-mono truncate">{stage.podName}</span>
-                  </div>
+                {stage.slug && (
+                  <SlugField stageId={stageId!} slug={stage.slug} onUpdate={(s) => setStage(prev => prev ? { ...prev, slug: s } : prev)} />
                 )}
-                {stage.directPort > 0 && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Globe className="h-3.5 w-3.5 shrink-0" />
-                    <span>Port {stage.directPort}</span>
-                  </div>
-                )}
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span className="text-muted-foreground">Created</span>
-                  <span>{stage.createdAt ? timestampDate(stage.createdAt).toLocaleDateString() : "\u2014"}</span>
-                </div>
               </div>
             </CardContent>
           </Card>

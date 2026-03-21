@@ -479,6 +479,24 @@ func dbRenameStage(db *sql.DB, id, userID, name string) (*stageRow, error) {
 	return s, nil
 }
 
+var errSlugTaken = fmt.Errorf("slug already taken")
+
+func dbUpdateSlug(db *sql.DB, stageID, userID, slug string) error {
+	res, err := db.Exec("UPDATE stages SET slug=$1, updated_at=NOW() WHERE id=$2 AND user_id=$3", slug, stageID, userID)
+	if err != nil {
+		// Unique index violation (idx_stages_slug)
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
+			return errSlugTaken
+		}
+		return err
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return fmt.Errorf("stage not found")
+	}
+	return nil
+}
+
 func dbUpdateStageProvider(db *sql.DB, id, provider, runpodPodID, sidecarURL string) error {
 	_, err := db.Exec(`
 		UPDATE stages SET provider=$2, runpod_pod_id=$3, sidecar_url=$4, updated_at=NOW()

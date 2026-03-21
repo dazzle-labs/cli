@@ -426,6 +426,20 @@ func (s *stageServer) UpdateStage(ctx context.Context, req *connect.Request[apiv
 			if _, err := dbRenameStage(s.mgr.db, stageID, info.UserID, req.Msg.Stage.Name); err != nil {
 				return nil, connect.NewError(connect.CodeNotFound, err)
 			}
+		case "slug":
+			slug := req.Msg.Stage.Slug
+			if slug == "" {
+				return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("slug cannot be empty"))
+			}
+			if err := dbUpdateSlug(s.mgr.db, stageID, info.UserID, slug); err != nil {
+				if errors.Is(err, errSlugTaken) {
+					return nil, connect.NewError(connect.CodeAlreadyExists, err)
+				}
+				return nil, connect.NewError(connect.CodeInternal, err)
+			}
+			// Invalidate slug cache so old slug stops resolving
+			s.mgr.slugCache.Remove(row.Slug.String)
+			s.mgr.slugCache.Add(slug, stageID)
 		default:
 			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("unsupported update path: %s", path))
 		}
