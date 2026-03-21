@@ -123,15 +123,15 @@ Full guide with GPU vs CPU details: https://dazzle.fm/guide.md (also via `dazzle
 
 ### Stage tiers
 
-- **GPU stages** — NVIDIA RTX with hardware-accelerated WebGL and NVENC encoding. Shaders, raymarching, complex post-processing — all 60 FPS. Go wild.
-- **CPU stages** — Software-rendered OpenGL on shared CPU. CSS, Canvas 2D, DOM, WebGL geometry all 60 FPS. Fragment-heavy shaders limited.
+- **GPU stages** — NVIDIA RTX with hardware-accelerated WebGL and NVENC encoding. Shaders, raymarching, complex post-processing — all 30 FPS.
+- **CPU stages** — Software-rendered OpenGL on shared CPU. CSS, Canvas 2D, DOM, WebGL geometry all 30 FPS. Fragment-heavy shaders limited.
 
 ### Environment
 
 | Setting     | GPU Stage                                      | CPU Stage                          |
 |-------------|------------------------------------------------|------------------------------------|
 | Resolution  | 1280×720 (fixed)                               | 1280×720 (fixed)                   |
-| Frame rate  | 60 fps rendering, 30 fps capture               | 30 fps rendering, 30 fps capture   |
+| Frame rate  | 30 fps rendering + capture                     | 30 fps rendering + capture         |
 | Renderer    | NVIDIA RTX (hardware WebGL)                    | Software OpenGL (no hardware GPU)  |
 | Encoder     | NVENC, CBR 2500k                               | x264 (CPU), CBR 2500k             |
 | Browser     | Chrome, kiosk mode, full viewport              | Chrome, kiosk mode, full viewport  |
@@ -158,12 +158,12 @@ Always use a full-viewport, no-scroll layout:
 
 For canvas, size to the window (`canvas.width = window.innerWidth`) — do NOT hardcode 1920×1080.
 
-### What works well (60 fps)
+### What works well (30 fps)
 
 - **CSS animations & transitions** — `@keyframes`, `transform`, `opacity`. Cheapest animation path.
 - **Canvas 2D** — Drawing, compositing, particle effects. Efficient even with 1000+ particles.
 - **DOM-heavy animation** — 200+ elements repositioned per frame via JS.
-- **WebGL shaders** — GPU: unlimited (raymarching, SDF, noise, bloom — all 60 FPS). CPU: geometry-only (500K+ tris at 60 fps, fragment shaders limited).
+- **WebGL shaders** — GPU: unlimited (raymarching, SDF, noise, bloom — all 30 FPS). CPU: geometry-only (500K+ tris at 30 fps, fragment shaders limited).
 - **Web Audio** — Oscillators, buffers, Tone.js. Audio captured by PulseAudio.
 - **CDN libraries** — Three.js, D3, GSAP, p5.js, Tone.js all work via `<script>` tags.
 
@@ -171,16 +171,15 @@ For canvas, size to the window (`canvas.width = window.innerWidth`) — do NOT h
 
 | Tier | What | FPS |
 |------|-------|-----|
-| Smooth (60) | Everything: CSS, Canvas 2D, WebGL (any shader complexity), SVG, DOM | 55–60 |
-| Good (30+) | Heavy JS computation + rendering, large DOM trees (1000+ nodes) | 30–60 |
+| Smooth (30) | Everything: CSS, Canvas 2D, WebGL (any shader complexity), SVG, DOM | 30 |
 | Risky (<30) | Main thread blocking (large JSON parse, crypto), layout thrashing | varies |
 
 ### Performance tiers (CPU stages)
 
 | Tier | What | FPS |
 |------|-------|-----|
-| Smooth (60) | HTML/CSS, Canvas 2D, DOM animation, WebGL geometry (500K+ tris) | 55–60 |
-| Good (30+) | Simple full-screen SDF raymarcher (48 steps, no noise), `backdrop-filter` | 30–36 |
+| Smooth (30) | HTML/CSS, Canvas 2D, DOM animation, WebGL geometry (500K+ tris) | 30 |
+| Marginal (20+) | Simple full-screen SDF raymarcher (48 steps, no noise), `backdrop-filter` | 20–30 |
 | Too heavy (<15) | Fragment shaders with noise, multi-pass rendering, complex raymarching | 1–11 |
 
 ### What to avoid

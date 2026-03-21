@@ -7,7 +7,7 @@ that looks great on stream.
 Dazzle stages come in two tiers:
 
 - **GPU stages** — NVIDIA RTX with hardware-accelerated WebGL and video encoding.
-  Shaders, raymarching, complex post-processing — all 60 FPS.
+  Shaders, raymarching, complex post-processing — all 30 FPS.
 - **CPU stages** — Software-rendered OpenGL on shared CPU. Lighter content only.
 
 Most of this guide applies to both. Sections marked **(CPU only)** note
@@ -18,7 +18,7 @@ constraints that don't apply on GPU.
 | Setting     | GPU Stage                                      | CPU Stage                          |
 |-------------|------------------------------------------------|------------------------------------|
 | Resolution  | 1280x720 (fixed)                               | 1280x720 (fixed)                   |
-| Frame rate  | 60 fps rendering, 30 fps capture               | 30 fps rendering, 30 fps capture   |
+| Frame rate  | 30 fps rendering + capture                     | 30 fps rendering + capture         |
 | Renderer    | NVIDIA RTX (hardware WebGL via ANGLE)           | Software OpenGL (no hardware GPU)  |
 | Encoder     | Vulkan Video / NVENC, CBR 2500k                | x264 (CPU), CBR 2500k             |
 | Browser     | Chrome, kiosk mode, full viewport               | Chrome, kiosk mode, full viewport  |
@@ -98,7 +98,7 @@ requires per-pixel control.
 ## What Works Well
 
 **CSS animations & transitions** (both tiers)
-- `@keyframes`, `transition`, `transform`, `opacity` — all smooth at 60 fps
+- `@keyframes`, `transition`, `transform`, `opacity` — all smooth at 30 fps
 - CSS is the cheapest way to animate; prefer it over JS when possible
 
 **SVG** (both tiers)
@@ -114,9 +114,9 @@ requires per-pixel control.
 
 **WebGL shaders** (GPU: unlimited | CPU: geometry only)
 - **GPU stages**: Full fragment shader support — raymarching, SDF, FBM noise,
-  multi-pass rendering, bloom, post-processing — all 60 FPS. Go wild.
+  multi-pass rendering, bloom, post-processing — all 30 FPS. Go wild.
 - **CPU stages**: Geometry-based WebGL (500K+ triangles with per-pixel lighting)
-  works at 60 fps. But fragment-heavy shaders (noise, raymarching) drop to
+  works at 30 fps. But fragment-heavy shaders (noise, raymarching) drop to
   1-11 fps. Use mesh complexity instead of shader complexity.
 
 **Web Audio API** (both tiers)
@@ -131,12 +131,12 @@ requires per-pixel control.
 
 ### GPU stages
 
-Almost everything runs at 60 FPS. The bottleneck is JavaScript, not rendering:
+Almost everything runs at 30 FPS. The bottleneck is JavaScript, not rendering:
 
 | Tier | What | FPS |
 |------|-------|-----|
-| Smooth (60) | Everything: CSS, Canvas 2D, WebGL (any shader complexity), SVG, DOM | 55-60 |
-| Good (30+) | Heavy JS computation + rendering, large DOM trees (1000+ nodes) | 30-60 |
+| Smooth (30) | Everything: CSS, Canvas 2D, WebGL (any shader complexity), SVG, DOM | 30 |
+| Good (25+) | Heavy JS computation + rendering, large DOM trees (1000+ nodes) | 25-30 |
 | Risky (<30) | Main thread blocking (large JSON parse, crypto), layout thrashing | varies |
 
 ### CPU stages
@@ -145,7 +145,7 @@ Rendering is the bottleneck. Shader complexity is expensive:
 
 | Tier | What | FPS |
 |------|-------|-----|
-| Smooth (60) | HTML/CSS, Canvas 2D (1000 particles), DOM animation, WebGL geometry (500K+ tris) | 55-60 |
+| Smooth (30) | HTML/CSS, Canvas 2D (1000 particles), DOM animation, WebGL geometry (500K+ tris) | 30 |
 | Good (30+) | Simple full-screen SDF raymarcher (48 steps, no noise), `backdrop-filter` with few panels | 30-36 |
 | Too heavy (<15) | Fragment shaders with noise, multi-pass rendering, complex raymarching | 1-11 |
 
@@ -215,7 +215,7 @@ dazzle s stats
 
 Output:
 ```
-Stage FPS:       60.0
+Stage FPS:       30.0
 Broadcast FPS:   30.0
 Dropped Frames:  0 (0 last 60s)
 Data:            142.50 MB
@@ -224,8 +224,8 @@ Uptime:          2h 15m
 ```
 
 - **Stage FPS** — how fast Chrome is rendering your content. On GPU stages this
-  should be near 60. On CPU stages, 30+ is good. Below 30, your content needs
-  to be simplified (or moved to a GPU stage).
+  should be at 30. Below 30, your content needs to be simplified
+  (or moved to a GPU stage if on CPU).
 - **Broadcast FPS** — the encoder output rate. Should stay at 30.0.
 
 Take screenshots to verify your content looks correct:
