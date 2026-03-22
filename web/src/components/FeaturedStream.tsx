@@ -93,8 +93,8 @@ export function FeaturedStreamCard({ data }: { data: FeaturedData }) {
         )}
       </div>
       <div className="flex items-center gap-2.5 px-4 py-2.5 bg-white/[0.02]">
-        <span className="relative flex items-center gap-1.5 text-red-400">
-          <span className="absolute -left-0.5 size-2.5 rounded-full bg-red-400/40 animate-ping" />
+        <span className="relative flex items-center gap-1.5 text-emerald-400">
+          <span className="absolute -left-0.5 size-2.5 rounded-full bg-emerald-400/40 animate-ping" />
           <Radio className="relative h-3.5 w-3.5" />
           <span className="text-xs font-medium uppercase tracking-wide">Live</span>
         </span>

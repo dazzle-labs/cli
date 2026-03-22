@@ -67,7 +67,7 @@ const SidebarNav = memo(function SidebarNav({ onGetStarted }: { onGetStarted: ()
               {location.pathname === "/" && (
                 <motion.div
                   layoutId="nav-indicator"
-                  className="absolute left-0 top-1 bottom-1 w-[2px] rounded-full bg-red-500"
+                  className="absolute left-0 top-1 bottom-1 w-[2px] rounded-full bg-emerald-500"
                   transition={springs.snappy}
                 />
               )}
@@ -76,8 +76,8 @@ const SidebarNav = memo(function SidebarNav({ onGetStarted }: { onGetStarted: ()
                 isActive={location.pathname === "/"}
                 className={cn(
                   location.pathname === "/"
-                    ? "bg-red-500/10 text-red-400 hover:bg-red-500/15 hover:text-red-400 active:bg-red-500/15 active:text-red-400"
-                    : "text-muted-foreground hover:text-red-400 hover:bg-red-500/[0.06]"
+                    ? "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/15 hover:text-emerald-400 active:bg-emerald-500/15 active:text-emerald-400"
+                    : "text-muted-foreground hover:text-emerald-400 hover:bg-emerald-500/[0.06]"
                 )}
               >
                 <Link to="/">

@@ -4,8 +4,6 @@ import { motion } from "motion/react";
 import { stageClient } from "@/client";
 import type { Stage } from "@/gen/api/v1/stage_pb";
 import { StageFilter } from "@/gen/api/v1/stage_pb";
-import { Badge } from "@/components/ui/badge";
-import { Radio } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { StageThumbnail } from "@/components/StageThumbnail";
 import { AnimatedPage } from "@/components/AnimatedPage";
@@ -47,8 +45,8 @@ export function LivePage() {
           </h1>
           {streams.length > 0 && (
             <span className="relative flex h-2.5 w-2.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
             </span>
           )}
         </div>
@@ -80,12 +78,6 @@ export function LivePage() {
                   <div className="rounded-lg overflow-hidden">
                     <div className="relative aspect-video bg-black">
                       <StageThumbnail slug={stage.slug} />
-                      <div className="absolute top-2 left-2">
-                        <Badge className="bg-emerald-500/90 text-white border-0 gap-1 text-[11px]">
-                          <Radio className="h-3 w-3" />
-                          LIVE
-                        </Badge>
-                      </div>
                     </div>
                     <div className="px-1 pt-2.5 pb-1">
                       <h3 className="text-base font-semibold text-foreground truncate">

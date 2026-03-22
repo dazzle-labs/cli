@@ -380,10 +380,10 @@ export function LandingPage() {
               <motion.div
                 key={step.num}
                 className="group relative rounded-2xl border border-white/[0.06] bg-white/[0.015] p-8 transition-all duration-300 hover:border-emerald-500/20 hover:bg-emerald-500/[0.02]"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-60px" }}
-                transition={{ duration: 0.4, delay: i * 0.08 }}
+                transition={{ duration: 0.6, delay: i * 0.08, ease }}
               >
                 <div className="flex items-center justify-between mb-5">
                   <span className="font-display text-5xl text-emerald-500/[0.12] leading-none">
