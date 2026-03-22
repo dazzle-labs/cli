@@ -234,6 +234,31 @@ Take screenshots to verify your content looks correct:
 dazzle s ss -o check.png
 ```
 
+## Streaming Destinations
+
+Every stage automatically streams to Dazzle. To also broadcast to external
+platforms, add a destination and attach it to your stage:
+
+```bash
+# Add a destination (interactive — OAuth for Twitch/YouTube/Kick/Restream, or manual RTMP)
+dazzle dest add
+
+# Attach to your stage — broadcasting starts automatically
+dazzle dest attach my-destination
+
+# Check broadcast status and FPS
+dazzle s bc status
+
+# Detach when done
+dazzle dest detach my-destination
+```
+
+- **Supported platforms**: Twitch, YouTube, Kick, Restream, custom RTMP
+- **Multi-destination**: attach multiple destinations to stream everywhere simultaneously
+- **Destinations are reusable** — add once, attach/detach across any of your stages
+- **Broadcast metadata**: `dazzle s bc title "My Stream"` and `dazzle s bc category "Art"`
+  set the title/category on the connected platform (not supported for Restream)
+
 ## Persistence & Live Updates
 
 **localStorage**

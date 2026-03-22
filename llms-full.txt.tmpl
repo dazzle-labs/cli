@@ -79,9 +79,6 @@ Every sync is a full snapshot — files deleted locally are automatically remove
 ```bash
 # Take a screenshot to verify
 dazzle s ss -o preview.png
-
-# Start streaming (requires a configured destination)
-dazzle s bc on
 ```
 
 ### 6. Update content live
@@ -94,13 +91,25 @@ dazzle s ev e score '{"points": 42}'
 dazzle s refresh
 ```
 
-### 7. (Optional) Add a stream destination
+### 7. Stream to external platforms
+
+Every stage automatically streams to Dazzle (watch URL shown on `dazzle s up`). To also stream to Twitch, YouTube, Kick, Restream, or a custom RTMP server:
 
 ```bash
-dazzle dest new
+# Add a destination (interactive — opens browser for OAuth, or prompts for RTMP details)
+dazzle dest add
+
+# Attach it to your stage (broadcasting starts automatically)
+dazzle dest attach my-destination
+
+# Check broadcast status
+dazzle s bc status
+
+# Detach when done (stops broadcasting to that destination)
+dazzle dest detach my-destination
 ```
 
-Destinations are linked to stages and configured automatically in OBS.
+Multiple destinations can be attached simultaneously for multi-platform streaming. Destinations are user-scoped and reusable across stages.
 
 ## CLI Reference
 
@@ -208,12 +217,12 @@ For canvas, size to the window (`canvas.width = window.innerWidth`) — do NOT h
 ## Typical Workflow
 
 ```
-1. dazzle s up                     → Bring up a stage
-2. dazzle s sync ./my-stage -w       → Sync a directory (watch + auto-refresh)
-3. dazzle s ss                     → Verify output looks correct
-4. dazzle s stats                  → Check rendering FPS and pipeline health
-5. dazzle s bc on                  → Go live on configured destination
-6. (edit files locally)            → Changes auto-sync via --watch
-7. dazzle s bc off                 → Stop streaming
-8. dazzle s down                   → Shut down stage
+1. dazzle s up                        → Bring up a stage (streams to Dazzle automatically)
+2. dazzle s sync ./my-stage -w        → Sync a directory (watch + auto-refresh)
+3. dazzle s ss                        → Verify output looks correct
+4. dazzle s stats                     → Check rendering FPS and pipeline health
+5. dazzle dest attach my-twitch       → Also stream to Twitch (or YouTube, Kick, etc.)
+6. (edit files locally)               → Changes auto-sync via --watch
+7. dazzle dest detach my-twitch       → Stop streaming to Twitch
+8. dazzle s down                      → Shut down stage
 ```

@@ -40,7 +40,7 @@ All stages are public during beta — anyone can watch your stage's rendered vid
 - [Live Events](https://dazzle.fm/guide.md#persistence--live-updates): Push real-time data to running pages via `dazzle s ev e <name> '<json>'` — dispatched as DOM CustomEvents.
 - [Persistence](https://dazzle.fm/guide.md#persistence--live-updates): localStorage survives stage restarts via cloud storage.
 - [Performance Monitoring](https://dazzle.fm/guide.md#performance-monitoring): `dazzle s stats` for FPS, dropped frames, encoder health. `dazzle s ss` for screenshots.
-- [Streaming Destinations](https://dazzle.fm/guide.md): Twitch, YouTube, Kick, Restream, or custom RTMP. Multi-destination simultaneous output.
+- [Streaming Destinations](https://dazzle.fm/guide.md#streaming-destinations): `dazzle dest add` to create, `dazzle dest attach <name>` / `detach` to connect to a stage. Twitch, YouTube, Kick, Restream, or custom RTMP. Multi-destination simultaneous output.
 
 ## Authentication
 

@@ -34,6 +34,8 @@ export const cli: Record<string, CLICommand> = {
   stageLogs:          cmd("stage logs"),
   destAdd:            cmd("destination add"),
   destList:           cmd("destination list"),
+  destAttach:         cmd("destination attach", "my-destination"),
+  destDetach:         cmd("destination detach", "my-destination"),
   help:               cmd("--help"),
   stageHelp:          cmd("stage --help"),
   stageSyncHelp:      cmd("stage sync --help"),
