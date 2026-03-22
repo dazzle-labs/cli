@@ -9,6 +9,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Separator } from "@/components/ui/separator";
 import { StepIndicator } from "./StepIndicator";
 import { EndpointCreator } from "./EndpointCreator";
+import { ConnectionDetails } from "./ConnectionDetails";
+import { FRAMEWORKS } from "./frameworks";
 import { StreamDestinationForm } from "./StreamDestinationForm";
 import type { StreamDestinationData } from "./StreamDestinationForm";
 import type { StreamDestination } from "../../gen/api/v1/stream_pb.js";
@@ -24,7 +26,7 @@ interface OnboardingWizardProps {
   skipIntro?: boolean;
 }
 
-const WIZARD_STEPS = ["Where to stream", "Create a stage"];
+const WIZARD_STEPS = ["Where to stream", "Create a stage", "Get started"];
 
 const OAUTH_PLATFORMS = ["twitch", "youtube", "kick", "restream"] as const;
 
@@ -43,6 +45,7 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
   const [destinations, setDestinations] = useState<StreamDestination[]>([]);
   const [availablePlatforms, setAvailablePlatforms] = useState<string[]>([]);
   const [showCustomForm, setShowCustomForm] = useState(false);
+  const [createdStageId, setCreatedStageId] = useState<string | null>(null);
 
   const reset = useCallback(() => {
     setShowInfoScreen(!skipIntro);
@@ -50,6 +53,7 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
     setSelectedDestId(null);
     setDestinations([]);
     setShowCustomForm(false);
+    setCreatedStageId(null);
   }, [skipIntro]);
 
   function handleClose() {
@@ -378,11 +382,30 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
           if (selectedDestId && st.id) {
             stageClient.setStageDestination({ stageId: st.id, destinationId: selectedDestId }).catch(() => {});
           }
+          setCreatedStageId(st.id);
         }}
-        onNavigate={(stageId) => {
+        onNavigate={() => {
+          setStep(2);
+        }}
+      />
+    );
+  }
+
+  function renderGetStartedStep() {
+    return (
+      <ConnectionDetails
+        framework={FRAMEWORKS[0]}
+        endpointId={createdStageId ?? ""}
+        apiKey={null}
+        verbose
+        onDone={() => {
           reset();
           onClose();
-          navigate(`/stage/${stageId}`);
+          if (createdStageId) {
+            navigate(`/stage/${createdStageId}`);
+          } else {
+            navigate("/stages");
+          }
         }}
       />
     );
@@ -394,6 +417,8 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
         return renderDestinationsStep();
       case 1:
         return renderSetupStageStep();
+      case 2:
+        return renderGetStartedStep();
       default:
         return null;
     }

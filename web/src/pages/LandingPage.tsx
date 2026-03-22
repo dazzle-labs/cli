@@ -30,6 +30,12 @@ function LiveText({ children = "live" }: { children?: string }) {
 }
 
 const TERMINAL_LINES: { type: "cmd" | "out"; text: string }[] = [
+  { type: "cmd", text: "curl -sSL https://dazzle.fm/install.sh | sh" },
+  { type: "out", text: "Dazzle CLI installed." },
+  { type: "out", text: "" },
+  { type: "cmd", text: "dazzle login" },
+  { type: "out", text: "\u2713 Logged in as you@example.com" },
+  { type: "out", text: "" },
   { type: "cmd", text: "dazzle stage create my-stage" },
   { type: "out", text: 'Stage "my-stage" created.' },
   { type: "out", text: "" },
@@ -349,10 +355,10 @@ export function LandingPage() {
             transition={{ duration: 0.4 }}
           >
             <h2 className="font-display text-3xl md:text-4xl text-white tracking-[-0.01em]">
-              Three commands to <LiveText />
+              Live in 60 seconds
             </h2>
             <p className="mt-3 text-zinc-500 text-sm">
-              From zero to broadcasting in under a minute.
+              Install, create, go live.
             </p>
           </motion.div>
 
