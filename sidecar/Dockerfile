@@ -10,7 +10,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o sidecar ./cmd/sidecar/
 
 FROM alpine:3.19
 RUN apk add --no-cache ca-certificates ffmpeg \
-    libva mesa-va-gallium
+    libva mesa-va-gallium freetype fontconfig
 WORKDIR /app
 COPY assets/DMSerifDisplay-Regular.ttf /usr/share/fonts/dazzle.ttf
 COPY --from=builder /app/sidecar /sidecar

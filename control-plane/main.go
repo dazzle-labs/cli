@@ -86,6 +86,7 @@ type Manager struct {
 	ingestPodCache    *expirable.LRU[string, string] // stageID -> ingest pod IP, for HLS proxy routing
 	slugCache         *expirable.LRU[string, string] // slug -> stageID
 	activateMu    sync.Map // per-stage activation locks (stageID -> *sync.Mutex)
+	activateCancel sync.Map // per-stage cancel funcs (stageID -> context.CancelFunc)
 	clientset     *kubernetes.Clientset
 	namespace     string
 	streamerImage string
@@ -770,6 +771,10 @@ func (m *Manager) deleteStage(id string) error {
 // deactivateStage tears down the pod but keeps the DB record as inactive.
 // Acquires the per-stage activation lock to prevent racing with concurrent activations.
 func (m *Manager) deactivateStage(id string) error {
+	// Cancel any in-flight activation so it releases the per-stage lock promptly.
+	if cancelVal, ok := m.activateCancel.Load(id); ok {
+		cancelVal.(context.CancelFunc)()
+	}
 	val, _ := m.activateMu.LoadOrStore(id, &sync.Mutex{})
 	mu := val.(*sync.Mutex)
 	mu.Lock()
@@ -823,6 +828,8 @@ func (m *Manager) doDeactivateStage(id string) error {
 func (m *Manager) activateStageAsync(stageID, userID string, isGPU bool) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
+	m.activateCancel.Store(stageID, cancel)
+	defer m.activateCancel.Delete(stageID)
 
 	var err error
 	if isGPU {

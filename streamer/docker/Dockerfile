@@ -90,7 +90,7 @@ RUN apt-get update && apt-get install -y \
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential git nasm pkg-config \
         libx264-dev libpulse-dev libx11-dev libxcb1-dev libxcb-shm0-dev \
-        libxcb-xfixes0-dev \
+        libxcb-xfixes0-dev libfreetype-dev \
     # nv-codec-headers for NVENC
     && git clone --depth 1 --branch n12.2.72.0 https://github.com/FFmpeg/nv-codec-headers /tmp/nv-codec-headers \
     && make -C /tmp/nv-codec-headers install \
@@ -99,7 +99,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && cd /tmp/ffmpeg && git checkout 313e776 \
     && ./configure \
         --enable-gpl --enable-nonfree \
-        --enable-nvenc --enable-libx264 --enable-libpulse \
+        --enable-nvenc --enable-libx264 --enable-libpulse --enable-libfreetype \
         --enable-libxcb --enable-libxcb-shm --enable-libxcb-xfixes \
         --disable-doc --disable-debug --disable-static --enable-shared \
     && make -j$(nproc) \
@@ -108,11 +108,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && cd / && rm -rf /tmp/ffmpeg /tmp/ffmpeg.tar.gz /tmp/nv-codec-headers \
     && apt-get purge -y build-essential git nasm pkg-config \
         libx264-dev libpulse-dev libx11-dev libxcb1-dev libxcb-shm0-dev \
-        libxcb-xfixes0-dev \
+        libxcb-xfixes0-dev libfreetype-dev \
     && apt-get autoremove -y && rm -rf /var/lib/apt/lists/* \
     # Smoke test: verify nothing critical was removed by autoremove
     && google-chrome-stable --version \
     && ffmpeg -encoders 2>/dev/null | grep -q h264_nvenc \
+    && ffmpeg -filters 2>/dev/null | grep -q drawtext \
     && echo "GPU image smoke test passed"
 
 # --- Streamer image (CPU stages) ---
