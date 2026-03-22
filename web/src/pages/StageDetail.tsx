@@ -263,7 +263,7 @@ export function StageDetail() {
           {/* Streaming */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-medium text-muted-foreground">Integrations</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Destinations</CardTitle>
             </CardHeader>
             <CardContent>
               {stage.destinations.filter((sd) => sd.platform !== "dazzle").length > 0 && (
@@ -309,7 +309,7 @@ export function StageDetail() {
                       }}
                     >
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Add integration..." />
+                        <SelectValue placeholder="Add destination..." />
                       </SelectTrigger>
                       <SelectContent>
                         {unlinked.map((d) => (
@@ -324,8 +324,8 @@ export function StageDetail() {
                 if (destinations.length === 0) {
                   return (
                     <Button size="sm" className="font-semibold text-sm" asChild>
-                      <Link to="/integrations">
-                        Add a streaming integration
+                      <Link to="/destinations">
+                        Add a streaming destination
                         <ArrowUpRight className="h-3 w-3 ml-1" />
                       </Link>
                     </Button>
@@ -335,8 +335,8 @@ export function StageDetail() {
               })()}
               <div className="flex flex-col gap-1.5 mt-3">
                 <Button variant="link" size="sm" className="text-sm text-muted-foreground hover:text-primary h-auto p-0 justify-start" asChild>
-                  <Link to="/integrations">
-                    Manage integrations
+                  <Link to="/destinations">
+                    Manage destinations
                     <ArrowUpRight className="h-3 w-3 ml-1" />
                   </Link>
                 </Button>

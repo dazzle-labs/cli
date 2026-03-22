@@ -87,13 +87,13 @@ function MobileDestinationCard({ d, onDelete }: { d: StreamDestination; onDelete
               )}
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10" aria-label="Delete integration">
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10" aria-label="Delete destination">
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Delete integration?</AlertDialogTitle>
+                    <AlertDialogTitle>Delete destination?</AlertDialogTitle>
                     <AlertDialogDescription>This will unlink it from any stages using it.</AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -153,18 +153,18 @@ export function StreamConfig() {
     const onboarding = searchParams.get("onboarding") || hashParams.get("onboarding");
     if (connected) {
       toast.success(`Connected to ${connected.charAt(0).toUpperCase() + connected.slice(1)}!`);
-      const cleanUrl = onboarding ? "/integrations?onboarding=true" : "/integrations";
+      const cleanUrl = onboarding ? "/destinations?onboarding=true" : "/destinations";
       window.history.replaceState(null, "", cleanUrl);
     }
     if (error) {
       showErrorToast(error);
-      window.history.replaceState(null, "", "/integrations");
+      window.history.replaceState(null, "", "/destinations");
     }
     if (onboarding === "true") {
       setWizardSkipIntro(!!connected);
       setWizardOpen(true);
       if (!connected) {
-        window.history.replaceState(null, "", "/integrations");
+        window.history.replaceState(null, "", "/destinations");
       }
     }
   }, []);
@@ -216,10 +216,10 @@ export function StreamConfig() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl tracking-[-0.02em] text-foreground mb-1 font-display">
-          Integrations
+          Destinations
         </h1>
         <p className="text-base text-muted-foreground">
-          Connect platforms and attach them to your stages. Each stage can stream to multiple integrations simultaneously.
+          Connect platforms and attach them to your stages. Each stage can stream to multiple destinations simultaneously.
         </p>
       </div>
 
@@ -287,12 +287,12 @@ export function StreamConfig() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Custom RTMP</DialogTitle>
-            <DialogDescription>Add a custom RTMP streaming integration.</DialogDescription>
+            <DialogDescription>Add a custom RTMP streaming destination.</DialogDescription>
           </DialogHeader>
           <StreamDestinationForm
             compact
             hideSkip
-            submitLabel="Add Integration"
+            submitLabel="Add Destination"
             onNext={(data) => {
               if (data) handleCreate(data);
             }}
@@ -347,13 +347,13 @@ export function StreamConfig() {
                       <TableCell className="text-right">
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10" aria-label="Delete integration">
+                            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10" aria-label="Delete destination">
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Delete integration?</AlertDialogTitle>
+                              <AlertDialogTitle>Delete destination?</AlertDialogTitle>
                               <AlertDialogDescription>This will unlink it from any stages using it.</AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
