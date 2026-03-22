@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file api/v1/featured.proto.
  */
 export const file_api_v1_featured: GenFile = /*@__PURE__*/
-  fileDesc("ChVhcGkvdjEvZmVhdHVyZWQucHJvdG8SEmRhenpsZS5pbnRlcm5hbC52MSIUChJHZXRGZWF0dXJlZFJlcXVlc3QiUgoTR2V0RmVhdHVyZWRSZXNwb25zZRIMCgRsaXZlGAEgASgIEgwKBHNsdWcYAiABKAkSDQoFdGl0bGUYAyABKAkSEAoIY2F0ZWdvcnkYBCABKAkycQoPRmVhdHVyZWRTZXJ2aWNlEl4KC0dldEZlYXR1cmVkEiYuZGF6emxlLmludGVybmFsLnYxLkdldEZlYXR1cmVkUmVxdWVzdBonLmRhenpsZS5pbnRlcm5hbC52MS5HZXRGZWF0dXJlZFJlc3BvbnNlQk1aS2dpdGh1Yi5jb20vYnJvd3Nlci1zdHJlYW1lci9jb250cm9sLXBsYW5lL2ludGVybmFsL2dlbi9hcGkvdjE7YXBpdjFpbnRlcm5hbGIGcHJvdG8z");
+  fileDesc("ChVhcGkvdjEvZmVhdHVyZWQucHJvdG8SEmRhenpsZS5pbnRlcm5hbC52MSIUChJHZXRGZWF0dXJlZFJlcXVlc3QiSgoTR2V0RmVhdHVyZWRSZXNwb25zZRIzCgdzdHJlYW1zGAEgAygLMiIuZGF6emxlLmludGVybmFsLnYxLkZlYXR1cmVkU3RyZWFtIj8KDkZlYXR1cmVkU3RyZWFtEgwKBHNsdWcYASABKAkSDQoFdGl0bGUYAiABKAkSEAoIY2F0ZWdvcnkYAyABKAkycQoPRmVhdHVyZWRTZXJ2aWNlEl4KC0dldEZlYXR1cmVkEiYuZGF6emxlLmludGVybmFsLnYxLkdldEZlYXR1cmVkUmVxdWVzdBonLmRhenpsZS5pbnRlcm5hbC52MS5HZXRGZWF0dXJlZFJlc3BvbnNlQk1aS2dpdGh1Yi5jb20vYnJvd3Nlci1zdHJlYW1lci9jb250cm9sLXBsYW5lL2ludGVybmFsL2dlbi9hcGkvdjE7YXBpdjFpbnRlcm5hbGIGcHJvdG8z");
 
 /**
  * @generated from message dazzle.internal.v1.GetFeaturedRequest
@@ -30,32 +30,9 @@ export const GetFeaturedRequestSchema: GenMessage<GetFeaturedRequest> = /*@__PUR
  */
 export type GetFeaturedResponse = Message<"dazzle.internal.v1.GetFeaturedResponse"> & {
   /**
-   * true if a stream is currently live
-   *
-   * @generated from field: bool live = 1;
+   * @generated from field: repeated dazzle.internal.v1.FeaturedStream streams = 1;
    */
-  live: boolean;
-
-  /**
-   * watch page slug
-   *
-   * @generated from field: string slug = 2;
-   */
-  slug: string;
-
-  /**
-   * stream title or stage name
-   *
-   * @generated from field: string title = 3;
-   */
-  title: string;
-
-  /**
-   * stream category (may be empty)
-   *
-   * @generated from field: string category = 4;
-   */
-  category: string;
+  streams: FeaturedStream[];
 };
 
 /**
@@ -64,6 +41,33 @@ export type GetFeaturedResponse = Message<"dazzle.internal.v1.GetFeaturedRespons
  */
 export const GetFeaturedResponseSchema: GenMessage<GetFeaturedResponse> = /*@__PURE__*/
   messageDesc(file_api_v1_featured, 1);
+
+/**
+ * @generated from message dazzle.internal.v1.FeaturedStream
+ */
+export type FeaturedStream = Message<"dazzle.internal.v1.FeaturedStream"> & {
+  /**
+   * @generated from field: string slug = 1;
+   */
+  slug: string;
+
+  /**
+   * @generated from field: string title = 2;
+   */
+  title: string;
+
+  /**
+   * @generated from field: string category = 3;
+   */
+  category: string;
+};
+
+/**
+ * Describes the message dazzle.internal.v1.FeaturedStream.
+ * Use `create(FeaturedStreamSchema)` to create a new message.
+ */
+export const FeaturedStreamSchema: GenMessage<FeaturedStream> = /*@__PURE__*/
+  messageDesc(file_api_v1_featured, 2);
 
 /**
  * FeaturedService provides public (unauthenticated) discovery endpoints.

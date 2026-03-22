@@ -39,20 +39,9 @@ export function LivePage() {
   return (
     <AnimatedPage>
       <div className="mb-8">
-        <div className="flex items-center gap-3">
-          <h1 className="text-3xl tracking-[-0.02em] text-foreground font-display">
-            Live Now
-          </h1>
-          {streams.length > 0 && (
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
-            </span>
-          )}
-        </div>
-        <p className="text-base text-muted-foreground mt-1">
-          Stages currently broadcasting.
-        </p>
+        <h1 className="text-3xl tracking-[-0.02em] text-foreground font-display">
+          Live
+        </h1>
       </div>
 
       {loading ? (

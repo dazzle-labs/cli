@@ -59,10 +59,7 @@ func (*GetFeaturedRequest) Descriptor() ([]byte, []int) {
 
 type GetFeaturedResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Live          bool                   `protobuf:"varint,1,opt,name=live,proto3" json:"live,omitempty"`        // true if a stream is currently live
-	Slug          string                 `protobuf:"bytes,2,opt,name=slug,proto3" json:"slug,omitempty"`         // watch page slug
-	Title         string                 `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`       // stream title or stage name
-	Category      string                 `protobuf:"bytes,4,opt,name=category,proto3" json:"category,omitempty"` // stream category (may be empty)
+	Streams       []*FeaturedStream      `protobuf:"bytes,1,rep,name=streams,proto3" json:"streams,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -97,28 +94,67 @@ func (*GetFeaturedResponse) Descriptor() ([]byte, []int) {
 	return file_api_v1_featured_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *GetFeaturedResponse) GetLive() bool {
+func (x *GetFeaturedResponse) GetStreams() []*FeaturedStream {
 	if x != nil {
-		return x.Live
+		return x.Streams
 	}
-	return false
+	return nil
 }
 
-func (x *GetFeaturedResponse) GetSlug() string {
+type FeaturedStream struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Slug          string                 `protobuf:"bytes,1,opt,name=slug,proto3" json:"slug,omitempty"`
+	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	Category      string                 `protobuf:"bytes,3,opt,name=category,proto3" json:"category,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FeaturedStream) Reset() {
+	*x = FeaturedStream{}
+	mi := &file_api_v1_featured_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FeaturedStream) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FeaturedStream) ProtoMessage() {}
+
+func (x *FeaturedStream) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_featured_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FeaturedStream.ProtoReflect.Descriptor instead.
+func (*FeaturedStream) Descriptor() ([]byte, []int) {
+	return file_api_v1_featured_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *FeaturedStream) GetSlug() string {
 	if x != nil {
 		return x.Slug
 	}
 	return ""
 }
 
-func (x *GetFeaturedResponse) GetTitle() string {
+func (x *FeaturedStream) GetTitle() string {
 	if x != nil {
 		return x.Title
 	}
 	return ""
 }
 
-func (x *GetFeaturedResponse) GetCategory() string {
+func (x *FeaturedStream) GetCategory() string {
 	if x != nil {
 		return x.Category
 	}
@@ -130,12 +166,13 @@ var File_api_v1_featured_proto protoreflect.FileDescriptor
 const file_api_v1_featured_proto_rawDesc = "" +
 	"\n" +
 	"\x15api/v1/featured.proto\x12\x12dazzle.internal.v1\"\x14\n" +
-	"\x12GetFeaturedRequest\"o\n" +
-	"\x13GetFeaturedResponse\x12\x12\n" +
-	"\x04live\x18\x01 \x01(\bR\x04live\x12\x12\n" +
-	"\x04slug\x18\x02 \x01(\tR\x04slug\x12\x14\n" +
-	"\x05title\x18\x03 \x01(\tR\x05title\x12\x1a\n" +
-	"\bcategory\x18\x04 \x01(\tR\bcategory2q\n" +
+	"\x12GetFeaturedRequest\"S\n" +
+	"\x13GetFeaturedResponse\x12<\n" +
+	"\astreams\x18\x01 \x03(\v2\".dazzle.internal.v1.FeaturedStreamR\astreams\"V\n" +
+	"\x0eFeaturedStream\x12\x12\n" +
+	"\x04slug\x18\x01 \x01(\tR\x04slug\x12\x14\n" +
+	"\x05title\x18\x02 \x01(\tR\x05title\x12\x1a\n" +
+	"\bcategory\x18\x03 \x01(\tR\bcategory2q\n" +
 	"\x0fFeaturedService\x12^\n" +
 	"\vGetFeatured\x12&.dazzle.internal.v1.GetFeaturedRequest\x1a'.dazzle.internal.v1.GetFeaturedResponseBMZKgithub.com/browser-streamer/control-plane/internal/gen/api/v1;apiv1internalb\x06proto3"
 
@@ -151,19 +188,21 @@ func file_api_v1_featured_proto_rawDescGZIP() []byte {
 	return file_api_v1_featured_proto_rawDescData
 }
 
-var file_api_v1_featured_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_api_v1_featured_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_api_v1_featured_proto_goTypes = []any{
 	(*GetFeaturedRequest)(nil),  // 0: dazzle.internal.v1.GetFeaturedRequest
 	(*GetFeaturedResponse)(nil), // 1: dazzle.internal.v1.GetFeaturedResponse
+	(*FeaturedStream)(nil),      // 2: dazzle.internal.v1.FeaturedStream
 }
 var file_api_v1_featured_proto_depIdxs = []int32{
-	0, // 0: dazzle.internal.v1.FeaturedService.GetFeatured:input_type -> dazzle.internal.v1.GetFeaturedRequest
-	1, // 1: dazzle.internal.v1.FeaturedService.GetFeatured:output_type -> dazzle.internal.v1.GetFeaturedResponse
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	2, // 0: dazzle.internal.v1.GetFeaturedResponse.streams:type_name -> dazzle.internal.v1.FeaturedStream
+	0, // 1: dazzle.internal.v1.FeaturedService.GetFeatured:input_type -> dazzle.internal.v1.GetFeaturedRequest
+	1, // 2: dazzle.internal.v1.FeaturedService.GetFeatured:output_type -> dazzle.internal.v1.GetFeaturedResponse
+	2, // [2:3] is the sub-list for method output_type
+	1, // [1:2] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_api_v1_featured_proto_init() }
@@ -177,7 +216,7 @@ func file_api_v1_featured_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_v1_featured_proto_rawDesc), len(file_api_v1_featured_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

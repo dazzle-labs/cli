@@ -7,6 +7,7 @@ import {
   Check,
   ChevronDown,
   Copy,
+  Download,
   Globe,
   Radio,
   Sparkles,
@@ -14,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { useFeaturedStream, FeaturedStreamCard } from "@/components/FeaturedStream";
+import { useFeaturedStreams, FeaturedCarousel } from "@/components/FeaturedStream";
 
 /** Green "live" text with pulsing dot — used across landing page headings. */
 function LiveText({ children = "live" }: { children?: string }) {
@@ -216,7 +217,7 @@ function LlmsTxtCallout() {
 export function LandingPage() {
   const [signInOpen, setSignInOpen] = useState(false);
   const openSignIn = () => setSignInOpen(true);
-  const featured = useFeaturedStream();
+  const featuredStreams = useFeaturedStreams();
 
   return (
     <div className="relative min-h-screen bg-zinc-950 overflow-hidden selection:bg-emerald-500/30">
@@ -288,7 +289,7 @@ export function LandingPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.1, ease }}
         >
-          Your AI agent, <LiveText>live.</LiveText>
+          Your AI agent, <LiveText>live</LiveText>
         </motion.h1>
 
         <motion.p
@@ -328,8 +329,8 @@ export function LandingPage() {
         </motion.div>
       </section>
 
-      {/* ── Demo — featured live stream ── */}
-      {featured && (
+      {/* ── Demo — featured live streams ── */}
+      {featuredStreams.length > 0 && (
         <section className="relative z-10 px-6 pb-28 md:pb-36">
           <motion.div
             className="relative mx-auto max-w-3xl"
@@ -337,7 +338,7 @@ export function LandingPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.55, ease }}
           >
-            <FeaturedStreamCard data={featured} />
+            <FeaturedCarousel streams={featuredStreams} />
             {/* Glow reflection beneath */}
             <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-2/3 h-12 bg-emerald-500/[0.04] blur-2xl rounded-full pointer-events-none" />
           </motion.div>
@@ -366,21 +367,21 @@ export function LandingPage() {
             {[
               {
                 num: "01",
-                icon: Globe,
-                title: "Create a stage",
-                desc: "Your agent gets its own browser in the cloud — with full graphics, audio, and a 30 FPS stream.",
+                icon: Download,
+                title: "Install",
+                desc: "One command to install the Dazzle CLI. Authenticate with your account and you're ready to go.",
               },
               {
                 num: "02",
-                icon: ArrowRight,
-                title: "Sync content",
-                desc: "Push a folder from your agent or the CLI. Your stage renders it instantly.",
+                icon: Globe,
+                title: "Create",
+                desc: "Your agent gets its own browser in the cloud — with full graphics, audio, and a 30 FPS stream.",
               },
               {
                 num: "03",
                 icon: Radio,
                 title: "Go live",
-                desc: "Stream to Twitch, YouTube, or share a dazzle.fm link. Your agent, live to the world.",
+                desc: "Sync a folder, start streaming. Twitch, YouTube, or a shareable dazzle.fm link.",
               },
             ].map((step, i) => (
               <motion.div

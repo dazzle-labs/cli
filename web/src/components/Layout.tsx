@@ -7,7 +7,7 @@ function UserButton() {
 }
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Monitor, Radio, Cast, Key, Rocket, BookOpen } from "lucide-react";
+import { Monitor, Plug, Key, Rocket, BookOpen } from "lucide-react";
 import { useEffect, useState, useCallback, memo } from "react";
 import type { ReactNode } from "react";
 import { motion } from "motion/react";
@@ -31,7 +31,7 @@ import { Separator } from "@/components/ui/separator";
 
 const navItems = [
   { path: "/stages", label: "Stages", icon: Monitor },
-  { path: "/integrations", label: "Integrations", icon: Cast },
+  { path: "/integrations", label: "Integrations", icon: Plug },
   { path: "/api-keys", label: "API Keys", icon: Key },
 ];
 
@@ -67,7 +67,7 @@ const SidebarNav = memo(function SidebarNav({ onGetStarted }: { onGetStarted: ()
               {location.pathname === "/" && (
                 <motion.div
                   layoutId="nav-indicator"
-                  className="absolute left-0 top-1 bottom-1 w-[2px] rounded-full bg-emerald-500"
+                  className="absolute left-0 top-1 bottom-1 w-[2px] rounded-full bg-primary"
                   transition={springs.snappy}
                 />
               )}
@@ -76,13 +76,18 @@ const SidebarNav = memo(function SidebarNav({ onGetStarted }: { onGetStarted: ()
                 isActive={location.pathname === "/"}
                 className={cn(
                   location.pathname === "/"
-                    ? "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/15 hover:text-emerald-400 active:bg-emerald-500/15 active:text-emerald-400"
-                    : "text-muted-foreground hover:text-emerald-400 hover:bg-emerald-500/[0.06]"
+                    ? "bg-primary/10 text-foreground hover:bg-primary/15 hover:text-foreground active:bg-primary/15 active:text-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-primary/[0.06]"
                 )}
               >
                 <Link to="/">
-                  <Radio className="h-4 w-4" />
-                  <span>Live Now</span>
+                  <span className="flex h-4 w-4 items-center justify-center">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                      <span className="relative inline-flex rounded-full h-full w-full bg-primary" />
+                    </span>
+                  </span>
+                  <span>Live</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -113,18 +118,6 @@ const SidebarNav = memo(function SidebarNav({ onGetStarted }: { onGetStarted: ()
                 </SidebarMenuItem>
               );
             })}
-          </SidebarMenu>
-          <SidebarSeparator className="my-2" />
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                onClick={onGetStarted}
-                className="text-muted-foreground hover:text-primary hover:bg-primary/[0.06] active:bg-primary/[0.06] active:text-primary cursor-pointer"
-              >
-                <Rocket className="h-4 w-4" />
-                <span>Get Started</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
             <SidebarMenuItem className="relative">
               {location.pathname === "/docs" && (
                 <motion.div
@@ -138,8 +131,8 @@ const SidebarNav = memo(function SidebarNav({ onGetStarted }: { onGetStarted: ()
                 isActive={location.pathname === "/docs"}
                 className={cn(
                   location.pathname === "/docs"
-                    ? "bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary active:bg-primary/15 active:text-primary"
-                    : "text-muted-foreground hover:text-primary hover:bg-primary/[0.06]"
+                    ? "bg-primary/10 text-foreground hover:bg-primary/15 hover:text-foreground active:bg-primary/15 active:text-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-primary/[0.06]"
                 )}
               >
                 <Link to="/docs">
@@ -149,6 +142,16 @@ const SidebarNav = memo(function SidebarNav({ onGetStarted }: { onGetStarted: ()
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
+          <SidebarSeparator className="my-2" />
+          <div className="px-2">
+            <button
+              onClick={onGetStarted}
+              className="w-full flex items-center justify-center gap-2 rounded-lg border border-primary/20 bg-primary/10 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/15 transition-colors cursor-pointer"
+            >
+              <Rocket className="h-4 w-4" />
+              Get Started
+            </button>
+          </div>
         </SidebarGroup>
       </SidebarContent>
     </Sidebar>

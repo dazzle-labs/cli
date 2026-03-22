@@ -12,8 +12,11 @@ service FeaturedService {
 message GetFeaturedRequest {}
 
 message GetFeaturedResponse {
-  bool live = 1;           // true if a stream is currently live
-  string slug = 2;         // watch page slug
-  string title = 3;        // stream title or stage name
-  string category = 4;     // stream category (may be empty)
+  repeated FeaturedStream streams = 1;
+}
+
+message FeaturedStream {
+  string slug = 1;
+  string title = 2;
+  string category = 3;
 }

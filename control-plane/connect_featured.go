@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"sync"
 	"time"
 
@@ -42,29 +41,36 @@ func (s *featuredServer) GetFeatured(ctx context.Context, req *connect.Request[a
 
 func (s *featuredServer) fetchFeatured() *apiv1internal.GetFeaturedResponse {
 	if s.mgr.db == nil {
-		return &apiv1internal.GetFeaturedResponse{Live: false}
+		return &apiv1internal.GetFeaturedResponse{}
 	}
 
-	var slug, name, title, category string
-	err := s.mgr.db.QueryRow(`
+	rows, err := s.mgr.db.Query(`
 		SELECT s.slug, s.name, COALESCE(s.stream_title, ''), COALESCE(s.stream_category, '')
 		FROM rtmp_sessions rs
 		JOIN stages s ON s.id = rs.stage_id
-		WHERE rs.ended_at IS NULL AND s.slug IS NOT NULL
-		ORDER BY RANDOM() LIMIT 1`).Scan(&slug, &name, &title, &category)
-	if err == sql.ErrNoRows || err != nil {
-		return &apiv1internal.GetFeaturedResponse{Live: false}
+		WHERE rs.ended_at IS NULL AND s.slug IS NOT NULL AND s.featured = true
+		ORDER BY RANDOM() LIMIT 3`)
+	if err != nil {
+		return &apiv1internal.GetFeaturedResponse{}
+	}
+	defer rows.Close()
+
+	var streams []*apiv1internal.FeaturedStream
+	for rows.Next() {
+		var slug, name, title, category string
+		if err := rows.Scan(&slug, &name, &title, &category); err != nil {
+			continue
+		}
+		displayTitle := title
+		if displayTitle == "" {
+			displayTitle = name
+		}
+		streams = append(streams, &apiv1internal.FeaturedStream{
+			Slug:     slug,
+			Title:    displayTitle,
+			Category: category,
+		})
 	}
 
-	displayTitle := title
-	if displayTitle == "" {
-		displayTitle = name
-	}
-
-	return &apiv1internal.GetFeaturedResponse{
-		Live:     true,
-		Slug:     slug,
-		Title:    displayTitle,
-		Category: category,
-	}
+	return &apiv1internal.GetFeaturedResponse{Streams: streams}
 }
