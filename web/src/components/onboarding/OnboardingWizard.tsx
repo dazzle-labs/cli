@@ -380,7 +380,7 @@ export function OnboardingWizard({ open, onClose, skipIntro }: OnboardingWizardP
         onCreated={async (st, _apiKey) => {
           // Link destination if selected (best-effort, don't block navigation)
           if (selectedDestId && st.id) {
-            stageClient.setStageDestination({ stageId: st.id, destinationId: selectedDestId }).catch(() => {});
+            stageClient.attachStageDestination({ stageId: st.id, destinationId: selectedDestId }).catch(() => {});
           }
           setCreatedStageId(st.id);
         }}

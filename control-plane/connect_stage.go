@@ -238,7 +238,7 @@ func (s *stageServer) DeleteStage(ctx context.Context, req *connect.Request[apiv
 	return connect.NewResponse(&apiv1.DeleteStageResponse{}), nil
 }
 
-func (s *stageServer) SetStageDestination(ctx context.Context, req *connect.Request[apiv1.SetStageDestinationRequest]) (*connect.Response[apiv1.SetStageDestinationResponse], error) {
+func (s *stageServer) AttachStageDestination(ctx context.Context, req *connect.Request[apiv1.AttachStageDestinationRequest]) (*connect.Response[apiv1.AttachStageDestinationResponse], error) {
 	info, row, err := requireStage(ctx, s.mgr, req.Msg.StageId)
 	if err != nil {
 		return nil, err
@@ -269,12 +269,12 @@ func (s *stageServer) SetStageDestination(ctx context.Context, req *connect.Requ
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	st := stageRowToStruct(updated, s.mgr)
-	return connect.NewResponse(&apiv1.SetStageDestinationResponse{
+	return connect.NewResponse(&apiv1.AttachStageDestinationResponse{
 		Stage: stageToProto(st, s.mgr.publicBaseURL, s.mgr.db),
 	}), nil
 }
 
-func (s *stageServer) RemoveStageDestination(ctx context.Context, req *connect.Request[apiv1.RemoveStageDestinationRequest]) (*connect.Response[apiv1.RemoveStageDestinationResponse], error) {
+func (s *stageServer) DetachStageDestination(ctx context.Context, req *connect.Request[apiv1.DetachStageDestinationRequest]) (*connect.Response[apiv1.DetachStageDestinationResponse], error) {
 	info, row, err := requireStage(ctx, s.mgr, req.Msg.StageId)
 	if err != nil {
 		return nil, err
@@ -300,8 +300,40 @@ func (s *stageServer) RemoveStageDestination(ctx context.Context, req *connect.R
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	st := stageRowToStruct(updated, s.mgr)
-	return connect.NewResponse(&apiv1.RemoveStageDestinationResponse{
+	return connect.NewResponse(&apiv1.DetachStageDestinationResponse{
 		Stage: stageToProto(st, s.mgr.publicBaseURL, s.mgr.db),
+	}), nil
+}
+
+// Deprecated: delegates to AttachStageDestination.
+func (s *stageServer) SetStageDestination(ctx context.Context, req *connect.Request[apiv1.SetStageDestinationRequest]) (*connect.Response[apiv1.SetStageDestinationResponse], error) {
+	attachReq := connect.NewRequest(&apiv1.AttachStageDestinationRequest{
+		StageId:       req.Msg.StageId,
+		DestinationId: req.Msg.DestinationId,
+	})
+	attachReq.Header().Set("Authorization", req.Header().Get("Authorization"))
+	resp, err := s.AttachStageDestination(ctx, attachReq)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(&apiv1.SetStageDestinationResponse{
+		Stage: resp.Msg.Stage,
+	}), nil
+}
+
+// Deprecated: delegates to DetachStageDestination.
+func (s *stageServer) RemoveStageDestination(ctx context.Context, req *connect.Request[apiv1.RemoveStageDestinationRequest]) (*connect.Response[apiv1.RemoveStageDestinationResponse], error) {
+	detachReq := connect.NewRequest(&apiv1.DetachStageDestinationRequest{
+		StageId:       req.Msg.StageId,
+		DestinationId: req.Msg.DestinationId,
+	})
+	detachReq.Header().Set("Authorization", req.Header().Get("Authorization"))
+	resp, err := s.DetachStageDestination(ctx, detachReq)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(&apiv1.RemoveStageDestinationResponse{
+		Stage: resp.Msg.Stage,
 	}), nil
 }
 

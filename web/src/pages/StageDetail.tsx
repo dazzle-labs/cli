@@ -282,7 +282,7 @@ export function StageDetail() {
                           className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0"
                           onClick={async () => {
                             try {
-                              await stageClient.removeStageDestination({ stageId: stageId!, destinationId: sd.id });
+                              await stageClient.detachStageDestination({ stageId: stageId!, destinationId: sd.id });
                               await refresh();
                             } catch { /* ignore */ }
                           }}
@@ -303,7 +303,7 @@ export function StageDetail() {
                       value=""
                       onValueChange={async (val) => {
                         try {
-                          await stageClient.setStageDestination({ stageId: stageId!, destinationId: val });
+                          await stageClient.attachStageDestination({ stageId: stageId!, destinationId: val });
                           await refresh();
                         } catch { /* ignore */ }
                       }}
