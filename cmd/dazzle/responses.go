@@ -113,8 +113,14 @@ type DestDeleteResponse struct {
 	Deleted string `json:"deleted"`
 }
 
-// DestSetResponse is returned by destination set.
-type DestSetResponse struct {
+// DestAttachResponse is returned by destination attach.
+type DestAttachResponse struct {
+	StageID       string `json:"stage_id"`
+	DestinationID string `json:"destination_id"`
+}
+
+// DestDetachResponse is returned by destination detach.
+type DestDetachResponse struct {
 	StageID       string `json:"stage_id"`
 	DestinationID string `json:"destination_id"`
 }

@@ -43,6 +43,12 @@ const (
 	// StageServiceDeleteStageProcedure is the fully-qualified name of the StageService's DeleteStage
 	// RPC.
 	StageServiceDeleteStageProcedure = "/dazzle.v1.StageService/DeleteStage"
+	// StageServiceAttachStageDestinationProcedure is the fully-qualified name of the StageService's
+	// AttachStageDestination RPC.
+	StageServiceAttachStageDestinationProcedure = "/dazzle.v1.StageService/AttachStageDestination"
+	// StageServiceDetachStageDestinationProcedure is the fully-qualified name of the StageService's
+	// DetachStageDestination RPC.
+	StageServiceDetachStageDestinationProcedure = "/dazzle.v1.StageService/DetachStageDestination"
 	// StageServiceSetStageDestinationProcedure is the fully-qualified name of the StageService's
 	// SetStageDestination RPC.
 	StageServiceSetStageDestinationProcedure = "/dazzle.v1.StageService/SetStageDestination"
@@ -66,7 +72,11 @@ type StageServiceClient interface {
 	ListStages(context.Context, *connect.Request[v1.ListStagesRequest]) (*connect.Response[v1.ListStagesResponse], error)
 	GetStage(context.Context, *connect.Request[v1.GetStageRequest]) (*connect.Response[v1.GetStageResponse], error)
 	DeleteStage(context.Context, *connect.Request[v1.DeleteStageRequest]) (*connect.Response[v1.DeleteStageResponse], error)
+	AttachStageDestination(context.Context, *connect.Request[v1.AttachStageDestinationRequest]) (*connect.Response[v1.AttachStageDestinationResponse], error)
+	DetachStageDestination(context.Context, *connect.Request[v1.DetachStageDestinationRequest]) (*connect.Response[v1.DetachStageDestinationResponse], error)
+	// Deprecated: Use AttachStageDestination instead.
 	SetStageDestination(context.Context, *connect.Request[v1.SetStageDestinationRequest]) (*connect.Response[v1.SetStageDestinationResponse], error)
+	// Deprecated: Use DetachStageDestination instead.
 	RemoveStageDestination(context.Context, *connect.Request[v1.RemoveStageDestinationRequest]) (*connect.Response[v1.RemoveStageDestinationResponse], error)
 	ActivateStage(context.Context, *connect.Request[v1.ActivateStageRequest]) (*connect.Response[v1.ActivateStageResponse], error)
 	DeactivateStage(context.Context, *connect.Request[v1.DeactivateStageRequest]) (*connect.Response[v1.DeactivateStageResponse], error)
@@ -108,6 +118,18 @@ func NewStageServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(stageServiceMethods.ByName("DeleteStage")),
 			connect.WithClientOptions(opts...),
 		),
+		attachStageDestination: connect.NewClient[v1.AttachStageDestinationRequest, v1.AttachStageDestinationResponse](
+			httpClient,
+			baseURL+StageServiceAttachStageDestinationProcedure,
+			connect.WithSchema(stageServiceMethods.ByName("AttachStageDestination")),
+			connect.WithClientOptions(opts...),
+		),
+		detachStageDestination: connect.NewClient[v1.DetachStageDestinationRequest, v1.DetachStageDestinationResponse](
+			httpClient,
+			baseURL+StageServiceDetachStageDestinationProcedure,
+			connect.WithSchema(stageServiceMethods.ByName("DetachStageDestination")),
+			connect.WithClientOptions(opts...),
+		),
 		setStageDestination: connect.NewClient[v1.SetStageDestinationRequest, v1.SetStageDestinationResponse](
 			httpClient,
 			baseURL+StageServiceSetStageDestinationProcedure,
@@ -147,6 +169,8 @@ type stageServiceClient struct {
 	listStages             *connect.Client[v1.ListStagesRequest, v1.ListStagesResponse]
 	getStage               *connect.Client[v1.GetStageRequest, v1.GetStageResponse]
 	deleteStage            *connect.Client[v1.DeleteStageRequest, v1.DeleteStageResponse]
+	attachStageDestination *connect.Client[v1.AttachStageDestinationRequest, v1.AttachStageDestinationResponse]
+	detachStageDestination *connect.Client[v1.DetachStageDestinationRequest, v1.DetachStageDestinationResponse]
 	setStageDestination    *connect.Client[v1.SetStageDestinationRequest, v1.SetStageDestinationResponse]
 	removeStageDestination *connect.Client[v1.RemoveStageDestinationRequest, v1.RemoveStageDestinationResponse]
 	activateStage          *connect.Client[v1.ActivateStageRequest, v1.ActivateStageResponse]
@@ -172,6 +196,16 @@ func (c *stageServiceClient) GetStage(ctx context.Context, req *connect.Request[
 // DeleteStage calls dazzle.v1.StageService.DeleteStage.
 func (c *stageServiceClient) DeleteStage(ctx context.Context, req *connect.Request[v1.DeleteStageRequest]) (*connect.Response[v1.DeleteStageResponse], error) {
 	return c.deleteStage.CallUnary(ctx, req)
+}
+
+// AttachStageDestination calls dazzle.v1.StageService.AttachStageDestination.
+func (c *stageServiceClient) AttachStageDestination(ctx context.Context, req *connect.Request[v1.AttachStageDestinationRequest]) (*connect.Response[v1.AttachStageDestinationResponse], error) {
+	return c.attachStageDestination.CallUnary(ctx, req)
+}
+
+// DetachStageDestination calls dazzle.v1.StageService.DetachStageDestination.
+func (c *stageServiceClient) DetachStageDestination(ctx context.Context, req *connect.Request[v1.DetachStageDestinationRequest]) (*connect.Response[v1.DetachStageDestinationResponse], error) {
+	return c.detachStageDestination.CallUnary(ctx, req)
 }
 
 // SetStageDestination calls dazzle.v1.StageService.SetStageDestination.
@@ -205,7 +239,11 @@ type StageServiceHandler interface {
 	ListStages(context.Context, *connect.Request[v1.ListStagesRequest]) (*connect.Response[v1.ListStagesResponse], error)
 	GetStage(context.Context, *connect.Request[v1.GetStageRequest]) (*connect.Response[v1.GetStageResponse], error)
 	DeleteStage(context.Context, *connect.Request[v1.DeleteStageRequest]) (*connect.Response[v1.DeleteStageResponse], error)
+	AttachStageDestination(context.Context, *connect.Request[v1.AttachStageDestinationRequest]) (*connect.Response[v1.AttachStageDestinationResponse], error)
+	DetachStageDestination(context.Context, *connect.Request[v1.DetachStageDestinationRequest]) (*connect.Response[v1.DetachStageDestinationResponse], error)
+	// Deprecated: Use AttachStageDestination instead.
 	SetStageDestination(context.Context, *connect.Request[v1.SetStageDestinationRequest]) (*connect.Response[v1.SetStageDestinationResponse], error)
+	// Deprecated: Use DetachStageDestination instead.
 	RemoveStageDestination(context.Context, *connect.Request[v1.RemoveStageDestinationRequest]) (*connect.Response[v1.RemoveStageDestinationResponse], error)
 	ActivateStage(context.Context, *connect.Request[v1.ActivateStageRequest]) (*connect.Response[v1.ActivateStageResponse], error)
 	DeactivateStage(context.Context, *connect.Request[v1.DeactivateStageRequest]) (*connect.Response[v1.DeactivateStageResponse], error)
@@ -241,6 +279,18 @@ func NewStageServiceHandler(svc StageServiceHandler, opts ...connect.HandlerOpti
 		StageServiceDeleteStageProcedure,
 		svc.DeleteStage,
 		connect.WithSchema(stageServiceMethods.ByName("DeleteStage")),
+		connect.WithHandlerOptions(opts...),
+	)
+	stageServiceAttachStageDestinationHandler := connect.NewUnaryHandler(
+		StageServiceAttachStageDestinationProcedure,
+		svc.AttachStageDestination,
+		connect.WithSchema(stageServiceMethods.ByName("AttachStageDestination")),
+		connect.WithHandlerOptions(opts...),
+	)
+	stageServiceDetachStageDestinationHandler := connect.NewUnaryHandler(
+		StageServiceDetachStageDestinationProcedure,
+		svc.DetachStageDestination,
+		connect.WithSchema(stageServiceMethods.ByName("DetachStageDestination")),
 		connect.WithHandlerOptions(opts...),
 	)
 	stageServiceSetStageDestinationHandler := connect.NewUnaryHandler(
@@ -283,6 +333,10 @@ func NewStageServiceHandler(svc StageServiceHandler, opts ...connect.HandlerOpti
 			stageServiceGetStageHandler.ServeHTTP(w, r)
 		case StageServiceDeleteStageProcedure:
 			stageServiceDeleteStageHandler.ServeHTTP(w, r)
+		case StageServiceAttachStageDestinationProcedure:
+			stageServiceAttachStageDestinationHandler.ServeHTTP(w, r)
+		case StageServiceDetachStageDestinationProcedure:
+			stageServiceDetachStageDestinationHandler.ServeHTTP(w, r)
 		case StageServiceSetStageDestinationProcedure:
 			stageServiceSetStageDestinationHandler.ServeHTTP(w, r)
 		case StageServiceRemoveStageDestinationProcedure:
@@ -316,6 +370,14 @@ func (UnimplementedStageServiceHandler) GetStage(context.Context, *connect.Reque
 
 func (UnimplementedStageServiceHandler) DeleteStage(context.Context, *connect.Request[v1.DeleteStageRequest]) (*connect.Response[v1.DeleteStageResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.StageService.DeleteStage is not implemented"))
+}
+
+func (UnimplementedStageServiceHandler) AttachStageDestination(context.Context, *connect.Request[v1.AttachStageDestinationRequest]) (*connect.Response[v1.AttachStageDestinationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.StageService.AttachStageDestination is not implemented"))
+}
+
+func (UnimplementedStageServiceHandler) DetachStageDestination(context.Context, *connect.Request[v1.DetachStageDestinationRequest]) (*connect.Response[v1.DetachStageDestinationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dazzle.v1.StageService.DetachStageDestination is not implemented"))
 }
 
 func (UnimplementedStageServiceHandler) SetStageDestination(context.Context, *connect.Request[v1.SetStageDestinationRequest]) (*connect.Response[v1.SetStageDestinationResponse], error) {

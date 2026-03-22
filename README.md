@@ -137,8 +137,10 @@ Commands:
                                    Add a broadcast destination.
   destination (dest) delete (rm)
                                    Remove a broadcast destination.
-  destination (dest) set           Assign a broadcast destination to the active
-                                   stage.
+  destination (dest) attach (set)
+                                   Attach a destination to a stage.
+  destination (dest) detach (unset)
+                                   Detach a destination from a stage.
 
 Run "dazzle <command> --help" for more information on a command.
 ```
@@ -294,8 +296,10 @@ Commands:
                                   Add a broadcast destination.
   destination (dest) delete (rm)
                                   Remove a broadcast destination.
-  destination (dest) set          Assign a broadcast destination to the active
-                                  stage.
+  destination (dest) attach (set)
+                                  Attach a destination to a stage.
+  destination (dest) detach (unset)
+                                  Detach a destination from a stage.
 ```
 
 ## Stage Resolution
