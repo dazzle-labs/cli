@@ -108,7 +108,11 @@ const SidebarNav = memo(function SidebarNav({ onGetStarted }: { onGetStarted: ()
                   <SidebarMenuButton
                     asChild
                     isActive={active}
-                    className={cn(active && "bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary active:bg-primary/15 active:text-primary")}
+                    className={cn(
+                      active
+                        ? "bg-primary/10 text-foreground hover:bg-primary/15 hover:text-foreground active:bg-primary/15 active:text-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-primary/[0.06]"
+                    )}
                   >
                     <Link to={item.path}>
                       <item.icon className="h-4 w-4" />

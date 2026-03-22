@@ -46,9 +46,9 @@ func (s *featuredServer) fetchFeatured() *apiv1internal.GetFeaturedResponse {
 
 	rows, err := s.mgr.db.Query(`
 		SELECT s.slug, s.name, COALESCE(s.stream_title, ''), COALESCE(s.stream_category, '')
-		FROM rtmp_sessions rs
-		JOIN stages s ON s.id = rs.stage_id
-		WHERE rs.ended_at IS NULL AND s.slug IS NOT NULL AND s.featured = true
+		FROM stages s
+		WHERE s.featured = true AND s.slug IS NOT NULL
+		AND EXISTS (SELECT 1 FROM rtmp_sessions rs WHERE rs.stage_id = s.id AND rs.ended_at IS NULL)
 		ORDER BY RANDOM() LIMIT 3`)
 	if err != nil {
 		return &apiv1internal.GetFeaturedResponse{}
