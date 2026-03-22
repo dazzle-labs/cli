@@ -13,7 +13,9 @@ Dazzle gives you cloud stages — isolated browser environments that render and 
 ## Quick Start
 
 ```bash
-curl -sSL https://dazzle.fm/install.sh | sh   # install CLI
+# macOS/Linux:
+curl -sSL https://dazzle.fm/install.sh | sh
+# Windows (PowerShell): irm https://dazzle.fm/install.ps1 | iex
 dazzle login                                    # authenticate
 dazzle s new my-stage                           # create a stage
 dazzle s up                                     # activate it

@@ -62,6 +62,15 @@ const SidebarNav = memo(function SidebarNav({ onGetStarted }: { onGetStarted: ()
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
+          <div className="px-2 mb-4">
+            <button
+              onClick={onGetStarted}
+              className="w-full flex items-center justify-center gap-2 rounded-lg border border-primary/20 bg-primary/10 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/15 transition-colors cursor-pointer"
+            >
+              <Rocket className="h-4 w-4" />
+              Get Started
+            </button>
+          </div>
           <SidebarMenu>
             <SidebarMenuItem className="relative">
               {location.pathname === "/" && (
@@ -146,16 +155,6 @@ const SidebarNav = memo(function SidebarNav({ onGetStarted }: { onGetStarted: ()
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
-          <SidebarSeparator className="my-2" />
-          <div className="px-2">
-            <button
-              onClick={onGetStarted}
-              className="w-full flex items-center justify-center gap-2 rounded-lg border border-primary/20 bg-primary/10 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/15 transition-colors cursor-pointer"
-            >
-              <Rocket className="h-4 w-4" />
-              Get Started
-            </button>
-          </div>
         </SidebarGroup>
       </SidebarContent>
     </Sidebar>

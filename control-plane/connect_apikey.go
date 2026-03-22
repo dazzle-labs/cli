@@ -20,6 +20,9 @@ func (s *apiKeyServer) CreateApiKey(ctx context.Context, req *connect.Request[ap
 	if req.Msg.Name == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, nil)
 	}
+	if err := validateName(req.Msg.Name); err != nil {
+		return nil, err
+	}
 
 	id, secret, prefix, err := dbCreateAPIKey(s.mgr.db, info.UserID, req.Msg.Name)
 	if err != nil {

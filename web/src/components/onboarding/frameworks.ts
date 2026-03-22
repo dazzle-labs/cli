@@ -5,7 +5,7 @@ export interface Framework {
   name: string;
   language: string;
   description: string;
-  getSnippet: () => string;
+  getSnippet: (stageName?: string) => string;
 }
 
 export const FRAMEWORKS: Framework[] = [
@@ -14,92 +14,105 @@ export const FRAMEWORKS: Framework[] = [
     name: "Claude Code",
     language: "Shell",
     description: "Anthropic's CLI coding agent",
-    getSnippet: () =>
-      `# Install the Dazzle CLI
+    getSnippet: (stageName?: string) => {
+      const s = stageName || "my-stage";
+      return `# Install the Dazzle CLI
 ${installCommand()}
 
 # Authenticate
 ${cli.login.full}
 
-# Create and start a stage
-${cli.stageCreate.full}
-${cli.stageUp.full}
+# Start your stage
+${cli.stageUp.base} -s "${s}"
 
 # Push content (sync your app directory, hot-reloads via HMR)
-${cli.stageSync.full}
+${cli.stageSync.base} -s "${s}" ./my-stage
 
 # Take a screenshot to verify
-${cli.stageScreenshotOut.full}
+${cli.stageScreenshotOut.base} -s "${s}"
 
 # Check status
-${cli.stageStatus.full}`,
+${cli.stageStatus.base} -s "${s}"`;
+    },
   },
   {
     id: "openai-agents",
     name: "OpenAI Agents SDK",
     language: "Shell",
     description: "OpenAI's multi-agent framework",
-    getSnippet: () =>
-      `# Install the Dazzle CLI
+    getSnippet: (stageName?: string) => {
+      const s = stageName || "my-stage";
+      return `# Install the Dazzle CLI
 ${installCommand()}
 
-# Authenticate and create a stage
+# Authenticate
 ${cli.login.full}
-${cli.stageCreate.full}
-${cli.stageUp.full}
+
+# Start your stage
+${cli.stageUp.base} -s "${s}"
 
 # Push content (streaming starts automatically)
-${cli.stageSync.full}`,
+${cli.stageSync.base} -s "${s}" ./my-stage`;
+    },
   },
   {
     id: "crewai",
     name: "CrewAI",
     language: "Shell",
     description: "Role-based agent collaboration",
-    getSnippet: () =>
-      `# Install the Dazzle CLI
+    getSnippet: (stageName?: string) => {
+      const s = stageName || "my-stage";
+      return `# Install the Dazzle CLI
 ${installCommand()}
 
-# Authenticate and create a stage
+# Authenticate
 ${cli.login.full}
-${cli.stageCreate.full}
-${cli.stageUp.full}
+
+# Start your stage
+${cli.stageUp.base} -s "${s}"
 
 # Push content (streaming starts automatically)
-${cli.stageSync.full}`,
+${cli.stageSync.base} -s "${s}" ./my-stage`;
+    },
   },
   {
     id: "langgraph",
     name: "LangGraph",
     language: "Shell",
     description: "LangChain's stateful agent graphs",
-    getSnippet: () =>
-      `# Install the Dazzle CLI
+    getSnippet: (stageName?: string) => {
+      const s = stageName || "my-stage";
+      return `# Install the Dazzle CLI
 ${installCommand()}
 
-# Authenticate and create a stage
+# Authenticate
 ${cli.login.full}
-${cli.stageCreate.full}
-${cli.stageUp.full}
+
+# Start your stage
+${cli.stageUp.base} -s "${s}"
 
 # Push content (streaming starts automatically)
-${cli.stageSync.full}`,
+${cli.stageSync.base} -s "${s}" ./my-stage`;
+    },
   },
   {
     id: "autogen",
     name: "AutoGen",
     language: "Shell",
     description: "Microsoft's multi-agent framework",
-    getSnippet: () =>
-      `# Install the Dazzle CLI
+    getSnippet: (stageName?: string) => {
+      const s = stageName || "my-stage";
+      return `# Install the Dazzle CLI
 ${installCommand()}
 
-# Authenticate and create a stage
+# Authenticate
 ${cli.login.full}
-${cli.stageCreate.full}
-${cli.stageUp.full}
+
+# Start your stage
+${cli.stageUp.base} -s "${s}"
 
 # Push content (streaming starts automatically)
-${cli.stageSync.full}`,
+${cli.stageSync.base} -s "${s}" ./my-stage`;
+    },
   },
 ];

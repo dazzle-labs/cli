@@ -37,10 +37,18 @@ export function CopyAgentPromptButton({ variant = "full" }: CopyAgentPromptButto
   return (
     <button
       onClick={handleCopy}
-      className="group w-full rounded-xl border border-dashed border-border bg-card/50 p-6 text-left transition-all duration-300 hover:border-primary/20 hover:bg-primary/[0.02] cursor-pointer"
+      className={`group w-full rounded-xl border p-6 text-left transition-all duration-300 cursor-pointer ${
+        copied
+          ? "border-primary/30 bg-primary/[0.06]"
+          : "border-dashed border-border bg-card/50 hover:border-primary/20 hover:bg-primary/[0.02]"
+      }`}
     >
       <div className="flex items-center gap-4">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
+        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors ${
+          copied
+            ? "bg-primary/20 text-primary"
+            : "bg-primary/10 text-primary group-hover:bg-primary/20"
+        }`}>
           {copied ? <Check className="h-5 w-5" /> : <Sparkles className="h-5 w-5" />}
         </div>
         <div>

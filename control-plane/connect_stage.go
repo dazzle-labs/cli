@@ -65,6 +65,9 @@ func (s *stageServer) CreateStage(ctx context.Context, req *connect.Request[apiv
 	if name == "" {
 		name = "default"
 	}
+	if err := validateName(name); err != nil {
+		return nil, err
+	}
 
 	// Enforce per-user total stage limit (created, regardless of state).
 	maxStages := 10
@@ -455,6 +458,9 @@ func (s *stageServer) UpdateStage(ctx context.Context, req *connect.Request[apiv
 			if req.Msg.Stage.Name == "" {
 				return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name cannot be empty"))
 			}
+			if err := validateName(req.Msg.Stage.Name); err != nil {
+				return nil, err
+			}
 			if _, err := dbRenameStage(s.mgr.db, stageID, info.UserID, req.Msg.Stage.Name); err != nil {
 				return nil, connect.NewError(connect.CodeNotFound, err)
 			}
@@ -462,6 +468,9 @@ func (s *stageServer) UpdateStage(ctx context.Context, req *connect.Request[apiv
 			slug := req.Msg.Stage.Slug
 			if slug == "" {
 				return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("slug cannot be empty"))
+			}
+			if err := validateSlug(slug); err != nil {
+				return nil, err
 			}
 			if err := dbUpdateSlug(s.mgr.db, stageID, info.UserID, slug); err != nil {
 				if errors.Is(err, errSlugTaken) {

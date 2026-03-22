@@ -26,6 +26,9 @@ func (s *rtmpDestinationServer) CreateStreamDestination(ctx context.Context, req
 	if name == "" || msg.RtmpUrl == "" || msg.StreamKey == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name, rtmp_url, and stream_key are required"))
 	}
+	if err := validateName(name); err != nil {
+		return nil, err
+	}
 
 	platform := msg.Platform
 	if platform == "" {

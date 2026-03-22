@@ -7,17 +7,20 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Copy, Check, PartyPopper, Plus, Loader2 } from "lucide-react";
 import { springs, scaleIn } from "@/lib/motion";
 import { cli } from "@/lib/cli-commands";
+import { CodeBlock } from "@/components/ui/code-block";
 
 interface ConnectionDetailsProps {
   framework: Framework;
   endpointId: string;
+  /** Stage name from step 2, used to personalize CLI snippets. */
+  stageName?: string;
   /** Pre-created API key (from guided path). If null, we check for existing keys. */
   apiKey: string | null;
   onDone: () => void;
   verbose?: boolean;
 }
 
-export function ConnectionDetails({ framework, endpointId: _endpointId, apiKey: initialKey, onDone, verbose }: ConnectionDetailsProps) {
+export function ConnectionDetails({ framework, endpointId: _endpointId, stageName, apiKey: initialKey, onDone, verbose }: ConnectionDetailsProps) {
   const [copiedSnippet, setCopiedSnippet] = useState(false);
   const [copiedKey, setCopiedKey] = useState(false);
   const [activeKey, setActiveKey] = useState(initialKey);
@@ -60,7 +63,7 @@ export function ConnectionDetails({ framework, endpointId: _endpointId, apiKey: 
     }
   }
 
-  const snippet = framework.getSnippet();
+  const snippet = framework.getSnippet(stageName);
 
   async function handleCopySnippet() {
     await navigator.clipboard.writeText(snippet);
@@ -123,9 +126,7 @@ export function ConnectionDetails({ framework, endpointId: _endpointId, apiKey: 
               )}
             </Button>
           </div>
-          <pre className="p-4 text-sm font-mono text-foreground overflow-x-auto leading-relaxed">
-            {snippet}
-          </pre>
+          <CodeBlock code={snippet} className="border-0 rounded-none leading-relaxed" />
         </div>
 
         {/* API key section */}
