@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { SignIn } from "@clerk/react";
 import { motion, useInView } from "motion/react";
@@ -12,6 +12,7 @@ import {
   Radio,
   Sparkles,
 } from "lucide-react";
+import { installCommand } from "@/lib/cli-commands";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -30,8 +31,9 @@ function LiveText({ children = "live" }: { children?: string }) {
   );
 }
 
-const TERMINAL_LINES: { type: "cmd" | "out"; text: string }[] = [
-  { type: "cmd", text: "curl -sSL https://dazzle.fm/install.sh | sh" },
+function getTerminalLines(): { type: "cmd" | "out"; text: string }[] {
+  return [
+  { type: "cmd", text: installCommand() },
   { type: "out", text: "Dazzle CLI installed." },
   { type: "out", text: "" },
   { type: "cmd", text: "dazzle login" },
@@ -45,9 +47,11 @@ const TERMINAL_LINES: { type: "cmd" | "out"; text: string }[] = [
   { type: "out", text: "" },
   { type: "cmd", text: "dazzle stage up" },
   { type: "out", text: "Stage is live at https://dazzle.fm/s/my-stage" },
-];
+  ];
+}
 
 function TerminalAnimation() {
+  const TERMINAL_LINES = useMemo(() => getTerminalLines(), []);
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-20px" });
   const [visibleLines, setVisibleLines] = useState(0);

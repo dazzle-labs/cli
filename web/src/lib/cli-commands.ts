@@ -42,6 +42,18 @@ export const cli: Record<string, CLICommand> = {
   guide:              cmd("guide"),
 };
 
+/** Detect if the visitor is on Windows. */
+export function isWindows(): boolean {
+  return navigator.platform?.startsWith("Win") || /windows/i.test(navigator.userAgent);
+}
+
+/** OS-appropriate install command. */
+export function installCommand(): string {
+  return isWindows()
+    ? "irm https://dazzle.fm/install.ps1 | iex"
+    : "curl -sSL https://dazzle.fm/install.sh | sh";
+}
+
 // Unique subcommand paths -- extracted by CI smoke test
 export const CLI_SUBCOMMANDS = [...new Set(
   Object.values(cli).map(c => c.subcommand)

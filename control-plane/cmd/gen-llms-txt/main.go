@@ -62,4 +62,5 @@ func main() {
 
 	generate("llms.txt.tmpl", "llms.txt", "web/public/llms.txt", d)
 	generate("llms-full.txt.tmpl", "llms-full.txt", "web/public/llms-full.txt", d)
+	generate("cli-reference.txt.tmpl", "cli-reference.txt", "web/public/cli-reference.txt", d)
 }

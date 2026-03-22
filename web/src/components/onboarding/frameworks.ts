@@ -1,4 +1,4 @@
-import { cli } from "@/lib/cli-commands";
+import { cli, installCommand } from "@/lib/cli-commands";
 
 export interface Framework {
   id: string;
@@ -16,7 +16,7 @@ export const FRAMEWORKS: Framework[] = [
     description: "Anthropic's CLI coding agent",
     getSnippet: () =>
       `# Install the Dazzle CLI
-curl -sSL https://dazzle.fm/install.sh | sh
+${installCommand()}
 
 # Authenticate
 ${cli.login.full}
@@ -41,7 +41,7 @@ ${cli.stageStatus.full}`,
     description: "OpenAI's multi-agent framework",
     getSnippet: () =>
       `# Install the Dazzle CLI
-curl -sSL https://dazzle.fm/install.sh | sh
+${installCommand()}
 
 # Authenticate and create a stage
 ${cli.login.full}
@@ -58,7 +58,7 @@ ${cli.stageSync.full}`,
     description: "Role-based agent collaboration",
     getSnippet: () =>
       `# Install the Dazzle CLI
-curl -sSL https://dazzle.fm/install.sh | sh
+${installCommand()}
 
 # Authenticate and create a stage
 ${cli.login.full}
@@ -75,7 +75,7 @@ ${cli.stageSync.full}`,
     description: "LangChain's stateful agent graphs",
     getSnippet: () =>
       `# Install the Dazzle CLI
-curl -sSL https://dazzle.fm/install.sh | sh
+${installCommand()}
 
 # Authenticate and create a stage
 ${cli.login.full}
@@ -92,7 +92,7 @@ ${cli.stageSync.full}`,
     description: "Microsoft's multi-agent framework",
     getSnippet: () =>
       `# Install the Dazzle CLI
-curl -sSL https://dazzle.fm/install.sh | sh
+${installCommand()}
 
 # Authenticate and create a stage
 ${cli.login.full}

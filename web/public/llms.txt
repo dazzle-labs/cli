@@ -28,86 +28,11 @@ dazzle s ss -o preview.png                      # screenshot to verify
 
 ## CLI Reference
 
-```
-Usage: dazzle <command> [flags]
+See [CLI Reference](https://dazzle.fm/cli-reference.txt) for the full command listing.
 
-Dazzle — cloud stages for streaming.
+## Visibility
 
-A stage is a cloud browser environment that renders and streams your content.
-Sync a local directory (must contain an index.html) and everything visible in
-the browser window is what gets streamed to viewers.
-
-Your content runs in a real browser with full access to standard web APIs (DOM,
-Canvas, WebGL, Web Audio, fetch, etc.). localStorage is persisted across stage
-restarts — use it to store app state that should survive between sessions.
-
-Workflow:
- 1. dazzle login # authenticate (one-time)
- 2. dazzle s new my-stage # create a stage
- 3. dazzle s up # bring it up — starts streaming to Dazzle
- 4. dazzle s sync ./my-app -w # sync + auto-refresh on changes
- 5. dazzle s ss -o preview.png # take a screenshot to verify
- 6. dazzle s down # stop streaming and shut down
-
-Stage selection: use -s <name>, DAZZLE_STAGE env, or auto-selected if only one.
-
-https://dazzle.fm
-
-Flags:
-  -h, --help              Show context-sensitive help.
-  -j, --json              Output as JSON.
-  -s, --stage=STRING      Stage name or ID ($DAZZLE_STAGE).
-      --api-url=STRING    API URL ($DAZZLE_API_URL).
-
-Commands:
-  version                          Print version information.
-  update                           Update dazzle to the latest release.
-  guide                            Show content authoring guide (rendering tips,
-                                   performance, best practices).
-  login                            Authenticate with Dazzle (opens browser).
-  logout                           Clear stored credentials.
-  whoami                           Show current user.
-  stage (s) list (ls)              List stages.
-  stage (s) create (new)           Create a stage.
-  stage (s) delete (rm)            Delete a stage.
-  stage (s) up                     Activate a stage.
-  stage (s) down                   Deactivate a stage.
-  stage (s) status (st)            Show stage status.
-  stage (s) stats                  Show live pipeline stats.
-  stage (s) preview                Show the shareable preview URL for a running
-                                   stage.
-  stage (s) sync (sy)              Sync a local directory to the stage. This is
-                                   the primary way to push content — use --watch
-                                   for live development.
-  stage (s) refresh (r)            Reload the stage entry point.
-  stage (s) event (ev) emit (e)    Push a named event with JSON data to
-                                   the running page — dispatched as a DOM
-                                   CustomEvent. Use this to send real-time data
-                                   from external processes (other agents, APIs,
-                                   etc.) without re-syncing or reloading.
-  stage (s) logs (l)               Retrieve stage console logs.
-  stage (s) screenshot (ss)        Capture a screenshot of the stage.
-  stage (s) broadcast (bc) status (st)
-                                   Check streaming status.
-  stage (s) broadcast (bc) info    Get current stream title and category.
-  stage (s) broadcast (bc) title
-                                   Set the stream title (not supported for
-                                   Restream).
-  stage (s) broadcast (bc) category
-                                   Set the stream category or game (not
-                                   supported for Restream).
-  stage (s) chat send              Send a message to live chat (not supported
-                                   for Restream).
-  destination (dest) list (ls)     List broadcast destinations.
-  destination (dest) add (create,new)
-                                   Add a broadcast destination.
-  destination (dest) delete (rm)
-                                   Remove a broadcast destination.
-  destination (dest) set           Assign a broadcast destination to the active
-                                   stage.
-
-Run "dazzle <command> --help" for more information on a command.
-```
+All stages are public during beta — anyone can watch your stage's rendered video stream. Viewers see only the visual output, not your source code or files. Treat your stage like a live broadcast.
 
 ## Key Concepts
 
