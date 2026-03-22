@@ -13,7 +13,11 @@ service StageService {
   rpc ListStages(ListStagesRequest) returns (ListStagesResponse);
   rpc GetStage(GetStageRequest) returns (GetStageResponse);
   rpc DeleteStage(DeleteStageRequest) returns (DeleteStageResponse);
+  rpc AttachStageDestination(AttachStageDestinationRequest) returns (AttachStageDestinationResponse);
+  rpc DetachStageDestination(DetachStageDestinationRequest) returns (DetachStageDestinationResponse);
+  // Deprecated: Use AttachStageDestination instead.
   rpc SetStageDestination(SetStageDestinationRequest) returns (SetStageDestinationResponse);
+  // Deprecated: Use DetachStageDestination instead.
   rpc RemoveStageDestination(RemoveStageDestinationRequest) returns (RemoveStageDestinationResponse);
   rpc ActivateStage(ActivateStageRequest) returns (ActivateStageResponse);
   rpc DeactivateStage(DeactivateStageRequest) returns (DeactivateStageResponse);
@@ -77,22 +81,44 @@ message DeleteStageRequest {
 
 message DeleteStageResponse {}
 
-// SetStageDestination adds/enables a destination for a stage.
-message SetStageDestinationRequest {
+// AttachStageDestination adds/enables a destination for a stage.
+message AttachStageDestinationRequest {
   string stage_id = 1; // stage UUID or slug
   string destination_id = 2;
 }
 
+message AttachStageDestinationResponse {
+  Stage stage = 1;
+}
+
+// DetachStageDestination removes a destination from a stage.
+message DetachStageDestinationRequest {
+  string stage_id = 1; // stage UUID or slug
+  string destination_id = 2;
+}
+
+message DetachStageDestinationResponse {
+  Stage stage = 1;
+}
+
+// Deprecated: Use AttachStageDestinationRequest instead.
+message SetStageDestinationRequest {
+  string stage_id = 1;
+  string destination_id = 2;
+}
+
+// Deprecated: Use AttachStageDestinationResponse instead.
 message SetStageDestinationResponse {
   Stage stage = 1;
 }
 
-// RemoveStageDestination removes a destination from a stage.
+// Deprecated: Use DetachStageDestinationRequest instead.
 message RemoveStageDestinationRequest {
-  string stage_id = 1; // stage UUID or slug
+  string stage_id = 1;
   string destination_id = 2;
 }
 
+// Deprecated: Use DetachStageDestinationResponse instead.
 message RemoveStageDestinationResponse {
   Stage stage = 1;
 }

@@ -19,10 +19,11 @@ import (
 
 // DestinationCmd groups destination subcommands.
 type DestinationCmd struct {
-	List   DestinationListCmd   `cmd:"" aliases:"ls" help:"List broadcast destinations."`
-	Add    DestinationAddCmd    `cmd:"" aliases:"create,new" help:"Add a broadcast destination."`
-	Delete DestinationDeleteCmd `cmd:"" aliases:"rm" help:"Remove a broadcast destination."`
-	Set    DestinationSetCmd    `cmd:"" help:"Assign a broadcast destination to the active stage."`
+	List   DestinationListCmd      `cmd:"" aliases:"ls" help:"List broadcast destinations."`
+	Add    DestinationAddCmd       `cmd:"" aliases:"create,new" help:"Add a broadcast destination."`
+	Delete DestinationDeleteCmd    `cmd:"" aliases:"rm" help:"Remove a broadcast destination."`
+	Attach DestinationAttachCmd    `cmd:"" aliases:"set" help:"Attach a destination to a stage."`
+	Detach DestinationDetachCmd    `cmd:"" aliases:"unset" help:"Detach a destination from a stage."`
 }
 
 var oauthPlatforms = []struct {
@@ -304,12 +305,12 @@ func (c *DestinationDeleteCmd) Run(ctx *Context) error {
 	return nil
 }
 
-// DestinationSetCmd assigns a destination to the resolved stage.
-type DestinationSetCmd struct {
+// DestinationAttachCmd attaches a destination to a stage.
+type DestinationAttachCmd struct {
 	Name string `arg:"" help:"Destination name or ID."`
 }
 
-func (c *DestinationSetCmd) Run(ctx *Context) error {
+func (c *DestinationAttachCmd) Run(ctx *Context) error {
 	if err := ctx.requireAuth(); err != nil {
 		return err
 	}
@@ -323,20 +324,57 @@ func (c *DestinationSetCmd) Run(ctx *Context) error {
 	}
 
 	stageClient := apiv1connect.NewStageServiceClient(ctx.HTTPClient, ctx.APIURL)
-	req := connect.NewRequest(&apiv1.SetStageDestinationRequest{
+	req := connect.NewRequest(&apiv1.AttachStageDestinationRequest{
 		StageId:       ctx.StageID,
 		DestinationId: destID,
 	})
 	req.Header().Set("Authorization", ctx.authHeader())
-	if _, err := stageClient.SetStageDestination(context.Background(), req); err != nil {
+	if _, err := stageClient.AttachStageDestination(context.Background(), req); err != nil {
 		return err
 	}
 
 	if ctx.JSON {
-		printJSON(DestSetResponse{StageID: ctx.StageID, DestinationID: destID})
+		printJSON(DestAttachResponse{StageID: ctx.StageID, DestinationID: destID})
 		return nil
 	}
 
-	printText("Destination %q assigned to stage.", c.Name)
+	printText("Destination %q attached to stage.", c.Name)
+	return nil
+}
+
+// DestinationDetachCmd detaches a destination from a stage.
+type DestinationDetachCmd struct {
+	Name string `arg:"" help:"Destination name or ID."`
+}
+
+func (c *DestinationDetachCmd) Run(ctx *Context) error {
+	if err := ctx.requireAuth(); err != nil {
+		return err
+	}
+	if err := ctx.resolveStage(); err != nil {
+		return err
+	}
+
+	destID, err := resolveDestinationByNameOrID(ctx, c.Name)
+	if err != nil {
+		return err
+	}
+
+	stageClient := apiv1connect.NewStageServiceClient(ctx.HTTPClient, ctx.APIURL)
+	req := connect.NewRequest(&apiv1.DetachStageDestinationRequest{
+		StageId:       ctx.StageID,
+		DestinationId: destID,
+	})
+	req.Header().Set("Authorization", ctx.authHeader())
+	if _, err := stageClient.DetachStageDestination(context.Background(), req); err != nil {
+		return err
+	}
+
+	if ctx.JSON {
+		printJSON(DestDetachResponse{StageID: ctx.StageID, DestinationID: destID})
+		return nil
+	}
+
+	printText("Destination %q detached from stage.", c.Name)
 	return nil
 }
