@@ -19,7 +19,8 @@ func dbListLiveStages(db *sql.DB) ([]stageRow, error) {
 	rows, err := db.Query(`
 		SELECT `+stageColumns+`
 		FROM stages s
-		WHERE EXISTS (
+		WHERE s.status = 'running'
+		AND EXISTS (
 			SELECT 1 FROM rtmp_sessions rs
 			WHERE rs.stage_id = s.id AND rs.ended_at IS NULL
 		)
@@ -42,7 +43,11 @@ func dbListLiveStages(db *sql.DB) ([]stageRow, error) {
 // dbStageIsLive returns true if a stage has an active RTMP session.
 func dbStageIsLive(db *sql.DB, stageID string) bool {
 	var exists bool
-	db.QueryRow(`SELECT EXISTS(SELECT 1 FROM rtmp_sessions WHERE stage_id=$1 AND ended_at IS NULL)`, stageID).Scan(&exists)
+	db.QueryRow(`SELECT EXISTS(
+		SELECT 1 FROM stages s
+		JOIN rtmp_sessions rs ON rs.stage_id = s.id
+		WHERE s.id=$1 AND s.status='running' AND rs.ended_at IS NULL
+	)`, stageID).Scan(&exists)
 	return exists
 }
 
