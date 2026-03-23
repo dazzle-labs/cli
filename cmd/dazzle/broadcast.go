@@ -10,50 +10,6 @@ import (
 	"github.com/dazzle-labs/cli/gen/api/v1/apiv1connect"
 )
 
-// BroadcastCmd groups broadcast subcommands.
-type BroadcastCmd struct {
-	Status   BroadcastStatusCmd   `cmd:"" aliases:"st" help:"Check streaming status."`
-	Info     BroadcastInfoCmd     `cmd:"" help:"Get current stream title and category."`
-	Title    BroadcastTitleCmd    `cmd:"" help:"Set the stream title (not supported for Restream)."`
-	Category BroadcastCategoryCmd `cmd:"" help:"Set the stream category or game (not supported for Restream)."`
-}
-
-// BroadcastStatusCmd shows broadcast status on the active stage.
-type BroadcastStatusCmd struct{}
-
-func (c *BroadcastStatusCmd) Run(ctx *Context) error {
-	if err := ctx.requireAuth(); err != nil {
-		return err
-	}
-	if err := ctx.resolveStage(); err != nil {
-		return err
-	}
-
-	client := apiv1connect.NewRuntimeServiceClient(ctx.HTTPClient, ctx.APIURL)
-	req := connect.NewRequest(&apiv1.GetStageStatsRequest{StageId: ctx.StageID})
-	req.Header().Set("Authorization", ctx.authHeader())
-	resp, err := client.GetStageStats(context.Background(), req)
-	if err != nil {
-		return err
-	}
-
-	s := resp.Msg
-	if ctx.JSON {
-		printJSON(BroadcastStatusResponse{
-			Active: s.Broadcasting,
-			FPS:    s.BroadcastFps,
-		})
-		return nil
-	}
-
-	if s.Broadcasting {
-		printText("Broadcast: active (fps=%.1f)", s.BroadcastFps)
-	} else {
-		printText("Broadcast: inactive")
-	}
-	return nil
-}
-
 // BroadcastInfoCmd gets the current stream title and category from the connected platform.
 type BroadcastInfoCmd struct{}
 
@@ -72,10 +28,10 @@ func (c *BroadcastInfoCmd) Run(ctx *Context) error {
 	if err != nil {
 		if connect.CodeOf(err) == connect.CodeUnimplemented {
 			if ctx.JSON {
-				printJSON(ErrorResponse{OK: false, Error: "bc info is not supported for this platform"})
+				printJSON(ErrorResponse{OK: false, Error: "info is not supported for this platform"})
 				return nil
 			}
-			printText("Error: bc info is not supported for this platform.")
+			printText("Error: info is not supported for this platform.")
 			return nil
 		}
 		return err

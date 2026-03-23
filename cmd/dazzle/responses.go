@@ -23,13 +23,7 @@ type SyncResponse struct {
 	Deleted int32 `json:"deleted"`
 }
 
-// BroadcastStatusResponse is returned by broadcast status.
-type BroadcastStatusResponse struct {
-	Active bool    `json:"active"`
-	FPS    float64 `json:"fps"`
-}
-
-// BroadcastInfoResponse is returned by broadcast info.
+// BroadcastInfoResponse is returned by info.
 type BroadcastInfoResponse struct {
 	Title    string `json:"title"`
 	Category string `json:"category"`

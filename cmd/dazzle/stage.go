@@ -28,8 +28,11 @@ type StageCmd struct {
 	Event      EventCmd      `cmd:"" aliases:"ev" help:"Send real-time data to the running page without reloading. Events are dispatched as DOM CustomEvents — use this for async updates from subagents, APIs, or other processes."`
 	Logs       LogsCmd       `cmd:"" name:"logs" aliases:"l" help:"Retrieve stage console logs."`
 	Screenshot ScreenshotCmd `cmd:"" name:"screenshot" aliases:"ss" help:"Capture a screenshot of the stage."`
-	Broadcast  BroadcastCmd  `cmd:"" aliases:"bc" help:"Broadcast to a streaming destination."`
-	Chat       ChatCmd       `cmd:"" help:"Read and send live chat messages."`
+	// Broadcast
+	Info     BroadcastInfoCmd     `cmd:"" help:"Get current stream title and category."`
+	Title    BroadcastTitleCmd    `cmd:"" help:"Set the stream title (not supported for Restream)."`
+	Category BroadcastCategoryCmd `cmd:"" help:"Set the stream category or game (not supported for Restream)."`
+	Chat     ChatCmd              `cmd:"" help:"Read and send live chat messages."`
 }
 
 // resolveStageByNameOrID tries to resolve a stage name or ID to its ID.
@@ -286,6 +289,21 @@ func (c *StageStatusCmd) Run(ctx *Context) error {
 	}
 
 	stage := resp.Msg.Stage
+
+	// Fetch broadcast stats if stage is running.
+	var broadcasting bool
+	var broadcastFPS float64
+	if stage.Status == "running" {
+		rtClient := apiv1connect.NewRuntimeServiceClient(ctx.HTTPClient, ctx.APIURL)
+		statsReq := connect.NewRequest(&apiv1.GetStageStatsRequest{StageId: ctx.StageID})
+		statsReq.Header().Set("Authorization", ctx.authHeader())
+		statsResp, err := rtClient.GetStageStats(context.Background(), statsReq)
+		if err == nil {
+			broadcasting = statsResp.Msg.Broadcasting
+			broadcastFPS = statsResp.Msg.BroadcastFps
+		}
+	}
+
 	if ctx.JSON {
 		printJSON(stage)
 		return nil
@@ -294,6 +312,13 @@ func (c *StageStatusCmd) Run(ctx *Context) error {
 	printText("Name:   %s\nStatus: %s", stage.Name, stage.Status)
 	if stage.WatchUrl != "" {
 		printText("Watch:  %s", stage.WatchUrl)
+	}
+	if stage.Status == "running" {
+		if broadcasting {
+			printText("Broadcast: active (fps=%.1f)", broadcastFPS)
+		} else {
+			printText("Broadcast: inactive")
+		}
 	}
 	return nil
 }

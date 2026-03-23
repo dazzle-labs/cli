@@ -14,7 +14,6 @@ type data struct {
 	HelpStage           string
 	HelpStageSync       string
 	HelpStageScreenshot string
-	HelpStageBroadcast  string
 	HelpStageEvent      string
 	HelpDestination     string
 }
@@ -42,7 +41,6 @@ func main() {
 		HelpStage:           help(bin.Name(), "stage"),
 		HelpStageSync:       help(bin.Name(), "stage", "sync"),
 		HelpStageScreenshot: help(bin.Name(), "stage", "screenshot"),
-		HelpStageBroadcast:  help(bin.Name(), "stage", "broadcast"),
 		HelpStageEvent:      help(bin.Name(), "stage", "event"),
 		HelpDestination:     help(bin.Name(), "destination"),
 	}

@@ -55,9 +55,8 @@ dazzle stage sync ./my-app --watch
 dazzle stage screenshot -o preview.png
 
 # Add a broadcast destination and go live
-dazzle destination create
-dazzle destination set my-destination
-dazzle stage broadcast on
+dazzle destination add
+dazzle destination attach my-destination
 ```
 
 ## Commands
@@ -82,12 +81,6 @@ dazzle stage broadcast on
 
 ```
 {{ .HelpStageScreenshot }}
-```
-
-#### `stage broadcast` subcommands
-
-```
-{{ .HelpStageBroadcast }}
 ```
 
 #### `stage event` subcommands
