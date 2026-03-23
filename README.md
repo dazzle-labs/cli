@@ -55,9 +55,8 @@ dazzle stage sync ./my-app --watch
 dazzle stage screenshot -o preview.png
 
 # Add a broadcast destination and go live
-dazzle destination create
-dazzle destination set my-destination
-dazzle stage broadcast on
+dazzle destination add
+dazzle destination attach my-destination
 ```
 
 ## Commands
@@ -121,14 +120,10 @@ Commands:
                                    etc.) without re-syncing or reloading.
   stage (s) logs (l)               Retrieve stage console logs.
   stage (s) screenshot (ss)        Capture a screenshot of the stage.
-  stage (s) broadcast (bc) status (st)
-                                   Check streaming status.
-  stage (s) broadcast (bc) info    Get current stream title and category.
-  stage (s) broadcast (bc) title
-                                   Set the stream title (not supported for
+  stage (s) info                   Get current stream title and category.
+  stage (s) title                  Set the stream title (not supported for
                                    Restream).
-  stage (s) broadcast (bc) category
-                                   Set the stream category or game (not
+  stage (s) category               Set the stream category or game (not
                                    supported for Restream).
   stage (s) chat send              Send a message to live chat (not supported
                                    for Restream).
@@ -179,14 +174,10 @@ Commands:
                                    etc.) without re-syncing or reloading.
   stage (s) logs (l)               Retrieve stage console logs.
   stage (s) screenshot (ss)        Capture a screenshot of the stage.
-  stage (s) broadcast (bc) status (st)
-                                   Check streaming status.
-  stage (s) broadcast (bc) info    Get current stream title and category.
-  stage (s) broadcast (bc) title
-                                   Set the stream title (not supported for
+  stage (s) info                   Get current stream title and category.
+  stage (s) title                  Set the stream title (not supported for
                                    Restream).
-  stage (s) broadcast (bc) category
-                                   Set the stream category or game (not
+  stage (s) category               Set the stream category or game (not
                                    supported for Restream).
   stage (s) chat send              Send a message to live chat (not supported
                                    for Restream).
@@ -227,31 +218,6 @@ Flags:
       --api-url=STRING    API URL ($DAZZLE_API_URL).
 
   -o, --out=STRING        Output file path (default: temp file).
-```
-
-#### `stage broadcast` subcommands
-
-```
-Usage: dazzle stage (s) broadcast (bc) <command>
-
-Broadcast to a streaming destination.
-
-Flags:
-  -h, --help              Show context-sensitive help.
-  -j, --json              Output as JSON.
-  -s, --stage=STRING      Stage name or ID ($DAZZLE_STAGE).
-      --api-url=STRING    API URL ($DAZZLE_API_URL).
-
-Commands:
-  stage (s) broadcast (bc) status (st)
-                                   Check streaming status.
-  stage (s) broadcast (bc) info    Get current stream title and category.
-  stage (s) broadcast (bc) title
-                                   Set the stream title (not supported for
-                                   Restream).
-  stage (s) broadcast (bc) category
-                                   Set the stream category or game (not
-                                   supported for Restream).
 ```
 
 #### `stage event` subcommands
