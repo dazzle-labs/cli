@@ -124,6 +124,11 @@ func (mgr *Manager) handleCreateCliSession(w http.ResponseWriter, r *http.Reques
 			return
 		}
 
+		if body.Platform == "youtube" {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "YouTube integration is coming soon"})
+			return
+		}
+
 		// Validate platform OAuth is configured
 		if _, ok := mgr.oauth.configs[body.Platform]; !ok {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": body.Platform + " OAuth is not configured on this server"})

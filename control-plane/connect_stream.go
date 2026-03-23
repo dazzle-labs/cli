@@ -34,6 +34,9 @@ func (s *rtmpDestinationServer) CreateStreamDestination(ctx context.Context, req
 	if platform == "" {
 		platform = "custom"
 	}
+	if platform == "youtube" {
+		return nil, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("YouTube integration is coming soon"))
+	}
 
 	encKey, err := encryptString(s.mgr.encryptionKey, msg.StreamKey)
 	if err != nil {
