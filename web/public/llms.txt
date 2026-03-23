@@ -8,6 +8,7 @@ Dazzle gives you cloud stages — isolated browser environments that render and 
 ## Docs
 
 - [Content Authoring Guide](https://dazzle.fm/guide.md): Environment specs, page setup, performance tiers (GPU vs CPU), what works at 30 FPS, what to avoid, design tips for 720p streaming, persistence, live events.
+- [Stream Examples](https://github.com/dazzle-labs/stream-examples): Open-source example stages, ready to sync and stream.
 - [Full LLM Reference](https://dazzle.fm/llms-full.txt): Complete getting started walkthrough, CLI reference, authentication, content guide, and typical workflow — all in one file.
 
 ## Quick Start

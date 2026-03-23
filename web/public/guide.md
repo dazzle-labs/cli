@@ -2,7 +2,7 @@
 
 Your content runs in a cloud browser captured at 1280x720 @ 30 fps and streamed
 to platforms like Twitch, Kick, and YouTube. This guide helps you write content
-that looks great on stream.
+that looks great on stream. For ready-to-use examples, see [stream-examples](https://github.com/dazzle-labs/stream-examples).
 
 Dazzle stages come in two tiers:
 

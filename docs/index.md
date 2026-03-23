@@ -18,6 +18,10 @@
 
 ---
 
+## External Resources
+
+- **[stream-examples](https://github.com/dazzle-labs/stream-examples)** — Open-source example stages, ready to sync and stream
+
 ## Quick Reference by Part
 
 ### cli (Go CLI — git submodule)

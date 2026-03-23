@@ -71,6 +71,8 @@ mkdir my-stage && cat > my-stage/index.html << 'EOF'
 EOF
 ```
 
+For more examples, see https://github.com/dazzle-labs/stream-examples
+
 ### 5. Push content
 
 Sync a local directory to your stage:
