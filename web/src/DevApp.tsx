@@ -9,6 +9,8 @@ import { Dashboard } from "./pages/Dashboard.js";
 import { StageDetail } from "./pages/StageDetail.js";
 import { StreamConfig } from "./pages/StreamConfig.js";
 import { ApiKeys } from "./pages/ApiKeys.js";
+import { TermsOfService } from "./pages/TermsOfService.js";
+import { PrivacyPolicy } from "./pages/PrivacyPolicy.js";
 import { TooltipProvider } from "./components/ui/tooltip.js";
 
 export function DevApp({ devToken }: { devToken: string }) {
@@ -18,18 +20,27 @@ export function DevApp({ devToken }: { devToken: string }) {
 
   return (
     <BrowserRouter>
-      <TooltipProvider>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<LivePage />} />
-            <Route path="/stages" element={<Dashboard />} />
-            <Route path="/stage/:stageId" element={<StageDetail />} />
-            <Route path="/destinations" element={<StreamConfig />} />
-            <Route path="/api-keys" element={<ApiKeys />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Layout>
-      </TooltipProvider>
+      <Routes>
+        <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route
+          path="*"
+          element={
+            <TooltipProvider>
+              <Layout>
+                <Routes>
+                  <Route path="/" element={<LivePage />} />
+                  <Route path="/stages" element={<Dashboard />} />
+                  <Route path="/stage/:stageId" element={<StageDetail />} />
+                  <Route path="/destinations" element={<StreamConfig />} />
+                  <Route path="/api-keys" element={<ApiKeys />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </Layout>
+            </TooltipProvider>
+          }
+        />
+      </Routes>
     </BrowserRouter>
   );
 }

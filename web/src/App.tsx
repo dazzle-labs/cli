@@ -18,6 +18,8 @@ import { PublicDocs } from "./pages/PublicDocs.js";
 import { LandingPage } from "./pages/LandingPage.js";
 import { WatchPage } from "./pages/WatchPage.js";
 import { CliAuth } from "./pages/CliAuth.js";
+import { TermsOfService } from "./pages/TermsOfService.js";
+import { PrivacyPolicy } from "./pages/PrivacyPolicy.js";
 import { TooltipProvider } from "./components/ui/tooltip.js";
 
 function AuthSetup() {
@@ -95,6 +97,8 @@ export function App() {
         <Route path="/watch/:slug" element={<WatchPage />} />
         <Route path="/auth/cli/:sessionId" element={<CliAuth />} />
         <Route path="/docs" element={<DocsRouter />} />
+        <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="*" element={<AuthenticatedApp />} />
       </Routes>
     </BrowserRouter>

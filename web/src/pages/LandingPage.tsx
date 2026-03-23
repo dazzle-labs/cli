@@ -491,6 +491,12 @@ export function LandingPage() {
           <Link to="/docs" className="hover:text-zinc-400 transition-colors">
             Docs
           </Link>
+          <Link to="/terms" className="hover:text-zinc-400 transition-colors">
+            Terms
+          </Link>
+          <Link to="/privacy" className="hover:text-zinc-400 transition-colors">
+            Privacy
+          </Link>
           <a
             href="/llms.txt"
             target="_blank"
