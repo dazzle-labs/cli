@@ -39,7 +39,9 @@ export const cli: Record<string, CLICommand> = {
   help:               cmd("--help"),
   stageHelp:          cmd("stage --help"),
   stageSyncHelp:      cmd("stage sync --help"),
-  broadcastHelp:      cmd("stage broadcast --help"),  // kept for info/title/category subcommands
+  stageInfo:          cmd("stage info"),
+  stageTitle:         cmd("stage title", '"My Stream Title"'),
+  stageCategory:      cmd("stage category", '"Just Chatting"'),
   version:            cmd("version"),
   guide:              cmd("guide"),
 };

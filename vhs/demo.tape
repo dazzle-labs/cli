@@ -83,7 +83,10 @@ Sleep 2.5s
 
 # ── Act 5: Go live ──
 
-Type "dazzle stage broadcast on"
+Type "dazzle destination attach my-twitch"
+Enter
+Sleep 1.5s
+Type "dazzle stage status"
 Enter
 Sleep 2s
 

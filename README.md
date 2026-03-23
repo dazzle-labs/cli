@@ -135,7 +135,7 @@ make prod/status    # Show prod cluster nodes and pods
 
 ## Key Capabilities
 
-- **CLI (`dazzle`)** — primary developer/agent interface: `dazzle stage up`, `dazzle stage sync`, `dazzle stage screenshot`, `dazzle stage broadcast`, etc.
+- **CLI (`dazzle`)** — primary developer/agent interface: `dazzle stage up`, `dazzle stage sync`, `dazzle stage screenshot`, `dazzle stage info`, etc.
 - **Web UI** — dashboard for stage monitoring, API key management, stream destination configuration, and account settings
 - **Stage lifecycle** — browser pods move through states: `inactive → starting → running → stopping`. Bring stages up/down via CLI or Web UI; pods are ephemeral, DB records persist.
 - **CDP access** — full Chrome DevTools Protocol proxied through control plane at `/stage/<stage-id>/cdp`

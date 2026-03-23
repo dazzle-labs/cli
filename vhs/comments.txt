@@ -9,4 +9,4 @@ send data to the page — no re-deploy needed
 
 localStorage survives stage restarts
 
-go live
+attach a destination and go live
