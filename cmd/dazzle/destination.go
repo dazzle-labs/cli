@@ -31,7 +31,6 @@ var oauthPlatforms = []struct {
 	Display string
 }{
 	{"twitch", "Twitch"},
-	{"youtube", "YouTube"},
 	{"kick", "Kick"},
 	{"restream", "Restream"},
 }
@@ -98,7 +97,7 @@ func (c *DestinationListCmd) Run(ctx *Context) error {
 
 // DestinationAddCmd adds a new streaming destination.
 type DestinationAddCmd struct {
-	Platform  string `help:"Platform (twitch, youtube, kick, restream, custom)." name:"platform"`
+	Platform  string `help:"Platform (twitch, kick, restream, custom)." name:"platform"`
 	Name      string `help:"Destination name (custom platform only)." name:"name"`
 	RtmpURL   string `help:"RTMP URL (custom platform only)." name:"rtmp-url"`
 	StreamKey string `help:"Stream key (custom platform only)." name:"stream-key"`
@@ -110,6 +109,10 @@ func (c *DestinationAddCmd) Run(ctx *Context) error {
 	}
 
 	platform := strings.ToLower(c.Platform)
+
+	if platform == "youtube" {
+		return fmt.Errorf("YouTube integration is coming soon. Use a custom RTMP destination for YouTube in the meantime.")
+	}
 
 	// If no platform specified, show interactive picker
 	if platform == "" {
