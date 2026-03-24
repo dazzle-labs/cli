@@ -10,6 +10,7 @@ node_modules/
 !**/.yarn/versions
 .playwright-mcp/
 *.png
+!web/public/og.png
 .DS_Store
 .env
 agent/.env

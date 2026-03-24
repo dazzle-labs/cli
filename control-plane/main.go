@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io"
 	"log"
 	"net"
@@ -110,6 +111,10 @@ type Manager struct {
 	gpuStageController *controller.GPUStageController
 	runpodClient       *runpod.Client
 	agentHTTPClient    *http.Client // mTLS client for all sidecar/agent RPC
+
+	// HTML template for index.html with OG meta tag injection
+	indexTmpl        *template.Template
+	defaultIndexHTML []byte // pre-rendered index.html with default meta
 }
 
 
@@ -261,6 +266,15 @@ func NewManager() (*Manager, error) {
 	m.oauth = newOAuthHandler(m)
 	if platforms := m.oauth.availablePlatforms(); len(platforms) > 0 {
 		log.Printf("OAuth configured for: %v", platforms)
+	}
+
+	// Parse Vite-emitted index.html.tmpl (contains hashed asset tags + Go template placeholders)
+	indexTmpl, defaultHTML, err := initIndexTemplate("web")
+	if err != nil {
+		log.Printf("WARN: index template init: %v (OG meta injection disabled)", err)
+	} else {
+		m.indexTmpl = indexTmpl
+		m.defaultIndexHTML = defaultHTML
 	}
 
 	if err := m.recoverStages(); err != nil {
@@ -1705,7 +1719,9 @@ func corsMiddleware(next http.Handler) http.Handler {
 
 // spaFileServer serves the web SPA, falling back to index.html for client-side routes.
 // Hashed assets (under /assets/) get long-lived cache headers; index.html is never cached.
-func spaFileServer(dir string) http.Handler {
+// If defaultHTML is non-nil, it is served instead of the static index.html (pre-rendered
+// from the Go template with default OG meta tags).
+func spaFileServer(dir string, defaultHTML []byte) http.Handler {
 	fs := http.Dir(dir)
 	fileServer := http.FileServer(fs)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -1726,6 +1742,11 @@ func spaFileServer(dir string) http.Handler {
 
 		// Serve index.html (directly or as SPA fallback) — never cache
 		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+		if defaultHTML != nil {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.Write(defaultHTML)
+			return
+		}
 		r.URL.Path = "/"
 		fileServer.ServeHTTP(w, r)
 	})
@@ -1875,7 +1896,7 @@ func main() {
 	//   /stage/<uuid>/cdp           — CDP WebSocket proxy and HTTP discovery
 	//   /stage/<uuid>/cdp/json/*    — CDP discovery (URL-rewritten)
 	//   /stage/<uuid>/*             — reverse proxy to streamer pod
-	spaHandler := spaFileServer("web")
+	spaHandler := spaFileServer("web", mgr.defaultIndexHTML)
 	mux.HandleFunc("/stage/", func(w http.ResponseWriter, r *http.Request) {
 		// Extract the third path segment: /stage/<id-or-slug>/<segment>/...
 		// parts[0]="", parts[1]="stage", parts[2]="<id-or-slug>", parts[3]="<segment>", ...
@@ -1944,7 +1965,7 @@ func main() {
 	})
 
 	// Web SPA (fallback route)
-	mux.Handle("/", spaFileServer("web"))
+	mux.Handle("/", spaFileServer("web", mgr.defaultIndexHTML))
 
 	// Internal server for cluster-only callbacks (not exposed via ingress).
 	internalMux := http.NewServeMux()

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{.Title}}</title>
+    <meta name="description" content="{{.Description}}" />
+    <meta property="og:title" content="{{.OGTitle}}" />
+    <meta property="og:description" content="{{.OGDescription}}" />
+    <meta property="og:image" content="{{.OGImage}}" />
+    <meta property="og:url" content="{{.OGUrl}}" />
+    <meta property="og:type" content="{{.OGType}}" />
+    <meta name="twitter:card" content="{{.TwitterCard}}" />
+    <meta name="twitter:title" content="{{.OGTitle}}" />
+    <meta name="twitter:description" content="{{.OGDescription}}" />
+    <meta name="twitter:image" content="{{.OGImage}}" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    {{.ViteHead}}
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

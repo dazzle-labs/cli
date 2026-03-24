@@ -7,6 +7,7 @@ RUN corepack enable && yarn install --immutable
 COPY web/src/ ./src/
 COPY web/public/ ./public/
 COPY web/index.html web/tsconfig.json web/vite.config.ts ./
+COPY control-plane/index.html.tmpl ../control-plane/index.html.tmpl
 RUN yarn build
 
 FROM golang:1.25-alpine AS builder

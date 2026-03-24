@@ -1,14 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
 	"fmt"
+	"html/template"
 	"log"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"os"
 	"strings"
 )
 
@@ -313,73 +314,93 @@ func (m *Manager) handleWatchThumbnail(w http.ResponseWriter, r *http.Request, s
 	proxy.ServeHTTP(w, r)
 }
 
-// serveWatchPage serves the SPA index.html with OG meta tags injected for social media crawlers.
-func (m *Manager) serveWatchPage(w http.ResponseWriter, r *http.Request, slug string) {
-	// Read the built index.html
-	indexBytes, err := os.ReadFile("web/index.html")
+// pageMeta holds template data for rendering index.html.tmpl with dynamic meta tags.
+// Vite bakes the asset tags directly into the template at build time, so this
+// struct only contains the dynamic metadata fields.
+type pageMeta struct {
+	Title         string
+	Description   string
+	OGTitle       string
+	OGDescription string
+	OGImage       string
+	OGUrl         string
+	OGType        string
+	TwitterCard   string
+}
+
+const (
+	defaultTitle       = "Dazzle"
+	defaultDescription = "A cloud stage for your AI agent, live on Twitch, YouTube, or a shareable link."
+	defaultOGImage     = "https://dazzle.fm/og.png"
+)
+
+func defaultPageMeta() pageMeta {
+	return pageMeta{
+		Title:         defaultTitle,
+		Description:   defaultDescription,
+		OGTitle:       defaultTitle,
+		OGDescription: defaultDescription,
+		OGImage:       defaultOGImage,
+		OGUrl:         "https://dazzle.fm",
+		OGType:        "website",
+		TwitterCard:   "summary_large_image",
+	}
+}
+
+// initIndexTemplate parses the Vite-emitted index.html.tmpl (which already
+// contains the hashed asset tags) and pre-renders a default page for SPA routes.
+func initIndexTemplate(webDir string) (*template.Template, []byte, error) {
+	tmpl, err := template.ParseFiles(webDir + "/index.html.tmpl")
 	if err != nil {
+		return nil, nil, fmt.Errorf("parsing index.html.tmpl: %w", err)
+	}
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, defaultPageMeta()); err != nil {
+		return nil, nil, fmt.Errorf("rendering default index: %w", err)
+	}
+	return tmpl, buf.Bytes(), nil
+}
+
+// serveWatchPage serves the SPA index.html with OG meta tags for social media crawlers.
+func (m *Manager) serveWatchPage(w http.ResponseWriter, r *http.Request, slug string) {
+	if m.indexTmpl == nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
-	html := string(indexBytes)
 
-	// Try to look up stage metadata for OG tags
-	var title, category, ogImage string
+	meta := defaultPageMeta()
+	meta.OGType = "video.other"
+	meta.OGUrl = r.URL.Path
+
+	// Look up stage metadata
 	if slug != "" && m.db != nil {
 		if row, err := dbLookupStageBySlug(m.db, slug); err == nil && row != nil {
-			title = row.Name
+			title := row.Name
 			if row.StreamTitle.Valid && row.StreamTitle.String != "" {
 				title = row.StreamTitle.String
 			}
-			if row.StreamCategory.Valid {
-				category = row.StreamCategory.String
+			meta.Title = title + " — Dazzle"
+			meta.OGTitle = title
+			meta.TwitterCard = "summary_large_image"
+
+			description := "Live on Dazzle"
+			if row.StreamCategory.Valid && row.StreamCategory.String != "" {
+				description = row.StreamCategory.String + " — Live on Dazzle"
 			}
-			ogImage = fmt.Sprintf("/watch/%s/thumbnail.png", slug)
+			meta.Description = description
+			meta.OGDescription = description
+			meta.OGImage = fmt.Sprintf("/watch/%s/thumbnail.png", slug)
 		}
 	}
 
-	if title == "" {
-		title = "Dazzle"
+	var buf bytes.Buffer
+	if err := m.indexTmpl.Execute(&buf, meta); err != nil {
+		log.Printf("ERROR: rendering watch page: %v", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
 	}
-	description := "Live on Dazzle"
-	if category != "" {
-		description = category + " — Live on Dazzle"
-	}
-
-	// Build OG meta tags
-	ogTags := fmt.Sprintf(`<meta property="og:title" content="%s" />
-    <meta property="og:description" content="%s" />
-    <meta property="og:type" content="video.other" />
-    <meta property="og:url" content="%s" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="%s" />
-    <meta name="twitter:description" content="%s" />`,
-		htmlEscape(title), htmlEscape(description),
-		htmlEscape(r.URL.Path),
-		htmlEscape(title), htmlEscape(description))
-
-	if ogImage != "" {
-		ogTags += fmt.Sprintf(`
-    <meta property="og:image" content="%s" />
-    <meta name="twitter:image" content="%s" />`, htmlEscape(ogImage), htmlEscape(ogImage))
-	}
-
-	// Also update <title>
-	html = strings.Replace(html, "<title>Dazzle</title>", "<title>"+htmlEscape(title)+" — Dazzle</title>", 1)
-
-	// Inject OG tags after <head>
-	html = strings.Replace(html, "<head>", "<head>\n    "+ogTags, 1)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
-	w.Write([]byte(html))
-}
-
-// htmlEscape escapes HTML special characters for safe inclusion in HTML attributes.
-func htmlEscape(s string) string {
-	s = strings.ReplaceAll(s, "&", "&amp;")
-	s = strings.ReplaceAll(s, "<", "&lt;")
-	s = strings.ReplaceAll(s, ">", "&gt;")
-	s = strings.ReplaceAll(s, `"`, "&quot;")
-	return s
+	w.Write(buf.Bytes())
 }
