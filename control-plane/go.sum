@@ -32,6 +32,8 @@ github.com/dazzle-labs/cli v0.1.0-beta.40 h1:nVdAutLs/+AINtroUFIwU1Y10xAvib5e2KN
 github.com/dazzle-labs/cli v0.1.0-beta.40/go.mod h1:AuphucsmRXt72WkppSaTGPmLaD+F1fJkCwkhEEsX+Hc=
 github.com/dazzle-labs/cli v0.1.0-beta.40.0.20260323195025-1c2d8e70b34c h1:aqtwyvJ/MHBFBCayLxGVQp3D6uulu7Ns4IbGGn9KsOw=
 github.com/dazzle-labs/cli v0.1.0-beta.40.0.20260323195025-1c2d8e70b34c/go.mod h1:AuphucsmRXt72WkppSaTGPmLaD+F1fJkCwkhEEsX+Hc=
+github.com/dazzle-labs/cli v0.1.0-beta.41 h1:j/YXg/iNlkfIZGxs6lxGJFPevbsdyubaAwJ5mETC5OA=
+github.com/dazzle-labs/cli v0.1.0-beta.41/go.mod h1:AuphucsmRXt72WkppSaTGPmLaD+F1fJkCwkhEEsX+Hc=
 github.com/dazzle-labs/cli v0.1.0 h1:N6pDNYuBAigTCmoiFyG1sqITOIvBMsOVIj6W1F5zWn0=
 github.com/dazzle-labs/cli v0.1.0/go.mod h1:AuphucsmRXt72WkppSaTGPmLaD+F1fJkCwkhEEsX+Hc=
 github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=
