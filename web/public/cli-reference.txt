@@ -62,14 +62,10 @@ Commands:
                                    etc.) without re-syncing or reloading.
   stage (s) logs (l)               Retrieve stage console logs.
   stage (s) screenshot (ss)        Capture a screenshot of the stage.
-  stage (s) broadcast (bc) status (st)
-                                   Check streaming status.
-  stage (s) broadcast (bc) info    Get current stream title and category.
-  stage (s) broadcast (bc) title
-                                   Set the stream title (not supported for
+  stage (s) info                   Get current stream title and category.
+  stage (s) title                  Set the stream title (not supported for
                                    Restream).
-  stage (s) broadcast (bc) category
-                                   Set the stream category or game (not
+  stage (s) category               Set the stream category or game (not
                                    supported for Restream).
   stage (s) chat send              Send a message to live chat (not supported
                                    for Restream).
