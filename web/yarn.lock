@@ -403,31 +403,31 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@clerk/localizations@npm:^4.1.0":
-  version: 4.1.0
-  resolution: "@clerk/localizations@npm:4.1.0"
+"@clerk/localizations@npm:^4.2.3":
+  version: 4.2.3
+  resolution: "@clerk/localizations@npm:4.2.3"
   dependencies:
-    "@clerk/shared": "npm:^4.1.0"
-  checksum: 10/edf562eaa08bb870135c46e157a71e729842d0b4fb652675ffe7181635e45d72fc35718412544dc12ec5d5ad786a094a909f12739335c6c61a18a034274d8d96
+    "@clerk/shared": "npm:^4.3.2"
+  checksum: 10/3b84304b885a002ec970118d52ae30a3a9d93d9fa55d0072b5d6aa507c3fa5fabc1c1c76651ddd9f6ae1ae35cd69d9c42a784192b1d2b7847f97d4b93827566e
   languageName: node
   linkType: hard
 
-"@clerk/react@npm:^6.0.1":
-  version: 6.0.2
-  resolution: "@clerk/react@npm:6.0.2"
+"@clerk/react@npm:^6.1.2":
+  version: 6.1.2
+  resolution: "@clerk/react@npm:6.1.2"
   dependencies:
-    "@clerk/shared": "npm:^4.1.0"
+    "@clerk/shared": "npm:^4.3.2"
     tslib: "npm:2.8.1"
   peerDependencies:
     react: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
     react-dom: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
-  checksum: 10/329be11746fe333f2f0d570317b113f00f6c4920070792e480f8ce25093d595c3a4f5377b6e1c2f5d2cdfd89022be58c1381741414740d9f3a90e348367c5859
+  checksum: 10/88a454976f80c025e4ff14a0a73ba0178f55f159d8e6e6536a251493e6a1663784d584ddfb5ab56ae622de305c877760a892a2332e528b52fb63f2278e912105
   languageName: node
   linkType: hard
 
-"@clerk/shared@npm:^4.1.0":
-  version: 4.1.0
-  resolution: "@clerk/shared@npm:4.1.0"
+"@clerk/shared@npm:^4.3.2":
+  version: 4.3.2
+  resolution: "@clerk/shared@npm:4.3.2"
   dependencies:
     "@tanstack/query-core": "npm:5.90.16"
     dequal: "npm:2.0.3"
@@ -442,16 +442,16 @@ __metadata:
       optional: true
     react-dom:
       optional: true
-  checksum: 10/ba5628610c64cb3a6bbfb9215413c92d1949e565e2aaa1860c0c51cf26dad9a25e7fce6f242c3921d300247ae78df330bac38fa2ea42ccb01b3d5378372059b0
+  checksum: 10/791a36f71a6f22a7e5b41d38de831026c3855cf59066b9449fc9c1ec5d80555657b72e67a7cc5b68b673a7a55b67b09c63bfdd39936995239250a441ac0d9448
   languageName: node
   linkType: hard
 
-"@clerk/ui@npm:^1.0.1":
-  version: 1.1.0
-  resolution: "@clerk/ui@npm:1.1.0"
+"@clerk/ui@npm:^1.2.3":
+  version: 1.2.3
+  resolution: "@clerk/ui@npm:1.2.3"
   dependencies:
-    "@clerk/localizations": "npm:^4.1.0"
-    "@clerk/shared": "npm:^4.1.0"
+    "@clerk/localizations": "npm:^4.2.3"
+    "@clerk/shared": "npm:^4.3.2"
     "@emotion/cache": "npm:11.11.0"
     "@emotion/react": "npm:11.11.1"
     "@floating-ui/react": "npm:0.27.12"
@@ -468,7 +468,7 @@ __metadata:
     qrcode.react: "npm:4.2.0"
     react: "npm:^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0"
     react-dom: "npm:^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0"
-  checksum: 10/2e7398cd174c35fc030af981f6588afdc16205ceeb9b7d53d442db088ecc62995979361e279264a777ec18c1cd20342ddd1d1d48c92a09815bed4f8e1bd6a024
+  checksum: 10/e49ae98262db7889b5473e0eb70c7aed2e4bc7eb59b68cc4ff5f9f85a7a565b61935bb2a493c38c09ef1508fc14f128d36c825dc57b1d8a0a834fbd1457eb9dd
   languageName: node
   linkType: hard
 
@@ -3787,8 +3787,8 @@ __metadata:
   dependencies:
     "@bufbuild/protobuf": "npm:^2.0.0"
     "@bufbuild/protoc-gen-es": "npm:^2.11.0"
-    "@clerk/react": "npm:^6.0.1"
-    "@clerk/ui": "npm:^1.0.1"
+    "@clerk/react": "npm:^6.1.2"
+    "@clerk/ui": "npm:^1.2.3"
     "@connectrpc/connect": "npm:^2.0.0"
     "@connectrpc/connect-web": "npm:^2.0.0"
     "@fontsource-variable/inter": "npm:^5.2.8"
