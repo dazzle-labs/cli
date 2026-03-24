@@ -110,8 +110,8 @@ dazzle dest add
 # Attach it to your stage (broadcasting starts automatically)
 dazzle dest attach my-destination
 
-# Check broadcast status
-dazzle s bc status
+# Check status (includes broadcast info)
+dazzle s status
 
 # Detach when done (stops broadcasting to that destination)
 dazzle dest detach my-destination
