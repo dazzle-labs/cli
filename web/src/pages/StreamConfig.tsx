@@ -240,7 +240,7 @@ export function StreamConfig() {
             const hoverColor = PLATFORM_HOVER_COLORS[platform] ?? "";
             return (
               <AnimatedListItem key={platform}>
-                <TouchTooltip content={comingSoon ? `${label} — Coming Soon` : `Connect ${label}`} contentClassName="sm:hidden">
+                <TouchTooltip content={comingSoon ? `${label} — Coming Soon. Use a custom RTMP destination to stream to ${label} in the meantime.` : `Connect ${label}`} contentClassName={comingSoon ? undefined : "sm:hidden"}>
                   <motion.div
                     whileHover={comingSoon ? undefined : { scale: 1.03 }}
                     whileTap={comingSoon ? undefined : { scale: 0.97 }}

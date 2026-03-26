@@ -125,7 +125,7 @@ func (mgr *Manager) handleCreateCliSession(w http.ResponseWriter, r *http.Reques
 		}
 
 		if body.Platform == "youtube" {
-			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "YouTube integration is coming soon"})
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "YouTube OAuth integration is coming soon — use a custom RTMP destination to stream to YouTube in the meantime"})
 			return
 		}
 
