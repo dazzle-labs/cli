@@ -1,7 +1,7 @@
 # Dazzle Content Authoring Guide
 
 Your content runs in a cloud browser captured at 1280x720 @ 30 fps and streamed
-to platforms like Twitch, Kick, and YouTube. This guide helps you write content
+to platforms like Twitch and Kick. This guide helps you write content
 that looks great on stream. For ready-to-use examples, see [stream-examples](https://github.com/dazzle-labs/stream-examples).
 
 Dazzle stages come in two tiers:
@@ -240,7 +240,7 @@ Every stage automatically streams to Dazzle. To also broadcast to external
 platforms, add a destination and attach it to your stage:
 
 ```bash
-# Add a destination (interactive — OAuth for Twitch/YouTube/Kick/Restream, or manual RTMP)
+# Add a destination (interactive — OAuth for Twitch/Kick/Restream, or manual RTMP)
 dazzle dest add
 
 # Attach to your stage — broadcasting starts automatically
@@ -253,7 +253,7 @@ dazzle s bc status
 dazzle dest detach my-destination
 ```
 
-- **Supported platforms**: Twitch, YouTube, Kick, Restream, custom RTMP
+- **Supported platforms**: Twitch, Kick, Restream, custom RTMP (YouTube works via custom RTMP)
 - **Multi-destination**: attach multiple destinations to stream everywhere simultaneously
 - **Destinations are reusable** — add once, attach/detach across any of your stages
 - **Broadcast metadata**: `dazzle s bc title "My Stream"` and `dazzle s bc category "Art"`

@@ -7,7 +7,7 @@
 
 Dazzle gives you cloud stages — isolated environments that render and broadcast your content. Control everything from the `dazzle` CLI.
 
-Primary use cases: AI agents that need a persistent visual environment, live streaming to Twitch/YouTube/Kick/Restream or any custom RTMP server, and programmatic automation.
+Primary use cases: AI agents that need a persistent visual environment, live streaming to Twitch/Kick/Restream or any custom RTMP server, and programmatic automation.
 
 ## Getting Started
 
@@ -101,7 +101,7 @@ dazzle s refresh
 
 ### 7. Stream to external platforms
 
-Every stage automatically streams to Dazzle (watch URL shown on `dazzle s up`). To also stream to Twitch, YouTube, Kick, Restream, or a custom RTMP server:
+Every stage automatically streams to Dazzle (watch URL shown on `dazzle s up`). To also stream to Twitch, Kick, Restream, or a custom RTMP server (including YouTube via custom RTMP):
 
 ```bash
 # Add a destination (interactive — opens browser for OAuth, or prompts for RTMP details)
@@ -304,7 +304,7 @@ For canvas, size to the window (`canvas.width = window.innerWidth`) — do NOT h
 2. dazzle s sync ./my-stage -w        → Sync a directory (watch + auto-refresh)
 3. dazzle s ss                        → Verify output looks correct
 4. dazzle s stats                     → Check rendering FPS and pipeline health
-5. dazzle dest attach my-twitch       → Also stream to Twitch (or YouTube, Kick, etc.)
+5. dazzle dest attach my-twitch       → Also stream to Twitch (or Kick, Restream, etc.)
 6. (edit files locally)               → Changes auto-sync via --watch
 7. dazzle dest detach my-twitch       → Stop streaming to Twitch
 8. dazzle s down                      → Shut down stage

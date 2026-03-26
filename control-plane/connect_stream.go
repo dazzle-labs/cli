@@ -34,6 +34,10 @@ func (s *rtmpDestinationServer) CreateStreamDestination(ctx context.Context, req
 	if platform == "" {
 		platform = "custom"
 	}
+	if platform == "youtube" {
+		return nil, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("YouTube OAuth integration is coming soon — use a custom RTMP destination to stream to YouTube in the meantime"))
+	}
+
 	encKey, err := encryptString(s.mgr.encryptionKey, msg.StreamKey)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
