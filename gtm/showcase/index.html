@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1280">
+<title>Dazzle Showcase</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 1280px;
+  height: 720px;
+  overflow: hidden;
+  background: #030306;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 50% 50%, rgba(10, 20, 40, 0.6) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.scene {
+  width: 100%;
+  height: 100%;
+  perspective: 1600px;
+  perspective-origin: 50% 48%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+
+.grid-wrapper {
+  transform-style: preserve-3d;
+  animation: orbit 15s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 392px);
+  grid-template-rows: repeat(2, 220px);
+  gap: 8px;
+  transform-style: preserve-3d;
+}
+
+.cell {
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(100, 200, 255, 0.08);
+  box-shadow:
+    0 2px 20px rgba(0, 0, 0, 0.6),
+    0 0 40px rgba(0, 150, 255, 0.04),
+    inset 0 0 1px rgba(255, 255, 255, 0.05);
+  transform: translateZ(0);
+}
+
+.cell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+  pointer-events: none;
+}
+
+.cell video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.reflection {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1200px;
+  height: 460px;
+  transform: translate(-50%, 232px) rotateX(180deg) scaleY(0.4);
+  opacity: 0.06;
+  filter: blur(8px);
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.reflection .grid {
+  gap: 8px;
+}
+
+.reflection .cell {
+  border: none;
+  box-shadow: none;
+}
+
+@keyframes orbit {
+  0% {
+    transform:
+      rotateX(14deg)
+      rotateY(-20deg)
+      rotateZ(1.5deg)
+      translateZ(-60px)
+      scale(0.86);
+  }
+  25% {
+    transform:
+      rotateX(7deg)
+      rotateY(-2deg)
+      rotateZ(0deg)
+      translateZ(-10px)
+      scale(0.93);
+  }
+  50% {
+    transform:
+      rotateX(2deg)
+      rotateY(14deg)
+      rotateZ(-0.8deg)
+      translateZ(10px)
+      scale(0.97);
+  }
+  75% {
+    transform:
+      rotateX(-4deg)
+      rotateY(8deg)
+      rotateZ(0.5deg)
+      translateZ(0px)
+      scale(0.95);
+  }
+  100% {
+    transform:
+      rotateX(14deg)
+      rotateY(-20deg)
+      rotateZ(1.5deg)
+      translateZ(-60px)
+      scale(0.86);
+  }
+}
+
+.ambient-glow {
+  position: fixed;
+  width: 600px;
+  height: 300px;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 0;
+  animation: glow-pulse 15s ease-in-out infinite;
+}
+
+.ambient-glow.a {
+  background: rgba(0, 180, 255, 0.15);
+  top: 20%;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.ambient-glow.b {
+  background: rgba(120, 0, 255, 0.1);
+  bottom: 10%;
+  right: 5%;
+  animation-delay: 2s;
+}
+
+@keyframes glow-pulse {
+  0% { opacity: 0.3; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0.3; }
+}
+</style>
+</head>
+<body>
+<div class="ambient-glow a"></div>
+<div class="ambient-glow b"></div>
+
+<div class="scene">
+  <div class="grid-wrapper">
+    <div class="grid">
+      <div class="cell"><video src="hyperstructure.mp4" autoplay muted loop playsinline></video></div>
+      <div class="cell"><video src="remotion.mp4" autoplay muted loop playsinline></video></div>
+      <div class="cell"><video src="club-claude.mp4" autoplay muted loop playsinline></video></div>
+      <div class="cell"><video src="hello-world.mp4" autoplay muted loop playsinline></video></div>
+      <div class="cell"><video src="wikipedia.mp4" autoplay muted loop playsinline></video></div>
+      <div class="cell"><video src="claude-code.mp4" autoplay muted loop playsinline></video></div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('video').forEach(video => {
+  video.play().catch(() => {})
+})
+</script>
+</body>
+</html>
