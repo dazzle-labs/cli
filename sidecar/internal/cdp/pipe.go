@@ -558,6 +558,11 @@ func (c *PipeClient) Navigate(url string) error {
 	return err
 }
 
+func (c *PipeClient) Reload() error {
+	_, err := c.sendSessionAndWait("Page.reload", map[string]any{"ignoreCache": true})
+	return err
+}
+
 func (c *PipeClient) DispatchEvent(eventName string, data any) bool {
 	c.mu.Lock()
 	connected := c.connected

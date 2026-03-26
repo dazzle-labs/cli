@@ -8,5 +8,6 @@ type CDP interface {
 	Evaluate(expression string) (string, error)
 	Screenshot() ([]byte, error)
 	Navigate(url string) error
+	Reload() error
 	DispatchEvent(eventName string, data any) bool
 }

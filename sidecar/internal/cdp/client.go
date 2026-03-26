@@ -347,6 +347,57 @@ func (c *Client) Navigate(url string) error {
 	}
 }
 
+// Reload reloads the current page via CDP Page.reload with cache bypass.
+// Preferred over Navigate for auto-refresh after sync since Page.navigate to
+// the same URL can be treated as a no-op by Chrome or serve from cache.
+func (c *Client) Reload() error {
+	httpURL := fmt.Sprintf("http://%s:%s/json", c.host, c.port)
+	resp, err := http.Get(httpURL)
+	if err != nil {
+		return fmt.Errorf("get tabs: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var tabs []struct {
+		WebSocketDebuggerURL string `json:"webSocketDebuggerUrl"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&tabs); err != nil || len(tabs) == 0 {
+		return fmt.Errorf("no browser tabs")
+	}
+
+	conn, _, err := websocket.DefaultDialer.Dial(tabs[0].WebSocketDebuggerURL, nil)
+	if err != nil {
+		return fmt.Errorf("dial: %w", err)
+	}
+	defer conn.Close()
+
+	conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+	conn.WriteJSON(map[string]any{
+		"id":     1,
+		"method": "Page.reload",
+		"params": map[string]any{"ignoreCache": true},
+	})
+
+	for {
+		_, raw, err := conn.ReadMessage()
+		if err != nil {
+			return fmt.Errorf("read: %w", err)
+		}
+		var msg struct {
+			ID    int `json:"id"`
+			Error *struct {
+				Message string `json:"message"`
+			} `json:"error"`
+		}
+		if json.Unmarshal(raw, &msg) == nil && msg.ID == 1 {
+			if msg.Error != nil {
+				return fmt.Errorf("reload: %s", msg.Error.Message)
+			}
+			return nil
+		}
+	}
+}
+
 // Screenshot captures a PNG screenshot via CDP Page.captureScreenshot.
 // Returns raw PNG bytes. Uses a dedicated connection to avoid interfering
 // with the event-listening connection in readLoop.

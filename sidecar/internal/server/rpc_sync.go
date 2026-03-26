@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -145,9 +146,13 @@ func (h *syncServer) Push(ctx context.Context, stream *connect.ClientStream[side
 	entryPoint := state.entryPoint
 	state.mu.Unlock()
 
-	// Auto-refresh Chrome after every successful sync
+	// Auto-refresh Chrome after every successful sync.
+	// Use Reload (Page.reload with ignoreCache) instead of Navigate — navigating
+	// to the same URL can be treated as a no-op by Chrome or served from cache.
 	if entryPoint != "" && len(entries) > 0 {
-		h.s.cdpClient.Navigate(h.s.cfg.ContentURL(entryPoint))
+		if err := h.s.cdpClient.Reload(); err != nil {
+			log.Printf("sync: auto-refresh failed: %v", err)
+		}
 	}
 
 	return connect.NewResponse(&sidecarv1.SyncPushResponse{
@@ -162,8 +167,7 @@ func (h *syncServer) Refresh(ctx context.Context, req *connect.Request[sidecarv1
 		return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("no entry point configured - run sync first"))
 	}
 
-	url := h.s.cfg.ContentURL(entry)
-	if err := h.s.cdpClient.Navigate(url); err != nil {
+	if err := h.s.cdpClient.Reload(); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
