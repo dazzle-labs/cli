@@ -430,6 +430,17 @@ func (c *GPUNodeController) handleReady(ctx context.Context, node *unstructured.
 				log.Printf("GPUNode %s: idle, drain window started (deletes at %s)", node.GetName(), drainAfter)
 				needsUpdate = true
 			} else if t, err := time.Parse(time.RFC3339, drainAfterStr); err == nil && time.Now().After(t) {
+				// Re-fetch to avoid racing with stage assignment that may have
+				// incremented currentStages or cancelled the drain window.
+				fresh, ferr := c.dynamicClient.Resource(gpuNodeGVR).Namespace(c.namespace).Get(ctx, node.GetName(), metav1.GetOptions{})
+				if ferr != nil {
+					return ferr
+				}
+				freshStatus := getNestedMap(fresh, "status")
+				if getNestedInt(freshStatus, "currentStages") > 0 || getNestedString(freshStatus, "drainAfter") == "" {
+					log.Printf("GPUNode %s: drain window expired but node is no longer idle, skipping delete", node.GetName())
+					return nil
+				}
 				log.Printf("GPUNode %s: idle drain window expired, deleting", node.GetName())
 				return c.dynamicClient.Resource(gpuNodeGVR).Namespace(c.namespace).Delete(ctx, node.GetName(), metav1.DeleteOptions{})
 			}
