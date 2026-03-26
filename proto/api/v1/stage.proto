@@ -39,11 +39,15 @@ message Stage {
   string slug = 14;                       // short URL slug for /watch/{slug}
   repeated StreamDestination destinations = 15;
   string watch_url = 16;
+  string visibility = 17;                 // "public" or "private"
+  string resolution = 18;                 // "720p" or "1080p"
 }
 
 message CreateStageRequest {
   string name = 1;
   repeated string capabilities = 2;
+  string visibility = 3;                  // "public" (default) or "private"
+  string resolution = 4;                  // "720p" (default) or "1080p"
 }
 
 message CreateStageResponse {
