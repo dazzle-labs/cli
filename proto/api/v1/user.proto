@@ -16,4 +16,26 @@ message GetProfileResponse {
   string name = 3;
   int32 stage_count = 4;
   int32 api_key_count = 5;
+  string plan = 6;           // "free", "starter", "pro"
+  PlanLimits limits = 7;
+  UsageSummary usage = 8;
+}
+
+message PlanLimits {
+  int32 max_stages = 1;
+  int32 max_active_cpu_stages = 2;
+  int32 max_active_gpu_stages = 3;
+  int32 max_external_destinations = 4;
+  int32 included_cpu_hours = 5;
+  int32 included_gpu_hours = 6;
+  bool watermark_required = 7;
+  bool can_use_1080p = 8;
+  bool can_use_private = 9;
+}
+
+message UsageSummary {
+  int32 cpu_hours_used = 1;         // this billing period
+  int32 gpu_hours_used = 2;         // this billing period
+  int32 cpu_hours_included = 3;
+  int32 gpu_hours_included = 4;
 }
