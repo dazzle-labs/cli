@@ -375,28 +375,37 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 		}), nil
 	}
 
-	// Enforce per-user active stage limits: 3 total, 1 GPU.
+	// Enforce per-user active stage limits from DB (fallback: 2 CPU, 1 GPU).
+	maxActiveCPU, maxActiveGPU := 2, 1
+	if s.mgr.db != nil {
+		var cpuLimit, gpuLimit int
+		if err := s.mgr.db.QueryRow("SELECT max_active_cpu_stages, max_active_gpu_stages FROM users WHERE id=$1", info.UserID).Scan(&cpuLimit, &gpuLimit); err == nil {
+			maxActiveCPU = cpuLimit
+			maxActiveGPU = gpuLimit
+		}
+	}
 	allStages, listErr := dbListStages(s.mgr.db, info.UserID)
 	if listErr != nil {
 		stageMu.Unlock()
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to check stage limits"))
 	}
-	activeCount, activeGPU := 0, 0
+	activeCPU, activeGPU := 0, 0
 	for _, st := range allStages {
 		if st.Status == "running" || st.Status == "starting" {
-			activeCount++
 			if hasCapability(st.Capabilities, "gpu") {
 				activeGPU++
+			} else {
+				activeCPU++
 			}
 		}
 	}
-	if activeCount >= 3 {
+	if isGPU && activeGPU >= maxActiveGPU {
 		stageMu.Unlock()
-		return nil, connect.NewError(connect.CodeResourceExhausted, fmt.Errorf("active stage limit reached (max 3)"))
+		return nil, connect.NewError(connect.CodeResourceExhausted, fmt.Errorf("active GPU stage limit reached (max %d)", maxActiveGPU))
 	}
-	if isGPU && activeGPU >= 1 {
+	if !isGPU && activeCPU >= maxActiveCPU {
 		stageMu.Unlock()
-		return nil, connect.NewError(connect.CodeResourceExhausted, fmt.Errorf("active GPU stage limit reached (max 1)"))
+		return nil, connect.NewError(connect.CodeResourceExhausted, fmt.Errorf("active CPU stage limit reached (max %d)", maxActiveCPU))
 	}
 
 	// Set DB status to starting before spawning goroutine so GetStage reflects it immediately
