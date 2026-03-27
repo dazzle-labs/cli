@@ -34,10 +34,18 @@ type Client struct {
 	ws       *websocket.Conn
 	msgID    atomic.Int64
 	logAdder LogAdder
+
+	// Pending response channels for sendAndWait (mirrors PipeClient pattern).
+	pendingMu sync.Mutex
+	pending   map[int64]chan json.RawMessage
 }
 
 func NewClient(host, port string) *Client {
-	c := &Client{host: host, port: port}
+	c := &Client{
+		host:    host,
+		port:    port,
+		pending: make(map[int64]chan json.RawMessage),
+	}
 	c.msgID.Store(100)
 	return c
 }
@@ -132,7 +140,28 @@ func (c *Client) readLoop() {
 			c.mu.Lock()
 			c.ws = nil
 			c.mu.Unlock()
+			// Drain pending waiters so they don't hang.
+			c.pendingMu.Lock()
+			for id, ch := range c.pending {
+				close(ch)
+				delete(c.pending, id)
+			}
+			c.pendingMu.Unlock()
 			return
+		}
+
+		// Check if this is a response to a pending sendAndWait call.
+		var resp struct {
+			ID int64 `json:"id"`
+		}
+		if json.Unmarshal(raw, &resp) == nil && resp.ID > 0 {
+			c.pendingMu.Lock()
+			ch, ok := c.pending[resp.ID]
+			c.pendingMu.Unlock()
+			if ok {
+				ch <- raw
+				continue
+			}
 		}
 
 		var msg struct {
@@ -144,6 +173,61 @@ func (c *Client) readLoop() {
 		}
 
 		c.handleCDPEvent(msg.Method, msg.Params)
+	}
+}
+
+// sendAndWait sends a CDP command on the persistent WebSocket and waits for
+// the matching response. Mirrors PipeClient.sendSessionAndWait for consistency.
+func (c *Client) sendAndWait(method string, params map[string]any) (json.RawMessage, error) {
+	c.mu.Lock()
+	ws := c.ws
+	c.mu.Unlock()
+	if ws == nil {
+		return nil, fmt.Errorf("not connected")
+	}
+
+	id := c.msgID.Add(1)
+	ch := make(chan json.RawMessage, 1)
+
+	c.pendingMu.Lock()
+	c.pending[id] = ch
+	c.pendingMu.Unlock()
+
+	defer func() {
+		c.pendingMu.Lock()
+		delete(c.pending, id)
+		c.pendingMu.Unlock()
+	}()
+
+	msg := map[string]any{
+		"id":     id,
+		"method": method,
+	}
+	if params != nil {
+		msg["params"] = params
+	}
+
+	if err := ws.WriteJSON(msg); err != nil {
+		return nil, fmt.Errorf("write: %w", err)
+	}
+
+	select {
+	case raw, ok := <-ch:
+		if !ok {
+			return nil, fmt.Errorf("connection closed")
+		}
+		var errMsg struct {
+			Error *struct {
+				Message string `json:"message"`
+			} `json:"error"`
+			Result json.RawMessage `json:"result"`
+		}
+		if err := json.Unmarshal(raw, &errMsg); err == nil && errMsg.Error != nil {
+			return nil, fmt.Errorf("%s", errMsg.Error.Message)
+		}
+		return errMsg.Result, nil
+	case <-time.After(10 * time.Second):
+		return nil, fmt.Errorf("timeout waiting for response to %s (id=%d)", method, id)
 	}
 }
 
@@ -298,104 +382,17 @@ func (c *Client) DispatchEvent(eventName string, data any) bool {
 }
 
 // Navigate opens a URL in the browser via CDP.
+// Uses the persistent WebSocket connection (same pattern as PipeClient).
 func (c *Client) Navigate(url string) error {
-	// Use a fresh connection for navigation (same pattern as original Node.js code)
-	httpURL := fmt.Sprintf("http://%s:%s/json", c.host, c.port)
-	resp, err := http.Get(httpURL)
-	if err != nil {
-		return fmt.Errorf("get tabs: %w", err)
-	}
-	defer resp.Body.Close()
-
-	var tabs []struct {
-		WebSocketDebuggerURL string `json:"webSocketDebuggerUrl"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&tabs); err != nil || len(tabs) == 0 {
-		return fmt.Errorf("no browser tabs")
-	}
-
-	conn, _, err := websocket.DefaultDialer.Dial(tabs[0].WebSocketDebuggerURL, nil)
-	if err != nil {
-		return fmt.Errorf("dial: %w", err)
-	}
-	defer conn.Close()
-
-	conn.SetReadDeadline(time.Now().Add(5 * time.Second))
-	conn.WriteJSON(map[string]any{
-		"id":     1,
-		"method": "Page.navigate",
-		"params": map[string]any{"url": url},
-	})
-
-	for {
-		_, raw, err := conn.ReadMessage()
-		if err != nil {
-			return fmt.Errorf("read: %w", err)
-		}
-		var msg struct {
-			ID    int `json:"id"`
-			Error *struct {
-				Message string `json:"message"`
-			} `json:"error"`
-		}
-		if json.Unmarshal(raw, &msg) == nil && msg.ID == 1 {
-			if msg.Error != nil {
-				return fmt.Errorf("navigate: %s", msg.Error.Message)
-			}
-			return nil
-		}
-	}
+	_, err := c.sendAndWait("Page.navigate", map[string]any{"url": url})
+	return err
 }
 
 // Reload reloads the current page via CDP Page.reload with cache bypass.
-// Preferred over Navigate for auto-refresh after sync since Page.navigate to
-// the same URL can be treated as a no-op by Chrome or serve from cache.
+// Uses the persistent WebSocket connection (same pattern as PipeClient).
 func (c *Client) Reload() error {
-	httpURL := fmt.Sprintf("http://%s:%s/json", c.host, c.port)
-	resp, err := http.Get(httpURL)
-	if err != nil {
-		return fmt.Errorf("get tabs: %w", err)
-	}
-	defer resp.Body.Close()
-
-	var tabs []struct {
-		WebSocketDebuggerURL string `json:"webSocketDebuggerUrl"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&tabs); err != nil || len(tabs) == 0 {
-		return fmt.Errorf("no browser tabs")
-	}
-
-	conn, _, err := websocket.DefaultDialer.Dial(tabs[0].WebSocketDebuggerURL, nil)
-	if err != nil {
-		return fmt.Errorf("dial: %w", err)
-	}
-	defer conn.Close()
-
-	conn.SetReadDeadline(time.Now().Add(5 * time.Second))
-	conn.WriteJSON(map[string]any{
-		"id":     1,
-		"method": "Page.reload",
-		"params": map[string]any{"ignoreCache": true},
-	})
-
-	for {
-		_, raw, err := conn.ReadMessage()
-		if err != nil {
-			return fmt.Errorf("read: %w", err)
-		}
-		var msg struct {
-			ID    int `json:"id"`
-			Error *struct {
-				Message string `json:"message"`
-			} `json:"error"`
-		}
-		if json.Unmarshal(raw, &msg) == nil && msg.ID == 1 {
-			if msg.Error != nil {
-				return fmt.Errorf("reload: %s", msg.Error.Message)
-			}
-			return nil
-		}
-	}
+	_, err := c.sendAndWait("Page.reload", map[string]any{"ignoreCache": true})
+	return err
 }
 
 // Screenshot captures a PNG screenshot via CDP Page.captureScreenshot.
