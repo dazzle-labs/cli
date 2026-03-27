@@ -160,6 +160,7 @@ jobs:
           SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
           BRANCH=$(echo "${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" | sed 's/[^a-zA-Z0-9._-]/-/g')
           echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "branch=${BRANCH}" >> $GITHUB_OUTPUT
           echo "image_tag=${{ env.CP_REPO }}:${SHORT_SHA}" >> $GITHUB_OUTPUT
           echo "branch_tag=${{ env.CP_REPO }}:${BRANCH}" >> $GITHUB_OUTPUT
 
@@ -191,8 +192,10 @@ jobs:
           build-args: |
             VITE_CLERK_PUBLISHABLE_KEY=${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
             GIT_COMMIT=${{ steps.cli.outputs.commit }}
-          cache-from: type=registry,ref=${{ env.CP_REPO }}:buildcache
-          cache-to: ${{ github.ref == 'refs/heads/main' && format('type=registry,ref={0}:buildcache,mode=max', env.CP_REPO) || '' }}
+          cache-from: |
+            type=registry,ref=${{ env.CP_REPO }}:buildcache-${{ steps.tags.outputs.branch }}
+            type=registry,ref=${{ env.CP_REPO }}:buildcache-main
+          cache-to: type=registry,ref=${{ env.CP_REPO }}:buildcache-${{ steps.tags.outputs.branch }},mode=max
           load: ${{ github.event_name == 'pull_request' }}
 
       - name: Docker Scout Scan
@@ -247,6 +250,7 @@ jobs:
           SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
           BRANCH=$(echo "${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" | sed 's/[^a-zA-Z0-9._-]/-/g')
           echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "branch=${BRANCH}" >> $GITHUB_OUTPUT
           echo "image_tag=${{ env.STREAMER_REPO }}:${SHORT_SHA}" >> $GITHUB_OUTPUT
           echo "branch_tag=${{ env.STREAMER_REPO }}:${BRANCH}" >> $GITHUB_OUTPUT
 
@@ -262,8 +266,10 @@ jobs:
           tags: |
             ${{ steps.tags.outputs.image_tag }}
             ${{ steps.tags.outputs.branch_tag }}
-          cache-from: type=registry,ref=${{ env.STREAMER_REPO }}:buildcache
-          cache-to: ${{ github.ref == 'refs/heads/main' && format('type=registry,ref={0}:buildcache,mode=max', env.STREAMER_REPO) || '' }}
+          cache-from: |
+            type=registry,ref=${{ env.STREAMER_REPO }}:buildcache-${{ steps.tags.outputs.branch }}
+            type=registry,ref=${{ env.STREAMER_REPO }}:buildcache-main
+          cache-to: type=registry,ref=${{ env.STREAMER_REPO }}:buildcache-${{ steps.tags.outputs.branch }},mode=max
           load: ${{ github.event_name == 'pull_request' }}
 
       - name: Docker Scout Scan
@@ -319,8 +325,10 @@ jobs:
           tags: |
             ${{ steps.tags.outputs.image_tag }}
             ${{ steps.tags.outputs.branch_tag }}
-          cache-from: type=registry,ref=${{ env.SIDECAR_REPO }}:buildcache
-          cache-to: ${{ github.ref == 'refs/heads/main' && format('type=registry,ref={0}:buildcache,mode=max', env.SIDECAR_REPO) || '' }}
+          cache-from: |
+            type=registry,ref=${{ env.SIDECAR_REPO }}:buildcache-${{ steps.tags.outputs.branch }}
+            type=registry,ref=${{ env.SIDECAR_REPO }}:buildcache-main
+          cache-to: type=registry,ref=${{ env.SIDECAR_REPO }}:buildcache-${{ steps.tags.outputs.branch }},mode=max
 
       - name: Build GPU Node Image
         uses: docker/build-push-action@v5
@@ -337,8 +345,10 @@ jobs:
           build-args: |
             VARIANT=gpu
             SIDECAR_IMAGE=${{ env.SIDECAR_REPO }}:${{ steps.tags.outputs.short_sha }}
-          cache-from: type=registry,ref=${{ env.GPU_NODE_REPO }}:buildcache
-          cache-to: ${{ github.ref == 'refs/heads/main' && format('type=registry,ref={0}:buildcache,mode=max', env.GPU_NODE_REPO) || '' }}
+          cache-from: |
+            type=registry,ref=${{ env.GPU_NODE_REPO }}:buildcache-${{ steps.tags.outputs.branch }}
+            type=registry,ref=${{ env.GPU_NODE_REPO }}:buildcache-main
+          cache-to: type=registry,ref=${{ env.GPU_NODE_REPO }}:buildcache-${{ steps.tags.outputs.branch }},mode=max
 
     outputs:
       image_tag: ${{ steps.tags.outputs.short_sha }}
@@ -367,6 +377,7 @@ jobs:
           SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
           BRANCH=$(echo "${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" | sed 's/[^a-zA-Z0-9._-]/-/g')
           echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "branch=${BRANCH}" >> $GITHUB_OUTPUT
           echo "image_tag=${{ env.INGEST_REPO }}:${SHORT_SHA}" >> $GITHUB_OUTPUT
           echo "branch_tag=${{ env.INGEST_REPO }}:${BRANCH}" >> $GITHUB_OUTPUT
 
@@ -391,8 +402,10 @@ jobs:
           tags: |
             ${{ steps.tags.outputs.image_tag }}
             ${{ steps.tags.outputs.branch_tag }}
-          cache-from: type=registry,ref=${{ env.INGEST_REPO }}:buildcache
-          cache-to: ${{ github.ref == 'refs/heads/main' && format('type=registry,ref={0}:buildcache,mode=max', env.INGEST_REPO) || '' }}
+          cache-from: |
+            type=registry,ref=${{ env.INGEST_REPO }}:buildcache-${{ steps.tags.outputs.branch }}
+            type=registry,ref=${{ env.INGEST_REPO }}:buildcache-main
+          cache-to: type=registry,ref=${{ env.INGEST_REPO }}:buildcache-${{ steps.tags.outputs.branch }},mode=max
 
     outputs:
       image_tag: ${{ steps.tags.outputs.short_sha }}
