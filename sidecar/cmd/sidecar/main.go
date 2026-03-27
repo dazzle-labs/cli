@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"mime"
 	"os"
 	"strconv"
 	"strings"
@@ -12,6 +13,38 @@ import (
 	"github.com/browser-streamer/sidecar/internal/r2"
 	"github.com/browser-streamer/sidecar/internal/server"
 )
+
+func init() {
+	// Ensure correct MIME types regardless of the host system's /etc/mime.types.
+	// The GPU image (nvidia/cuda) may have a missing or incomplete MIME database,
+	// causing http.FileServer to fall back to content sniffing (text/plain).
+	for ext, ct := range map[string]string{
+		".css":  "text/css; charset=utf-8",
+		".js":   "text/javascript; charset=utf-8",
+		".mjs":  "text/javascript; charset=utf-8",
+		".json": "application/json",
+		".html": "text/html; charset=utf-8",
+		".htm":  "text/html; charset=utf-8",
+		".svg":  "image/svg+xml",
+		".png":  "image/png",
+		".jpg":  "image/jpeg",
+		".jpeg": "image/jpeg",
+		".gif":  "image/gif",
+		".webp": "image/webp",
+		".woff": "font/woff",
+		".woff2": "font/woff2",
+		".ttf":  "font/ttf",
+		".otf":  "font/otf",
+		".wasm": "application/wasm",
+		".mp4":  "video/mp4",
+		".webm": "video/webm",
+		".mp3":  "audio/mpeg",
+		".ogg":  "audio/ogg",
+		".wav":  "audio/wav",
+	} {
+		mime.AddExtensionType(ext, ct)
+	}
+}
 
 func main() {
 	if len(os.Args) < 2 {
