@@ -28,7 +28,7 @@ message PlanLimits {
   int32 max_external_destinations = 4;
   int32 included_cpu_hours = 5;
   int32 included_gpu_hours = 6;
-  bool watermark_required = 7;
+  reserved 7;
   bool can_use_1080p = 8;
   bool can_use_private = 9;
 }
