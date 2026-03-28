@@ -46,6 +46,8 @@ spec:
           ports:
             - containerPort: 8080
           env:
+            - name: ENVIRONMENT
+              value: production
             - name: CLERK_SECRET_KEY
               valueFrom:
                 secretKeyRef:
@@ -198,6 +200,13 @@ spec:
                 secretKeyRef:
                   name: dazzle-mtls
                   key: server.key
+                  optional: true
+            # Telemetry webhook for diagnostics alerting
+            - name: TELEMETRY_WEBHOOK_URL
+              valueFrom:
+                secretKeyRef:
+                  name: telemetry-config
+                  key: webhook-url
                   optional: true
             # Streamer runtime config — any STREAMER_* env var is passed
             # through to streamer pods with the prefix stripped.

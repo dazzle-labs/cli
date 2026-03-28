@@ -1603,7 +1603,7 @@ func main() {
 	port := envOrDefault("PORT", "8080")
 	server := &http.Server{
 		Addr:    ":" + port,
-		Handler: securityHeaders(mux),
+		Handler: telemetryMiddleware(securityHeaders(mux)),
 	}
 
 	// Start GPU controllers if configured
