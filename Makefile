@@ -1,3 +1,5 @@
+SHELL := /bin/bash
+
 CLERK_PK ?= pk_test_cmFyZS13YWxsZXllLTQ4LmNsZXJrLmFjY291bnRzLmRldiQ
 NS       := browser-streamer
 KIND_CTX := kind-browser-streamer
@@ -35,7 +37,7 @@ TFSTATE_ENC := $(INFRA_DIR)/terraform.tfstate.enc
 
 .PHONY: help check-deps check-hooks check-cli pull-cli proto up down build build-cp build-streamer build-ingest deploy dev llms-txt logs status \
         install-hooks \
-        kubectx prod/kubectl prod/status prod/nodes \
+        kubectx prod/helm prod/kubectl prod/status prod/nodes \
         prod/infra/init prod/infra/plan prod/infra/apply prod/infra/output \
         gpu/rebuild gpu/deploy gpu/node-create gpu/node-delete gpu/node-recreate gpu/status gpu/logs gpu/port-forward \
         cli/stages cli/up cli/down cli/sync cli/screenshot cli/logs \
@@ -353,6 +355,12 @@ status: check-cluster ## Show pods and services in Kind
 # ══════════════════════════════════════════════════════
 # Production cluster (Hetzner)
 # ══════════════════════════════════════════════════════
+
+prod/helm: ## Run helm against prod cluster (use ARGS="list -A")
+	@tmpkc=$$(mktemp) && \
+		trap "rm -f $$tmpkc" EXIT && \
+		sops -d --input-type yaml --output-type yaml k8s/hetzner/kubeconfig.yaml.enc > $$tmpkc && \
+		KUBECONFIG=$$tmpkc helm $(ARGS)
 
 prod/kubectl: ## Run kubectl against prod cluster (use ARGS="get pods")
 	@bash -c '$(RKCTL) $(ARGS)'
