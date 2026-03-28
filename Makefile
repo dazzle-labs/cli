@@ -2,16 +2,17 @@ CLERK_PK ?= pk_test_cmFyZS13YWxsZXllLTQ4LmNsZXJrLmFjY291bnRzLmRldiQ
 NS       := browser-streamer
 KIND_CTX := kind-browser-streamer
 KCTL     := kubectl --context $(KIND_CTX) -n $(NS)
-GIT_SHA  := $(shell git rev-parse --short HEAD 2>/dev/null || echo latest)
-CP_IMG   := dazzlefm/agent-streamer-control-plane:$(GIT_SHA)
-STR_IMG  := dazzlefm/agent-streamer-stage:main
-CLI_COMMIT := $(shell git -C cli rev-parse HEAD 2>/dev/null || echo main)
-CP_BUILD := docker build -f control-plane/docker/Dockerfile --build-arg VITE_CLERK_PUBLISHABLE_KEY=$(CLERK_PK) --build-arg GIT_COMMIT=$(CLI_COMMIT) -t $(CP_IMG) .
-SIDECAR_IMG := dazzlefm/agent-streamer-sidecar:main
-INGEST_IMG  := dazzlefm/agent-streamer-ingest:latest
-STR_BUILD := docker build --platform linux/amd64 -f streamer/docker/Dockerfile -t $(STR_IMG) streamer/
+GIT_SHA   := $(shell git rev-parse --short HEAD 2>/dev/null || echo latest)
+LOCAL_TAG := local-dev
+CP_IMG      := dazzlefm/agent-streamer-control-plane:$(LOCAL_TAG)
+STR_IMG     := dazzlefm/agent-streamer-stage:$(LOCAL_TAG)
+SIDECAR_IMG := dazzlefm/agent-streamer-sidecar:$(LOCAL_TAG)
+INGEST_IMG  := dazzlefm/agent-streamer-ingest:$(LOCAL_TAG)
+CLI_COMMIT  := $(shell git -C cli rev-parse HEAD 2>/dev/null || echo main)
+CP_BUILD      := docker build -f control-plane/docker/Dockerfile --build-arg VITE_CLERK_PUBLISHABLE_KEY=$(CLERK_PK) --build-arg GIT_COMMIT=$(CLI_COMMIT) -t $(CP_IMG) .
+STR_BUILD     := docker build --target streamer -f streamer/docker/Dockerfile -t $(STR_IMG) streamer/
 SIDECAR_BUILD := docker build -f sidecar/Dockerfile -t $(SIDECAR_IMG) sidecar/
-INGEST_BUILD := docker build -t $(INGEST_IMG) ingest/
+INGEST_BUILD  := docker build -t $(INGEST_IMG) ingest/
 
 # Colored log helpers
 _cyan    = \033[36m
@@ -81,6 +82,7 @@ check-deps: check-hooks
 	@which kind >/dev/null 2>&1 || { echo "ERROR: kind not found. Install: brew install kind"; exit 1; }
 	@which kubectl >/dev/null 2>&1 || { echo "ERROR: kubectl not found. Install: brew install kubectl"; exit 1; }
 	@which sops >/dev/null 2>&1 || { echo "ERROR: sops not found. Install: brew install sops"; exit 1; }
+	@which kustomize >/dev/null 2>&1 || { echo "ERROR: kustomize not found. Install: brew install kustomize"; exit 1; }
 	@if [ -z "$$SOPS_AGE_KEY_FILE" ] && [ -z "$$SOPS_AGE_KEY" ] && [ ! -f "$$HOME/.config/sops/age/keys.txt" ]; then \
 		echo ""; \
 		echo "ERROR: No Age key found. SOPS needs an Age key to decrypt secrets."; \
@@ -142,6 +144,8 @@ up: check-deps check-cli ## Create Kind cluster, build images, deploy full stack
 	$(STR_BUILD)
 	$(STEP) "Building sidecar image"
 	$(SIDECAR_BUILD)
+	$(STEP) "Building ingest image"
+	$(INGEST_BUILD)
 	$(STEP) "Regenerating llms.txt"
 	go run ./control-plane/cmd/gen-llms-txt
 	$(STEP) "Creating Kind cluster"
@@ -155,10 +159,12 @@ up: check-deps check-cli ## Create Kind cluster, build images, deploy full stack
 	kind load docker-image $(CP_IMG) --name $(NS)
 	kind load docker-image $(STR_IMG) --name $(NS)
 	kind load docker-image $(SIDECAR_IMG) --name $(NS)
+	kind load docker-image $(INGEST_IMG) --name $(NS)
 	$(STEP) "Applying secrets"
 	sops -d k8s/local/local.secrets.yaml | $(KCTL) apply -f -
 	@for secret in k8s/secrets/*.secrets.yaml; do \
 		[ -f "$$secret" ] || continue; \
+		case "$$secret" in *clerk-auth*) continue;; esac; \
 		if sops -d "$$secret" 2>/dev/null | $(KCTL) apply -f - 2>/dev/null; then \
 			echo "  $$secret"; \
 		fi; \
@@ -167,17 +173,12 @@ up: check-deps check-cli ## Create Kind cluster, build images, deploy full stack
 	@if [ -d k8s/crds ] && ls k8s/crds/*.yaml >/dev/null 2>&1; then \
 		$(KCTL) apply -f k8s/crds/; \
 	fi
-	$(STEP) "Deploying postgres"
-	$(KCTL) apply -f k8s/infrastructure/postgres.yaml
-	$(STEP) "Deploying control-plane"
-	$(KCTL) apply -f k8s/control-plane/rbac.yaml
-	$(KCTL) apply -f k8s/control-plane/deployment.yaml
-	$(KCTL) apply -f k8s/local/service.yaml
-	$(KCTL) set env deployment/control-plane OAUTH_REDIRECT_BASE_URL=http://localhost:5173
+	$(STEP) "Deploying stack via kustomize (local-dev images)"
+	kustomize build --load-restrictor LoadRestrictionsNone k8s/local | $(KCTL) apply -f -
 	$(STEP) "Waiting for pods"
 	$(KCTL) wait --for=condition=ready pod -l app=postgres --timeout=120s
 	$(KCTL) rollout status deployment/control-plane --timeout=120s
-	$(OK) "Local stack ready — http://localhost:5173"
+	$(OK) "Local stack ready — http://localhost:5173 (API on :38080)"
 
 down: ## Delete the Kind cluster
 	kind delete cluster --name $(NS)
@@ -301,6 +302,7 @@ deploy: check-deps check-cluster ## Apply manifests and restart control-plane in
 	sops -d k8s/local/local.secrets.yaml | $(KCTL) apply -f -
 	@for secret in k8s/secrets/*.secrets.yaml; do \
 		[ -f "$$secret" ] || continue; \
+		case "$$secret" in *clerk-auth*) continue;; esac; \
 		if sops -d "$$secret" 2>/dev/null | $(KCTL) apply -f - 2>/dev/null; then \
 			echo "  $$secret"; \
 		fi; \
@@ -309,17 +311,8 @@ deploy: check-deps check-cluster ## Apply manifests and restart control-plane in
 	@if [ -d k8s/crds ] && ls k8s/crds/*.yaml >/dev/null 2>&1; then \
 		$(KCTL) apply -f k8s/crds/; \
 	fi
-	$(STEP) "Deploying postgres"
-	$(KCTL) apply -f k8s/infrastructure/postgres.yaml
-	$(STEP) "Deploying control-plane"
-	$(KCTL) apply -f k8s/control-plane/rbac.yaml
-	$(KCTL) apply -f k8s/control-plane/deployment.yaml
-	$(KCTL) set image deployment/control-plane control-plane=$(CP_IMG)
-	$(KCTL) apply -f k8s/local/service.yaml
-	$(KCTL) set env deployment/control-plane OAUTH_REDIRECT_BASE_URL=http://localhost:5173
-	$(STEP) "Deploying ingest"
-	$(KCTL) apply -f k8s/ingest/deployment.yaml
-	$(KCTL) apply -f k8s/ingest/service.yaml
+	$(STEP) "Deploying stack via kustomize (local-dev images)"
+	kustomize build --load-restrictor LoadRestrictionsNone k8s/local | $(KCTL) apply -f -
 	$(STEP) "Restarting control-plane"
 	$(KCTL) rollout restart deployment/control-plane
 	$(KCTL) rollout status deployment/control-plane --timeout=120s
@@ -330,22 +323,10 @@ dev: up ## ★ Full local dev — build, deploy, watch everything
 	@printf "  $(_yellow)web/dev$(_reset)        Vite dev server with HMR\n"
 	@printf "  $(_yellow)logs$(_reset)           control-plane log tail\n"
 	@echo ""
-	@trap ' \
-		kill 0 2>/dev/null; \
-		echo ""; \
-		printf "$(_bold)$(_yellow)Tear down Kind cluster? [y/N] $(_reset)"; \
-		read ans; \
-		if [ "$$ans" = "y" ] || [ "$$ans" = "Y" ]; then \
-			kind delete cluster --name $(NS); \
-			printf "$(_bold)$(_green)✓ Cluster deleted$(_reset)\n"; \
-		else \
-			printf "Cluster kept running. Use $(_cyan)make down$(_reset) to delete later.\n"; \
-		fi; \
-		exit 0; \
-	' INT TERM; \
-	(cd web && yarn dev) & \
+	@trap 'exit 0' INT TERM; \
+	(cd web && VITE_CLERK_PUBLISHABLE_KEY=$(CLERK_PK) yarn dev) & \
 	$(KCTL) logs -f deployment/control-plane & \
-	wait
+	wait; true
 
 llms-txt: check-cli ## Regenerate llms.txt
 	go run ./control-plane/cmd/gen-llms-txt

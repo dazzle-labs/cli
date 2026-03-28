@@ -213,7 +213,7 @@ spec:
                 --disable-gpu-compositing --disable-gpu-watchdog
                 --no-first-run --no-default-browser-check --disable-infobars
                 --autoplay-policy=no-user-gesture-required
-                --remote-debugging-port=9222 --remote-debugging-address=0.0.0.0
+                --remote-debugging-port=9222 --remote-debugging-address=127.0.0.1
                 --user-data-dir=/data/chrome
                 --renderer-process-limit=1
                 --kiosk --window-size=1280,720 --window-position=0,0

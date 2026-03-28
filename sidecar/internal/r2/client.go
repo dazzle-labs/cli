@@ -50,7 +50,12 @@ func Restore(endpoint, accessKey, secretKey, bucket, prefix, localDir string) er
 			continue
 		}
 
+		// Prevent path traversal — ensure the resolved path stays within localDir.
 		localPath := filepath.Join(localDir, relPath)
+		if !strings.HasPrefix(filepath.Clean(localPath), filepath.Clean(localDir)+string(filepath.Separator)) {
+			log.Printf("WARN: restore skip %s: path traversal detected", obj.Key)
+			continue
+		}
 		os.MkdirAll(filepath.Dir(localPath), 0o755)
 
 		reader, err := client.GetObject(ctx, bucket, obj.Key, minio.GetObjectOptions{})

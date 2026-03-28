@@ -451,6 +451,13 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 					Name:    "restore",
 					Image:   m.sidecarImage,
 					Command: []string{"/sidecar", "restore"},
+					SecurityContext: &corev1.SecurityContext{
+						AllowPrivilegeEscalation: boolPtr(false),
+						Capabilities: &corev1.Capabilities{
+							Drop: []corev1.Capability{"ALL"},
+						},
+						SeccompProfile: &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault},
+					},
 					Env:     sidecarEnvVars(userID, id, m.r2Bucket),
 					VolumeMounts: []corev1.VolumeMount{
 						{Name: "stage-data", MountPath: "/data"},
@@ -473,6 +480,13 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 					Name:  "streamer",
 					Image: m.streamerImage,
 					Env: streamerEnvVars(id, userID),
+					SecurityContext: &corev1.SecurityContext{
+						AllowPrivilegeEscalation: boolPtr(false),
+						Capabilities: &corev1.Capabilities{
+							Drop: []corev1.Capability{"ALL"},
+						},
+						SeccompProfile: &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault},
+					},
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
 							corev1.ResourceCPU:    resource.MustParse("500m"),
@@ -504,6 +518,13 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 					Name:    "sidecar",
 					Image:   m.sidecarImage,
 					Command: []string{"/sidecar", "serve"},
+					SecurityContext: &corev1.SecurityContext{
+						AllowPrivilegeEscalation: boolPtr(false),
+						Capabilities: &corev1.Capabilities{
+							Drop: []corev1.Capability{"ALL"},
+						},
+						SeccompProfile: &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault},
+					},
 					Ports: []corev1.ContainerPort{
 						{
 							ContainerPort: 8080,
@@ -820,6 +841,8 @@ func (m *Manager) doDeactivateStage(id string) error {
 		err := m.clientset.CoreV1().Pods(m.namespace).Delete(context.Background(), stage.PodName, metav1.DeleteOptions{})
 		if err != nil {
 			log.Printf("WARN: delete pod %s: %v", stage.PodName, err)
+		} else {
+			m.waitForPodDeletion(stage.PodName, 30*time.Second)
 		}
 	}
 
@@ -1229,6 +1252,27 @@ func (m *Manager) handleHealth(w http.ResponseWriter, r *http.Request) {
 }
 
 // waitForStage polls until the stage is running with a PodIP, or context expires.
+// waitForPodDeletion polls until the named pod no longer exists, so that a
+// rapid deactivate→activate cycle doesn't fail with "already exists".
+func (m *Manager) waitForPodDeletion(podName string, timeout time.Duration) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	ticker := time.NewTicker(500 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		_, err := m.clientset.CoreV1().Pods(m.namespace).Get(ctx, podName, metav1.GetOptions{})
+		if err != nil {
+			return // pod gone (NotFound) or context expired
+		}
+		select {
+		case <-ctx.Done():
+			log.Printf("WARN: timed out waiting for pod %s deletion", podName)
+			return
+		case <-ticker.C:
+		}
+	}
+}
+
 func (m *Manager) waitForStage(ctx context.Context, id string) (*Stage, error) {
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
@@ -1252,26 +1296,87 @@ func (m *Manager) waitForStage(ctx context.Context, id string) (*Stage, error) {
 	}
 }
 
+// allowedOrigins returns the set of permitted CORS origins.
+// Defaults to the public base URL; additional origins can be added via
+// ALLOWED_ORIGINS (comma-separated). Localhost origins are always allowed
+// in development (when PUBLIC_BASE_URL is unset).
+func allowedOrigins() map[string]bool {
+	origins := make(map[string]bool)
+	if base := os.Getenv("PUBLIC_BASE_URL"); base != "" {
+		origins[strings.TrimRight(base, "/")] = true
+	} else if base := os.Getenv("OAUTH_REDIRECT_BASE_URL"); base != "" {
+		origins[strings.TrimRight(base, "/")] = true
+	}
+	if extra := os.Getenv("ALLOWED_ORIGINS"); extra != "" {
+		for _, o := range strings.Split(extra, ",") {
+			if o = strings.TrimSpace(o); o != "" {
+				origins[strings.TrimRight(o, "/")] = true
+			}
+		}
+	}
+	return origins
+}
+
+// corsOrigin returns the validated origin for CORS headers, or empty string
+// if the request origin is not allowed. Localhost origins on any port are
+// always permitted for local development.
+func corsOrigin(r *http.Request, allowed map[string]bool) string {
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		return ""
+	}
+	if allowed[origin] {
+		return origin
+	}
+	// Allow any localhost port for local development.
+	if u, err := url.Parse(origin); err == nil {
+		host := u.Hostname()
+		if host == "localhost" || host == "127.0.0.1" {
+			return origin
+		}
+	}
+	return ""
+}
+
+// setCORSHeaders writes CORS response headers for an allowed origin.
+func setCORSHeaders(w http.ResponseWriter, origin, methods, headers string) {
+	if origin == "" {
+		return
+	}
+	w.Header().Set("Access-Control-Allow-Origin", origin)
+	w.Header().Set("Access-Control-Allow-Methods", methods)
+	w.Header().Set("Access-Control-Allow-Headers", headers)
+	w.Header().Set("Vary", "Origin")
+}
+
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(v)
 }
 
-func corsMiddleware(next http.Handler) http.Handler {
+// securityHeaders adds standard security headers to all responses.
+func securityHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Connect-Protocol-Version")
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("X-Frame-Options", "DENY")
+		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		w.Header().Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
 		next.ServeHTTP(w, r)
 	})
+}
+
+func corsMiddleware(allowed map[string]bool) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			setCORSHeaders(w, corsOrigin(r, allowed), "GET, POST, DELETE, OPTIONS", "Authorization, Content-Type, Connect-Protocol-Version")
+			if r.Method == http.MethodOptions {
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }
 
 // spaFileServer serves the web SPA, falling back to index.html for client-side routes.
@@ -1318,6 +1423,8 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
+	allowed := allowedOrigins()
+	cors := corsMiddleware(allowed)
 
 	// Health (no auth)
 	mux.HandleFunc("/health", mgr.handleHealth)
@@ -1331,55 +1438,53 @@ func main() {
 		&stageServer{mgr: mgr},
 		connect.WithInterceptors(authInterceptor),
 	)
-	mux.Handle(stagePath, corsMiddleware(stageHandler))
+	mux.Handle(stagePath, cors(stageHandler))
 
 	// FeaturedService — public (no auth)
 	featuredPath, featuredHandler := apiv1internalconnect.NewFeaturedServiceHandler(
 		&featuredServer{mgr: mgr},
 	)
-	mux.Handle(featuredPath, corsMiddleware(featuredHandler))
+	mux.Handle(featuredPath, cors(featuredHandler))
 
 	// ApiKeyService — Clerk JWT only
 	apiKeyPath, apiKeyHandler := apiv1internalconnect.NewApiKeyServiceHandler(
 		&apiKeyServer{mgr: mgr},
 		connect.WithInterceptors(authInterceptor, clerkOnly),
 	)
-	mux.Handle(apiKeyPath, corsMiddleware(apiKeyHandler))
+	mux.Handle(apiKeyPath, cors(apiKeyHandler))
 
 	// RtmpDestinationService — Clerk JWT or API key
 	streamPath, streamHandler := apiv1connect.NewRtmpDestinationServiceHandler(
 		&rtmpDestinationServer{mgr: mgr},
 		connect.WithInterceptors(authInterceptor),
 	)
-	mux.Handle(streamPath, corsMiddleware(streamHandler))
+	mux.Handle(streamPath, cors(streamHandler))
 
 	// UserService — Clerk JWT or API key
 	userPath, userHandler := apiv1connect.NewUserServiceHandler(
 		&userServer{mgr: mgr},
 		connect.WithInterceptors(authInterceptor),
 	)
-	mux.Handle(userPath, corsMiddleware(userHandler))
+	mux.Handle(userPath, cors(userHandler))
 
 	// RuntimeService — Clerk JWT or API key
 	runtimePath, runtimeHandler := apiv1connect.NewRuntimeServiceHandler(
 		&runtimeServer{mgr: mgr},
 		connect.WithInterceptors(authInterceptor),
 	)
-	mux.Handle(runtimePath, corsMiddleware(runtimeHandler))
+	mux.Handle(runtimePath, cors(runtimeHandler))
 
 	// BroadcastService — Clerk JWT or API key
 	broadcastPath, broadcastHandler := apiv1connect.NewBroadcastServiceHandler(
 		&broadcastServer{mgr: mgr},
 		connect.WithInterceptors(authInterceptor),
 	)
-	mux.Handle(broadcastPath, corsMiddleware(broadcastHandler))
+	mux.Handle(broadcastPath, cors(broadcastHandler))
 
 	// CLI session routes (Go 1.22+ pattern matching)
 	cliSessionCORS := func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Access-Control-Allow-Origin", "*")
-			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+			setCORSHeaders(w, corsOrigin(r, allowed), "GET, POST, OPTIONS", "Authorization, Content-Type")
 			if r.Method == http.MethodOptions {
 				w.WriteHeader(http.StatusNoContent)
 				return
@@ -1401,9 +1506,7 @@ func main() {
 	// OAuth routes (Go 1.22+ pattern matching)
 	oauthCORS := func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Access-Control-Allow-Origin", "*")
-			w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Authorization")
+			setCORSHeaders(w, corsOrigin(r, allowed), "GET, OPTIONS", "Authorization")
 			if r.Method == http.MethodOptions {
 				w.WriteHeader(http.StatusNoContent)
 				return
@@ -1500,7 +1603,7 @@ func main() {
 	port := envOrDefault("PORT", "8080")
 	server := &http.Server{
 		Addr:    ":" + port,
-		Handler: mux,
+		Handler: securityHeaders(mux),
 	}
 
 	// Start GPU controllers if configured

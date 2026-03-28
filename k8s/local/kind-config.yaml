@@ -5,5 +5,5 @@ nodes:
     extraPortMappings:
       # Must match nodePort in k8s/local/service.yaml
       - containerPort: 30080
-        hostPort: 8080
+        hostPort: 38080
         protocol: TCP

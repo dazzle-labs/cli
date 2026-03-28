@@ -10,6 +10,14 @@ import "./index.css";
 
 const devToken = import.meta.env.VITE_DEV_TOKEN as string | undefined;
 
+// Prevent dev auth bypass from being used in production builds.
+if (devToken && import.meta.env.PROD) {
+  throw new Error(
+    "VITE_DEV_TOKEN must not be set in production builds. " +
+    "Remove it from your environment and rebuild."
+  );
+}
+
 if (devToken) {
   ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>

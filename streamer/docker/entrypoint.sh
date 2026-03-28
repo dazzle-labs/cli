@@ -39,7 +39,7 @@ CHROME_FLAGS="$(strip_runtime_flags "$CHROME_FLAGS")"
 # Append per-instance runtime flags
 CHROME_FLAGS="$CHROME_FLAGS --display=:99 --user-data-dir=/data/chrome"
 CHROME_FLAGS="$CHROME_FLAGS --window-size=${SCREEN_WIDTH},${SCREEN_HEIGHT} --window-position=0,0"
-CHROME_FLAGS="$CHROME_FLAGS --remote-debugging-port=9222 --remote-debugging-address=0.0.0.0"
+CHROME_FLAGS="$CHROME_FLAGS --remote-debugging-port=9222 --remote-debugging-address=127.0.0.1"
 
 # Renderer config (SwiftShader.ini) is mounted from the swiftshader-ini ConfigMap.
 # Controls thread count for software rendering. Entrypoint ensures the dir exists.

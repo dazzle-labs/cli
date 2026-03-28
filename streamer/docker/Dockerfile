@@ -47,12 +47,26 @@ RUN apt-get update \
     unclutter \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Chromium from the official Google Chrome stable channel (real .deb, not snap)
-RUN wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
-    && apt-get update \
-    && apt-get install -y /tmp/chrome.deb \
-    && rm /tmp/chrome.deb \
-    && rm -rf /var/lib/apt/lists/*
+# Install Chrome/Chromium — Google Chrome .deb is amd64-only, so on arm64 we
+# use Playwright's standalone Chromium (first-class arm64 support, no snap).
+COPY --from=node:22-slim /usr/local/bin/node /usr/local/bin/node
+COPY --from=node:22-slim /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -sf /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+    && ln -sf /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
+RUN ARCH=$(dpkg --print-architecture) \
+    && if [ "$ARCH" = "arm64" ]; then \
+         npx --yes playwright install --with-deps chromium \
+         && CHROME_DIR=$(find /root/.cache/ms-playwright -maxdepth 1 -name 'chromium-*' -type d | head -1) \
+         && ln -sf "$CHROME_DIR/chrome-linux/chrome" /usr/bin/google-chrome-stable \
+         && rm -rf /usr/local/bin/node /usr/local/bin/npm /usr/local/bin/npx /usr/local/lib/node_modules; \
+       else \
+         wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
+         && apt-get update \
+         && apt-get install -y /tmp/chrome.deb \
+         && rm /tmp/chrome.deb \
+         && rm -rf /var/lib/apt/lists/* \
+         && rm -rf /usr/local/bin/node /usr/local/bin/npm /usr/local/bin/npx /usr/local/lib/node_modules; \
+       fi
 
 # --- GL libraries per variant ---
 FROM base AS gl-cpu

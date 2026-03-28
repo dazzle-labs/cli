@@ -1,0 +1,67 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../namespace.yaml
+  - ../infrastructure/postgres.yaml
+  - ../control-plane/rbac.yaml
+  - ../control-plane/deployment.yaml
+  - ../control-plane/service.yaml
+  - ../control-plane/swiftshader-configmap.yaml
+  - ../ingest/configmap.yaml
+  - ../ingest/deployment.yaml
+  - ../ingest/service.yaml
+
+images:
+  - name: dazzlefm/agent-streamer-control-plane
+    newTag: local-dev
+  - name: dazzlefm/agent-streamer-stage
+    newTag: local-dev
+  - name: dazzlefm/agent-streamer-sidecar
+    newTag: local-dev
+  - name: dazzlefm/agent-streamer-ingest
+    newTag: local-dev
+
+patches:
+  - target:
+      kind: Deployment
+      name: control-plane
+    patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: control-plane
+      spec:
+        template:
+          spec:
+            containers:
+              - name: control-plane
+                env:
+                  - name: STREAMER_IMAGE
+                    value: "dazzlefm/agent-streamer-stage:local-dev"
+                  - name: SIDECAR_IMAGE
+                    value: "dazzlefm/agent-streamer-sidecar:local-dev"
+                  - name: OAUTH_REDIRECT_BASE_URL
+                    value: "http://localhost:5173"
+                  - name: SCHEDULER_NAME
+                    value: ""
+                  - name: PRIORITY_CLASS_NAME
+                    value: ""
+  - target:
+      kind: Service
+      name: control-plane
+    patch: |
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: control-plane
+      spec:
+        type: NodePort
+        ports:
+          - name: http
+            port: 8080
+            targetPort: 8080
+            nodePort: 30080
+          - name: internal
+            port: 9090
+            targetPort: 9090

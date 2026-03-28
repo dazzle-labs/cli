@@ -8,6 +8,10 @@ spec:
   selector:
     app: control-plane
   ports:
-    - port: 8080
+    - name: http
+      port: 8080
       targetPort: 8080
       nodePort: 30080  # Must match containerPort in k8s/local/kind-config.yaml
+    - name: internal
+      port: 9090
+      targetPort: 9090

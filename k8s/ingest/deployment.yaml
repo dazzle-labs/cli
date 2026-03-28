@@ -22,10 +22,19 @@ spec:
     spec:
       imagePullSecrets:
         - name: dazzlefm-dockerhub-secret
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       terminationGracePeriodSeconds: 120
       containers:
         - name: nginx-rtmp
           image: dazzlefm/agent-streamer-ingest:latest
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+              add: ["NET_BIND_SERVICE", "CHOWN", "SETUID", "SETGID"]  # nginx needs bind + user switching
           ports:
             - containerPort: 1935
               name: rtmp

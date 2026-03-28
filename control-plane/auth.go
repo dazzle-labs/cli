@@ -145,6 +145,7 @@ func (a *authenticator) verifyClerkJWT(ctx context.Context, token string) (*auth
 		a.jwkStore.jwk = jwk
 		claims, err = jwt.Verify(ctx, &jwt.VerifyParams{Token: token, JWK: jwk})
 		if err != nil {
+			log.Printf("JWT verify failed after retry: %v", err)
 			return nil, err
 		}
 	}

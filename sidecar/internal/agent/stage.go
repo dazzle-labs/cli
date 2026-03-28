@@ -131,7 +131,8 @@ func (a *Agent) CreateStage(stageID, userID string, r2Endpoint, r2AccessKey, r2S
 	xauthCmd := exec.Command("xauth", "-f", xauthPath, "source", "-")
 	xauthCmd.Stdin = strings.NewReader(fmt.Sprintf("add %s . %s\n", slot.display, cookieHex))
 	if out, err := xauthCmd.CombinedOutput(); err != nil {
-		log.Printf("WARN: xauth setup failed (display auth disabled): %v: %s", err, out)
+		a.releaseSlot(slot)
+		return 0, fmt.Errorf("xauth setup failed (refusing to run without display auth): %v: %s", err, out)
 	}
 	os.Chown(xauthPath, uid, uid)
 	os.Chmod(xauthPath, 0o600)
