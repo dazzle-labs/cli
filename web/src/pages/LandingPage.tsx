@@ -337,7 +337,7 @@ export function LandingPage() {
       {featuredStreams.length > 0 && (
         <section className="relative z-10 px-6 pb-28 md:pb-36">
           <motion.div
-            className="relative mx-auto max-w-3xl"
+            className="relative mx-auto max-w-5xl"
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.55, ease }}

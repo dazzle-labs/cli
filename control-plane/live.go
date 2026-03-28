@@ -25,7 +25,7 @@ func dbListLiveStages(db *sql.DB) ([]stageRow, error) {
 			SELECT 1 FROM rtmp_sessions rs
 			WHERE rs.stage_id = s.id AND rs.ended_at IS NULL
 		)
-		ORDER BY s.featured DESC, s.created_at`)
+		ORDER BY s.featured_index DESC, s.created_at`)
 	if err != nil {
 		return nil, err
 	}
