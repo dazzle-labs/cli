@@ -25,6 +25,10 @@ _bmad/
 
 # Generated llms.txt (make llms-txt)
 llms.txt
+llms-full.txt
+cli-reference.txt
 web/public/llms.txt
+web/public/llms-full.txt
+web/public/cli-reference.txt
 
 # Go workspace (local dev only)
