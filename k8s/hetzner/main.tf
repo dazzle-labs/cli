@@ -94,6 +94,8 @@ module "kube-hetzner" {
   ingress_controller = "traefik"
 
   # --- Networking ---
+  cni_plugin       = "cilium"
+  cilium_version   = "1.17.0"
   enable_wireguard = true
 
   # --- Storage ---

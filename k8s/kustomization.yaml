@@ -18,6 +18,7 @@ resources:
   - networking/cloudflare-middleware.yaml
   - networking/traefik-config.yaml
   - networking/network-policies.yaml
+  - networking/cilium-network-policies.yaml
   - monitoring/streamer-podmonitor.yaml
   - scheduling/priority-classes.yaml
   - scheduling/placeholder.yaml

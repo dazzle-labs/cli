@@ -79,6 +79,9 @@
 - [API Contracts](./api-contracts.md) — All ConnectRPC services (Stage, ApiKey, Stream, User) + HTTP endpoints
 - [Data Models](./data-models.md) — PostgreSQL schema, migration history, entity relationships
 
+### Security
+- [Network Security](./network-security.md) — NetworkPolicy and CiliumNetworkPolicy rules, per-pod ingress/egress, FQDN-locked external access
+
 ### Operations
 - [Local Development (Kind)](./local-dev.md) — Run the full stack locally with Kind (recommended for new devs)
 - [Development Guide](./development-guide.md) — Remote build commands, protobuf regen, secret management

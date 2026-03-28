@@ -1,0 +1,125 @@
+# CiliumNetworkPolicy for FQDN-based egress restrictions.
+# These supplement the standard NetworkPolicies with DNS-aware rules
+# that Cilium enforces via eBPF. Requires cni_plugin = "cilium".
+#
+# Standard NetworkPolicies (network-policies.yaml) handle:
+#   - Default deny (ingress + egress)
+#   - Intra-cluster allow rules (pod-to-pod, pod-to-namespace)
+#
+# CiliumNetworkPolicies below handle:
+#   - External HTTPS egress locked to specific FQDNs
+---
+# Control-plane: restrict external HTTPS to only the services it needs.
+# Replaces the broad 0.0.0.0/0 ipBlock rule in standard NetworkPolicy.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: control-plane-egress-fqdn
+  namespace: browser-streamer
+spec:
+  endpointSelector:
+    matchLabels:
+      app: control-plane
+  egress:
+    # --- Auth (Clerk) ---
+    - toFQDNs:
+        - matchName: "api.clerk.com"
+        - matchName: "api.clerk.dev"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+    # --- GPU provisioning (RunPod) ---
+    - toFQDNs:
+        - matchName: "rest.runpod.io"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+    # --- Object storage (Cloudflare R2) ---
+    # Pinned to our account's R2 endpoint, not all of Cloudflare.
+    - toFQDNs:
+        - matchName: "d7190540717efd7404fee7b5263e1443.r2.cloudflarestorage.com"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+    # --- OAuth: Twitch ---
+    - toFQDNs:
+        - matchName: "id.twitch.tv"
+        - matchName: "api.twitch.tv"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+    # --- OAuth: YouTube / Google ---
+    - toFQDNs:
+        - matchName: "accounts.google.com"
+        - matchName: "oauth2.googleapis.com"
+        - matchName: "www.googleapis.com"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+    # --- OAuth: Kick ---
+    - toFQDNs:
+        - matchName: "id.kick.com"
+        - matchName: "api.kick.com"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+    # --- OAuth: Restream ---
+    - toFQDNs:
+        - matchName: "api.restream.io"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+    # --- Clerk JWKS (may use CDN subdomains) ---
+    - toFQDNs:
+        - matchPattern: "*.clerk.accounts.dev"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+    # --- GPU sidecar mTLS (RunPod public IPs) ---
+    # RunPod pods get dynamic public IPs — can't use FQDN.
+    # Allow HTTPS to any external IP on port 8080 (sidecar ConnectRPC).
+    # RFC1918 excluded to prevent cluster-internal lateral movement.
+    - toCIDRSet:
+        - cidr: 0.0.0.0/0
+          except:
+            - 10.0.0.0/8
+            - 172.16.0.0/12
+            - 192.168.0.0/16
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+---
+# Streamer pods: restrict external egress to HTTP/HTTPS only.
+# Chrome loads user content over 80/443 — no reason to allow other ports.
+# RTMP to ingest is already handled by the standard NetworkPolicy (pod selector).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: streamer-egress-ports
+  namespace: browser-streamer
+spec:
+  endpointSelector:
+    matchLabels:
+      app: streamer-stage
+  egress:
+    - toCIDRSet:
+        - cidr: 0.0.0.0/0
+          except:
+            - 10.0.0.0/8
+            - 172.16.0.0/12
+            - 192.168.0.0/16
+      toPorts:
+        - ports:
+            - port: "80"
+              protocol: TCP
+            - port: "443"
+              protocol: TCP
