@@ -306,36 +306,6 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
         responseExample: JSON.stringify({ status: "ok", stages: 2, maxStages: 10 }, null, 2),
         notes: "Unauthenticated requests only return { status: \"ok\" }.",
       },
-      {
-        id: "cdp-discovery",
-        method: "GET",
-        path: "/stage/<uuid>/cdp",
-        description:
-          "CDP endpoint. Returns Chrome DevTools Protocol discovery info with rewritten WebSocket URLs. Requires the stage to be active. Returns 503 if stage is not active.",
-        auth: "Clerk JWT or API Key",
-        params: [],
-        responseExample: JSON.stringify(
-          {
-            webSocketDebuggerUrl: "wss://your-host/stage/a1b2c3d4-.../cdp/devtools/browser/...",
-            "Browser": "Chrome/131.0.6778.204",
-          },
-          null,
-          2,
-        ),
-        notes:
-          "Also supports /stage/<uuid>/cdp/json/version and /stage/<uuid>/cdp/json for Chrome target listing. WebSocket connections to /stage/<uuid>/cdp are proxied directly to Chrome port 9222.",
-      },
-      {
-        id: "stage-proxy",
-        method: "ANY",
-        path: "/stage/<id>/*",
-        description:
-          "Reverse proxy to an active stage. Strips the /stage/<id> prefix and forwards requests. Supports both HTTP and WebSocket.",
-        auth: "Clerk JWT or API Key",
-        params: [],
-        notes:
-          "Returns 404 if stage not found, 503 if stage is not ready yet. All headers and query parameters are forwarded.",
-      },
     ],
   },
 ];
