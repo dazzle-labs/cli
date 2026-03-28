@@ -18,7 +18,9 @@ resources:
   - networking/cloudflare-middleware.yaml
   - networking/traefik-config.yaml
   - networking/network-policies.yaml
-  - networking/cilium-network-policies.yaml
+  # cilium-network-policies.yaml is applied separately (requires Cilium CNI).
+  # After CNI migration: uncomment the line below and remove the manual apply step.
+  # - networking/cilium-network-policies.yaml
   - monitoring/streamer-podmonitor.yaml
   - scheduling/priority-classes.yaml
   - scheduling/placeholder.yaml
