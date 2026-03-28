@@ -1,5 +1,6 @@
 .claude/worktrees/
 node_modules/
+*.age
 
 # Yarn
 **/.yarn/*
