@@ -51,12 +51,63 @@ export function FeaturedCarousel({ streams }: { streams: FeaturedData[] }) {
 
   if (streams.length === 0) return null;
 
-  return (
-    <div className="w-full">
-      <div className="relative">
-        <FeaturedStreamCard data={streams[active]} key={streams[active].slug} />
+  // Single stream — no coverflow needed
+  if (streams.length === 1) {
+    return (
+      <div className="w-full">
+        <FeaturedStreamCard data={streams[0]} />
       </div>
-      {streams.length > 1 && (
+    );
+  }
+
+  return (
+    <div className="w-full" style={{ perspective: "1200px" }}>
+      <div className="relative flex items-center justify-center" style={{ height: "clamp(280px, 40vw, 440px)" }}>
+        {streams.map((s, i) => {
+          const offset = i - active;
+          // Wrap around for circular positioning
+          const half = streams.length / 2;
+          let wrapped = offset;
+          if (wrapped > half) wrapped -= streams.length;
+          if (wrapped < -half) wrapped += streams.length;
+
+          const isCenter = wrapped === 0;
+          const isVisible = Math.abs(wrapped) <= 2;
+
+          if (!isVisible) return null;
+
+          const translateX = isCenter ? 0 : wrapped * 260;
+          const translateZ = isCenter ? 0 : -200;
+          const rotateY = isCenter ? 0 : wrapped < 0 ? 35 : -35;
+          const scale = isCenter ? 1 : 0.65;
+          const zIndex = isCenter ? 10 : 5 - Math.abs(wrapped);
+          const opacity = isCenter ? 1 : Math.abs(wrapped) === 1 ? 0.7 : 0.4;
+
+          return (
+            <div
+              key={s.slug}
+              className={cn(
+                "absolute transition-all duration-500 ease-out",
+                isCenter ? "w-[min(600px,80vw)]" : "w-[min(600px,80vw)] cursor-pointer"
+              )}
+              style={{
+                transform: `translateX(${translateX}px) translateZ(${translateZ}px) rotateY(${rotateY}deg) scale(${scale})`,
+                zIndex,
+                opacity,
+                transformStyle: "preserve-3d",
+              }}
+              onClick={isCenter ? undefined : () => setActive(i)}
+            >
+              {isCenter ? (
+                <FeaturedStreamCard data={s} />
+              ) : (
+                <SideThumbnail data={s} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {streams.length > 2 && (
         <div className="flex justify-center gap-2 mt-4">
           {streams.map((s, i) => (
             <button
@@ -72,6 +123,37 @@ export function FeaturedCarousel({ streams }: { streams: FeaturedData[] }) {
         </div>
       )}
     </div>
+  );
+}
+
+function SideThumbnail({ data }: { data: FeaturedData }) {
+  return (
+    <Link
+      to={`/watch/${data.slug}`}
+      className="block rounded-xl border border-white/[0.08] overflow-hidden"
+      onClick={(e) => e.preventDefault()} // Let carousel onClick handle navigation
+    >
+      <div className="relative aspect-video bg-black">
+        <img
+          src={`/watch/${data.slug}/thumbnail.png`}
+          alt={data.title}
+          className="w-full h-full object-contain"
+          loading="lazy"
+        />
+      </div>
+      <div className="flex items-center gap-2.5 px-4 py-2.5 bg-white/[0.02]">
+        <span className="text-emerald-400 inline-flex items-center gap-1.5">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-full w-full bg-emerald-400" />
+          </span>
+          <span className="text-xs font-medium uppercase tracking-wide">Live</span>
+        </span>
+        <span className="text-sm text-white font-medium truncate">
+          {data.title}
+        </span>
+      </div>
+    </Link>
   );
 }
 
