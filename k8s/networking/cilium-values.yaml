@@ -10,7 +10,7 @@ encryption:
 k8sServiceHost: 10.255.0.101
 k8sServicePort: 6443
 
-kubeProxyReplacement: false
+kubeProxyReplacement: true
 
 ipam:
   mode: kubernetes
