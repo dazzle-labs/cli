@@ -388,10 +388,10 @@ func (c *Client) Navigate(url string) error {
 	return err
 }
 
-// Reload reloads the current page via CDP Page.reload with cache bypass.
+// Reload reloads the current page via CDP Page.reload.
 // Uses the persistent WebSocket connection (same pattern as PipeClient).
 func (c *Client) Reload() error {
-	_, err := c.sendAndWait("Page.reload", map[string]any{"ignoreCache": true})
+	_, err := c.sendAndWait("Page.reload", map[string]any{})
 	return err
 }
 

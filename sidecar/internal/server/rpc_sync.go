@@ -147,8 +147,8 @@ func (h *syncServer) Push(ctx context.Context, stream *connect.ClientStream[side
 	state.mu.Unlock()
 
 	// Auto-refresh Chrome after every successful sync.
-	// Use Reload (Page.reload with ignoreCache) instead of Navigate — navigating
-	// to the same URL can be treated as a no-op by Chrome or served from cache.
+	// Use Reload (Page.reload) instead of Navigate — navigating to the same URL
+	// can be treated as a no-op by Chrome.
 	if entryPoint != "" && len(entries) > 0 {
 		if err := h.s.cdpClient.Reload(); err != nil {
 			log.Printf("sync: auto-refresh failed: %v", err)

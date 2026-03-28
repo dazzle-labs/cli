@@ -559,7 +559,7 @@ func (c *PipeClient) Navigate(url string) error {
 }
 
 func (c *PipeClient) Reload() error {
-	_, err := c.sendSessionAndWait("Page.reload", map[string]any{"ignoreCache": true})
+	_, err := c.sendSessionAndWait("Page.reload", map[string]any{})
 	return err
 }
 
