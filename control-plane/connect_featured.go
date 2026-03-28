@@ -47,9 +47,9 @@ func (s *featuredServer) fetchFeatured() *apiv1internal.GetFeaturedResponse {
 	rows, err := s.mgr.db.Query(`
 		SELECT s.slug, s.name, COALESCE(s.stream_title, ''), COALESCE(s.stream_category, '')
 		FROM stages s
-		WHERE s.featured = true AND s.slug IS NOT NULL AND s.status = 'running'
+		WHERE s.featured_index > 0 AND s.slug IS NOT NULL AND s.status = 'running'
 		AND EXISTS (SELECT 1 FROM rtmp_sessions rs WHERE rs.stage_id = s.id AND rs.ended_at IS NULL)
-		ORDER BY RANDOM() LIMIT 3`)
+		ORDER BY s.featured_index DESC`)
 	if err != nil {
 		return &apiv1internal.GetFeaturedResponse{}
 	}
