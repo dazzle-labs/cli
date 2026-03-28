@@ -87,7 +87,7 @@ trimaran/uninstall: ## Remove Trimaran scheduler from the cluster
 	$(HELM) uninstall trimaran -n kube-system || true
 	$(OK) "Trimaran removed"
 
-deploy: apply-secrets cilium/install prometheus/install ## Apply secrets, install Helm charts, and deploy Kustomize manifests to the cluster
+deploy: apply-secrets ## Apply secrets, install Helm charts, and deploy Kustomize manifests to the cluster
 	$(STEP) "Applying CRDs"
 	$(KUBECTL) apply -f crds/
 	$(STEP) "Applying Kustomize manifests"
