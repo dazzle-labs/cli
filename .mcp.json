@@ -5,14 +5,14 @@
       "command": "npx",
       "args": [
         "-y",
-        "chrome-devtools-mcp@latest"
+        "chrome-devtools-mcp@0.20.3"
       ],
       "env": {}
     },
     "shadcn": {
       "command": "npx",
       "args": [
-        "shadcn@latest",
+        "shadcn@4.1.1",
         "mcp"
       ]
     }
