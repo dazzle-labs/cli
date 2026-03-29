@@ -350,6 +350,16 @@ func (s *Server) startPipeline() {
 		time.Sleep(500 * time.Millisecond)
 	}
 
+	// Native renderer starts at about:blank — navigate to content entry point.
+	// Chrome gets the URL on launch, but stage-runtime needs an explicit navigate.
+	if os.Getenv("RENDERER") == "native" {
+		url := s.cfg.ContentURL("index.html")
+		log.Printf("Native renderer: navigating to %s", url)
+		if err := s.cdpClient.Navigate(url); err != nil {
+			log.Printf("WARN: initial navigate failed: %v", err)
+		}
+	}
+
 	s.pipeline.SetStatsCallback(func(stats pipeline.Stats) {
 		UpdatePipelineStats(stats)
 	})
