@@ -25,6 +25,13 @@ spec:
   policyTypes:
     - Ingress
   ingress:
+    # Kubelet health/readiness probes (sent from node host IPs).
+    - from:
+        - ipBlock:
+            cidr: 10.0.0.0/8
+      ports:
+        - protocol: TCP
+          port: 8080
     # Traefik ingress controller
     - from:
         - namespaceSelector:
@@ -229,41 +236,28 @@ spec:
         - protocol: TCP
           port: 53
     # Kubernetes API server (GPUNode/GPUNodeClass CRDs, pod management,
-    # leader election leases). API server runs on host network or as a
-    # ClusterIP in default namespace — allow port 443 and 6443.
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: default
-      ports:
+    # leader election leases). Allow all egress on API server ports —
+    # Cilium's kube-proxy replacement rewrites ClusterIP destinations
+    # via eBPF before NetworkPolicy evaluation, making ipBlock matching
+    # unreliable for service IPs.
+    - ports:
         - protocol: TCP
           port: 443
         - protocol: TCP
           port: 6443
-    # Postgres (same namespace)
-    - to:
-        - podSelector:
-            matchLabels:
-              app: postgres
-      ports:
+    # Postgres
+    - ports:
         - protocol: TCP
           port: 5432
     # Streamer pods (management API via ConnectRPC over mTLS)
-    - to:
-        - podSelector:
-            matchLabels:
-              app: streamer-stage
-      ports:
+    - ports:
         - protocol: TCP
           port: 8080
-    # Ingest pods (HLS proxy)
-    - to:
-        - podSelector:
-            matchLabels:
-              app: ingest
-      ports:
+    # Ingest pods (HLS proxy — also on 8080, covered above)
+    # Ingest RTMP callbacks on port 9090
+    - ports:
         - protocol: TCP
-          port: 8080
+          port: 9090
     # External HTTPS egress is handled by CiliumNetworkPolicy
     # (cilium-network-policies.yaml) with FQDN-based restrictions.
     # Fallback for non-Cilium clusters (e.g. local Kind):

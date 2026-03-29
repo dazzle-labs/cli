@@ -15,6 +15,11 @@ kubeProxyReplacement: true
 ipam:
   mode: kubernetes
 
-routingMode: native
-autoDirectNodeRoutes: true
-ipv4NativeRoutingCIDR: 10.42.0.0/16
+routingMode: tunnel
+tunnelProtocol: vxlan
+
+# Use the private Hetzner network interface for tunnel and node-to-node traffic.
+# eth0 is the public interface; eth1 is the private network where all node
+# InternalIPs (10.x.x.x) live. Without this, Cilium defaults to eth0 and
+# VXLAN packets to private IPs get dropped.
+devices: "eth+"
