@@ -417,6 +417,25 @@ func dbListStages(db *sql.DB, userID string) ([]stageRow, error) {
 	return stages, rows.Err()
 }
 
+func dbListAllStages(db *sql.DB) ([]stageRow, error) {
+	rows, err := db.Query(`
+		SELECT `+stageColumns+`
+		FROM stages ORDER BY created_at`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var stages []stageRow
+	for rows.Next() {
+		s, err := scanStage(rows)
+		if err != nil {
+			return nil, err
+		}
+		stages = append(stages, *s)
+	}
+	return stages, rows.Err()
+}
+
 func dbGetStage(db *sql.DB, id string) (*stageRow, error) {
 	row := db.QueryRow(`
 		SELECT `+stageColumns+`

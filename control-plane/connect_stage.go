@@ -160,8 +160,14 @@ func (s *stageServer) ListStages(ctx context.Context, req *connect.Request[apiv1
 		return connect.NewResponse(&apiv1.ListStagesResponse{Stages: pbStages}), nil
 	}
 
-	// Owned (possibly filtered to live)
-	rows, err := dbListStages(s.mgr.db, info.UserID)
+	// Owned (possibly filtered to live). Admins see all stages.
+	var rows []stageRow
+	var err error
+	if isAdmin(info.UserID) {
+		rows, err = dbListAllStages(s.mgr.db)
+	} else {
+		rows, err = dbListStages(s.mgr.db, info.UserID)
+	}
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
