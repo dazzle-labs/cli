@@ -110,8 +110,9 @@ func (c *StageListCmd) Run(ctx *Context) error {
 
 // StageCreateCmd creates a new stage.
 type StageCreateCmd struct {
-	Name string `arg:"" help:"Stage name."`
-	GPU  bool   `help:"Create a GPU-accelerated stage." default:"false"`
+	Name         string   `arg:"" help:"Stage name."`
+	GPU          bool     `help:"Create a GPU-accelerated stage." default:"false"`
+	Experimental []string `help:"Enable experimental capabilities (e.g. native-runtime)." short:"x"`
 }
 
 func (c *StageCreateCmd) Run(ctx *Context) error {
@@ -122,6 +123,9 @@ func (c *StageCreateCmd) Run(ctx *Context) error {
 	var caps []string
 	if c.GPU {
 		caps = append(caps, "gpu")
+	}
+	for _, exp := range c.Experimental {
+		caps = append(caps, "x-"+exp)
 	}
 
 	client := apiv1connect.NewStageServiceClient(ctx.HTTPClient, ctx.APIURL)
@@ -310,6 +314,9 @@ func (c *StageStatusCmd) Run(ctx *Context) error {
 	}
 
 	printText("Name:   %s\nStatus: %s", stage.Name, stage.Status)
+	if len(stage.Capabilities) > 0 {
+		printText("Caps:   %s", strings.Join(stage.Capabilities, ", "))
+	}
 	if stage.WatchUrl != "" {
 		printText("Watch:  %s", stage.WatchUrl)
 	}
