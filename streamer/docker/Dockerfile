@@ -1,5 +1,6 @@
 ARG VARIANT=cpu
 ARG SIDECAR_IMAGE=dazzlefm/agent-streamer-sidecar:main
+ARG STAGE_RUNTIME_IMAGE=
 
 # --- Base images per variant ---
 FROM ubuntu:24.04                        AS base-cpu
@@ -103,15 +104,17 @@ RUN apt-get update && apt-get install -y \
 # by nvidia-container-toolkit, so they always match the host driver.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential git nasm pkg-config \
-        libx264-dev libpulse-dev libx11-dev libxcb1-dev libxcb-shm0-dev \
+        libssl-dev libx264-dev libpulse-dev libx11-dev libxcb1-dev libxcb-shm0-dev \
         libxcb-xfixes0-dev libfreetype-dev libfontconfig-dev libharfbuzz-dev \
         libssl-dev \
     # nv-codec-headers for NVENC
     && git clone --depth 1 --branch n12.2.72.0 https://github.com/FFmpeg/nv-codec-headers /tmp/nv-codec-headers \
     && make -C /tmp/nv-codec-headers install \
     # ffmpeg — pinned to 313e776 (2026-03-20).
-    && git clone --depth 100 https://git.ffmpeg.org/ffmpeg.git /tmp/ffmpeg \
-    && cd /tmp/ffmpeg && git checkout 313e776 \
+    && git init /tmp/ffmpeg \
+    && cd /tmp/ffmpeg \
+    && git fetch --depth 1 https://github.com/FFmpeg/FFmpeg.git 313e776ba7d79e0830e2769ba88b787f0f1da24c \
+    && git checkout FETCH_HEAD \
     && ./configure \
         --enable-gpl --enable-nonfree \
         --enable-openssl \
@@ -133,6 +136,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && ffmpeg -protocols 2>/dev/null | grep -q rtmps \
     && echo "GPU image smoke test passed"
 
+# --- Optional: stage-runtime binary (Rust stage runtime) ---
+# When STAGE_RUNTIME_IMAGE is set, the binary is copied into both CPU and GPU images.
+# Build it separately: docker build -f stage-runtime/Dockerfile --target builder ...
+ARG STAGE_RUNTIME_IMAGE
+FROM ${STAGE_RUNTIME_IMAGE:-ubuntu:24.04} AS stage-runtime-src
+# Ensure the path exists so the glob COPY trick works even on the bare ubuntu fallback.
+RUN mkdir -p /build/target/release
+
 # --- Streamer image (CPU stages) ---
 FROM gl-${VARIANT} AS streamer
 
@@ -148,6 +159,10 @@ COPY docker/prestop.sh /scripts/prestop.sh
 COPY docker/stage-start.sh /stage-start.sh
 RUN chmod +x /entrypoint.sh /scripts/prestop.sh /stage-start.sh
 
+# Copy stage-runtime binary if the builder image was provided.
+# Glob trick: trailing [e] is a no-op when the path doesn't exist (default ubuntu base).
+COPY --from=stage-runtime-src /build/target/release/stage-runtim[e] /stage-runtime
+
 ENV DISPLAY=:99
 ENV PULSE_SERVER=unix:/tmp/pulse/native
 # NVIDIA container runtime: request specific driver capabilities.
@@ -161,6 +176,7 @@ ENTRYPOINT ["/entrypoint.sh"]
 
 # --- GPU Agent: streamer + sidecar in agent mode ---
 FROM ${SIDECAR_IMAGE} AS sidecar-src
+
 FROM streamer AS gpu-node
 COPY --from=sidecar-src /sidecar /sidecar
 ENTRYPOINT ["/sidecar", "agent"]

@@ -18,6 +18,7 @@ set -euo pipefail
 #   __NV_PRIME_RENDER_OFFLOAD, __GLX_VENDOR_LIBRARY_NAME
 
 CHROME_PID=""
+RENDER_PID=""
 SIDECAR_PID=""
 PULSE_PID=""
 XVFB_PID=""
@@ -25,6 +26,7 @@ XVFB_PID=""
 cleanup() {
     echo "[stage $STAGE_ID] Shutting down..."
     [ -n "$CHROME_PID" ] && kill "$CHROME_PID" 2>/dev/null || true
+    [ -n "$RENDER_PID" ] && kill "$RENDER_PID" 2>/dev/null || true
     [ -n "$SIDECAR_PID" ] && kill "$SIDECAR_PID" 2>/dev/null || true
     [ -n "$PULSE_PID" ] && kill "$PULSE_PID" 2>/dev/null || true
     [ -n "$XVFB_PID" ] && kill "$XVFB_PID" 2>/dev/null || true
@@ -40,8 +42,10 @@ SLOT="${SLOT:-0}"
 DATA_DIR="${DATA_DIR:-/data}"
 HLS_DIR="${HLS_DIR:-/tmp/hls-$SLOT}"
 
-if [ -z "${CHROME_FLAGS:-}" ]; then
-    echo "ERROR: CHROME_FLAGS env var is required"
+RENDERER="${RENDERER:-chrome}"
+
+if [ "$RENDERER" != "native" ] && [ -z "${CHROME_FLAGS:-}" ]; then
+    echo "ERROR: CHROME_FLAGS env var is required (set RENDERER=native to use stage-runtime)"
     exit 1
 fi
 
@@ -82,6 +86,8 @@ fi
 CHROME_FLAGS="$CHROME_FLAGS --display=$DISPLAY --user-data-dir=$DATA_DIR/chrome"
 CHROME_FLAGS="$CHROME_FLAGS --window-size=${SCREEN_WIDTH},${SCREEN_HEIGHT} --window-position=0,0"
 
+if [ "$RENDERER" != "native" ]; then
+# --- Xvfb + PulseAudio (Chrome mode only) ---
 DISPLAY_NUM="${DISPLAY#:}"
 AUTH_FLAG="-ac"
 if [ -n "${XAUTHORITY:-}" ] && [ -f "$XAUTHORITY" ]; then
@@ -128,6 +134,7 @@ fi
 PULSE_PID=$(pgrep -n -f "socket=$PULSE_DIR/native" || true)
 
 sleep 0.3
+fi # end Chrome-only Xvfb + PulseAudio
 
 # Restore content + Chrome state from R2 before starting sidecar.
 # On CPU stages this happens in a K8s init container; on GPU stages
@@ -165,36 +172,58 @@ for i in $(seq 1 120); do
     sleep 0.5
 done
 
-# Hide cursor
-unclutter -idle 0 -root -display "$DISPLAY" &>/dev/null &
-disown
-
-echo "[stage $STAGE_ID] Starting Chrome (CDP via pipe)..."
-echo "  Display: $DISPLAY"
-echo "  Flags: $CHROME_FLAGS --remote-debugging-pipe"
-# Launch Chrome with --remote-debugging-pipe: fd 3 = read commands, fd 4 = write responses.
-# Named FIFOs provide the transport, owned by the stage UID for isolation.
-# Build Chrome's start URL — in multi-tenant mode, Chrome loads /_boot which
-# redirects to /<nonce>/. The nonce never appears in the command line
-# (which is world-readable via /proc/<pid>/cmdline without hidepid=2).
-CHROME_START_URL="http://127.0.0.1:$LOCAL_PORT/"
-if [ -n "${CONTENT_NONCE:-}" ]; then
-    CHROME_START_URL="http://127.0.0.1:$LOCAL_PORT/_boot"
-fi
-# Drop to non-root stage UID for Chrome (process isolation).
-# Sidecar/ffmpeg stay root for /dev/nvidia* NVENC access.
-if [ -n "${STAGE_UID:-}" ] && [ "$STAGE_UID" != "0" ]; then
-    (exec 3<>"$CDP_PIPE_IN" 4>"$CDP_PIPE_OUT"; exec setpriv --reuid="$STAGE_UID" --regid="${STAGE_GID:-$STAGE_UID}" --clear-groups google-chrome-stable $CHROME_FLAGS --remote-debugging-pipe "$CHROME_START_URL") &
-else
-    (exec 3<>"$CDP_PIPE_IN" 4>"$CDP_PIPE_OUT"; exec google-chrome-stable $CHROME_FLAGS --remote-debugging-pipe "$CHROME_START_URL") &
-fi
-CHROME_PID=$!
-
-# Brief wait for Chrome to initialize (no TCP port to poll — pipe connects on first message)
-sleep 2
-echo "[stage $STAGE_ID] Chrome started (CDP pipe: $CDP_PIPE_IN, $CDP_PIPE_OUT)."
-
 mkdir -p "$HLS_DIR"
+
+if [ "$RENDERER" = "native" ]; then
+    # --- native mode: stage-runtime replaces Xvfb + PulseAudio + Chrome + ffmpeg ---
+    echo "[stage $STAGE_ID] Starting stage-runtime (CDP via pipe)..."
+    echo "  Screen: ${SCREEN_WIDTH}x${SCREEN_HEIGHT}"
+    echo "  Content: $DATA_DIR/content"
+    export CONTENT_DIR="$DATA_DIR/content"
+    # Drop to stage UID (same as Chrome would). Sidecar stays root for /dev/nvidia*.
+    if [ -n "${STAGE_UID:-}" ] && [ "$STAGE_UID" != "0" ]; then
+        setpriv --reuid="$STAGE_UID" --regid="${STAGE_GID:-$STAGE_UID}" --clear-groups \
+            /stage-runtime \
+            --content-dir "$DATA_DIR/content" \
+            --data-dir "$DATA_DIR" \
+            --cdp-pipe-in "$CDP_PIPE_IN" \
+            --cdp-pipe-out "$CDP_PIPE_OUT" \
+            --width "$SCREEN_WIDTH" \
+            --height "$SCREEN_HEIGHT" &
+    else
+        /stage-runtime \
+            --content-dir "$DATA_DIR/content" \
+            --data-dir "$DATA_DIR" \
+            --cdp-pipe-in "$CDP_PIPE_IN" \
+            --cdp-pipe-out "$CDP_PIPE_OUT" \
+            --width "$SCREEN_WIDTH" \
+            --height "$SCREEN_HEIGHT" &
+    fi
+    RENDER_PID=$!
+    sleep 1
+    echo "[stage $STAGE_ID] stage-runtime started (CDP pipe: $CDP_PIPE_IN, $CDP_PIPE_OUT)."
+else
+    # --- Chrome mode: standard Xvfb + PulseAudio + Chrome pipeline ---
+    # Hide cursor
+    unclutter -idle 0 -root -display "$DISPLAY" &>/dev/null &
+    disown
+
+    echo "[stage $STAGE_ID] Starting Chrome (CDP via pipe)..."
+    echo "  Display: $DISPLAY"
+    echo "  Flags: $CHROME_FLAGS --remote-debugging-pipe"
+    CHROME_START_URL="http://127.0.0.1:$LOCAL_PORT/"
+    if [ -n "${CONTENT_NONCE:-}" ]; then
+        CHROME_START_URL="http://127.0.0.1:$LOCAL_PORT/_boot"
+    fi
+    if [ -n "${STAGE_UID:-}" ] && [ "$STAGE_UID" != "0" ]; then
+        (exec 3<>"$CDP_PIPE_IN" 4>"$CDP_PIPE_OUT"; exec setpriv --reuid="$STAGE_UID" --regid="${STAGE_GID:-$STAGE_UID}" --clear-groups google-chrome-stable $CHROME_FLAGS --remote-debugging-pipe "$CHROME_START_URL") &
+    else
+        (exec 3<>"$CDP_PIPE_IN" 4>"$CDP_PIPE_OUT"; exec google-chrome-stable $CHROME_FLAGS --remote-debugging-pipe "$CHROME_START_URL") &
+    fi
+    CHROME_PID=$!
+    sleep 2
+    echo "[stage $STAGE_ID] Chrome started (CDP pipe: $CDP_PIPE_IN, $CDP_PIPE_OUT)."
+fi
 
 echo "[stage $STAGE_ID] All processes started. Waiting..."
 wait -n

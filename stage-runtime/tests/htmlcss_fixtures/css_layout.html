@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #1a1a2e; font-family: sans-serif; color: white; }
+.grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 16px; }
+.card {
+  background: linear-gradient(135deg, #16213e, #0f3460);
+  border-radius: 8px; padding: 16px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.card h3 { font-size: 14px; margin-bottom: 8px; color: #e94560; }
+.card p { font-size: 12px; opacity: 0.7; line-height: 1.4; }
+.bar { height: 4px; background: #e94560; border-radius: 2px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="grid">
+  <div class="card"><h3>Alpha</h3><p>First card content with text layout</p><div class="bar" style="width:80%"></div></div>
+  <div class="card"><h3>Beta</h3><p>Second card with different text</p><div class="bar" style="width:60%"></div></div>
+  <div class="card"><h3>Gamma</h3><p>Third card more text here</p><div class="bar" style="width:90%"></div></div>
+  <div class="card"><h3>Delta</h3><p>Fourth card final text</p><div class="bar" style="width:45%"></div></div>
+  <div class="card"><h3>Epsilon</h3><p>Fifth card extra row</p><div class="bar" style="width:70%"></div></div>
+  <div class="card"><h3>Zeta</h3><p>Sixth card more content</p><div class="bar" style="width:55%"></div></div>
+  <div class="card"><h3>Eta</h3><p>Seventh card almost done</p><div class="bar" style="width:85%"></div></div>
+  <div class="card"><h3>Theta</h3><p>Eighth card the end</p><div class="bar" style="width:65%"></div></div>
+</div>
+</body>
+</html>

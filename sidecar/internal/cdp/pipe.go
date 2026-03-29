@@ -563,6 +563,13 @@ func (c *PipeClient) Reload() error {
 	return err
 }
 
+func (c *PipeClient) SetOutputs(outputs []OutputConfig) error {
+	_, err := c.sendSessionAndWait("StageRuntime.setOutputs", map[string]any{
+		"outputs": outputs,
+	})
+	return err
+}
+
 func (c *PipeClient) DispatchEvent(eventName string, data any) bool {
 	c.mu.Lock()
 	connected := c.connected

@@ -1,11 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+CHROME_PID=""
+RENDER_PID=""
+PULSE_PID=""
+XVFB_PID=""
+
 cleanup() {
     echo "Shutting down..."
-    kill "$CHROME_PID" 2>/dev/null || true
-    kill "$PULSE_PID" 2>/dev/null || true
-    kill "$XVFB_PID" 2>/dev/null || true
+    [ -n "$CHROME_PID" ] && kill "$CHROME_PID" 2>/dev/null || true
+    [ -n "$RENDER_PID" ] && kill "$RENDER_PID" 2>/dev/null || true
+    [ -n "$PULSE_PID" ] && kill "$PULSE_PID" 2>/dev/null || true
+    [ -n "$XVFB_PID" ] && kill "$XVFB_PID" 2>/dev/null || true
     wait
     echo "All processes stopped."
 }
@@ -15,10 +21,55 @@ trap cleanup EXIT INT TERM
 SCREEN_WIDTH="${SCREEN_WIDTH:-1280}"
 SCREEN_HEIGHT="${SCREEN_HEIGHT:-720}"
 
+RENDERER="${RENDERER:-chrome}"
+
+# CDP pipes: shared between streamer and sidecar containers via a volume.
+CDP_PIPE_IN="${CDP_PIPE_IN:-/tmp/cdp/in}"
+CDP_PIPE_OUT="${CDP_PIPE_OUT:-/tmp/cdp/out}"
+
+if [ "$RENDERER" = "native" ]; then
+    # --- native mode: stage-runtime replaces Xvfb + PulseAudio + Chrome ---
+    # Create CDP FIFOs for sidecar communication
+    mkdir -p "$(dirname "$CDP_PIPE_IN")"
+    rm -f "$CDP_PIPE_IN" "$CDP_PIPE_OUT"
+    mkfifo "$CDP_PIPE_IN" "$CDP_PIPE_OUT"
+    chmod 666 "$CDP_PIPE_IN" "$CDP_PIPE_OUT"
+
+    # Wait for sidecar to be healthy
+    LOCAL_PORT="${LOCAL_HTTP_PORT:-8080}"
+    echo "Waiting for sidecar on port $LOCAL_PORT..."
+    for i in $(seq 1 120); do
+        if curl -s "http://localhost:$LOCAL_PORT/_dz_9f7a3b1c/health" > /dev/null 2>&1; then
+            echo "Sidecar ready."
+            break
+        fi
+        sleep 0.5
+    done
+
+    echo "Starting stage-runtime (${SCREEN_WIDTH}x${SCREEN_HEIGHT})..."
+    mkdir -p /data/content
+    /stage-runtime \
+        --content-dir /data/content \
+        --data-dir /data \
+        --cdp-pipe-in "$CDP_PIPE_IN" \
+        --cdp-pipe-out "$CDP_PIPE_OUT" \
+        --width "$SCREEN_WIDTH" \
+        --height "$SCREEN_HEIGHT" &
+    RENDER_PID=$!
+
+    mkdir -p /tmp/hls
+    echo "stage-runtime started. Waiting..."
+    wait -n
+    echo "A process exited, shutting down."
+    exit 0
+fi
+
+# --- Chrome mode (default) ---
+
 # Chrome policy flags — set via CHROME_FLAGS env var from the k8s deployment.
 # Runtime flags (display, data dir, window size, CDP) are appended below.
 if [ -z "${CHROME_FLAGS:-}" ]; then
-    echo "ERROR: CHROME_FLAGS env var is required"
+    echo "ERROR: CHROME_FLAGS env var is required (set RENDERER=native to use stage-runtime)"
     exit 1
 fi
 

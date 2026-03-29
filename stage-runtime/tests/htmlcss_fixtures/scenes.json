@@ -1,0 +1,710 @@
+{
+  "width": 256,
+  "height": 256,
+  "scenes": {
+    "solid_background": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #ff0000; }</style></head><body></body></html>",
+      "threshold": 0.005
+    },
+    "nested_divs": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #000; } .outer { width: 200px; height: 200px; background: #0000ff; padding: 20px; } .inner { width: 100%; height: 100%; background: #00ff00; }</style></head><body><div class=\"outer\"><div class=\"inner\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "flex_row": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { background: #111; } .row { display: flex; gap: 8px; padding: 8px; } .box { width: 60px; height: 60px; } .r { background: #ff0000; } .g { background: #00ff00; } .b { background: #0000ff; }</style></head><body><div class=\"row\"><div class=\"box r\"></div><div class=\"box g\"></div><div class=\"box b\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "grid_2x2": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { background: #222; } .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; } .cell { height: 120px; } .a { background: #e94560; } .b { background: #0f3460; } .c { background: #16213e; } .d { background: #533483; }</style></head><body><div class=\"grid\"><div class=\"cell a\"></div><div class=\"cell b\"></div><div class=\"cell c\"></div><div class=\"cell d\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "border_radius": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 256px; } .pill { width: 200px; height: 80px; background: #e94560; border-radius: 40px; }</style></head><body><div class=\"pill\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "border_solid": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 20px; } .bordered { width: 200px; height: 200px; background: #1a1a2e; border: 4px solid #e94560; }</style></head><body><div class=\"bordered\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "gradient_linear": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; } .grad { width: 256px; height: 256px; background: linear-gradient(135deg, #e94560, #0f3460); }</style></head><body><div class=\"grad\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "opacity_layers": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #fff; padding: 20px; } .layer { width: 150px; height: 150px; position: absolute; } .l1 { background: #ff0000; opacity: 0.5; top: 20px; left: 20px; } .l2 { background: #0000ff; opacity: 0.5; top: 60px; left: 60px; }</style></head><body><div class=\"layer l1\"></div><div class=\"layer l2\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "margin_padding": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .outer { margin: 20px; padding: 16px; background: #333; } .inner { width: 100px; height: 100px; background: #e94560; }</style></head><body><div class=\"outer\"><div class=\"inner\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "text_basic": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #000; color: #fff; font-family: sans-serif; font-size: 24px; padding: 20px; }</style></head><body><div>Hello World</div></body></html>",
+      "threshold": 0.105
+    },
+    "text_colors_sizes": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #1a1a2e; padding: 10px; font-family: sans-serif; } .big { font-size: 32px; color: #e94560; } .med { font-size: 18px; color: #00ff88; } .small { font-size: 12px; color: #aaa; }</style></head><body><div class=\"big\">Large</div><div class=\"med\">Medium</div><div class=\"small\">Small text</div></body></html>",
+      "threshold": 0.06
+    },
+    "card_layout": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { background: #1a1a2e; font-family: sans-serif; color: white; } .card { margin: 16px; padding: 16px; background: linear-gradient(135deg, #16213e, #0f3460); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); } .card h3 { font-size: 14px; margin-bottom: 8px; color: #e94560; } .card p { font-size: 12px; opacity: 0.7; } .bar { height: 4px; background: #e94560; border-radius: 2px; margin-top: 8px; width: 70%; }</style></head><body><div class=\"card\"><h3>Dashboard</h3><p>Status overview panel</p><div class=\"bar\"></div></div></body></html>",
+      "threshold": 0.065
+    },
+    "percentage_widths": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .bar { height: 30px; margin: 4px 0; } .w25 { width: 25%; background: #e94560; } .w50 { width: 50%; background: #0f3460; } .w75 { width: 75%; background: #533483; } .w100 { width: 100%; background: #16213e; }</style></head><body><div class=\"bar w25\"></div><div class=\"bar w50\"></div><div class=\"bar w75\"></div><div class=\"bar w100\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "display_none": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #000; } .visible { width: 100px; height: 100px; background: #00ff00; } .hidden { width: 100px; height: 100px; background: #ff0000; display: none; }</style></head><body><div class=\"hidden\"></div><div class=\"visible\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "overflow_hidden": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 20px; } .container { width: 100px; height: 100px; background: #333; overflow: hidden; } .big { width: 200px; height: 200px; background: #e94560; }</style></head><body><div class=\"container\"><div class=\"big\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "css_var_basic": {
+      "html": "<!DOCTYPE html><html><head><style>:root { --accent: #e94560; --bg: #1a1a2e; --size: 120px; } body { margin: 0; background: var(--bg); padding: 20px; } .box { width: var(--size); height: var(--size); background: var(--accent); border-radius: 8px; }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "css_var_inheritance": {
+      "html": "<!DOCTYPE html><html><head><style>:root { --color-a: #e94560; --color-b: #0f3460; --color-c: #533483; } body { margin: 0; background: #111; padding: 10px; } .row { display: flex; gap: 10px; } .box { width: 60px; height: 60px; border-radius: 4px; } .a { background: var(--color-a); } .b { background: var(--color-b); } .c { background: var(--color-c); }</style></head><body><div class=\"row\"><div class=\"box a\"></div><div class=\"box b\"></div><div class=\"box c\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "css_var_fallback": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #000; padding: 20px; } .box { width: 100px; height: 100px; background: var(--undefined, #00ff88); border-radius: 8px; }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "css_var_nested": {
+      "html": "<!DOCTYPE html><html><head><style>:root { --base: #e94560; --accent: var(--base); } body { margin: 0; background: #111; padding: 20px; } .box { width: 100px; height: 100px; background: var(--accent); }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "css_calc_width": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .bar { height: 40px; margin: 8px; background: #e94560; } .b1 { width: calc(100% - 40px); } .b2 { width: calc(50% + 20px); } .b3 { width: calc(256px / 2); }</style></head><body><div class=\"bar b1\"></div><div class=\"bar b2\"></div><div class=\"bar b3\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "css_calc_padding": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .outer { padding: calc(10px + 10px); background: #333; } .inner { width: 100px; height: 100px; background: #e94560; }</style></head><body><div class=\"outer\"><div class=\"inner\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "box_shadow_basic": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #1a1a2e; display: flex; justify-content: center; align-items: center; height: 256px; } .card { width: 120px; height: 80px; background: #fff; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }</style></head><body><div class=\"card\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "box_shadow_colored": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 256px; } .card { width: 100px; height: 100px; background: #1a1a2e; border-radius: 12px; box-shadow: 0 0 30px rgba(233, 69, 96, 0.6); }</style></head><body><div class=\"card\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "box_shadow_offset": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #f0f0f0; padding: 40px; } .box { width: 100px; height: 100px; background: #fff; box-shadow: 8px 8px 0px #333; }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "box_shadow_multiple": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 256px; } .card { width: 100px; height: 60px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.3), 0 8px 16px rgba(0,0,0,0.2); }</style></head><body><div class=\"card\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "box_shadow_spread": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #222; display: flex; justify-content: center; align-items: center; height: 256px; } .box { width: 80px; height: 80px; background: #e94560; box-shadow: 0 0 0 10px #0f3460, 0 0 0 20px #533483; border-radius: 4px; }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.045
+    },
+    "backdrop_filter_blur": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: linear-gradient(135deg, #e94560, #0f3460); } .overlay { position: absolute; top: 40px; left: 40px; width: 176px; height: 176px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); background: rgba(255,255,255,0.1); border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); }</style></head><body><div class=\"overlay\"></div></body></html>",
+      "threshold": 0.34
+    },
+    "backdrop_filter_dark": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #e94560; } .stripe { height: 20px; } .s1 { background: #0f3460; } .s2 { background: #e94560; } .panel { position: absolute; top: 60px; left: 30px; width: 196px; height: 136px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); background: rgba(0,0,0,0.4); border-radius: 8px; }</style></head><body><div class=\"stripe s1\"></div><div class=\"stripe s2\"></div><div class=\"stripe s1\"></div><div class=\"stripe s2\"></div><div class=\"stripe s1\"></div><div class=\"stripe s2\"></div><div class=\"stripe s1\"></div><div class=\"stripe s2\"></div><div class=\"stripe s1\"></div><div class=\"stripe s2\"></div><div class=\"stripe s1\"></div><div class=\"stripe s2\"></div><div class=\"panel\"></div></body></html>",
+      "threshold": 0.025
+    },
+    "transform_rotate": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 60px; } .box { width: 80px; height: 80px; background: #e94560; transform: rotate(45deg); }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.01
+    },
+    "transform_scale": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 60px; } .box { width: 40px; height: 40px; background: #0f3460; transform: scale(2.5); border-radius: 4px; }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "transform_translate": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .box { width: 60px; height: 60px; background: #e94560; transform: translate(80px, 80px); }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "transform_skew": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 60px; } .box { width: 100px; height: 60px; background: #533483; transform: skewX(-15deg); }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "transform_compound": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 40px; } .box { width: 60px; height: 60px; background: #e94560; transform: rotate(30deg) scale(1.5) translate(10px, 10px); }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.015
+    },
+    "transform_origin": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 40px; } .box { width: 80px; height: 80px; background: #0f3460; transform: rotate(45deg); transform-origin: top left; }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "flex_wrap": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { background: #111; } .row { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; } .box { width: 80px; height: 50px; } .a { background: #e94560; } .b { background: #0f3460; } .c { background: #533483; } .d { background: #16213e; } .e { background: #00ff88; }</style></head><body><div class=\"row\"><div class=\"box a\"></div><div class=\"box b\"></div><div class=\"box c\"></div><div class=\"box d\"></div><div class=\"box e\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "flex_column": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { background: #111; height: 256px; } .col { display: flex; flex-direction: column; justify-content: space-between; height: 100%; padding: 10px; } .box { height: 50px; border-radius: 4px; } .a { background: #e94560; } .b { background: #0f3460; } .c { background: #533483; }</style></head><body><div class=\"col\"><div class=\"box a\"></div><div class=\"box b\"></div><div class=\"box c\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "flex_center": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #1a1a2e; display: flex; justify-content: center; align-items: center; height: 256px; } .box { width: 80px; height: 80px; background: #e94560; border-radius: 50%; }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "grid_3col": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { background: #111; } .grid { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 4px; padding: 4px; } .cell { height: 80px; } .a { background: #e94560; } .b { background: #0f3460; } .c { background: #533483; } .d { background: #16213e; } .e { background: #00ff88; } .f { background: #ffcc00; }</style></head><body><div class=\"grid\"><div class=\"cell a\"></div><div class=\"cell b\"></div><div class=\"cell c\"></div><div class=\"cell d\"></div><div class=\"cell e\"></div><div class=\"cell f\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "absolute_position": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; position: relative; height: 256px; } .box { position: absolute; width: 60px; height: 60px; border-radius: 4px; } .tl { top: 10px; left: 10px; background: #e94560; } .tr { top: 10px; left: 186px; background: #0f3460; } .bl { top: 186px; left: 10px; background: #533483; } .br { top: 186px; left: 186px; background: #16213e; } .center { top: 98px; left: 98px; background: #00ff88; }</style></head><body><div class=\"box tl\"></div><div class=\"box tr\"></div><div class=\"box bl\"></div><div class=\"box br\"></div><div class=\"box center\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "dashboard_card": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { background: #0a0a1a; font-family: sans-serif; color: white; padding: 16px; } .card { background: linear-gradient(135deg, #16213e, #0f3460); border-radius: 12px; padding: 20px; box-shadow: 0 4px 24px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.08); } .title { font-size: 14px; color: #e94560; margin-bottom: 12px; font-weight: bold; } .stat { font-size: 36px; font-weight: bold; margin-bottom: 8px; } .bar-bg { height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; } .bar-fill { height: 100%; width: 72%; background: #e94560; border-radius: 3px; } .label { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 8px; }</style></head><body><div class=\"card\"><div class=\"title\">Active Users</div><div class=\"stat\">2,847</div><div class=\"bar-bg\"><div class=\"bar-fill\"></div></div><div class=\"label\">72% of capacity</div></div></body></html>",
+      "threshold": 0.14
+    },
+    "gradient_multi_stop": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; } .grad { width: 256px; height: 256px; background: linear-gradient(to right, #e94560 0%, #533483 33%, #0f3460 66%, #16213e 100%); }</style></head><body><div class=\"grad\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "border_radius_circle": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 256px; } .circle { width: 120px; height: 120px; background: linear-gradient(135deg, #e94560, #533483); border-radius: 50%; }</style></head><body><div class=\"circle\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "padding_percent": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .outer { padding: 10%; background: #333; } .inner { width: 100px; height: 100px; background: #e94560; }</style></head><body><div class=\"outer\"><div class=\"inner\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "gap_vw": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { background: #111; } .row { display: flex; gap: 4vw; padding: 8px; } .box { width: 50px; height: 50px; } .a { background: #e94560; } .b { background: #0f3460; } .c { background: #533483; }</style></head><body><div class=\"row\"><div class=\"box a\"></div><div class=\"box b\"></div><div class=\"box c\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "font_size_em": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; color: #fff; font-family: sans-serif; font-size: 16px; padding: 10px; } .parent { font-size: 20px; } .child { font-size: 1.5em; }</style></head><body><div class=\"parent\"><div class=\"child\">Big Text</div></div></body></html>",
+      "threshold": 0.115
+    },
+    "font_size_rem": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; color: #fff; font-family: sans-serif; padding: 10px; } .small { font-size: 0.75rem; } .normal { font-size: 1rem; } .big { font-size: 2rem; }</style></head><body><div class=\"small\">Small</div><div class=\"normal\">Normal</div><div class=\"big\">Big</div></body></html>",
+      "threshold": 0.095
+    },
+    "width_vw_vh": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .box { width: 50vw; height: 50vh; background: linear-gradient(135deg, #e94560, #0f3460); }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "margin_percent": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .box { width: 100px; height: 100px; background: #e94560; margin-left: 20%; }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "nested_border_radius": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 256px; } .outer { width: 140px; height: 140px; background: #0f3460; border-radius: 20px; display: flex; justify-content: center; align-items: center; } .inner { width: 80px; height: 80px; background: #e94560; border-radius: 12px; }</style></head><body><div class=\"outer\"><div class=\"inner\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "text_transform_upper": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; color: #fff; font-family: sans-serif; font-size: 24px; padding: 20px; } .upper { text-transform: uppercase; }</style></head><body><div class=\"upper\">hello world</div></body></html>",
+      "threshold": 0.11
+    },
+    "text_transform_capitalize": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; color: #fff; font-family: sans-serif; font-size: 24px; padding: 20px; } .cap { text-transform: capitalize; }</style></head><body><div class=\"cap\">hello world</div></body></html>",
+      "threshold": 0.1
+    },
+    "text_decoration_underline": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; color: #fff; font-family: sans-serif; font-size: 24px; padding: 20px; } .underline { text-decoration: underline; }</style></head><body><div class=\"underline\">Underlined</div></body></html>",
+      "threshold": 0.11
+    },
+    "text_decoration_line_through": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; color: #fff; font-family: sans-serif; font-size: 24px; padding: 20px; } .strike { text-decoration: line-through; }</style></head><body><div class=\"strike\">Strikethrough</div></body></html>",
+      "threshold": 0.125
+    },
+    "font_style_italic": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; color: #fff; font-family: sans-serif; font-size: 24px; padding: 20px; } .italic { font-style: italic; }</style></head><body><div class=\"italic\">Italic Text</div></body></html>",
+      "threshold": 0.11
+    },
+    "letter_spacing_wide": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; color: #fff; font-family: sans-serif; font-size: 20px; padding: 20px; } .wide { letter-spacing: 8px; }</style></head><body><div class=\"wide\">SPACED</div></body></html>",
+      "threshold": 0.075
+    },
+    "pseudo_before_text": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; color: #fff; font-family: sans-serif; font-size: 20px; padding: 20px; } .item::before { content: \"\u2192 \"; color: #e94560; }</style></head><body><div class=\"item\">Hello</div></body></html>",
+      "threshold": 0.05
+    },
+    "pseudo_after_text": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; color: #fff; font-family: sans-serif; font-size: 20px; padding: 20px; } .item::after { content: \" \u2713\"; color: #00ff88; }</style></head><body><div class=\"item\">Done</div></body></html>",
+      "threshold": 0.05
+    },
+    "pseudo_both": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; color: #fff; font-family: sans-serif; font-size: 20px; padding: 20px; } .item::before { content: \"[\"; color: #e94560; } .item::after { content: \"]\"; color: #e94560; }</style></head><body><div class=\"item\">Wrapped</div></body></html>",
+      "threshold": 0.075
+    },
+    "pseudo_empty_content": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 20px; } .box::before { content: \"\"; display: block; width: 50px; height: 50px; background: #e94560; }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "pseudo_with_background": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 20px; color: #fff; font-family: sans-serif; font-size: 16px; } .tag::before { content: \"NEW\"; background: #e94560; color: #fff; padding: 2px 8px; margin-right: 8px; font-size: 12px; }</style></head><body><div class=\"tag\">Feature</div></body></html>",
+      "threshold": 0.095
+    },
+    "img_basic": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 20px; }</style></head><body><img src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAEklEQVR4nGP4z8DwHx9mGBkKAMLXf4EvceABAAAAAElFTkSuQmCC\" width=\"100\" height=\"100\"></body></html>",
+      "threshold": 0.005
+    },
+    "img_natural_size": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 20px; }</style></head><body><img src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAD0lEQVR4nGNg+E8AjgwFAIMXf4H6lHc8AAAAAElFTkSuQmCC\"></body></html>",
+      "threshold": 0.025
+    },
+    "img_in_flex": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .row { display: flex; gap: 10px; padding: 10px; }</style></head><body><div class=\"row\"><img src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAEklEQVR4nGP4z8DwHx9mGBkKAMLXf4EvceABAAAAAElFTkSuQmCC\" width=\"80\" height=\"80\"><img src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAD0lEQVR4nGNg+E8AjgwFAIMXf4H6lHc8AAAAAElFTkSuQmCC\" width=\"80\" height=\"80\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "img_no_src": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 20px; } img { width: 50px; height: 50px; background: #333; }</style></head><body><img></body></html>",
+      "threshold": 0.035
+    },
+    "media_min_width_match": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .box { width: 100px; height: 100px; background: #ff0000; } @media (min-width: 200px) { .box { background: #00ff00; } }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "media_max_width_no_match": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .box { width: 100px; height: 100px; background: #00ff00; } @media (max-width: 200px) { .box { background: #ff0000; } }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "media_screen": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .box { width: 100px; height: 100px; background: #ff0000; } @media screen { .box { background: #0000ff; } }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "media_print_ignored": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .box { width: 100px; height: 100px; background: #00ff00; } @media print { .box { background: #ff0000; } }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "media_compound_and": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .box { width: 100px; height: 100px; background: #ff0000; } @media screen and (min-width: 200px) and (max-width: 1400px) { .box { background: #00ff00; } }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "media_prefers_color_scheme_light": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .box { width: 100px; height: 100px; background: #ff0000; } @media (prefers-color-scheme: light) { .box { background: #00ff00; } }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "media_not_print": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .box { width: 100px; height: 100px; background: #ff0000; } @media not print { .box { background: #00ff00; } }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "media_with_normal_rules": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .a { width: 100px; height: 50px; background: #e94560; } @media (min-width: 200px) { .b { background: #0f3460; } } .b { width: 100px; height: 50px; background: #ff0000; }</style></head><body><div class=\"a\"></div><div class=\"b\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "nth_child_striped": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #000; } .row { width: 256px; height: 32px; } .row:nth-child(odd) { background: #e94560; } .row:nth-child(even) { background: #0f3460; }</style></head><body><div class=\"row\"></div><div class=\"row\"></div><div class=\"row\"></div><div class=\"row\"></div><div class=\"row\"></div><div class=\"row\"></div><div class=\"row\"></div><div class=\"row\"></div></body></html>"
+    },
+    "not_selector": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #000; padding: 4px; } .box { width: 60px; height: 60px; background: #ff0000; display: inline-block; margin: 4px; } .box:not(.special) { background: #00ff00; }</style></head><body><div class=\"box\"></div><div class=\"box special\"></div><div class=\"box\"></div></body></html>"
+    },
+    "first_of_type": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #000; padding: 4px; } .item { width: 100px; height: 40px; background: #333; margin: 4px; } p.item:first-of-type { background: #e94560; } span.item { display: block; } span.item:first-of-type { background: #0f3460; }</style></head><body><p class=\"item\"></p><span class=\"item\"></span><p class=\"item\"></p><span class=\"item\"></span></body></html>"
+    },
+    "only_child": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #000; padding: 8px; } .wrapper { margin: 8px; padding: 8px; background: #222; } .child { width: 80px; height: 40px; background: #333; } .child:only-child { background: #e94560; }</style></head><body><div class=\"wrapper\"><div class=\"child\"></div></div><div class=\"wrapper\"><div class=\"child\"></div><div class=\"child\"></div></div></body></html>"
+    },
+    "inline_svg_rect": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #000; }</style></head><body><svg width=\"256\" height=\"256\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"200\" height=\"200\" x=\"28\" y=\"28\" fill=\"#e94560\" rx=\"10\"/></svg></body></html>",
+      "threshold": 0.04
+    },
+    "inline_svg_circles": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; }</style></head><body><svg width=\"256\" height=\"256\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"80\" cy=\"128\" r=\"60\" fill=\"#e94560\" opacity=\"0.8\"/><circle cx=\"176\" cy=\"128\" r=\"60\" fill=\"#0f3460\" opacity=\"0.8\"/></svg></body></html>",
+      "threshold": 0.04
+    },
+    "position_relative": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { margin: 0; background: #111; padding: 10px; } .box { width: 60px; height: 60px; } .a { background: #e94560; } .b { background: #0f3460; position: relative; top: 20px; left: 15px; } .c { background: #533483; }</style></head><body><div class=\"box a\"></div><div class=\"box b\"></div><div class=\"box c\"></div></body></html>",
+      "threshold": 0.025
+    },
+    "position_fixed": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { margin: 0; background: #111; } .fixed { position: fixed; bottom: 10px; right: 10px; width: 80px; height: 80px; background: #e94560; } .content { width: 100px; height: 100px; background: #0f3460; margin: 10px; }</style></head><body><div class=\"content\"></div><div class=\"fixed\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "min_width_height": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { margin: 0; background: #111; padding: 10px; } .container { display: flex; gap: 10px; } .a { width: 30px; min-width: 100px; height: 60px; background: #e94560; } .b { width: 60px; height: 20px; min-height: 80px; background: #0f3460; }</style></head><body><div class=\"container\"><div class=\"a\"></div><div class=\"b\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "max_width_height": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { margin: 0; background: #111; padding: 10px; } .a { width: 250px; max-width: 120px; height: 60px; background: #e94560; margin-bottom: 10px; } .b { width: 60px; height: 250px; max-height: 80px; background: #0f3460; }</style></head><body><div class=\"a\"></div><div class=\"b\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "z_index_stacking": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { margin: 0; background: #111; } .box { position: absolute; width: 100px; height: 100px; } .red { background: #ff0000; top: 30px; left: 30px; z-index: 10; } .green { background: #00ff00; top: 60px; left: 60px; z-index: 1; } .blue { background: #0000ff; top: 90px; left: 90px; z-index: 1; }</style></head><body><div class=\"box red\"></div><div class=\"box green\"></div><div class=\"box blue\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "display_inline_block": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { margin: 0; background: #111; padding: 10px; font-size: 0; } .item { display: inline-block; width: 60px; height: 60px; } .a { background: #e94560; } .b { background: #0f3460; } .c { background: #533483; }</style></head><body><span class=\"item a\"></span><span class=\"item b\"></span><span class=\"item c\"></span></body></html>",
+      "threshold": 0.005
+    },
+    "flex_grow_ratio": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { margin: 0; background: #111; padding: 10px; } .row { display: flex; width: 236px; height: 60px; } .a { flex-grow: 1; background: #e94560; } .b { flex-grow: 2; background: #0f3460; } .c { flex-grow: 1; background: #533483; }</style></head><body><div class=\"row\"><div class=\"a\"></div><div class=\"b\"></div><div class=\"c\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "flex_shrink_ratio": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { margin: 0; background: #111; padding: 10px; } .row { display: flex; width: 200px; height: 60px; } .item { width: 100px; } .a { flex-shrink: 1; background: #e94560; } .b { flex-shrink: 2; background: #0f3460; } .c { flex-shrink: 1; background: #533483; }</style></head><body><div class=\"row\"><div class=\"item a\"></div><div class=\"item b\"></div><div class=\"item c\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "line_height_unitless": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { margin: 0; background: #111; color: #fff; font-family: sans-serif; font-size: 14px; padding: 10px; } .double { line-height: 2; margin-bottom: 10px; background: #222; } .tight { line-height: 1; background: #333; }</style></head><body><div class=\"double\">Line one<br>Line two<br>Line three</div><div class=\"tight\">Line one<br>Line two<br>Line three</div></body></html>",
+      "threshold": 0.125
+    },
+    "text_overflow_ellipsis": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { margin: 0; background: #111; color: #fff; font-family: sans-serif; font-size: 14px; padding: 20px; } .truncate { width: 80px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: #222; padding: 4px; }</style></head><body><div class=\"truncate\">This is a very long text that should be truncated</div></body></html>",
+      "threshold": 0.05
+    },
+    "border_sides": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { margin: 0; background: #111; padding: 20px; } .box { width: 150px; height: 150px; background: #1a1a2e; border-top: 4px solid red; border-right: 8px solid green; border-bottom: 4px solid blue; border-left: 8px solid yellow; }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "attr_selector_exact": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { margin: 0; background: #111; padding: 8px; } .box { width: 60px; height: 60px; margin-bottom: 4px; } [data-theme=\"dark\"] { background: #e94560; } [data-theme=\"light\"] { background: #0f3460; }</style></head><body><div class=\"box\" data-theme=\"dark\"></div><div class=\"box\" data-theme=\"light\"></div><div class=\"box\" data-theme=\"dark\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "attr_selector_starts": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { margin: 0; background: #111; padding: 8px; } .box { width: 60px; height: 60px; margin-bottom: 4px; background: #222; } [data-tag^=\"btn\"] { background: #e94560; }</style></head><body><div class=\"box\" data-tag=\"btn-primary\"></div><div class=\"box\" data-tag=\"btn-secondary\"></div><div class=\"box\" data-tag=\"card-main\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "attr_selector_ends": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { margin: 0; background: #111; padding: 8px; } .box { width: 60px; height: 60px; margin-bottom: 4px; background: #222; } [data-tag$=\"large\"] { background: #00ff88; }</style></head><body><div class=\"box\" data-tag=\"header-large\"></div><div class=\"box\" data-tag=\"footer-large\"></div><div class=\"box\" data-tag=\"sidebar-small\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "attr_selector_contains": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { margin: 0; background: #111; padding: 8px; } .box { width: 60px; height: 60px; margin-bottom: 4px; background: #222; } [data-tag*=\"item\"] { background: #533483; }</style></head><body><div class=\"box\" data-tag=\"nav-item-active\"></div><div class=\"box\" data-tag=\"menu-link\"></div><div class=\"box\" data-tag=\"nav-item-disabled\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "combinator_child": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { margin: 0; background: #111; padding: 8px; } .box { width: 60px; height: 60px; margin: 4px; background: #222; } .parent > .child { background: #e94560; }</style></head><body><div class=\"parent\"><div class=\"child box\"></div><div class=\"child box\"><div class=\"grandchild box\"></div></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "combinator_adjacent": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { margin: 0; background: #111; padding: 8px; } .box { width: 60px; height: 60px; margin-bottom: 4px; background: #222; } .highlight + div { background: #00ff88; }</style></head><body><div class=\"container\"><div class=\"box\"></div><div class=\"box highlight\"></div><div class=\"box\"></div><div class=\"box\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "combinator_general_sibling": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { margin: 0; background: #111; padding: 8px; } .box { width: 60px; height: 60px; margin-bottom: 4px; background: #222; } .trigger ~ div { background: #0f3460; }</style></head><body><div class=\"container\"><div class=\"box\"></div><div class=\"box trigger\"></div><div class=\"box\"></div><div class=\"box\"></div><div class=\"box\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "compound_class": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { margin: 0; background: #111; padding: 8px; } .box { width: 60px; height: 60px; margin-bottom: 4px; background: #333; } .box.active { background: #e94560; }</style></head><body><div class=\"box active\"></div><div class=\"box\"></div><div class=\"box active\"></div><div class=\"box\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "border_radius_percent": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 16px; display: flex; gap: 16px; } .circle { width: 80px; height: 80px; background: #e94560; border-radius: 50%; } .pill { width: 160px; height: 50px; background: #0f3460; border-radius: 50%; } .squircle { width: 80px; height: 80px; background: #533483; border-radius: 25%; }</style></head><body><div class=\"circle\"></div><div class=\"pill\"></div><div class=\"squircle\"></div></body></html>",
+      "threshold": 0.1
+    },
+    "border_radius_mixed": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 16px; display: flex; gap: 12px; flex-wrap: wrap; } .box { width: 80px; height: 80px; } .a { background: #e94560; border-radius: 50% 0 50% 0; } .b { background: #0f3460; border-radius: 20px 50%; } .c { background: #533483; border-radius: 40% 10% 40% 10%; } .d { background: #00ff88; border-radius: 0 50% 0 50%; }</style></head><body><div class=\"box a\"></div><div class=\"box b\"></div><div class=\"box c\"></div><div class=\"box d\"></div></body></html>",
+      "threshold": 0.01
+    },
+    "transform_translate_percent": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .container { position: relative; width: 256px; height: 256px; } .centered { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100px; height: 100px; background: #e94560; border-radius: 8px; } .offset { position: absolute; top: 0; left: 0; transform: translate(25%, 75%); width: 60px; height: 60px; background: #0f3460; }</style></head><body><div class=\"container\"><div class=\"centered\"></div><div class=\"offset\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "transform_nested_stacking": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .parent { position: relative; width: 200px; height: 200px; margin: 20px; transform: rotate(10deg); background: #1a1a2e; } .child { position: absolute; top: 20px; left: 20px; width: 120px; height: 120px; transform: scale(0.9) rotate(-5deg); background: #0f3460; } .grandchild { position: absolute; top: 15px; left: 15px; width: 60px; height: 60px; transform: translate(10px, 10px) rotate(15deg); background: #e94560; border-radius: 4px; }</style></head><body><div class=\"parent\"><div class=\"child\"><div class=\"grandchild\"></div></div></div></body></html>",
+      "threshold": 0.01
+    },
+    "z_index_nested_stacking_contexts": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .layer { position: absolute; width: 120px; height: 120px; } .a { top: 20px; left: 20px; background: #e94560; z-index: 3; } .b { top: 40px; left: 40px; background: #0f3460; z-index: 1; opacity: 0.99; } .b-child { position: absolute; top: -10px; left: -10px; width: 60px; height: 60px; background: #00ff88; z-index: 999; } .c { top: 60px; left: 60px; background: #533483; z-index: 2; } .d { top: 80px; left: 80px; background: #16213e; z-index: 2; transform: translateZ(0); } .d-child { position: absolute; top: 10px; left: 10px; width: 50px; height: 50px; background: #ff6600; z-index: 100; }</style></head><body><div class=\"layer a\"></div><div class=\"layer b\"><div class=\"b-child\"></div></div><div class=\"layer c\"></div><div class=\"layer d\"><div class=\"d-child\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "z_index_opacity_context": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #fff; } .base { position: absolute; top: 60px; left: 60px; width: 100px; height: 100px; background: #ff0000; z-index: 1; } .ctx { position: absolute; top: 30px; left: 30px; width: 150px; height: 80px; opacity: 0.8; } .ctx-child { position: relative; z-index: 10; width: 80px; height: 80px; background: #0000ff; }</style></head><body><div class=\"base\"></div><div class=\"ctx\"><div class=\"ctx-child\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "grid_auto_columns": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { background: #111; } .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; } .cell { height: 50px; } .a { background: #e94560; } .b { background: #0f3460; } .c { background: #533483; } .d { background: #16213e; } .e { background: #00ff88; } .f { background: #ff6600; }</style></head><body><div class=\"grid\"><div class=\"cell a\"></div><div class=\"cell b\"></div><div class=\"cell c\"></div><div class=\"cell d\"></div><div class=\"cell e\"></div><div class=\"cell f\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "grid_minmax": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { background: #111; } .grid { display: grid; grid-template-columns: minmax(40px, 1fr) 2fr minmax(40px, 1fr); gap: 4px; padding: 4px; } .cell { height: 80px; } .a { background: #e94560; } .b { background: #0f3460; } .c { background: #533483; }</style></head><body><div class=\"grid\"><div class=\"cell a\"></div><div class=\"cell b\"></div><div class=\"cell c\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "grid_mixed_units": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { background: #111; } .grid { display: grid; grid-template-columns: 60px 1fr 80px; grid-template-rows: 40px 1fr; gap: 4px; padding: 4px; height: 256px; } .cell { min-height: 0; } .a { background: #e94560; } .b { background: #0f3460; } .c { background: #533483; } .d { background: #16213e; } .e { background: #00ff88; } .f { background: #ff6600; }</style></head><body><div class=\"grid\"><div class=\"cell a\"></div><div class=\"cell b\"></div><div class=\"cell c\"></div><div class=\"cell d\"></div><div class=\"cell e\"></div><div class=\"cell f\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "text_multiline_wrap": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; color: #fff; font-family: sans-serif; font-size: 14px; padding: 8px; } .wrap { width: 200px; background: #1a1a2e; padding: 8px; border-radius: 4px; line-height: 1.4; }</style></head><body><div class=\"wrap\">The quick brown fox jumps over the lazy dog. This text should wrap across multiple lines within the container.</div></body></html>",
+      "threshold": 0.08
+    },
+    "text_multiline_break_word": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; color: #fff; font-family: sans-serif; font-size: 14px; padding: 8px; } .box { width: 120px; background: #1a1a2e; padding: 8px; overflow-wrap: break-word; word-wrap: break-word; }</style></head><body><div class=\"box\">Superlongwordthatcannotpossiblyfitinasinglelineshouldbreakhere.</div></body></html>",
+      "threshold": 0.14
+    },
+    "text_multiline_lineheight": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; color: #fff; font-family: sans-serif; padding: 8px; } .tight { width: 200px; font-size: 14px; line-height: 1.0; background: #1a1a2e; padding: 8px; margin-bottom: 8px; } .loose { width: 200px; font-size: 14px; line-height: 2.0; background: #0f3460; padding: 8px; }</style></head><body><div class=\"tight\">Tight line height text that wraps over multiple lines in the box.</div><div class=\"loose\">Loose line height text wrapping over multiple lines.</div></body></html>",
+      "threshold": 0.19
+    },
+    "overflow_clip_nested": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 16px; } .outer { width: 120px; height: 120px; overflow: hidden; background: #1a1a2e; position: relative; } .inner { position: absolute; top: -20px; left: -20px; width: 200px; height: 200px; background: #e94560; border-radius: 50%; } .text { position: absolute; top: 80px; left: 10px; color: #fff; font-family: sans-serif; font-size: 14px; }</style></head><body><div class=\"outer\"><div class=\"inner\"></div><div class=\"text\">Clipped</div></div></body></html>",
+      "threshold": 0.025
+    },
+    "overflow_hidden_border_radius": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 256px; } .card { width: 150px; height: 150px; border-radius: 20px; overflow: hidden; background: #1a1a2e; position: relative; } .stripe { height: 50px; } .s1 { background: #e94560; } .s2 { background: #0f3460; } .s3 { background: #533483; }</style></head><body><div class=\"card\"><div class=\"stripe s1\"></div><div class=\"stripe s2\"></div><div class=\"stripe s3\"></div></div></body></html>",
+      "threshold": 0.035
+    },
+    "inline_block_mixed": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 12px; font-family: sans-serif; font-size: 14px; color: #fff; } .tag { display: inline-block; padding: 4px 10px; margin: 3px; background: #0f3460; border-radius: 12px; font-size: 12px; } .container { width: 220px; background: #1a1a2e; padding: 8px; border-radius: 4px; }</style></head><body><div class=\"container\"><span class=\"tag\">rust</span><span class=\"tag\">wasm</span><span class=\"tag\">gpu</span><span class=\"tag\">render</span><span class=\"tag\">css</span><span class=\"tag\">layout</span></div></body></html>",
+      "threshold": 0.065
+    },
+    "flex_align_baseline": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 16px; } .row { display: flex; align-items: baseline; gap: 8px; background: #1a1a2e; padding: 12px; border-radius: 4px; } .a { font-size: 28px; color: #e94560; font-family: sans-serif; padding: 4px 8px; background: #222; } .b { font-size: 12px; color: #00ff88; font-family: sans-serif; padding: 4px 8px; background: #222; } .c { font-size: 18px; color: #0f3460; font-family: sans-serif; padding: 4px 8px; background: #222; }</style></head><body><div class=\"row\"><div class=\"a\">Big</div><div class=\"b\">Small</div><div class=\"c\">Med</div></div></body></html>",
+      "threshold": 0.045
+    },
+    "negative_margins": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 40px; } .a { width: 100px; height: 100px; background: #e94560; } .b { width: 100px; height: 100px; background: #0f3460; margin-top: -30px; margin-left: 30px; }</style></head><body><div class=\"a\"></div><div class=\"b\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "font_size_rem_custom_root": {
+      "html": "<!DOCTYPE html><html><head><style>html { font-size: 20px; } body { margin: 0; background: #111; color: #fff; font-family: sans-serif; padding: 8px; } .a { font-size: 1rem; } .b { font-size: 1.5rem; } .c { font-size: 0.6rem; }</style></head><body><div class=\"a\">1rem = 20px</div><div class=\"b\">1.5rem = 30px</div><div class=\"c\">0.6rem = 12px</div></body></html>",
+      "threshold": 0.16
+    },
+    "complex_dashboard_panel": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { background: #0a0a1a; font-family: sans-serif; } .panel { margin: 8px; padding: 12px; background: linear-gradient(135deg, #16213e, #0f3460); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); } .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; } .title { font-size: 13px; color: #e94560; font-weight: bold; } .badge { display: inline-block; padding: 2px 8px; background: rgba(233,69,96,0.2); color: #e94560; border-radius: 10px; font-size: 10px; } .bars { display: flex; gap: 3px; align-items: flex-end; height: 60px; } .bar { width: 14px; border-radius: 2px 2px 0 0; } .b1 { height: 60%; background: #e94560; } .b2 { height: 80%; background: #e94560; } .b3 { height: 45%; background: #e94560; } .b4 { height: 90%; background: #e94560; } .b5 { height: 70%; background: #e94560; } .b6 { height: 55%; background: #e94560; } .b7 { height: 75%; background: #e94560; } .b8 { height: 40%; background: #e94560; } .footer { margin-top: 8px; font-size: 10px; color: rgba(255,255,255,0.4); }</style></head><body><div class=\"panel\"><div class=\"header\"><span class=\"title\">Render FPS</span><span class=\"badge\">LIVE</span></div><div class=\"bars\"><div class=\"bar b1\"></div><div class=\"bar b2\"></div><div class=\"bar b3\"></div><div class=\"bar b4\"></div><div class=\"bar b5\"></div><div class=\"bar b6\"></div><div class=\"bar b7\"></div><div class=\"bar b8\"></div></div><div class=\"footer\">Last 8 frames</div></div></body></html>",
+      "threshold": 0.05
+    },
+    "overflow_hidden_rotate": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 20px; } .container { width: 150px; height: 150px; overflow: hidden; background: #1a1a2e; } .child { width: 120px; height: 120px; background: #e94560; transform: rotate(45deg); margin: 15px; }</style></head><body><div class=\"container\"><div class=\"child\"></div></div></body></html>",
+      "threshold": 0.015
+    },
+    "overflow_hidden_scale": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 20px; } .container { width: 120px; height: 120px; overflow: hidden; background: #1a1a2e; } .child { width: 120px; height: 120px; background: #0f3460; transform: scale(2); }</style></head><body><div class=\"container\"><div class=\"child\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "overflow_hidden_translate": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 20px; } .container { width: 140px; height: 140px; overflow: hidden; background: #1a1a2e; } .child { width: 140px; height: 140px; background: #533483; transform: translateX(60px) translateY(40px); }</style></head><body><div class=\"container\"><div class=\"child\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "grid_auto_fill": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { background: #111; padding: 8px; } .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 4px; } .cell { height: 50px; } .c1 { background: #e94560; } .c2 { background: #0f3460; } .c3 { background: #533483; } .c4 { background: #16213e; } .c5 { background: #00ff88; }</style></head><body><div class=\"grid\"><div class=\"cell c1\"></div><div class=\"cell c2\"></div><div class=\"cell c3\"></div><div class=\"cell c4\"></div><div class=\"cell c5\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "grid_gap_percent": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { background: #111; padding: 8px; } .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5%; width: 240px; } .cell { height: 80px; } .a { background: #e94560; } .b { background: #0f3460; } .c { background: #533483; } .d { background: #16213e; }</style></head><body><div class=\"grid\"><div class=\"cell a\"></div><div class=\"cell b\"></div><div class=\"cell c\"></div><div class=\"cell d\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "grid_fr_mixed": {
+      "html": "<!DOCTYPE html><html><head><style>* { margin: 0; padding: 0; box-sizing: border-box; } body { background: #111; padding: 8px; } .grid { display: grid; grid-template-columns: 100px 1fr 2fr; gap: 4px; } .cell { height: 80px; } .a { background: #e94560; } .b { background: #0f3460; } .c { background: #533483; }</style></head><body><div class=\"grid\"><div class=\"cell a\"></div><div class=\"cell b\"></div><div class=\"cell c\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "transform_origin_percent": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 40px; } .box { width: 100px; height: 100px; background: #e94560; transform: rotate(45deg); transform-origin: 0% 0%; }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.015
+    },
+    "transform_origin_bottom_right": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 40px; } .box { width: 100px; height: 100px; background: #0f3460; transform: scale(1.5); transform-origin: 100% 100%; }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "backdrop_filter_blur_small": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .checker { width: 256px; height: 256px; background: linear-gradient(135deg, #333, #666, #333, #666, #333); } .overlay { position: absolute; top: 40px; left: 40px; width: 160px; height: 160px; backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); }</style></head><body><div class=\"checker\"></div><div class=\"overlay\"></div></body></html>",
+      "threshold": 0.01
+    },
+    "backdrop_filter_grayscale": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; } .bg { width: 256px; height: 256px; background: linear-gradient(135deg, #e94560, #0f3460, #533483, #00ff88); } .overlay { position: absolute; top: 50px; left: 50px; width: 150px; height: 150px; backdrop-filter: grayscale(100%); -webkit-backdrop-filter: grayscale(100%); background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); }</style></head><body><div class=\"bg\"></div><div class=\"overlay\"></div></body></html>",
+      "threshold": 0.085
+    },
+    "box_shadow_inset": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 256px; } .box { width: 160px; height: 160px; background: #1a1a2e; box-shadow: inset 0 0 20px rgba(0,0,0,0.5); }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.01
+    },
+    "box_shadow_inset_colored": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 256px; } .box { width: 150px; height: 150px; background: #1a1a2e; box-shadow: inset 4px 4px 8px #e94560; }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.055
+    },
+    "box_shadow_with_border_radius": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 256px; } .circle { width: 140px; height: 140px; background: #e94560; border-radius: 50%; box-shadow: 0 0 24px 8px rgba(233,69,96,0.6); }</style></head><body><div class=\"circle\"></div></body></html>",
+      "threshold": 0.01
+    },
+    "pseudo_absolute": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 30px; } .box { position: relative; width: 160px; height: 120px; background: #1a1a2e; } .box::before { content: ''; position: absolute; top: 0; right: 0; width: 40px; height: 40px; background: #e94560; }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "pseudo_with_transform": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 50px; } .box { position: relative; width: 120px; height: 120px; background: #1a1a2e; } .box::after { content: ''; position: absolute; top: 20px; left: 20px; width: 60px; height: 60px; background: #0f3460; transform: rotate(45deg); }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "flex_baseline_mixed": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 16px; } .row { display: flex; align-items: baseline; gap: 8px; background: #1a1a2e; padding: 12px; } .a { font-size: 12px; color: #00ff88; font-family: sans-serif; background: #222; padding: 4px 8px; } .b { font-size: 24px; color: #e94560; font-family: sans-serif; background: #222; padding: 4px 8px; } .c { font-size: 36px; color: #0f3460; font-family: sans-serif; background: #222; padding: 4px 8px; }</style></head><body><div class=\"row\"><div class=\"a\">Small</div><div class=\"b\">Medium</div><div class=\"c\">Large</div></div></body></html>",
+      "threshold": 0.06
+    },
+    "border_radius_overflow_nested": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 256px; } .outer { width: 180px; height: 180px; border-radius: 24px; overflow: hidden; background: #0f3460; } .inner { width: 140px; height: 140px; margin: 20px; border-radius: 16px; background: #e94560; }</style></head><body><div class=\"outer\"><div class=\"inner\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "text_ellipsis_uppercase": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 20px; font-family: sans-serif; } .truncated { width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; font-size: 14px; color: #e94560; background: #1a1a2e; padding: 8px; }</style></head><body><div class=\"truncated\">this is a very long string that should be truncated with an ellipsis</div></body></html>",
+      "threshold": 0.055
+    },
+    "negative_margin_overlap": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 30px; } .a { width: 120px; height: 80px; background: #e94560; } .b { width: 120px; height: 80px; background: #0f3460; margin-top: -40px; margin-left: 40px; }</style></head><body><div class=\"a\"></div><div class=\"b\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "gradient_angle_0": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; } .grad { width: 256px; height: 256px; background: linear-gradient(0deg, #e94560, #0f3460); }</style></head><body><div class=\"grad\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "gradient_angle_90": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; } .grad { width: 256px; height: 256px; background: linear-gradient(90deg, #e94560, #0f3460); }</style></head><body><div class=\"grad\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "gradient_transparent_stop": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .grad { width: 256px; height: 256px; background: linear-gradient(to right, #e94560, transparent, #0f3460); }</style></head><body><div class=\"grad\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "inline_vertical_align_middle": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; font-family: sans-serif; padding: 10px; } .container { line-height: 80px; background: #1a1a2e; } .box { display: inline-block; vertical-align: middle; background: #e94560; } .small { width: 20px; height: 20px; } .med { width: 30px; height: 40px; } .tall { width: 25px; height: 60px; }</style></head><body><div class=\"container\"><span class=\"box small\"></span><span class=\"box med\"></span><span class=\"box tall\"></span></div></body></html>",
+      "threshold": 0.03
+    },
+    "inline_img_baseline": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; font-family: sans-serif; font-size: 24px; color: #fff; padding: 20px; } .line { background: #1a1a2e; }</style></head><body><div class=\"line\">Text <img src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAIAAAAC64paAAAAGklEQVR4nGN46ZpANmIY1TyqeVTzqOaB1QwAAXlt/1yhswkAAAAASUVORK5CYII=\" width=\"20\" height=\"20\"> baseline</div></body></html>",
+      "threshold": 0.135
+    },
+    "inline_block_wrap": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; font-family: sans-serif; padding: 8px; } .container { width: 256px; background: #1a1a2e; } .item { display: inline-block; width: 70px; height: 40px; margin: 4px; border-radius: 4px; } .a { background: #e94560; } .b { background: #0f3460; } .c { background: #533483; } .d { background: #16213e; } .e { background: #00ff88; }</style></head><body><div class=\"container\"><div class=\"item a\"></div><div class=\"item b\"></div><div class=\"item c\"></div><div class=\"item d\"></div><div class=\"item e\"></div></div></body></html>",
+      "threshold": 0.06
+    },
+    "text_white_space_pre": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #1a1a2e; font-family: sans-serif; color: #e0e0e0; padding: 16px; } .pre { white-space: pre; font-size: 13px; }</style></head><body><div class=\"pre\">line one&#10;  indented line&#10;multiple   spaces</div></body></html>",
+      "threshold": 0.08
+    },
+    "border_dashed": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #1a1a2e; padding: 28px; } .box { width: 200px; height: 200px; background: #111; border: 4px dashed #e94560; }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.075
+    },
+    "border_dotted": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #1a1a2e; padding: 28px; } .box { width: 200px; height: 200px; background: #111; border: 4px dotted #00ff88; }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.015
+    },
+    "border_double": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #1a1a2e; padding: 28px; } .box { width: 200px; height: 200px; background: #111; border: 6px double #4488ff; }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "border_dashed_radius": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #1a1a2e; padding: 28px; } .box { width: 200px; height: 200px; background: #111; border: 3px dashed #e94560; border-radius: 12px; }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.03
+    },
+    "border_mixed_styles": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #1a1a2e; padding: 28px; } .box { width: 200px; height: 200px; background: #111; border-top: 3px solid red; border-right: 3px dashed green; border-bottom: 3px dotted blue; border-left: 3px double orange; }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.065
+    },
+    "flex_basis_vs_width": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .row { display: flex; width: 256px; height: 80px; } .a { flex-basis: 100px; background: #e94560; } .b { width: 100px; background: #0f3460; } .c { flex-basis: 80px; width: 100px; background: #533483; }</style></head><body><div class=\"row\"><div class=\"a\"></div><div class=\"b\"></div><div class=\"c\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "grid_explicit_placement": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 80px); gap: 4px; padding: 4px; width: 256px; } .span-cols { grid-column: 1 / 4; background: #e94560; } .span-rows { grid-row: 1 / 3; grid-column: 3; background: #0f3460; } .cell { background: #533483; } .cell2 { background: #16213e; }</style></head><body><div class=\"grid\"><div class=\"span-cols\"></div><div class=\"cell\"></div><div class=\"cell2\"></div><div class=\"span-rows\"></div><div class=\"cell\"></div><div class=\"cell2\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "gradient_radial": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; } div { width: 256px; height: 256px; background: radial-gradient(circle, #e94560, #0f3460); }</style></head><body><div></div></body></html>",
+      "threshold": 0.005
+    },
+    "gradient_radial_ellipse": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; } div { width: 256px; height: 256px; background: radial-gradient(ellipse at 30% 70%, #ff0, #00f, #000); }</style></head><body><div></div></body></html>",
+      "threshold": 0.005
+    },
+    "filter_blur": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 256px; } .box { width: 100px; height: 100px; background: #e94560; filter: blur(4px); }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "filter_grayscale": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .parent { filter: grayscale(1); padding: 10px; } .a { width: 80px; height: 80px; background: #e94560; display: inline-block; margin: 5px; } .b { width: 80px; height: 80px; background: #00ff88; display: inline-block; margin: 5px; } .c { width: 80px; height: 80px; background: #4488ff; display: inline-block; margin: 5px; }</style></head><body><div class=\"parent\"><div class=\"a\"></div><div class=\"b\"></div><div class=\"c\"></div></div></body></html>",
+      "threshold": 0.05
+    },
+    "filter_brightness_contrast": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 256px; } .box { width: 120px; height: 120px; background: #0f3460; filter: brightness(1.5) contrast(1.5); }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "filter_drop_shadow": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 256px; } .box { width: 100px; height: 100px; background: #e94560; filter: drop-shadow(4px 4px 4px rgba(0,0,0,0.5)); }</style></head><body><div class=\"box\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "mix_blend_multiply": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 20px; } .base { width: 120px; height: 120px; background: #e94560; position: relative; } .overlay { width: 120px; height: 120px; background: #4488ff; position: absolute; top: 40px; left: 40px; mix-blend-mode: multiply; }</style></head><body><div class=\"base\"><div class=\"overlay\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "mix_blend_screen": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 20px; } .base { width: 120px; height: 120px; background: #662233; position: relative; } .overlay { width: 120px; height: 120px; background: #223366; position: absolute; top: 40px; left: 40px; mix-blend-mode: screen; }</style></head><body><div class=\"base\"><div class=\"overlay\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "text_shadow_basic": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #ddd; font-family: sans-serif; padding: 30px; } h1 { font-size: 36px; color: #333; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }</style></head><body><h1>Shadow</h1></body></html>",
+      "threshold": 0.05
+    },
+    "text_shadow_glow": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; font-family: sans-serif; padding: 30px; } h1 { font-size: 36px; color: #fff; text-shadow: 0 0 10px #e94560, 0 0 20px #e94560; }</style></head><body><h1>Glow</h1></body></html>",
+      "threshold": 0.07
+    },
+    "clip_path_circle": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 256px; } .shape { width: 180px; height: 180px; background: #e8476a; clip-path: circle(50%); }</style></head><body><div class=\"shape\"></div></body></html>",
+      "threshold": 0.01
+    },
+    "clip_path_polygon": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 256px; } .shape { width: 200px; height: 180px; background: #6688ee; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); }</style></head><body><div class=\"shape\"></div></body></html>",
+      "threshold": 0.005
+    },
+    "z_index_transform_context": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .parent { position: relative; width: 256px; height: 256px; } .a { position: absolute; top: 20px; left: 20px; width: 120px; height: 120px; background: #e94560; z-index: 1; transform: rotate(5deg); } .b { position: absolute; top: 60px; left: 60px; width: 120px; height: 120px; background: #4488ff; z-index: 2; }</style></head><body><div class=\"parent\"><div class=\"a\"></div><div class=\"b\"></div></div></body></html>",
+      "threshold": 0.015
+    },
+    "z_index_filter_context": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .parent { position: relative; width: 256px; height: 256px; } .a { position: absolute; top: 20px; left: 20px; width: 120px; height: 120px; background: #e94560; z-index: 1; filter: blur(0px); } .b { position: absolute; top: 60px; left: 60px; width: 120px; height: 120px; background: #4488ff; z-index: 2; }</style></head><body><div class=\"parent\"><div class=\"a\"></div><div class=\"b\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "z_index_mixed_contexts": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .parent { position: relative; width: 256px; height: 256px; } .a { position: absolute; top: 10px; left: 10px; width: 100px; height: 100px; background: #e94560; z-index: 1; opacity: 0.99; } .b { position: absolute; top: 50px; left: 50px; width: 100px; height: 100px; background: #00ff88; z-index: 2; transform: scale(1); } .c { position: absolute; top: 90px; left: 90px; width: 100px; height: 100px; background: #4488ff; z-index: 3; }</style></head><body><div class=\"parent\"><div class=\"a\"></div><div class=\"b\"></div><div class=\"c\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "z_index_nested_transform": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .parent { position: relative; width: 256px; height: 256px; } .outer { position: absolute; top: 20px; left: 20px; z-index: 1; } .inner { width: 100px; height: 100px; background: #e94560; transform: rotate(0deg); z-index: 999; position: relative; } .sibling { position: absolute; top: 40px; left: 40px; width: 100px; height: 100px; background: #4488ff; z-index: 2; }</style></head><body><div class=\"parent\"><div class=\"outer\"><div class=\"inner\"></div></div><div class=\"sibling\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "z_index_auto_vs_zero": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .parent { position: relative; width: 256px; height: 256px; } .a { position: absolute; top: 30px; left: 30px; width: 120px; height: 120px; background: #e94560; z-index: auto; } .b { position: absolute; top: 60px; left: 60px; width: 120px; height: 120px; background: #4488ff; z-index: 0; }</style></head><body><div class=\"parent\"><div class=\"a\"></div><div class=\"b\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "percent_height_no_parent": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .outer { background: #1a1a2e; } .inner { height: 100%; background: #e94560; }</style></head><body><div class=\"outer\"><div class=\"inner\">Content</div></div></body></html>",
+      "threshold": 0.05
+    },
+    "percent_height_explicit_chain": {
+      "html": "<!DOCTYPE html><html><head><style>html, body { height: 100%; margin: 0; } body { background: #111; } .mid { height: 50%; background: #1a1a2e; } .inner { height: 50%; background: #e94560; }</style></head><body><div class=\"mid\"><div class=\"inner\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "percent_margin_in_flex": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .flex { display: flex; width: 256px; height: 256px; background: #1a1a2e; } .child { margin: 10%; width: 80px; height: 80px; background: #e94560; }</style></head><body><div class=\"flex\"><div class=\"child\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "flex_wrap_align_content": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; } .flex { display: flex; flex-wrap: wrap; align-content: space-between; width: 256px; height: 256px; background: #1a1a2e; } .item { width: 70px; height: 30px; margin: 2px; border-radius: 4px; } .a { background: #e94560; } .b { background: #0f3460; } .c { background: #533483; } .d { background: #00ff88; } .e { background: #4488ff; } .f { background: #16213e; }</style></head><body><div class=\"flex\"><div class=\"item a\"></div><div class=\"item b\"></div><div class=\"item c\"></div><div class=\"item d\"></div><div class=\"item e\"></div><div class=\"item f\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "min_max_in_flex": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 8px; } .flex { display: flex; gap: 8px; } .a { flex-grow: 1; max-width: 80px; height: 60px; background: #e94560; } .b { flex-grow: 1; height: 60px; background: #4488ff; } .c { flex-grow: 1; height: 60px; background: #00ff88; }</style></head><body><div class=\"flex\"><div class=\"a\"></div><div class=\"b\"></div><div class=\"c\"></div></div></body></html>",
+      "threshold": 0.12
+    },
+    "overflow_hidden_compound_transform": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 40px; } .container { overflow: hidden; width: 100px; height: 100px; background: #1a1a2e; } .child { width: 80px; height: 80px; background: #e94560; transform: rotate(30deg) scale(1.5); }</style></head><body><div class=\"container\"><div class=\"child\"></div></div></body></html>",
+      "threshold": 0.01
+    },
+    "overflow_hidden_translate_partial": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 40px; } .container { overflow: hidden; width: 100px; height: 100px; background: #1a1a2e; } .child { width: 80px; height: 80px; background: #e94560; transform: translateX(60px); }</style></head><body><div class=\"container\"><div class=\"child\"></div></div></body></html>",
+      "threshold": 0.005
+    },
+    "overflow_hidden_nested_transform": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; padding: 30px; } .outer { overflow: hidden; width: 120px; height: 120px; background: #1a1a2e; } .inner { overflow: hidden; width: 100px; height: 100px; margin: 10px; background: #0f3460; transform: rotate(15deg); } .child { width: 80px; height: 80px; background: #e94560; transform: translateX(30px); }</style></head><body><div class=\"outer\"><div class=\"inner\"><div class=\"child\"></div></div></div></body></html>",
+      "threshold": 0.01
+    },
+    "text_multiline_ellipsis": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; font-family: sans-serif; padding: 20px; color: #fff; } .clamp { width: 200px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 16px; line-height: 1.4; background: #1a1a2e; padding: 8px; }</style></head><body><div class=\"clamp\">This is a long paragraph of text that should be clamped to exactly two lines with an ellipsis at the end of the second line.</div></body></html>",
+      "threshold": 0.095
+    },
+    "text_white_space_nowrap": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; font-family: sans-serif; padding: 20px; color: #fff; } .nowrap { width: 100px; white-space: nowrap; overflow: hidden; background: #1a1a2e; font-size: 16px; padding: 4px; }</style></head><body><div class=\"nowrap\">This text should not wrap at all</div></body></html>",
+      "threshold": 0.055
+    },
+    "text_word_break_all": {
+      "html": "<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; font-family: sans-serif; padding: 20px; color: #fff; } .break { width: 80px; word-break: break-all; background: #1a1a2e; font-size: 16px; padding: 4px; }</style></head><body><div class=\"break\">ABCDEFGHIJKLMNOPQRSTUVWXYZ</div></body></html>",
+      "threshold": 0.105
+    }
+  }
+}

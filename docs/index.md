@@ -58,6 +58,12 @@
 - **Role:** nginx-rtmp server — receives RTMP streams, transmuxes to HLS (codec copy, no re-encode)
 - **Port:** 1935 (RTMP), 8080 (HLS serving)
 
+### stage-runtime (Rust stage runtime)
+- **Path:** `stage-runtime/`
+- **Role:** Pure-Rust drop-in replacement for Chrome + Xvfb + ffmpeg. V8 runtime with Canvas 2D (tiny-skia), WebGL2 (wgpu), HTML/CSS (html5ever + taffy), Web Audio (web-audio-api crate), and H.264 encoding (ffmpeg-next). Communicates with sidecar via CDP over named pipes. Wire-compatible with Chrome's CDP protocol.
+- **Enable:** Set `STREAMER_RENDERER=native` (CPU stages) or `RENDERER=native` (GPU stages). Chrome is the default.
+- **Docs:** [Architecture: stage-runtime](./architecture-stage-runtime.md)
+
 ### k8s (Infrastructure)
 - **Path:** `k8s/`
 - **Role:** Kubernetes manifests, Traefik (HTTP + RTMP TCP), TLS, SOPS-encrypted secrets
@@ -72,6 +78,7 @@
 - [Architecture: Control Plane](./architecture-control-plane.md) — Go backend: routes, stage lifecycle, CDP proxy, MCP, env vars
 - [Architecture: Web Frontend](./architecture-web.md) — React SPA: pages, routing, ConnectRPC client setup
 - [Architecture: Streamer Pod](./architecture-streamer.md) — Stage pod: Chrome, ffmpeg pipeline, sidecar
+- [Architecture: stage-runtime](./architecture-stage-runtime.md) — Rust stage runtime: V8 engine, Canvas 2D (tiny-skia), WebGL2 (wgpu), HTML/CSS, audio, encoding pipeline
 - [Integration Architecture](./integration-architecture.md) — How all parts communicate; data flows
 - [Source Tree Analysis](./source-tree-analysis.md) — Annotated directory structure with critical file callouts
 

@@ -49,11 +49,21 @@ func (s *Syncer) Watch() {
 	}
 	defer watcher.Close()
 
-	// Watch key directories
+	// Watch key directories.
+	// When RENDERER=dazzle-render, watch storage.json instead of Chrome's
+	// localStorage/IndexedDB dirs.
 	dirs := []string{
 		filepath.Join(s.localDir, "content"),
-		filepath.Join(s.localDir, "chrome", "Default", "Local Storage"),
-		filepath.Join(s.localDir, "chrome", "Default", "IndexedDB"),
+	}
+	if os.Getenv("RENDERER") == "native" {
+		// dazzle-render uses a single storage.json file
+		storageDir := s.localDir // storage.json lives at $DATA_DIR/storage.json
+		dirs = append(dirs, storageDir)
+	} else {
+		dirs = append(dirs,
+			filepath.Join(s.localDir, "chrome", "Default", "Local Storage"),
+			filepath.Join(s.localDir, "chrome", "Default", "IndexedDB"),
+		)
 	}
 	for _, dir := range dirs {
 		os.MkdirAll(dir, 0o755)

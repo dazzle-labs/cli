@@ -1,0 +1,100 @@
+[package]
+name = "stage-runtime"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "stage_runtime"
+path = "src/lib.rs"
+
+[[bin]]
+name = "stage-runtime"
+path = "src/main.rs"
+
+[dependencies]
+# V8 JavaScript engine
+v8 = "146"
+
+# 2D rendering
+tiny-skia = "0.12"
+
+# GPU rendering via wgpu — WebGL2 backend
+wgpu = "29"
+bytemuck = { version = "1", features = ["derive"] }
+naga = { version = "29", features = ["glsl-in", "wgsl-out"] }
+pollster = "0.4"
+
+# Text rendering — font rasterization
+fontdue = "0.9"
+
+# Video encoding (H.264 + AAC → FLV/RTMP via ffmpeg-next)
+# Requires FFmpeg dev headers + libs:
+#   macOS: brew install ffmpeg
+#   Linux: apt install libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev
+ffmpeg-next = { version = "8", default-features = false, features = ["codec", "format", "software-resampling", "software-scaling"] }
+
+# HTML/CSS rendering (paints to tiny-skia)
+html5ever = "0.38"
+markup5ever_rcdom = "0.38"
+taffy = "0.9"
+
+# CSS tokenizer/parser (used by htmlcss style parser)
+cssparser = "0.37"
+
+# SVG rendering (rasterizes SVG to tiny-skia pixmap)
+resvg = { version = "0.44", default-features = false }
+
+# Image loading
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+base64 = "0.22"
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# HTTP client (for fetch API)
+reqwest = { version = "0.12", features = ["json", "blocking"] }
+
+# WebSocket client (for WebSocket API)
+tungstenite = "0.24"
+
+# Logging
+log = "0.4"
+env_logger = "0.11"
+
+# CLI
+clap = { version = "4", features = ["derive", "env"] }
+
+# URL parsing (used by servo path for file:// URLs)
+url = "2"
+
+# Web Audio API — spec-compliant audio processing (OfflineAudioContext for Chrome-matching output)
+web-audio-api = "1.2"
+
+# Utilities
+anyhow = "1"
+
+[dev-dependencies]
+tempfile = "3"
+png = "0.17"
+proptest = "1"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "render_bench"
+harness = false
+
+[[bench]]
+name = "percentile_bench"
+harness = false
+
+[[bench]]
+name = "e2e_encode_bench"
+harness = false
+
+[[bench]]
+name = "htmlcss_bench"
+harness = false

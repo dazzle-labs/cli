@@ -12,7 +12,7 @@ SIDECAR_IMG := dazzlefm/agent-streamer-sidecar:$(LOCAL_TAG)
 INGEST_IMG  := dazzlefm/agent-streamer-ingest:$(LOCAL_TAG)
 CLI_COMMIT  := $(shell git -C cli rev-parse HEAD 2>/dev/null || echo main)
 CP_BUILD      := docker build -f control-plane/docker/Dockerfile --build-arg VITE_CLERK_PUBLISHABLE_KEY=$(CLERK_PK) --build-arg GIT_COMMIT=$(CLI_COMMIT) -t $(CP_IMG) .
-STR_BUILD     := docker build --target streamer -f streamer/docker/Dockerfile -t $(STR_IMG) streamer/
+STR_BUILD     := docker build --platform linux/amd64 -f streamer/docker/Dockerfile --build-arg STAGE_RUNTIME_IMAGE=$(STAGE_RUNTIME_IMG) -t $(STR_IMG) streamer/
 SIDECAR_BUILD := docker build -f sidecar/Dockerfile -t $(SIDECAR_IMG) sidecar/
 INGEST_BUILD  := docker build -t $(INGEST_IMG) ingest/
 
@@ -35,7 +35,7 @@ INFRA_DIR := k8s/hetzner
 TFSTATE   := $(INFRA_DIR)/terraform.tfstate
 TFSTATE_ENC := $(INFRA_DIR)/terraform.tfstate.enc
 
-.PHONY: help check-deps check-hooks check-cli pull-cli proto up down build build-cp build-streamer build-ingest deploy dev llms-txt logs status \
+.PHONY: help check-deps check-hooks check-cli pull-cli proto up down build build-cp build-streamer build-ingest build-stage-runtime deploy dev llms-txt logs status \
         install-hooks \
         kubectx prod/helm prod/kubectl prod/status prod/nodes \
         prod/infra/init prod/infra/plan prod/infra/apply prod/infra/output \
@@ -193,7 +193,7 @@ build-cp: check-deps check-cluster ## Build control-plane image and load into Ki
 	$(STEP) "Loading into Kind"
 	kind load docker-image $(CP_IMG) --name $(NS)
 
-build-streamer: check-deps check-cluster ## Build streamer image and load into Kind
+build-streamer: check-deps check-cluster build-stage-runtime ## Build streamer image and load into Kind
 	$(STEP) "Building streamer image"
 	$(STR_BUILD)
 	$(STEP) "Loading into Kind"
@@ -211,10 +211,15 @@ build-ingest: check-deps check-cluster ## Build ingest (nginx-rtmp) image and lo
 	$(STEP) "Loading into Kind"
 	kind load docker-image $(INGEST_IMG) --name $(NS)
 
+STAGE_RUNTIME_IMG := dazzlefm/stage-runtime-builder:main
 GPU_NODE_IMG := dazzlefm/agent-streamer-gpu-node:main
-GPU_NODE_BUILD := docker build --platform linux/amd64 -f streamer/docker/Dockerfile --build-arg VARIANT=gpu --build-arg SIDECAR_IMAGE=$(SIDECAR_IMG) --target gpu-node -t $(GPU_NODE_IMG) streamer/
+GPU_NODE_BUILD := docker build --platform linux/amd64 -f streamer/docker/Dockerfile --build-arg VARIANT=gpu --build-arg SIDECAR_IMAGE=$(SIDECAR_IMG) --build-arg STAGE_RUNTIME_IMAGE=$(STAGE_RUNTIME_IMG) --target gpu-node -t $(GPU_NODE_IMG) streamer/
 
-build-gpu-node: check-deps ## Build GPU node image (streamer + sidecar)
+build-stage-runtime: check-deps ## Build stage-runtime Rust binary (linux/amd64)
+	$(STEP) "Building stage-runtime"
+	docker build --platform linux/amd64 -f stage-runtime/Dockerfile --target builder -t $(STAGE_RUNTIME_IMG) stage-runtime/
+
+build-gpu-node: check-deps build-stage-runtime ## Build GPU node image (streamer + sidecar + stage-runtime)
 	$(STEP) "Building sidecar image (dependency)"
 	$(SIDECAR_BUILD)
 	$(STEP) "Building GPU node image"
@@ -231,13 +236,16 @@ push-gpu-node: build-gpu-node ## Build and push GPU node image to Docker Hub
 # Local CLI alias — builds the CLI and runs it against the local control-plane
 CLI := DAZZLE_API_URL=http://localhost:8080 go run ./cli/cmd/dazzle
 
-gpu/rebuild: check-deps ## Rebuild sidecar + GPU node images for amd64 and push to Docker Hub
+gpu/rebuild: check-deps ## Rebuild sidecar + stage-runtime + GPU node images for amd64 and push to Docker Hub
+	$(STEP) "Building stage-runtime (amd64)"
+	docker build --platform linux/amd64 -f stage-runtime/Dockerfile --target builder -t dazzlefm/stage-runtime-builder:$(GIT_SHA) stage-runtime/
 	$(STEP) "Building sidecar (amd64)"
 	docker build --platform linux/amd64 -f sidecar/Dockerfile -t dazzlefm/agent-streamer-sidecar:$(GIT_SHA)-amd64 sidecar/
 	$(STEP) "Building GPU node (amd64)"
 	docker build --platform linux/amd64 -f streamer/docker/Dockerfile \
 		--build-arg VARIANT=gpu \
 		--build-arg SIDECAR_IMAGE=dazzlefm/agent-streamer-sidecar:$(GIT_SHA)-amd64 \
+		--build-arg STAGE_RUNTIME_IMAGE=dazzlefm/stage-runtime-builder:$(GIT_SHA) \
 		--target gpu-node -t dazzlefm/agent-streamer-gpu-node:$(GIT_SHA) streamer/
 	$(STEP) "Pushing sidecar"
 	docker push dazzlefm/agent-streamer-sidecar:$(GIT_SHA)-amd64

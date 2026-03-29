@@ -381,6 +381,12 @@ func (c *Client) DispatchEvent(eventName string, data any) bool {
 	return true
 }
 
+// SetOutputs is not supported for WebSocket CDP clients (Chrome mode).
+// Only the stage runtime (via PipeClient) supports StageRuntime.setOutputs.
+func (c *Client) SetOutputs(outputs []OutputConfig) error {
+	return fmt.Errorf("SetOutputs not supported for WebSocket CDP client (Chrome mode)")
+}
+
 // Navigate opens a URL in the browser via CDP.
 // Uses the persistent WebSocket connection (same pattern as PipeClient).
 func (c *Client) Navigate(url string) error {

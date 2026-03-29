@@ -430,6 +430,107 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 	}
 	podName := "streamer-" + id
 
+	useNativeRenderer := os.Getenv("STREAMER_RENDERER") == "native"
+
+	streamerVolMounts := []corev1.VolumeMount{
+		{Name: "dshm", MountPath: "/dev/shm"},
+		{Name: "stage-data", MountPath: "/data"},
+		{Name: "hls-data", MountPath: "/tmp/hls"},
+		{Name: "x11-socket", MountPath: "/tmp/.X11-unix"},
+		{Name: "pulse-socket", MountPath: "/tmp/pulse"},
+		{Name: "swiftshader-ini", MountPath: "/data/chrome/SwiftShader.ini", SubPath: "SwiftShader.ini"},
+	}
+
+	sidecarEnv := append(sidecarEnvVars(userID, id, m.r2Bucket),
+		append(mtlsEnvVars(),
+			corev1.EnvVar{Name: "DISPLAY", Value: ":99"},
+			corev1.EnvVar{Name: "PULSE_SERVER", Value: "unix:/tmp/pulse/native"},
+			corev1.EnvVar{Name: "LOCAL_HTTP_PORT", Value: "8081"},
+		)...,
+	)
+
+	sidecarVolMounts := []corev1.VolumeMount{
+		{Name: "stage-data", MountPath: "/data"},
+		{Name: "hls-data", MountPath: "/tmp/hls"},
+		{Name: "x11-socket", MountPath: "/tmp/.X11-unix"},
+		{Name: "pulse-socket", MountPath: "/tmp/pulse"},
+	}
+
+	volumes := []corev1.Volume{
+		{
+			Name: "dshm",
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{
+					Medium:    corev1.StorageMediumMemory,
+					SizeLimit: resourcePtr(resource.MustParse("2Gi")),
+				},
+			},
+		},
+		{
+			Name: "stage-data",
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{
+					SizeLimit: resourcePtr(resource.MustParse("2Gi")),
+				},
+			},
+		},
+		{
+			Name: "hls-data",
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{
+					SizeLimit: resourcePtr(resource.MustParse("512Mi")),
+				},
+			},
+		},
+		{
+			Name: "x11-socket",
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		},
+		{
+			Name: "pulse-socket",
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		},
+		{
+			Name: "swiftshader-ini",
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "swiftshader-ini"},
+				},
+			},
+		},
+	}
+
+	// Init container env — needs RENDERER so isRestorablePath knows
+	// to restore storage.json instead of Chrome's localStorage dirs.
+	initEnv := sidecarEnvVars(userID, id, m.r2Bucket)
+	if useNativeRenderer {
+		initEnv = append(initEnv, corev1.EnvVar{Name: "RENDERER", Value: "native"})
+	}
+
+	// Native renderer mode: streamer and sidecar communicate via CDP FIFOs
+	// instead of Chrome's WebSocket on port 9222. Add a shared volume for
+	// the named pipes and pass pipe paths to both containers.
+	if useNativeRenderer {
+		cdpVolMount := corev1.VolumeMount{Name: "cdp-pipes", MountPath: "/tmp/cdp"}
+		streamerVolMounts = append(streamerVolMounts, cdpVolMount)
+		sidecarVolMounts = append(sidecarVolMounts, cdpVolMount)
+		sidecarEnv = append(sidecarEnv,
+			corev1.EnvVar{Name: "CDP_PIPE_IN", Value: "/tmp/cdp/in"},
+			corev1.EnvVar{Name: "CDP_PIPE_OUT", Value: "/tmp/cdp/out"},
+			corev1.EnvVar{Name: "RENDERER", Value: "native"},
+		)
+		volumes = append(volumes, corev1.Volume{
+			Name: "cdp-pipes",
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		})
+	}
+
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      podName,
@@ -458,7 +559,7 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 						},
 						SeccompProfile: &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault},
 					},
-					Env:     sidecarEnvVars(userID, id, m.r2Bucket),
+					Env:     initEnv,
 					VolumeMounts: []corev1.VolumeMount{
 						{Name: "stage-data", MountPath: "/data"},
 					},
@@ -477,9 +578,10 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 			},
 			Containers: []corev1.Container{
 				{
-					Name:  "streamer",
-					Image: m.streamerImage,
-					Env: streamerEnvVars(id, userID),
+					Name:         "streamer",
+					Image:        m.streamerImage,
+					Env:          streamerEnvVars(id, userID),
+					VolumeMounts: streamerVolMounts,
 					SecurityContext: &corev1.SecurityContext{
 						AllowPrivilegeEscalation: boolPtr(false),
 						Capabilities: &corev1.Capabilities{
@@ -496,14 +598,6 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 							corev1.ResourceCPU:    resource.MustParse("3500m"),
 							corev1.ResourceMemory: resource.MustParse("14Gi"),
 						},
-					},
-					VolumeMounts: []corev1.VolumeMount{
-						{Name: "dshm", MountPath: "/dev/shm"},
-						{Name: "stage-data", MountPath: "/data"},
-						{Name: "hls-data", MountPath: "/tmp/hls"},
-						{Name: "x11-socket", MountPath: "/tmp/.X11-unix"},
-						{Name: "pulse-socket", MountPath: "/tmp/pulse"},
-						{Name: "swiftshader-ini", MountPath: "/data/chrome/SwiftShader.ini", SubPath: "SwiftShader.ini"},
 					},
 					Lifecycle: &corev1.Lifecycle{
 						PreStop: &corev1.LifecycleHandler{
@@ -531,19 +625,8 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 							Protocol:      corev1.ProtocolTCP,
 						},
 					},
-					Env: append(sidecarEnvVars(userID, id, m.r2Bucket),
-						append(mtlsEnvVars(),
-							corev1.EnvVar{Name: "DISPLAY", Value: ":99"},
-							corev1.EnvVar{Name: "PULSE_SERVER", Value: "unix:/tmp/pulse/native"},
-							corev1.EnvVar{Name: "LOCAL_HTTP_PORT", Value: "8081"},
-						)...,
-					),
-					VolumeMounts: []corev1.VolumeMount{
-						{Name: "stage-data", MountPath: "/data"},
-						{Name: "hls-data", MountPath: "/tmp/hls"},
-						{Name: "x11-socket", MountPath: "/tmp/.X11-unix"},
-						{Name: "pulse-socket", MountPath: "/tmp/pulse"},
-					},
+					Env:          sidecarEnv,
+					VolumeMounts: sidecarVolMounts,
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
 							corev1.ResourceCPU:    resource.MustParse("100m"),
@@ -567,53 +650,7 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 					ImagePullPolicy: corev1.PullIfNotPresent,
 				},
 			},
-			Volumes: []corev1.Volume{
-				{
-					Name: "dshm",
-					VolumeSource: corev1.VolumeSource{
-						EmptyDir: &corev1.EmptyDirVolumeSource{
-							Medium:    corev1.StorageMediumMemory,
-							SizeLimit: resourcePtr(resource.MustParse("2Gi")),
-						},
-					},
-				},
-				{
-					Name: "stage-data",
-					VolumeSource: corev1.VolumeSource{
-						EmptyDir: &corev1.EmptyDirVolumeSource{
-							SizeLimit: resourcePtr(resource.MustParse("2Gi")),
-						},
-					},
-				},
-				{
-					Name: "hls-data",
-					VolumeSource: corev1.VolumeSource{
-						EmptyDir: &corev1.EmptyDirVolumeSource{
-							SizeLimit: resourcePtr(resource.MustParse("512Mi")),
-						},
-					},
-				},
-				{
-					Name: "x11-socket",
-					VolumeSource: corev1.VolumeSource{
-						EmptyDir: &corev1.EmptyDirVolumeSource{},
-					},
-				},
-				{
-					Name: "pulse-socket",
-					VolumeSource: corev1.VolumeSource{
-						EmptyDir: &corev1.EmptyDirVolumeSource{},
-					},
-				},
-				{
-					Name: "swiftshader-ini",
-					VolumeSource: corev1.VolumeSource{
-						ConfigMap: &corev1.ConfigMapVolumeSource{
-							LocalObjectReference: corev1.LocalObjectReference{Name: "swiftshader-ini"},
-						},
-					},
-				},
-			},
+			Volumes: volumes,
 		},
 	}
 

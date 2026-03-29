@@ -1,0 +1,8 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc abdc6080d89916bee726036646223081d60988559c7b9449c60aacf1419852e3 # shrinks to src = "uniform float a;\nvoid main() {\n}"
+cc 1e5905d2e277f145d2589a3bb551eed87dbe82a05c943b08b580cb5c2fe4603e # shrinks to varyings = [("float", "_"), ("float", "_")]

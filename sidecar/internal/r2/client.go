@@ -84,7 +84,13 @@ func Restore(endpoint, accessKey, secretKey, bucket, prefix, localDir string) er
 }
 
 func isRestorablePath(relPath string) bool {
-	return strings.HasPrefix(relPath, "content/") ||
-		strings.HasPrefix(relPath, "chrome/Default/Local Storage/") ||
+	if strings.HasPrefix(relPath, "content/") {
+		return true
+	}
+	// dazzle-render uses storage.json instead of Chrome's localStorage/IndexedDB
+	if os.Getenv("RENDERER") == "native" {
+		return relPath == "storage.json"
+	}
+	return strings.HasPrefix(relPath, "chrome/Default/Local Storage/") ||
 		strings.HasPrefix(relPath, "chrome/Default/IndexedDB/")
 }

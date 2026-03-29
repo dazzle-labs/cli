@@ -1,0 +1,5781 @@
+{
+  "width": 200,
+  "height": 200,
+  "scenes": {
+    "solid_rects": {
+      "description": "Three solid colored rectangles",
+      "threshold": 0.0,
+      "commands": [
+        [
+          "fillStyle",
+          "#ff0000"
+        ],
+        [
+          "fillRect",
+          10,
+          10,
+          60,
+          60
+        ],
+        [
+          "fillStyle",
+          "#00ff00"
+        ],
+        [
+          "fillRect",
+          80,
+          10,
+          60,
+          60
+        ],
+        [
+          "fillStyle",
+          "#0000ff"
+        ],
+        [
+          "fillRect",
+          10,
+          80,
+          130,
+          60
+        ]
+      ]
+    },
+    "overlapping_alpha": {
+      "description": "Overlapping rectangles with alpha blending",
+      "threshold": 0.0,
+      "commands": [
+        [
+          "fillStyle",
+          "rgba(255, 0, 0, 1)"
+        ],
+        [
+          "fillRect",
+          20,
+          20,
+          100,
+          100
+        ],
+        [
+          "globalAlpha",
+          0.5
+        ],
+        [
+          "fillStyle",
+          "#0000ff"
+        ],
+        [
+          "fillRect",
+          60,
+          60,
+          100,
+          100
+        ],
+        [
+          "globalAlpha",
+          1.0
+        ]
+      ]
+    },
+    "stroked_rect": {
+      "description": "Stroked rectangle with thick border",
+      "threshold": 0.0,
+      "commands": [
+        [
+          "strokeStyle",
+          "#ff6600"
+        ],
+        [
+          "lineWidth",
+          6
+        ],
+        [
+          "strokeRect",
+          20,
+          20,
+          160,
+          160
+        ]
+      ]
+    },
+    "translate_rects": {
+      "description": "Translated rectangles using save/restore",
+      "threshold": 0.0,
+      "commands": [
+        [
+          "fillStyle",
+          "#ff0000"
+        ],
+        [
+          "fillRect",
+          0,
+          0,
+          30,
+          30
+        ],
+        [
+          "save"
+        ],
+        [
+          "translate",
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "#00ff00"
+        ],
+        [
+          "fillRect",
+          0,
+          0,
+          30,
+          30
+        ],
+        [
+          "restore"
+        ],
+        [
+          "save"
+        ],
+        [
+          "translate",
+          100,
+          100
+        ],
+        [
+          "fillStyle",
+          "#0000ff"
+        ],
+        [
+          "fillRect",
+          0,
+          0,
+          30,
+          30
+        ],
+        [
+          "restore"
+        ]
+      ]
+    },
+    "scale_rect": {
+      "description": "Scaled rectangle",
+      "threshold": 0.0,
+      "commands": [
+        [
+          "save"
+        ],
+        [
+          "scale",
+          2.0,
+          2.0
+        ],
+        [
+          "fillStyle",
+          "#884488"
+        ],
+        [
+          "fillRect",
+          10,
+          10,
+          40,
+          40
+        ],
+        [
+          "restore"
+        ]
+      ]
+    },
+    "path_triangle": {
+      "description": "Filled triangle via path",
+      "threshold": 0.0002,
+      "commands": [
+        [
+          "fillStyle",
+          "#ff8800"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          100,
+          10
+        ],
+        [
+          "lineTo",
+          190,
+          190
+        ],
+        [
+          "lineTo",
+          10,
+          190
+        ],
+        [
+          "closePath"
+        ],
+        [
+          "fill"
+        ]
+      ]
+    },
+    "path_circle": {
+      "description": "Filled circle via arc",
+      "threshold": 0.0154,
+      "commands": [
+        [
+          "fillStyle",
+          "#3366cc"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "arc",
+          100,
+          100,
+          80,
+          0,
+          6.283185307,
+          0
+        ],
+        [
+          "fill"
+        ]
+      ]
+    },
+    "stroked_path": {
+      "description": "Stroked zigzag line",
+      "threshold": 0.0294,
+      "commands": [
+        [
+          "strokeStyle",
+          "#cc3333"
+        ],
+        [
+          "lineWidth",
+          3
+        ],
+        [
+          "lineCap",
+          "round"
+        ],
+        [
+          "lineJoin",
+          "round"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          10,
+          100
+        ],
+        [
+          "lineTo",
+          50,
+          30
+        ],
+        [
+          "lineTo",
+          90,
+          170
+        ],
+        [
+          "lineTo",
+          130,
+          30
+        ],
+        [
+          "lineTo",
+          170,
+          170
+        ],
+        [
+          "lineTo",
+          190,
+          100
+        ],
+        [
+          "stroke"
+        ]
+      ]
+    },
+    "clear_rect": {
+      "description": "Fill then clear center",
+      "threshold": 0.0,
+      "commands": [
+        [
+          "fillStyle",
+          "#336699"
+        ],
+        [
+          "fillRect",
+          0,
+          0,
+          200,
+          200
+        ],
+        [
+          "clearRect",
+          50,
+          50,
+          100,
+          100
+        ]
+      ]
+    },
+    "nested_transforms": {
+      "description": "Nested save/translate/rotate",
+      "threshold": 0.0019,
+      "commands": [
+        [
+          "save"
+        ],
+        [
+          "translate",
+          100,
+          100
+        ],
+        [
+          "fillStyle",
+          "#ff0000"
+        ],
+        [
+          "fillRect",
+          -40,
+          -40,
+          80,
+          80
+        ],
+        [
+          "save"
+        ],
+        [
+          "rotate",
+          0.785398
+        ],
+        [
+          "fillStyle",
+          "rgba(0, 0, 255, 0.6)"
+        ],
+        [
+          "fillRect",
+          -30,
+          -30,
+          60,
+          60
+        ],
+        [
+          "restore"
+        ],
+        [
+          "restore"
+        ]
+      ]
+    },
+    "multiple_colors": {
+      "description": "4x4 grid of colored squares",
+      "threshold": 0.0,
+      "commands": [
+        [
+          "fillStyle",
+          "#e74c3c"
+        ],
+        [
+          "fillRect",
+          0,
+          0,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "#2ecc71"
+        ],
+        [
+          "fillRect",
+          50,
+          0,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "#3498db"
+        ],
+        [
+          "fillRect",
+          100,
+          0,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "#f39c12"
+        ],
+        [
+          "fillRect",
+          150,
+          0,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "#9b59b6"
+        ],
+        [
+          "fillRect",
+          0,
+          50,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "#1abc9c"
+        ],
+        [
+          "fillRect",
+          50,
+          50,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "#e67e22"
+        ],
+        [
+          "fillRect",
+          100,
+          50,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "#34495e"
+        ],
+        [
+          "fillRect",
+          150,
+          50,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "#ecf0f1"
+        ],
+        [
+          "fillRect",
+          0,
+          100,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "#95a5a6"
+        ],
+        [
+          "fillRect",
+          50,
+          100,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "#c0392b"
+        ],
+        [
+          "fillRect",
+          100,
+          100,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "#27ae60"
+        ],
+        [
+          "fillRect",
+          150,
+          100,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "#2980b9"
+        ],
+        [
+          "fillRect",
+          0,
+          150,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "#8e44ad"
+        ],
+        [
+          "fillRect",
+          50,
+          150,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "#f1c40f"
+        ],
+        [
+          "fillRect",
+          100,
+          150,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "#d35400"
+        ],
+        [
+          "fillRect",
+          150,
+          150,
+          50,
+          50
+        ]
+      ]
+    },
+    "bezier_curve": {
+      "description": "Cubic bezier curve",
+      "threshold": 0.0132,
+      "commands": [
+        [
+          "strokeStyle",
+          "#228B22"
+        ],
+        [
+          "lineWidth",
+          4
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          10,
+          100
+        ],
+        [
+          "bezierCurveTo",
+          50,
+          10,
+          150,
+          190,
+          190,
+          100
+        ],
+        [
+          "stroke"
+        ]
+      ]
+    },
+    "quad_curve": {
+      "description": "Quadratic bezier curve",
+      "threshold": 0.0136,
+      "commands": [
+        [
+          "strokeStyle",
+          "#8B0000"
+        ],
+        [
+          "lineWidth",
+          3
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          10,
+          190
+        ],
+        [
+          "quadraticCurveTo",
+          100,
+          10,
+          190,
+          190
+        ],
+        [
+          "stroke"
+        ]
+      ]
+    },
+    "rgb_colors": {
+      "description": "Various rgb/rgba color formats",
+      "threshold": 0.0,
+      "commands": [
+        [
+          "fillStyle",
+          "rgb(255, 0, 0)"
+        ],
+        [
+          "fillRect",
+          0,
+          0,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "rgb(0, 255, 0)"
+        ],
+        [
+          "fillRect",
+          50,
+          0,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "rgb(0, 0, 255)"
+        ],
+        [
+          "fillRect",
+          100,
+          0,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "rgba(255, 255, 0, 0.7)"
+        ],
+        [
+          "fillRect",
+          0,
+          50,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "rgba(0, 255, 255, 0.5)"
+        ],
+        [
+          "fillRect",
+          50,
+          50,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "rgba(255, 0, 255, 0.3)"
+        ],
+        [
+          "fillRect",
+          100,
+          50,
+          50,
+          50
+        ]
+      ]
+    },
+    "line_caps": {
+      "description": "Different line cap styles",
+      "threshold": 0.0013,
+      "commands": [
+        [
+          "strokeStyle",
+          "#333333"
+        ],
+        [
+          "lineWidth",
+          12
+        ],
+        [
+          "lineCap",
+          "butt"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          30,
+          40
+        ],
+        [
+          "lineTo",
+          170,
+          40
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "lineCap",
+          "round"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          30,
+          100
+        ],
+        [
+          "lineTo",
+          170,
+          100
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "lineCap",
+          "square"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          30,
+          160
+        ],
+        [
+          "lineTo",
+          170,
+          160
+        ],
+        [
+          "stroke"
+        ]
+      ]
+    },
+    "line_joins": {
+      "description": "Different line join styles",
+      "threshold": 0.0143,
+      "commands": [
+        [
+          "strokeStyle",
+          "#006600"
+        ],
+        [
+          "lineWidth",
+          10
+        ],
+        [
+          "lineJoin",
+          "miter"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          10,
+          50
+        ],
+        [
+          "lineTo",
+          60,
+          10
+        ],
+        [
+          "lineTo",
+          110,
+          50
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "lineJoin",
+          "round"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          10,
+          120
+        ],
+        [
+          "lineTo",
+          60,
+          80
+        ],
+        [
+          "lineTo",
+          110,
+          120
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "lineJoin",
+          "bevel"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          10,
+          190
+        ],
+        [
+          "lineTo",
+          60,
+          150
+        ],
+        [
+          "lineTo",
+          110,
+          190
+        ],
+        [
+          "stroke"
+        ]
+      ]
+    },
+    "global_alpha_layers": {
+      "description": "Multiple alpha layers stacked",
+      "threshold": 0.0009,
+      "commands": [
+        [
+          "fillStyle",
+          "#ff0000"
+        ],
+        [
+          "fillRect",
+          20,
+          20,
+          120,
+          120
+        ],
+        [
+          "globalAlpha",
+          0.7
+        ],
+        [
+          "fillStyle",
+          "#00ff00"
+        ],
+        [
+          "fillRect",
+          40,
+          40,
+          120,
+          120
+        ],
+        [
+          "globalAlpha",
+          0.4
+        ],
+        [
+          "fillStyle",
+          "#0000ff"
+        ],
+        [
+          "fillRect",
+          60,
+          60,
+          120,
+          120
+        ],
+        [
+          "globalAlpha",
+          1.0
+        ]
+      ]
+    },
+    "setTransform_matrix": {
+      "description": "setTransform with custom skew matrix (AA diff expected on diagonal edges)",
+      "threshold": 0.016,
+      "commands": [
+        [
+          "fillStyle",
+          "#cc6600"
+        ],
+        [
+          "setTransform",
+          1,
+          0.3,
+          -0.3,
+          1,
+          50,
+          50
+        ],
+        [
+          "fillRect",
+          0,
+          0,
+          80,
+          80
+        ],
+        [
+          "setTransform",
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ]
+      ]
+    },
+    "multiple_paths": {
+      "description": "Multiple separate paths",
+      "threshold": 0.0201,
+      "commands": [
+        [
+          "fillStyle",
+          "#e74c3c"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "arc",
+          50,
+          50,
+          30,
+          0,
+          6.283185307,
+          0
+        ],
+        [
+          "fill"
+        ],
+        [
+          "fillStyle",
+          "#3498db"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "arc",
+          150,
+          50,
+          30,
+          0,
+          6.283185307,
+          0
+        ],
+        [
+          "fill"
+        ],
+        [
+          "fillStyle",
+          "#2ecc71"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "arc",
+          100,
+          140,
+          40,
+          0,
+          6.283185307,
+          0
+        ],
+        [
+          "fill"
+        ]
+      ]
+    },
+    "half_arc": {
+      "description": "Filled semicircle",
+      "threshold": 0.0131,
+      "commands": [
+        [
+          "fillStyle",
+          "#9933cc"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "arc",
+          100,
+          100,
+          70,
+          0,
+          3.141592653,
+          0
+        ],
+        [
+          "closePath"
+        ],
+        [
+          "fill"
+        ]
+      ]
+    },
+    "concentric_rects": {
+      "description": "Concentric rectangles with decreasing alpha",
+      "threshold": 0.001,
+      "commands": [
+        [
+          "fillStyle",
+          "rgba(0, 100, 200, 1.0)"
+        ],
+        [
+          "fillRect",
+          10,
+          10,
+          180,
+          180
+        ],
+        [
+          "fillStyle",
+          "rgba(200, 100, 0, 0.8)"
+        ],
+        [
+          "fillRect",
+          30,
+          30,
+          140,
+          140
+        ],
+        [
+          "fillStyle",
+          "rgba(0, 200, 100, 0.6)"
+        ],
+        [
+          "fillRect",
+          50,
+          50,
+          100,
+          100
+        ],
+        [
+          "fillStyle",
+          "rgba(200, 0, 100, 0.4)"
+        ],
+        [
+          "fillRect",
+          70,
+          70,
+          60,
+          60
+        ],
+        [
+          "fillStyle",
+          "rgba(100, 200, 0, 0.2)"
+        ],
+        [
+          "fillRect",
+          85,
+          85,
+          30,
+          30
+        ]
+      ]
+    },
+    "dashed_lines": {
+      "description": "Dashed line patterns",
+      "threshold": 0.0003,
+      "commands": [
+        [
+          "strokeStyle",
+          "#000000"
+        ],
+        [
+          "lineWidth",
+          3
+        ],
+        [
+          "setLineDash",
+          10,
+          5
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          10,
+          30
+        ],
+        [
+          "lineTo",
+          190,
+          30
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "setLineDash",
+          20,
+          10
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          10,
+          80
+        ],
+        [
+          "lineTo",
+          190,
+          80
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "setLineDash",
+          5,
+          5,
+          15,
+          5
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          10,
+          130
+        ],
+        [
+          "lineTo",
+          190,
+          130
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "setLineDash"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          10,
+          180
+        ],
+        [
+          "lineTo",
+          190,
+          180
+        ],
+        [
+          "stroke"
+        ]
+      ]
+    },
+    "thin_lines": {
+      "description": "Thin 1px lines for subpixel accuracy",
+      "threshold": 0.0,
+      "commands": [
+        [
+          "strokeStyle",
+          "#000000"
+        ],
+        [
+          "lineWidth",
+          1
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          10.5,
+          10.5
+        ],
+        [
+          "lineTo",
+          190.5,
+          10.5
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          10.5,
+          30.5
+        ],
+        [
+          "lineTo",
+          190.5,
+          30.5
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          10.5,
+          50.5
+        ],
+        [
+          "lineTo",
+          190.5,
+          50.5
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          50.5,
+          10.5
+        ],
+        [
+          "lineTo",
+          50.5,
+          190.5
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          100.5,
+          10.5
+        ],
+        [
+          "lineTo",
+          100.5,
+          190.5
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          150.5,
+          10.5
+        ],
+        [
+          "lineTo",
+          150.5,
+          190.5
+        ],
+        [
+          "stroke"
+        ]
+      ]
+    },
+    "ellipse_filled": {
+      "description": "Filled ellipse via ellipse() path command",
+      "threshold": 0.0127,
+      "commands": [
+        [
+          "fillStyle",
+          "#cc3366"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "ellipse",
+          100,
+          100,
+          80,
+          40,
+          0,
+          0,
+          6.283185307,
+          0
+        ],
+        [
+          "fill"
+        ]
+      ]
+    },
+    "ellipse_rotated": {
+      "description": "Rotated ellipse at 45 degrees",
+      "threshold": 0.0177,
+      "commands": [
+        [
+          "fillStyle",
+          "#3366cc"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "ellipse",
+          100,
+          100,
+          80,
+          40,
+          0.785398,
+          0,
+          6.283185307,
+          0
+        ],
+        [
+          "fill"
+        ]
+      ]
+    },
+    "ellipse_stroked": {
+      "description": "Stroked ellipse outline",
+      "threshold": 0.017,
+      "commands": [
+        [
+          "strokeStyle",
+          "#009966"
+        ],
+        [
+          "lineWidth",
+          3
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "ellipse",
+          100,
+          100,
+          70,
+          35,
+          0,
+          0,
+          6.283185307,
+          0
+        ],
+        [
+          "stroke"
+        ]
+      ]
+    },
+    "arc_ccw": {
+      "description": "Counter-clockwise arc (three-quarter circle)",
+      "threshold": 0.0176,
+      "commands": [
+        [
+          "fillStyle",
+          "#ff6600"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "arc",
+          100,
+          100,
+          70,
+          0,
+          4.71238898,
+          1
+        ],
+        [
+          "lineTo",
+          100,
+          100
+        ],
+        [
+          "closePath"
+        ],
+        [
+          "fill"
+        ]
+      ]
+    },
+    "arc_stroked": {
+      "description": "Stroked arc segments (not filled)",
+      "threshold": 0.0181,
+      "commands": [
+        [
+          "strokeStyle",
+          "#cc0066"
+        ],
+        [
+          "lineWidth",
+          4
+        ],
+        [
+          "lineCap",
+          "round"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "arc",
+          100,
+          60,
+          50,
+          0,
+          3.141592653,
+          0
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "strokeStyle",
+          "#0066cc"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "arc",
+          100,
+          140,
+          50,
+          3.141592653,
+          6.283185307,
+          0
+        ],
+        [
+          "stroke"
+        ]
+      ]
+    },
+    "quarter_arcs": {
+      "description": "Four quarter-circle arcs in different colors",
+      "threshold": 0.0293,
+      "commands": [
+        [
+          "fillStyle",
+          "#e74c3c"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          100,
+          100
+        ],
+        [
+          "arc",
+          100,
+          100,
+          80,
+          0,
+          1.5707963,
+          0
+        ],
+        [
+          "closePath"
+        ],
+        [
+          "fill"
+        ],
+        [
+          "fillStyle",
+          "#3498db"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          100,
+          100
+        ],
+        [
+          "arc",
+          100,
+          100,
+          80,
+          1.5707963,
+          3.1415926,
+          0
+        ],
+        [
+          "closePath"
+        ],
+        [
+          "fill"
+        ],
+        [
+          "fillStyle",
+          "#2ecc71"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          100,
+          100
+        ],
+        [
+          "arc",
+          100,
+          100,
+          80,
+          3.1415926,
+          4.7123889,
+          0
+        ],
+        [
+          "closePath"
+        ],
+        [
+          "fill"
+        ],
+        [
+          "fillStyle",
+          "#f39c12"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          100,
+          100
+        ],
+        [
+          "arc",
+          100,
+          100,
+          80,
+          4.7123889,
+          6.2831853,
+          0
+        ],
+        [
+          "closePath"
+        ],
+        [
+          "fill"
+        ]
+      ]
+    },
+    "stroked_circle": {
+      "description": "Stroked circle outline with thick line",
+      "threshold": 0.0167,
+      "commands": [
+        [
+          "strokeStyle",
+          "#8B4513"
+        ],
+        [
+          "lineWidth",
+          6
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "arc",
+          100,
+          100,
+          70,
+          0,
+          6.283185307,
+          0
+        ],
+        [
+          "stroke"
+        ]
+      ]
+    },
+    "hsl_colors": {
+      "description": "HSL color format visual test",
+      "threshold": 0.0,
+      "commands": [
+        [
+          "fillStyle",
+          "hsl(0, 100%, 50%)"
+        ],
+        [
+          "fillRect",
+          0,
+          0,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "hsl(120, 100%, 50%)"
+        ],
+        [
+          "fillRect",
+          50,
+          0,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "hsl(240, 100%, 50%)"
+        ],
+        [
+          "fillRect",
+          100,
+          0,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "hsl(60, 100%, 50%)"
+        ],
+        [
+          "fillRect",
+          150,
+          0,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "hsl(180, 100%, 50%)"
+        ],
+        [
+          "fillRect",
+          0,
+          50,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "hsl(300, 100%, 50%)"
+        ],
+        [
+          "fillRect",
+          50,
+          50,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "hsl(0, 0%, 50%)"
+        ],
+        [
+          "fillRect",
+          100,
+          50,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "hsl(0, 0%, 0%)"
+        ],
+        [
+          "fillRect",
+          150,
+          50,
+          50,
+          50
+        ]
+      ]
+    },
+    "named_colors": {
+      "description": "Grid of CSS named colors",
+      "threshold": 0.0,
+      "commands": [
+        [
+          "fillStyle",
+          "red"
+        ],
+        [
+          "fillRect",
+          0,
+          0,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "green"
+        ],
+        [
+          "fillRect",
+          50,
+          0,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "blue"
+        ],
+        [
+          "fillRect",
+          100,
+          0,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "yellow"
+        ],
+        [
+          "fillRect",
+          150,
+          0,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "cyan"
+        ],
+        [
+          "fillRect",
+          0,
+          50,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "magenta"
+        ],
+        [
+          "fillRect",
+          50,
+          50,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "orange"
+        ],
+        [
+          "fillRect",
+          100,
+          50,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "purple"
+        ],
+        [
+          "fillRect",
+          150,
+          50,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "gray"
+        ],
+        [
+          "fillRect",
+          0,
+          100,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "white"
+        ],
+        [
+          "fillRect",
+          50,
+          100,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "black"
+        ],
+        [
+          "fillRect",
+          100,
+          100,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "transparent"
+        ],
+        [
+          "fillRect",
+          150,
+          100,
+          50,
+          50
+        ]
+      ]
+    },
+    "hex_alpha_colors": {
+      "description": "Hex colors with alpha channel (#RRGGBBAA and #RGBA)",
+      "threshold": 0.0,
+      "commands": [
+        [
+          "fillStyle",
+          "#ff0000"
+        ],
+        [
+          "fillRect",
+          0,
+          0,
+          200,
+          200
+        ],
+        [
+          "fillStyle",
+          "#0000ff80"
+        ],
+        [
+          "fillRect",
+          20,
+          20,
+          80,
+          80
+        ],
+        [
+          "fillStyle",
+          "#00ff0040"
+        ],
+        [
+          "fillRect",
+          100,
+          20,
+          80,
+          80
+        ],
+        [
+          "fillStyle",
+          "#ff00ffc0"
+        ],
+        [
+          "fillRect",
+          20,
+          100,
+          80,
+          80
+        ],
+        [
+          "fillStyle",
+          "#ffff0060"
+        ],
+        [
+          "fillRect",
+          100,
+          100,
+          80,
+          80
+        ]
+      ]
+    },
+    "rotate_rect": {
+      "description": "Rectangle rotated 30 degrees around its center",
+      "threshold": 0.014,
+      "commands": [
+        [
+          "save"
+        ],
+        [
+          "translate",
+          100,
+          100
+        ],
+        [
+          "rotate",
+          0.5235987
+        ],
+        [
+          "fillStyle",
+          "#336699"
+        ],
+        [
+          "fillRect",
+          -50,
+          -30,
+          100,
+          60
+        ],
+        [
+          "restore"
+        ]
+      ]
+    },
+    "transform_multiply": {
+      "description": "transform() to multiply current matrix",
+      "threshold": 0.0158,
+      "commands": [
+        [
+          "fillStyle",
+          "#993366"
+        ],
+        [
+          "translate",
+          100,
+          100
+        ],
+        [
+          "transform",
+          0.866,
+          0.5,
+          -0.5,
+          0.866,
+          0,
+          0
+        ],
+        [
+          "fillRect",
+          -40,
+          -40,
+          80,
+          80
+        ]
+      ]
+    },
+    "reset_transform": {
+      "description": "resetTransform returns to identity",
+      "threshold": 0.0,
+      "commands": [
+        [
+          "translate",
+          100,
+          100
+        ],
+        [
+          "rotate",
+          0.785398
+        ],
+        [
+          "resetTransform"
+        ],
+        [
+          "fillStyle",
+          "#669933"
+        ],
+        [
+          "fillRect",
+          10,
+          10,
+          60,
+          60
+        ]
+      ]
+    },
+    "scale_and_translate": {
+      "description": "Scale then translate \u2014 order matters",
+      "threshold": 0.0,
+      "commands": [
+        [
+          "fillStyle",
+          "#cc3333"
+        ],
+        [
+          "save"
+        ],
+        [
+          "scale",
+          2,
+          2
+        ],
+        [
+          "translate",
+          10,
+          10
+        ],
+        [
+          "fillRect",
+          0,
+          0,
+          30,
+          30
+        ],
+        [
+          "restore"
+        ],
+        [
+          "fillStyle",
+          "#3333cc"
+        ],
+        [
+          "save"
+        ],
+        [
+          "translate",
+          10,
+          10
+        ],
+        [
+          "scale",
+          2,
+          2
+        ],
+        [
+          "fillRect",
+          0,
+          0,
+          30,
+          30
+        ],
+        [
+          "restore"
+        ]
+      ]
+    },
+    "negative_scale": {
+      "description": "Negative scale for mirroring",
+      "threshold": 0.0,
+      "commands": [
+        [
+          "fillStyle",
+          "#ff0000"
+        ],
+        [
+          "fillRect",
+          10,
+          10,
+          40,
+          80
+        ],
+        [
+          "save"
+        ],
+        [
+          "translate",
+          200,
+          0
+        ],
+        [
+          "scale",
+          -1,
+          1
+        ],
+        [
+          "fillStyle",
+          "#0000ff"
+        ],
+        [
+          "fillRect",
+          10,
+          10,
+          40,
+          80
+        ],
+        [
+          "restore"
+        ]
+      ]
+    },
+    "miter_limit": {
+      "description": "Miter limit causing bevel fallback on sharp angles",
+      "threshold": 0.0156,
+      "commands": [
+        [
+          "strokeStyle",
+          "#333333"
+        ],
+        [
+          "lineWidth",
+          10
+        ],
+        [
+          "lineJoin",
+          "miter"
+        ],
+        [
+          "miterLimit",
+          2
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          20,
+          180
+        ],
+        [
+          "lineTo",
+          60,
+          20
+        ],
+        [
+          "lineTo",
+          100,
+          180
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "miterLimit",
+          10
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          100,
+          180
+        ],
+        [
+          "lineTo",
+          140,
+          20
+        ],
+        [
+          "lineTo",
+          180,
+          180
+        ],
+        [
+          "stroke"
+        ]
+      ]
+    },
+    "line_dash_offset": {
+      "description": "Dashed lines with different offsets",
+      "threshold": 0.0003,
+      "commands": [
+        [
+          "strokeStyle",
+          "#000000"
+        ],
+        [
+          "lineWidth",
+          3
+        ],
+        [
+          "setLineDash",
+          15,
+          10
+        ],
+        [
+          "lineDashOffset",
+          0
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          10,
+          40
+        ],
+        [
+          "lineTo",
+          190,
+          40
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "lineDashOffset",
+          5
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          10,
+          80
+        ],
+        [
+          "lineTo",
+          190,
+          80
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "lineDashOffset",
+          10
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          10,
+          120
+        ],
+        [
+          "lineTo",
+          190,
+          120
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "lineDashOffset",
+          15
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          10,
+          160
+        ],
+        [
+          "lineTo",
+          190,
+          160
+        ],
+        [
+          "stroke"
+        ]
+      ]
+    },
+    "fill_and_stroke": {
+      "description": "Same shape filled then stroked",
+      "threshold": 0.0036,
+      "commands": [
+        [
+          "fillStyle",
+          "#3498db"
+        ],
+        [
+          "strokeStyle",
+          "#2c3e50"
+        ],
+        [
+          "lineWidth",
+          4
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          100,
+          10
+        ],
+        [
+          "lineTo",
+          190,
+          70
+        ],
+        [
+          "lineTo",
+          160,
+          170
+        ],
+        [
+          "lineTo",
+          40,
+          170
+        ],
+        [
+          "lineTo",
+          10,
+          70
+        ],
+        [
+          "closePath"
+        ],
+        [
+          "fill"
+        ],
+        [
+          "stroke"
+        ]
+      ]
+    },
+    "star_path": {
+      "description": "Five-pointed star polygon",
+      "threshold": 0.0202,
+      "commands": [
+        [
+          "fillStyle",
+          "#f1c40f"
+        ],
+        [
+          "strokeStyle",
+          "#e67e22"
+        ],
+        [
+          "lineWidth",
+          2
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          100,
+          10
+        ],
+        [
+          "lineTo",
+          120,
+          75
+        ],
+        [
+          "lineTo",
+          190,
+          75
+        ],
+        [
+          "lineTo",
+          132,
+          118
+        ],
+        [
+          "lineTo",
+          155,
+          185
+        ],
+        [
+          "lineTo",
+          100,
+          145
+        ],
+        [
+          "lineTo",
+          45,
+          185
+        ],
+        [
+          "lineTo",
+          68,
+          118
+        ],
+        [
+          "lineTo",
+          10,
+          75
+        ],
+        [
+          "lineTo",
+          80,
+          75
+        ],
+        [
+          "closePath"
+        ],
+        [
+          "fill"
+        ],
+        [
+          "stroke"
+        ]
+      ]
+    },
+    "complex_polygon": {
+      "description": "Arrow shape with multiple vertices",
+      "threshold": 0.015,
+      "commands": [
+        [
+          "fillStyle",
+          "#27ae60"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          100,
+          10
+        ],
+        [
+          "lineTo",
+          190,
+          80
+        ],
+        [
+          "lineTo",
+          150,
+          80
+        ],
+        [
+          "lineTo",
+          150,
+          180
+        ],
+        [
+          "lineTo",
+          50,
+          180
+        ],
+        [
+          "lineTo",
+          50,
+          80
+        ],
+        [
+          "lineTo",
+          10,
+          80
+        ],
+        [
+          "closePath"
+        ],
+        [
+          "fill"
+        ]
+      ]
+    },
+    "deep_save_restore": {
+      "description": "Multiple levels of save/restore nesting",
+      "threshold": 0.0,
+      "commands": [
+        [
+          "fillStyle",
+          "#ff0000"
+        ],
+        [
+          "save"
+        ],
+        [
+          "translate",
+          20,
+          20
+        ],
+        [
+          "fillRect",
+          0,
+          0,
+          30,
+          30
+        ],
+        [
+          "save"
+        ],
+        [
+          "fillStyle",
+          "#00ff00"
+        ],
+        [
+          "translate",
+          40,
+          0
+        ],
+        [
+          "fillRect",
+          0,
+          0,
+          30,
+          30
+        ],
+        [
+          "save"
+        ],
+        [
+          "fillStyle",
+          "#0000ff"
+        ],
+        [
+          "translate",
+          40,
+          0
+        ],
+        [
+          "fillRect",
+          0,
+          0,
+          30,
+          30
+        ],
+        [
+          "save"
+        ],
+        [
+          "fillStyle",
+          "#ff00ff"
+        ],
+        [
+          "translate",
+          40,
+          0
+        ],
+        [
+          "fillRect",
+          0,
+          0,
+          30,
+          30
+        ],
+        [
+          "restore"
+        ],
+        [
+          "translate",
+          0,
+          50
+        ],
+        [
+          "fillRect",
+          0,
+          0,
+          30,
+          30
+        ],
+        [
+          "restore"
+        ],
+        [
+          "translate",
+          0,
+          50
+        ],
+        [
+          "fillRect",
+          0,
+          0,
+          30,
+          30
+        ],
+        [
+          "restore"
+        ],
+        [
+          "translate",
+          0,
+          50
+        ],
+        [
+          "fillRect",
+          0,
+          0,
+          30,
+          30
+        ],
+        [
+          "restore"
+        ]
+      ]
+    },
+    "overlapping_strokes": {
+      "description": "Multiple stroked paths with alpha blending",
+      "threshold": 0.0,
+      "commands": [
+        [
+          "lineWidth",
+          8
+        ],
+        [
+          "globalAlpha",
+          0.5
+        ],
+        [
+          "strokeStyle",
+          "#ff0000"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          10,
+          50
+        ],
+        [
+          "lineTo",
+          190,
+          50
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "strokeStyle",
+          "#00ff00"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          10,
+          100
+        ],
+        [
+          "lineTo",
+          190,
+          100
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "strokeStyle",
+          "#0000ff"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          10,
+          150
+        ],
+        [
+          "lineTo",
+          190,
+          150
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "strokeStyle",
+          "#ff0000"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          50,
+          10
+        ],
+        [
+          "lineTo",
+          50,
+          190
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "strokeStyle",
+          "#0000ff"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          150,
+          10
+        ],
+        [
+          "lineTo",
+          150,
+          190
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "globalAlpha",
+          1.0
+        ]
+      ]
+    },
+    "wide_stroke": {
+      "description": "Very wide stroke on a curved path",
+      "threshold": 0.0199,
+      "commands": [
+        [
+          "strokeStyle",
+          "#9b59b6"
+        ],
+        [
+          "lineWidth",
+          20
+        ],
+        [
+          "lineCap",
+          "round"
+        ],
+        [
+          "lineJoin",
+          "round"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          30,
+          150
+        ],
+        [
+          "quadraticCurveTo",
+          100,
+          10,
+          170,
+          150
+        ],
+        [
+          "stroke"
+        ]
+      ]
+    },
+    "closed_vs_open": {
+      "description": "Closed path (left) vs open path (right)",
+      "threshold": 0.0014,
+      "commands": [
+        [
+          "strokeStyle",
+          "#333333"
+        ],
+        [
+          "lineWidth",
+          4
+        ],
+        [
+          "lineJoin",
+          "round"
+        ],
+        [
+          "lineCap",
+          "round"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          20,
+          40
+        ],
+        [
+          "lineTo",
+          80,
+          40
+        ],
+        [
+          "lineTo",
+          80,
+          160
+        ],
+        [
+          "lineTo",
+          20,
+          160
+        ],
+        [
+          "closePath"
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          120,
+          40
+        ],
+        [
+          "lineTo",
+          180,
+          40
+        ],
+        [
+          "lineTo",
+          180,
+          160
+        ],
+        [
+          "lineTo",
+          120,
+          160
+        ],
+        [
+          "stroke"
+        ]
+      ]
+    },
+    "diagonal_lines": {
+      "description": "Diagonal lines at various angles for anti-aliasing test",
+      "threshold": 0.0096,
+      "commands": [
+        [
+          "strokeStyle",
+          "#000000"
+        ],
+        [
+          "lineWidth",
+          1
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          10,
+          10
+        ],
+        [
+          "lineTo",
+          190,
+          190
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          190,
+          10
+        ],
+        [
+          "lineTo",
+          10,
+          190
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          100,
+          10
+        ],
+        [
+          "lineTo",
+          100,
+          190
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          10,
+          100
+        ],
+        [
+          "lineTo",
+          190,
+          100
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "strokeStyle",
+          "#cc0000"
+        ],
+        [
+          "lineWidth",
+          2
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          10,
+          50
+        ],
+        [
+          "lineTo",
+          190,
+          150
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          10,
+          150
+        ],
+        [
+          "lineTo",
+          190,
+          50
+        ],
+        [
+          "stroke"
+        ]
+      ]
+    },
+    "bezier_s_curve": {
+      "description": "S-shaped cubic bezier curve",
+      "threshold": 0.0161,
+      "commands": [
+        [
+          "strokeStyle",
+          "#336699"
+        ],
+        [
+          "lineWidth",
+          4
+        ],
+        [
+          "lineCap",
+          "round"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          20,
+          180
+        ],
+        [
+          "bezierCurveTo",
+          20,
+          60,
+          180,
+          140,
+          180,
+          20
+        ],
+        [
+          "stroke"
+        ]
+      ]
+    },
+    "multi_bezier_path": {
+      "description": "Connected bezier curves forming a smooth path",
+      "threshold": 0.0164,
+      "commands": [
+        [
+          "strokeStyle",
+          "#663399"
+        ],
+        [
+          "lineWidth",
+          3
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          10,
+          100
+        ],
+        [
+          "bezierCurveTo",
+          30,
+          20,
+          60,
+          20,
+          80,
+          100
+        ],
+        [
+          "bezierCurveTo",
+          100,
+          180,
+          130,
+          180,
+          150,
+          100
+        ],
+        [
+          "bezierCurveTo",
+          170,
+          20,
+          180,
+          20,
+          190,
+          100
+        ],
+        [
+          "stroke"
+        ]
+      ]
+    },
+    "filled_bezier": {
+      "description": "Filled shape defined by bezier curves",
+      "threshold": 0.0206,
+      "commands": [
+        [
+          "fillStyle",
+          "#e74c3c"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          100,
+          10
+        ],
+        [
+          "bezierCurveTo",
+          180,
+          10,
+          190,
+          100,
+          190,
+          100
+        ],
+        [
+          "bezierCurveTo",
+          190,
+          180,
+          100,
+          190,
+          100,
+          190
+        ],
+        [
+          "bezierCurveTo",
+          10,
+          190,
+          10,
+          100,
+          10,
+          100
+        ],
+        [
+          "bezierCurveTo",
+          10,
+          10,
+          100,
+          10,
+          100,
+          10
+        ],
+        [
+          "closePath"
+        ],
+        [
+          "fill"
+        ]
+      ]
+    },
+    "alpha_gradient_rects": {
+      "description": "Series of rects with decreasing alpha (manual gradient)",
+      "threshold": 0.0,
+      "commands": [
+        [
+          "fillStyle",
+          "rgba(0, 100, 200, 1.0)"
+        ],
+        [
+          "fillRect",
+          0,
+          0,
+          20,
+          200
+        ],
+        [
+          "fillStyle",
+          "rgba(0, 100, 200, 0.9)"
+        ],
+        [
+          "fillRect",
+          20,
+          0,
+          20,
+          200
+        ],
+        [
+          "fillStyle",
+          "rgba(0, 100, 200, 0.8)"
+        ],
+        [
+          "fillRect",
+          40,
+          0,
+          20,
+          200
+        ],
+        [
+          "fillStyle",
+          "rgba(0, 100, 200, 0.7)"
+        ],
+        [
+          "fillRect",
+          60,
+          0,
+          20,
+          200
+        ],
+        [
+          "fillStyle",
+          "rgba(0, 100, 200, 0.6)"
+        ],
+        [
+          "fillRect",
+          80,
+          0,
+          20,
+          200
+        ],
+        [
+          "fillStyle",
+          "rgba(0, 100, 200, 0.5)"
+        ],
+        [
+          "fillRect",
+          100,
+          0,
+          20,
+          200
+        ],
+        [
+          "fillStyle",
+          "rgba(0, 100, 200, 0.4)"
+        ],
+        [
+          "fillRect",
+          120,
+          0,
+          20,
+          200
+        ],
+        [
+          "fillStyle",
+          "rgba(0, 100, 200, 0.3)"
+        ],
+        [
+          "fillRect",
+          140,
+          0,
+          20,
+          200
+        ],
+        [
+          "fillStyle",
+          "rgba(0, 100, 200, 0.2)"
+        ],
+        [
+          "fillRect",
+          160,
+          0,
+          20,
+          200
+        ],
+        [
+          "fillStyle",
+          "rgba(0, 100, 200, 0.1)"
+        ],
+        [
+          "fillRect",
+          180,
+          0,
+          20,
+          200
+        ]
+      ]
+    },
+    "alpha_on_alpha": {
+      "description": "globalAlpha applied to already-transparent fillStyle",
+      "threshold": 0.0,
+      "commands": [
+        [
+          "fillStyle",
+          "#000000"
+        ],
+        [
+          "fillRect",
+          0,
+          0,
+          200,
+          200
+        ],
+        [
+          "globalAlpha",
+          0.5
+        ],
+        [
+          "fillStyle",
+          "rgba(255, 0, 0, 0.5)"
+        ],
+        [
+          "fillRect",
+          20,
+          20,
+          80,
+          80
+        ],
+        [
+          "fillStyle",
+          "rgba(0, 255, 0, 0.8)"
+        ],
+        [
+          "fillRect",
+          100,
+          20,
+          80,
+          80
+        ],
+        [
+          "fillStyle",
+          "rgba(0, 0, 255, 1.0)"
+        ],
+        [
+          "fillRect",
+          20,
+          100,
+          80,
+          80
+        ],
+        [
+          "fillStyle",
+          "rgba(255, 255, 0, 0.3)"
+        ],
+        [
+          "fillRect",
+          100,
+          100,
+          80,
+          80
+        ],
+        [
+          "globalAlpha",
+          1.0
+        ]
+      ]
+    },
+    "spiral_path": {
+      "description": "Spiral drawn with many short line segments",
+      "threshold": 0.0,
+      "commands": [
+        [
+          "strokeStyle",
+          "#2980b9"
+        ],
+        [
+          "lineWidth",
+          2
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          100,
+          100
+        ],
+        [
+          "lineTo",
+          110,
+          100
+        ],
+        [
+          "lineTo",
+          110,
+          110
+        ],
+        [
+          "lineTo",
+          90,
+          110
+        ],
+        [
+          "lineTo",
+          90,
+          90
+        ],
+        [
+          "lineTo",
+          120,
+          90
+        ],
+        [
+          "lineTo",
+          120,
+          120
+        ],
+        [
+          "lineTo",
+          80,
+          120
+        ],
+        [
+          "lineTo",
+          80,
+          80
+        ],
+        [
+          "lineTo",
+          130,
+          80
+        ],
+        [
+          "lineTo",
+          130,
+          130
+        ],
+        [
+          "lineTo",
+          70,
+          130
+        ],
+        [
+          "lineTo",
+          70,
+          70
+        ],
+        [
+          "lineTo",
+          140,
+          70
+        ],
+        [
+          "lineTo",
+          140,
+          140
+        ],
+        [
+          "lineTo",
+          60,
+          140
+        ],
+        [
+          "lineTo",
+          60,
+          60
+        ],
+        [
+          "lineTo",
+          150,
+          60
+        ],
+        [
+          "lineTo",
+          150,
+          150
+        ],
+        [
+          "lineTo",
+          50,
+          150
+        ],
+        [
+          "lineTo",
+          50,
+          50
+        ],
+        [
+          "lineTo",
+          160,
+          50
+        ],
+        [
+          "lineTo",
+          160,
+          160
+        ],
+        [
+          "lineTo",
+          40,
+          160
+        ],
+        [
+          "lineTo",
+          40,
+          40
+        ],
+        [
+          "lineTo",
+          170,
+          40
+        ],
+        [
+          "lineTo",
+          170,
+          170
+        ],
+        [
+          "lineTo",
+          30,
+          170
+        ],
+        [
+          "lineTo",
+          30,
+          30
+        ],
+        [
+          "lineTo",
+          180,
+          30
+        ],
+        [
+          "lineTo",
+          180,
+          180
+        ],
+        [
+          "lineTo",
+          20,
+          180
+        ],
+        [
+          "lineTo",
+          20,
+          20
+        ],
+        [
+          "lineTo",
+          190,
+          20
+        ],
+        [
+          "stroke"
+        ]
+      ]
+    },
+    "donut_shape": {
+      "description": "Donut using two concentric circle paths (winding rule)",
+      "threshold": 0.0239,
+      "commands": [
+        [
+          "fillStyle",
+          "#e67e22"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "arc",
+          100,
+          100,
+          80,
+          0,
+          6.283185307,
+          0
+        ],
+        [
+          "arc",
+          100,
+          100,
+          40,
+          0,
+          6.283185307,
+          1
+        ],
+        [
+          "fill"
+        ]
+      ]
+    },
+    "dashed_shapes": {
+      "description": "Dashed outlines on various shapes",
+      "threshold": 0.0167,
+      "commands": [
+        [
+          "strokeStyle",
+          "#2c3e50"
+        ],
+        [
+          "lineWidth",
+          2
+        ],
+        [
+          "setLineDash",
+          8,
+          4
+        ],
+        [
+          "strokeRect",
+          10,
+          10,
+          80,
+          80
+        ],
+        [
+          "strokeRect",
+          110,
+          10,
+          80,
+          80
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "arc",
+          50,
+          150,
+          40,
+          0,
+          6.283185307,
+          0
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "arc",
+          150,
+          150,
+          40,
+          0,
+          6.283185307,
+          0
+        ],
+        [
+          "stroke"
+        ]
+      ]
+    },
+    "clip_rect": {
+      "description": "Rectangular clip path \u2014 fill large rect but only visible inside clip region",
+      "threshold": 0.0,
+      "commands": [
+        [
+          "beginPath"
+        ],
+        [
+          "rect_path",
+          40,
+          40,
+          120,
+          120
+        ],
+        [
+          "clip"
+        ],
+        [
+          "fillStyle",
+          "#e74c3c"
+        ],
+        [
+          "fillRect",
+          0,
+          0,
+          200,
+          200
+        ]
+      ]
+    },
+    "clip_circle": {
+      "description": "Circular clip path \u2014 rects drawn through circular window",
+      "threshold": 0.0162,
+      "commands": [
+        [
+          "beginPath"
+        ],
+        [
+          "arc",
+          100,
+          100,
+          70,
+          0,
+          6.283185307,
+          0
+        ],
+        [
+          "clip"
+        ],
+        [
+          "fillStyle",
+          "#3498db"
+        ],
+        [
+          "fillRect",
+          0,
+          0,
+          100,
+          100
+        ],
+        [
+          "fillStyle",
+          "#e67e22"
+        ],
+        [
+          "fillRect",
+          100,
+          0,
+          100,
+          100
+        ],
+        [
+          "fillStyle",
+          "#2ecc71"
+        ],
+        [
+          "fillRect",
+          0,
+          100,
+          100,
+          100
+        ],
+        [
+          "fillStyle",
+          "#9b59b6"
+        ],
+        [
+          "fillRect",
+          100,
+          100,
+          100,
+          100
+        ]
+      ]
+    },
+    "clip_nested": {
+      "description": "Nested clip paths \u2014 inner clip further restricts outer",
+      "threshold": 0.0132,
+      "commands": [
+        [
+          "save"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "rect_path",
+          20,
+          20,
+          160,
+          160
+        ],
+        [
+          "clip"
+        ],
+        [
+          "save"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "arc",
+          100,
+          100,
+          60,
+          0,
+          6.283185307,
+          0
+        ],
+        [
+          "clip"
+        ],
+        [
+          "fillStyle",
+          "#e74c3c"
+        ],
+        [
+          "fillRect",
+          0,
+          0,
+          200,
+          200
+        ],
+        [
+          "restore"
+        ],
+        [
+          "restore"
+        ]
+      ]
+    },
+    "clip_transform": {
+      "description": "Clip path with transform applied \u2014 rotated clip region",
+      "threshold": 0.0044,
+      "commands": [
+        [
+          "save"
+        ],
+        [
+          "translate",
+          100,
+          100
+        ],
+        [
+          "rotate",
+          0.785398
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "rect_path",
+          -50,
+          -50,
+          100,
+          100
+        ],
+        [
+          "clip"
+        ],
+        [
+          "rotate",
+          -0.785398
+        ],
+        [
+          "translate",
+          -100,
+          -100
+        ],
+        [
+          "fillStyle",
+          "#2980b9"
+        ],
+        [
+          "fillRect",
+          0,
+          0,
+          200,
+          200
+        ],
+        [
+          "restore"
+        ]
+      ]
+    },
+    "gradient_linear_basic": {
+      "description": "Linear gradient fill from red to blue across rectangle",
+      "threshold": 0.0014,
+      "commands": [
+        [
+          "_createLinearGradient",
+          "g1",
+          0,
+          0,
+          200,
+          0
+        ],
+        [
+          "_addColorStop",
+          "g1",
+          0,
+          "#ff0000"
+        ],
+        [
+          "_addColorStop",
+          "g1",
+          1,
+          "#0000ff"
+        ],
+        [
+          "_setFillGradient",
+          "g1"
+        ],
+        [
+          "fillRect",
+          10,
+          10,
+          180,
+          180
+        ]
+      ]
+    },
+    "gradient_linear_multi": {
+      "description": "Linear gradient with multiple color stops (rainbow)",
+      "threshold": 0.0012,
+      "commands": [
+        [
+          "_createLinearGradient",
+          "g1",
+          0,
+          0,
+          200,
+          0
+        ],
+        [
+          "_addColorStop",
+          "g1",
+          0,
+          "#ff0000"
+        ],
+        [
+          "_addColorStop",
+          "g1",
+          0.17,
+          "#ff8800"
+        ],
+        [
+          "_addColorStop",
+          "g1",
+          0.33,
+          "#ffff00"
+        ],
+        [
+          "_addColorStop",
+          "g1",
+          0.5,
+          "#00ff00"
+        ],
+        [
+          "_addColorStop",
+          "g1",
+          0.67,
+          "#0000ff"
+        ],
+        [
+          "_addColorStop",
+          "g1",
+          0.83,
+          "#4b0082"
+        ],
+        [
+          "_addColorStop",
+          "g1",
+          1,
+          "#8b00ff"
+        ],
+        [
+          "_setFillGradient",
+          "g1"
+        ],
+        [
+          "fillRect",
+          0,
+          0,
+          200,
+          200
+        ]
+      ]
+    },
+    "gradient_radial": {
+      "description": "Radial gradient from center outward",
+      "threshold": 0.0015,
+      "commands": [
+        [
+          "_createRadialGradient",
+          "g1",
+          100,
+          100,
+          10,
+          100,
+          100,
+          90
+        ],
+        [
+          "_addColorStop",
+          "g1",
+          0,
+          "#ffffff"
+        ],
+        [
+          "_addColorStop",
+          "g1",
+          1,
+          "#000000"
+        ],
+        [
+          "_setFillGradient",
+          "g1"
+        ],
+        [
+          "fillRect",
+          0,
+          0,
+          200,
+          200
+        ]
+      ]
+    },
+    "composite_multiply": {
+      "description": "globalCompositeOperation multiply \u2014 blends overlapping colors",
+      "threshold": 0.0,
+      "commands": [
+        [
+          "fillStyle",
+          "#ff6666"
+        ],
+        [
+          "fillRect",
+          20,
+          20,
+          120,
+          120
+        ],
+        [
+          "globalCompositeOperation",
+          "multiply"
+        ],
+        [
+          "fillStyle",
+          "#6666ff"
+        ],
+        [
+          "fillRect",
+          60,
+          60,
+          120,
+          120
+        ]
+      ]
+    },
+    "composite_screen": {
+      "description": "globalCompositeOperation screen \u2014 lightens overlapping colors",
+      "threshold": 0.0,
+      "commands": [
+        [
+          "fillStyle",
+          "#990000"
+        ],
+        [
+          "fillRect",
+          20,
+          20,
+          120,
+          120
+        ],
+        [
+          "globalCompositeOperation",
+          "screen"
+        ],
+        [
+          "fillStyle",
+          "#000099"
+        ],
+        [
+          "fillRect",
+          60,
+          60,
+          120,
+          120
+        ]
+      ]
+    },
+    "composite_destination_out": {
+      "description": "globalCompositeOperation destination-out \u2014 erases where new shape is drawn",
+      "threshold": 0.0245,
+      "commands": [
+        [
+          "fillStyle",
+          "#3498db"
+        ],
+        [
+          "fillRect",
+          20,
+          20,
+          160,
+          160
+        ],
+        [
+          "globalCompositeOperation",
+          "destination-out"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "arc",
+          100,
+          100,
+          50,
+          0,
+          6.283185307,
+          0
+        ],
+        [
+          "fill"
+        ]
+      ]
+    },
+    "shadow_rect": {
+      "description": "Rectangle with drop shadow",
+      "threshold": 0.0016,
+      "commands": [
+        [
+          "shadowColor",
+          "rgba(0, 0, 0, 0.5)"
+        ],
+        [
+          "shadowBlur",
+          10
+        ],
+        [
+          "shadowOffsetX",
+          5
+        ],
+        [
+          "shadowOffsetY",
+          5
+        ],
+        [
+          "fillStyle",
+          "#3498db"
+        ],
+        [
+          "fillRect",
+          40,
+          40,
+          100,
+          100
+        ]
+      ]
+    },
+    "shadow_text": {
+      "description": "Text with drop shadow",
+      "threshold": 0.0391,
+      "commands": [
+        [
+          "shadowColor",
+          "rgba(0, 0, 0, 0.7)"
+        ],
+        [
+          "shadowBlur",
+          8
+        ],
+        [
+          "shadowOffsetX",
+          3
+        ],
+        [
+          "shadowOffsetY",
+          3
+        ],
+        [
+          "fillStyle",
+          "#e74c3c"
+        ],
+        [
+          "font",
+          "bold 40px sans-serif"
+        ],
+        [
+          "fillText",
+          "Shadow",
+          20,
+          120
+        ]
+      ]
+    },
+    "arcto_rounded_rect": {
+      "description": "Rounded rectangle using arcTo for corners",
+      "threshold": 0.0094,
+      "commands": [
+        [
+          "fillStyle",
+          "#2ecc71"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          50,
+          20
+        ],
+        [
+          "arcTo",
+          180,
+          20,
+          180,
+          180,
+          20
+        ],
+        [
+          "arcTo",
+          180,
+          180,
+          20,
+          180,
+          20
+        ],
+        [
+          "arcTo",
+          20,
+          180,
+          20,
+          20,
+          20
+        ],
+        [
+          "arcTo",
+          20,
+          20,
+          180,
+          20,
+          20
+        ],
+        [
+          "closePath"
+        ],
+        [
+          "fill"
+        ]
+      ]
+    },
+    "arcto_simple": {
+      "description": "Simple arcTo connecting two line segments with a curve",
+      "threshold": 0.0048,
+      "commands": [
+        [
+          "strokeStyle",
+          "#333333"
+        ],
+        [
+          "lineWidth",
+          3
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          20,
+          20
+        ],
+        [
+          "arcTo",
+          180,
+          20,
+          180,
+          180,
+          40
+        ],
+        [
+          "lineTo",
+          180,
+          180
+        ],
+        [
+          "stroke"
+        ]
+      ]
+    },
+    "named_colors_extended": {
+      "description": "Extended named colors: coral, navy, teal, salmon, olive, maroon, silver, etc.",
+      "threshold": 0.0,
+      "commands": [
+        [
+          "fillStyle",
+          "coral"
+        ],
+        [
+          "fillRect",
+          0,
+          0,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "navy"
+        ],
+        [
+          "fillRect",
+          50,
+          0,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "teal"
+        ],
+        [
+          "fillRect",
+          100,
+          0,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "salmon"
+        ],
+        [
+          "fillRect",
+          150,
+          0,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "olive"
+        ],
+        [
+          "fillRect",
+          0,
+          50,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "maroon"
+        ],
+        [
+          "fillRect",
+          50,
+          50,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "silver"
+        ],
+        [
+          "fillRect",
+          100,
+          50,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "lime"
+        ],
+        [
+          "fillRect",
+          150,
+          50,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "indigo"
+        ],
+        [
+          "fillRect",
+          0,
+          100,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "crimson"
+        ],
+        [
+          "fillRect",
+          50,
+          100,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "turquoise"
+        ],
+        [
+          "fillRect",
+          100,
+          100,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "gold"
+        ],
+        [
+          "fillRect",
+          150,
+          100,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "plum"
+        ],
+        [
+          "fillRect",
+          0,
+          150,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "khaki"
+        ],
+        [
+          "fillRect",
+          50,
+          150,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "sienna"
+        ],
+        [
+          "fillRect",
+          100,
+          150,
+          50,
+          50
+        ],
+        [
+          "fillStyle",
+          "tomato"
+        ],
+        [
+          "fillRect",
+          150,
+          150,
+          50,
+          50
+        ]
+      ]
+    },
+    "tiny_arc": {
+      "description": "Very small arcs (radius < 1) \u2014 edge case for arc approximation",
+      "threshold": 0.0008,
+      "commands": [
+        [
+          "fillStyle",
+          "#000000"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "arc",
+          50,
+          50,
+          0.5,
+          0,
+          6.283185307,
+          0
+        ],
+        [
+          "fill"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "arc",
+          100,
+          50,
+          0.8,
+          0,
+          6.283185307,
+          0
+        ],
+        [
+          "fill"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "arc",
+          150,
+          50,
+          0.3,
+          0,
+          6.283185307,
+          0
+        ],
+        [
+          "fill"
+        ],
+        [
+          "strokeStyle",
+          "#ff0000"
+        ],
+        [
+          "lineWidth",
+          1
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "arc",
+          50,
+          100,
+          0.5,
+          0,
+          6.283185307,
+          0
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "arc",
+          100,
+          100,
+          0.8,
+          0,
+          6.283185307,
+          0
+        ],
+        [
+          "stroke"
+        ]
+      ]
+    },
+    "zero_width_stroke": {
+      "description": "Stroke with lineWidth = 0 should be invisible",
+      "threshold": 0.0084,
+      "commands": [
+        [
+          "fillStyle",
+          "#3498db"
+        ],
+        [
+          "fillRect",
+          0,
+          0,
+          200,
+          200
+        ],
+        [
+          "strokeStyle",
+          "#ff0000"
+        ],
+        [
+          "lineWidth",
+          0
+        ],
+        [
+          "strokeRect",
+          40,
+          40,
+          120,
+          120
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "arc",
+          100,
+          100,
+          50,
+          0,
+          6.283185307,
+          0
+        ],
+        [
+          "stroke"
+        ]
+      ]
+    },
+    "negative_rect_dims": {
+      "description": "fillRect with negative width and height \u2014 should still render",
+      "threshold": 0.0,
+      "commands": [
+        [
+          "fillStyle",
+          "#e74c3c"
+        ],
+        [
+          "fillRect",
+          100,
+          100,
+          -80,
+          -80
+        ],
+        [
+          "fillStyle",
+          "#3498db"
+        ],
+        [
+          "fillRect",
+          100,
+          100,
+          80,
+          -80
+        ],
+        [
+          "fillStyle",
+          "#2ecc71"
+        ],
+        [
+          "fillRect",
+          100,
+          100,
+          -80,
+          80
+        ],
+        [
+          "fillStyle",
+          "#f39c12"
+        ],
+        [
+          "fillRect",
+          100,
+          100,
+          80,
+          80
+        ]
+      ]
+    },
+    "large_coordinates": {
+      "description": "Shapes at very large coordinates, partially visible",
+      "threshold": 0.0,
+      "commands": [
+        [
+          "fillStyle",
+          "#e74c3c"
+        ],
+        [
+          "fillRect",
+          -50,
+          -50,
+          100,
+          100
+        ],
+        [
+          "fillStyle",
+          "#3498db"
+        ],
+        [
+          "fillRect",
+          150,
+          -50,
+          100,
+          100
+        ],
+        [
+          "fillStyle",
+          "#2ecc71"
+        ],
+        [
+          "fillRect",
+          -50,
+          150,
+          100,
+          100
+        ],
+        [
+          "fillStyle",
+          "#f39c12"
+        ],
+        [
+          "fillRect",
+          150,
+          150,
+          100,
+          100
+        ]
+      ]
+    },
+    "degenerate_bezier": {
+      "description": "Bezier with all control points at the same location \u2014 should be a dot or nothing",
+      "threshold": 0.0009,
+      "commands": [
+        [
+          "strokeStyle",
+          "#000000"
+        ],
+        [
+          "lineWidth",
+          3
+        ],
+        [
+          "lineCap",
+          "round"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          50,
+          100
+        ],
+        [
+          "bezierCurveTo",
+          50,
+          100,
+          50,
+          100,
+          50,
+          100
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          100,
+          100
+        ],
+        [
+          "bezierCurveTo",
+          100,
+          100,
+          150,
+          100,
+          150,
+          100
+        ],
+        [
+          "stroke"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          30,
+          50
+        ],
+        [
+          "quadraticCurveTo",
+          30,
+          50,
+          30,
+          50
+        ],
+        [
+          "stroke"
+        ]
+      ]
+    },
+    "multiple_beginpath": {
+      "description": "Multiple beginPath calls without fill/stroke \u2014 only last path should render",
+      "threshold": 0.0,
+      "commands": [
+        [
+          "fillStyle",
+          "#ff0000"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "rect_path",
+          10,
+          10,
+          80,
+          80
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "rect_path",
+          50,
+          50,
+          80,
+          80
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "rect_path",
+          100,
+          100,
+          80,
+          80
+        ],
+        [
+          "fill"
+        ]
+      ]
+    },
+    "fill_rule_evenodd": {
+      "description": "Self-intersecting polygon \u2014 evenodd vs default winding fill",
+      "threshold": 0.0208,
+      "commands": [
+        [
+          "fillStyle",
+          "#9b59b6"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          100,
+          10
+        ],
+        [
+          "lineTo",
+          40,
+          190
+        ],
+        [
+          "lineTo",
+          190,
+          70
+        ],
+        [
+          "lineTo",
+          10,
+          70
+        ],
+        [
+          "lineTo",
+          160,
+          190
+        ],
+        [
+          "closePath"
+        ],
+        [
+          "fill"
+        ]
+      ]
+    },
+    "transform_mid_path": {
+      "description": "Change transform mid-path; Canvas2D applies transform at fill time to whole path",
+      "threshold": 0.0,
+      "commands": [
+        [
+          "fillStyle",
+          "#e74c3c"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "moveTo",
+          20,
+          20
+        ],
+        [
+          "lineTo",
+          100,
+          20
+        ],
+        [
+          "translate",
+          0,
+          80
+        ],
+        [
+          "lineTo",
+          100,
+          100
+        ],
+        [
+          "lineTo",
+          20,
+          100
+        ],
+        [
+          "closePath"
+        ],
+        [
+          "fill"
+        ],
+        [
+          "setTransform",
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ]
+      ]
+    },
+    "scaled_stroke_width": {
+      "description": "Non-uniform scale affects stroke width differently per axis",
+      "threshold": 0.0,
+      "commands": [
+        [
+          "strokeStyle",
+          "#2ecc71"
+        ],
+        [
+          "lineWidth",
+          4
+        ],
+        [
+          "scale",
+          2.0,
+          1.0
+        ],
+        [
+          "strokeRect",
+          20,
+          40,
+          40,
+          80
+        ]
+      ]
+    },
+    "transform_order_rotate_scale": {
+      "description": "Rotate then scale \u2014 order matters for final result",
+      "threshold": 0.0068,
+      "commands": [
+        [
+          "fillStyle",
+          "#3498db"
+        ],
+        [
+          "translate",
+          100,
+          100
+        ],
+        [
+          "rotate",
+          0.785398
+        ],
+        [
+          "scale",
+          2.0,
+          1.0
+        ],
+        [
+          "fillRect",
+          -30,
+          -20,
+          60,
+          40
+        ]
+      ]
+    },
+    "transform_order_scale_rotate": {
+      "description": "Scale then rotate \u2014 different result from rotate-then-scale",
+      "threshold": 0.0032,
+      "commands": [
+        [
+          "fillStyle",
+          "#e67e22"
+        ],
+        [
+          "translate",
+          100,
+          100
+        ],
+        [
+          "scale",
+          2.0,
+          1.0
+        ],
+        [
+          "rotate",
+          0.785398
+        ],
+        [
+          "fillRect",
+          -30,
+          -20,
+          60,
+          40
+        ]
+      ]
+    },
+    "transform_persist_across_paths": {
+      "description": "Transform persists across multiple beginPath/fill calls without reset",
+      "threshold": 0.0,
+      "commands": [
+        [
+          "fillStyle",
+          "#9b59b6"
+        ],
+        [
+          "translate",
+          50,
+          50
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "rect_path",
+          0,
+          0,
+          40,
+          40
+        ],
+        [
+          "fill"
+        ],
+        [
+          "fillStyle",
+          "#1abc9c"
+        ],
+        [
+          "beginPath"
+        ],
+        [
+          "rect_path",
+          50,
+          0,
+          40,
+          40
+        ],
+        [
+          "fill"
+        ]
+      ]
+    },
+    "set_transform_overrides": {
+      "description": "setTransform overrides accumulated transforms instead of compounding",
+      "threshold": 0.0,
+      "commands": [
+        [
+          "fillStyle",
+          "#e74c3c"
+        ],
+        [
+          "translate",
+          100,
+          100
+        ],
+        [
+          "setTransform",
+          1,
+          0,
+          0,
+          1,
+          10,
+          10
+        ],
+        [
+          "fillRect",
+          0,
+          0,
+          60,
+          60
+        ],
+        [
+          "setTransform",
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ]
+      ]
+    },
+    "composite_source_atop": {
+      "description": "globalCompositeOperation source-atop — new shape only where it overlaps existing",
+      "threshold": 0.025,
+      "commands": [
+        ["fillStyle", "#3498db"],
+        ["fillRect", 20, 20, 120, 120],
+        ["globalCompositeOperation", "source-atop"],
+        ["fillStyle", "#e74c3c"],
+        ["beginPath"],
+        ["arc", 100, 100, 60, 0, 6.283185307, 0],
+        ["fill"]
+      ]
+    },
+    "composite_destination_over": {
+      "description": "globalCompositeOperation destination-over — draws behind existing content",
+      "threshold": 0.025,
+      "commands": [
+        ["fillStyle", "#e74c3c"],
+        ["beginPath"],
+        ["arc", 80, 80, 50, 0, 6.283185307, 0],
+        ["fill"],
+        ["globalCompositeOperation", "destination-over"],
+        ["fillStyle", "#3498db"],
+        ["fillRect", 60, 60, 100, 100]
+      ]
+    },
+    "composite_lighter": {
+      "description": "globalCompositeOperation lighter — additive blending",
+      "threshold": 0.025,
+      "commands": [
+        ["fillStyle", "#ff0000"],
+        ["fillRect", 20, 40, 100, 100],
+        ["globalCompositeOperation", "lighter"],
+        ["fillStyle", "#00ff00"],
+        ["fillRect", 80, 40, 100, 100],
+        ["fillStyle", "#0000ff"],
+        ["fillRect", 50, 80, 100, 80]
+      ]
+    },
+    "composite_xor": {
+      "description": "globalCompositeOperation xor — shows non-overlapping parts only",
+      "threshold": 0.025,
+      "commands": [
+        ["fillStyle", "#3498db"],
+        ["fillRect", 30, 30, 100, 100],
+        ["globalCompositeOperation", "xor"],
+        ["fillStyle", "#e74c3c"],
+        ["fillRect", 70, 70, 100, 100]
+      ]
+    },
+    "composite_darken": {
+      "description": "globalCompositeOperation darken — picks darker of overlapping pixels",
+      "threshold": 0.025,
+      "commands": [
+        ["fillStyle", "#ff8844"],
+        ["fillRect", 20, 20, 120, 120],
+        ["globalCompositeOperation", "darken"],
+        ["fillStyle", "#4488ff"],
+        ["fillRect", 60, 60, 120, 120]
+      ]
+    },
+    "composite_lighten": {
+      "description": "globalCompositeOperation lighten — picks lighter of overlapping pixels",
+      "threshold": 0.025,
+      "commands": [
+        ["fillStyle", "#443322"],
+        ["fillRect", 20, 20, 120, 120],
+        ["globalCompositeOperation", "lighten"],
+        ["fillStyle", "#224433"],
+        ["fillRect", 60, 60, 120, 120]
+      ]
+    },
+    "composite_difference": {
+      "description": "globalCompositeOperation difference — inverts overlapping pixels",
+      "threshold": 0.025,
+      "commands": [
+        ["fillStyle", "#ffffff"],
+        ["fillRect", 0, 0, 200, 200],
+        ["globalCompositeOperation", "difference"],
+        ["fillStyle", "#ff0000"],
+        ["fillRect", 20, 20, 80, 160],
+        ["fillStyle", "#00ff00"],
+        ["fillRect", 60, 20, 80, 160],
+        ["fillStyle", "#0000ff"],
+        ["fillRect", 100, 20, 80, 160]
+      ]
+    },
+    "composite_overlay": {
+      "description": "globalCompositeOperation overlay — multiplies dark, screens light",
+      "threshold": 0.025,
+      "commands": [
+        ["fillStyle", "#808080"],
+        ["fillRect", 0, 0, 200, 200],
+        ["globalCompositeOperation", "overlay"],
+        ["fillStyle", "#ff0000"],
+        ["fillRect", 20, 20, 80, 160],
+        ["fillStyle", "#00ff00"],
+        ["fillRect", 60, 20, 80, 160],
+        ["fillStyle", "#0000ff"],
+        ["fillRect", 100, 20, 80, 160]
+      ]
+    },
+    "composite_copy": {
+      "description": "globalCompositeOperation copy — replaces everything with new shape",
+      "threshold": 0.025,
+      "commands": [
+        ["fillStyle", "#3498db"],
+        ["fillRect", 0, 0, 200, 200],
+        ["globalCompositeOperation", "copy"],
+        ["fillStyle", "#e74c3c"],
+        ["fillRect", 50, 50, 100, 100]
+      ]
+    },
+    "subpixel_transform": {
+      "description": "Fractional translate (0.5, 0.5) tests subpixel rendering",
+      "threshold": 0.0002,
+      "commands": [
+        [
+          "fillStyle",
+          "#2c3e50"
+        ],
+        [
+          "translate",
+          0.5,
+          0.5
+        ],
+        [
+          "fillRect",
+          20,
+          20,
+          60,
+          60
+        ],
+        [
+          "setTransform",
+          1,
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          "fillStyle",
+          "#c0392b"
+        ],
+        [
+          "fillRect",
+          100,
+          20,
+          60,
+          60
+        ]
+      ]
+    },
+    "gradient_linear_fill": {
+      "description": "Linear gradient red→blue horizontal, fill full canvas",
+      "threshold": 0.02,
+      "commands": [
+        ["_createLinearGradient", "g1", 0, 0, 200, 0],
+        ["_addColorStop", "g1", 0, "#ff0000"],
+        ["_addColorStop", "g1", 1, "#0000ff"],
+        ["_setFillGradient", "g1"],
+        ["fillRect", 0, 0, 200, 200]
+      ]
+    },
+    "gradient_radial_fill": {
+      "description": "Radial gradient yellow→purple centered on canvas",
+      "threshold": 0.02,
+      "commands": [
+        ["_createRadialGradient", "g1", 100, 100, 10, 100, 100, 90],
+        ["_addColorStop", "g1", 0, "#ffff00"],
+        ["_addColorStop", "g1", 1, "#800080"],
+        ["_setFillGradient", "g1"],
+        ["fillRect", 0, 0, 200, 200]
+      ]
+    },
+    "gradient_multi_stop_fill": {
+      "description": "Vertical linear gradient with 4 stops: red→yellow→green→blue",
+      "threshold": 0.02,
+      "commands": [
+        ["_createLinearGradient", "g1", 0, 0, 0, 200],
+        ["_addColorStop", "g1", 0, "#ff0000"],
+        ["_addColorStop", "g1", 0.33, "#ffff00"],
+        ["_addColorStop", "g1", 0.66, "#00ff00"],
+        ["_addColorStop", "g1", 1, "#0000ff"],
+        ["_setFillGradient", "g1"],
+        ["fillRect", 0, 0, 200, 200]
+      ]
+    },
+    "shadow_fillrect": {
+      "description": "Red rectangle with dark drop shadow",
+      "threshold": 0.08,
+      "commands": [
+        ["shadowColor", "rgba(0,0,0,0.8)"],
+        ["shadowBlur", 10],
+        ["shadowOffsetX", 5],
+        ["shadowOffsetY", 5],
+        ["fillStyle", "#ff0000"],
+        ["fillRect", 30, 30, 120, 120]
+      ]
+    },
+    "shadow_filltext": {
+      "description": "White text with red drop shadow",
+      "threshold": 0.15,
+      "commands": [
+        ["shadowColor", "#ff0000"],
+        ["shadowBlur", 8],
+        ["shadowOffsetX", 3],
+        ["shadowOffsetY", 3],
+        ["font", "bold 30px sans-serif"],
+        ["fillStyle", "#ffffff"],
+        ["fillText", "Shadow", 30, 100]
+      ]
+    },
+    "roundrect_basic": {
+      "description": "Rounded rectangle with uniform corner radius",
+      "threshold": 0.02,
+      "commands": [
+        ["beginPath"],
+        ["roundRect", 20, 20, 160, 160, 20],
+        ["fillStyle", "#e94560"],
+        ["fill"]
+      ]
+    },
+    "roundrect_varied": {
+      "description": "Rounded rectangle with varying corner radii",
+      "threshold": 0.02,
+      "commands": [
+        ["beginPath"],
+        ["roundRect", 20, 20, 160, 120, [30, 10, 30, 10]],
+        ["fillStyle", "#0f3460"],
+        ["fill"]
+      ]
+    },
+    "text_baseline_top": {
+      "description": "Text with textBaseline=top aligned to reference line",
+      "threshold": 0.12,
+      "commands": [
+        ["fillStyle", "#ffffff"],
+        ["strokeStyle", "#666666"],
+        ["lineWidth", 1],
+        ["beginPath"],
+        ["moveTo", 0, 100],
+        ["lineTo", 200, 100],
+        ["stroke"],
+        ["textBaseline", "top"],
+        ["font", "20px sans-serif"],
+        ["fillText", "Top", 10, 100]
+      ]
+    },
+    "text_baseline_middle": {
+      "description": "Text with textBaseline=middle aligned to reference line",
+      "threshold": 0.12,
+      "commands": [
+        ["fillStyle", "#ffffff"],
+        ["strokeStyle", "#666666"],
+        ["lineWidth", 1],
+        ["beginPath"],
+        ["moveTo", 0, 100],
+        ["lineTo", 200, 100],
+        ["stroke"],
+        ["textBaseline", "middle"],
+        ["font", "20px sans-serif"],
+        ["fillText", "Middle", 10, 100]
+      ]
+    },
+    "text_baseline_bottom": {
+      "description": "Text with textBaseline=bottom aligned to reference line",
+      "threshold": 0.12,
+      "commands": [
+        ["fillStyle", "#ffffff"],
+        ["strokeStyle", "#666666"],
+        ["lineWidth", 1],
+        ["beginPath"],
+        ["moveTo", 0, 100],
+        ["lineTo", 200, 100],
+        ["stroke"],
+        ["textBaseline", "bottom"],
+        ["font", "20px sans-serif"],
+        ["fillText", "Bottom", 10, 100]
+      ]
+    },
+    "composite_color_dodge": {
+      "description": "globalCompositeOperation color-dodge — brightens base by blend",
+      "threshold": 0.02,
+      "commands": [
+        ["fillStyle", "#ff0000"],
+        ["fillRect", 20, 20, 100, 100],
+        ["globalCompositeOperation", "color-dodge"],
+        ["fillStyle", "#0000ff"],
+        ["fillRect", 80, 80, 100, 100]
+      ]
+    },
+    "composite_color_burn": {
+      "description": "globalCompositeOperation color-burn — darkens base by blend",
+      "threshold": 0.02,
+      "commands": [
+        ["fillStyle", "#ff0000"],
+        ["fillRect", 20, 20, 100, 100],
+        ["globalCompositeOperation", "color-burn"],
+        ["fillStyle", "#0000ff"],
+        ["fillRect", 80, 80, 100, 100]
+      ]
+    },
+    "composite_hard_light": {
+      "description": "globalCompositeOperation hard-light — multiply or screen depending on blend",
+      "threshold": 0.02,
+      "commands": [
+        ["fillStyle", "#ff0000"],
+        ["fillRect", 20, 20, 100, 100],
+        ["globalCompositeOperation", "hard-light"],
+        ["fillStyle", "#0000ff"],
+        ["fillRect", 80, 80, 100, 100]
+      ]
+    },
+    "composite_soft_light": {
+      "description": "globalCompositeOperation soft-light — softer version of hard-light",
+      "threshold": 0.02,
+      "commands": [
+        ["fillStyle", "#ff0000"],
+        ["fillRect", 20, 20, 100, 100],
+        ["globalCompositeOperation", "soft-light"],
+        ["fillStyle", "#0000ff"],
+        ["fillRect", 80, 80, 100, 100]
+      ]
+    },
+    "clip_fillrect": {
+      "description": "Rectangular clip with fillRect — red only inside 100x100 clip region",
+      "threshold": 0.01,
+      "commands": [
+        ["save"],
+        ["beginPath"],
+        ["rect", 50, 50, 100, 100],
+        ["clip"],
+        ["fillStyle", "#e94560"],
+        ["fillRect", 0, 0, 200, 200],
+        ["restore"]
+      ]
+    },
+    "clip_arc_fill": {
+      "description": "Circular clip with arc — blue only inside circle",
+      "threshold": 0.02,
+      "commands": [
+        ["save"],
+        ["beginPath"],
+        ["arc", 100, 100, 60, 0, 6.283185, false],
+        ["clip"],
+        ["fillStyle", "#0f3460"],
+        ["fillRect", 0, 0, 200, 200],
+        ["restore"]
+      ]
+    },
+    "clip_with_transform": {
+      "description": "Clip with translate+rotate — purple only inside rotated square",
+      "threshold": 0.03,
+      "commands": [
+        ["save"],
+        ["translate", 100, 100],
+        ["rotate", 0.785398],
+        ["beginPath"],
+        ["rect", -40, -40, 80, 80],
+        ["clip"],
+        ["fillStyle", "#533483"],
+        ["fillRect", -100, -100, 200, 200],
+        ["restore"]
+      ]
+    },
+    "clip_nested_rects": {
+      "description": "Nested clips — red only where both rectangles overlap (inner rect)",
+      "threshold": 0.01,
+      "commands": [
+        ["save"],
+        ["beginPath"],
+        ["rect", 20, 20, 160, 160],
+        ["clip"],
+        ["save"],
+        ["beginPath"],
+        ["rect", 60, 60, 80, 80],
+        ["clip"],
+        ["fillStyle", "#e94560"],
+        ["fillRect", 0, 0, 200, 200],
+        ["restore"],
+        ["restore"]
+      ]
+    },
+    "arcto_corner": {
+      "description": "arcTo producing a shape with one rounded corner",
+      "threshold": 0.03,
+      "commands": [
+        ["beginPath"],
+        ["moveTo", 20, 100],
+        ["arcTo", 20, 20, 100, 20, 20],
+        ["lineTo", 180, 20],
+        ["lineTo", 180, 100],
+        ["closePath"],
+        ["fillStyle", "#00ff88"],
+        ["fill"]
+      ]
+    },
+    "arcto_full_roundrect": {
+      "description": "Full rounded rectangle via 4 arcTo calls",
+      "threshold": 0.03,
+      "commands": [
+        ["beginPath"],
+        ["moveTo", 40, 20],
+        ["arcTo", 180, 20, 180, 180, 20],
+        ["arcTo", 180, 180, 20, 180, 20],
+        ["arcTo", 20, 180, 20, 20, 20],
+        ["arcTo", 20, 20, 180, 20, 20],
+        ["closePath"],
+        ["fillStyle", "#0f3460"],
+        ["fill"]
+      ]
+    },
+    "clip_multi_draw": {
+      "description": "Multiple clip regions with different colored fills in two corners",
+      "threshold": 0.01,
+      "commands": [
+        ["save"],
+        ["beginPath"],
+        ["rect", 10, 10, 90, 90],
+        ["clip"],
+        ["fillStyle", "#ff0000"],
+        ["fillRect", 0, 0, 200, 200],
+        ["restore"],
+        ["save"],
+        ["beginPath"],
+        ["rect", 100, 100, 90, 90],
+        ["clip"],
+        ["fillStyle", "#0000ff"],
+        ["fillRect", 0, 0, 200, 200],
+        ["restore"]
+      ]
+    },
+    "clip_with_stroke": {
+      "description": "Clip affecting stroke — only the arc portion inside the clip rect is visible",
+      "threshold": 0.03,
+      "commands": [
+        ["save"],
+        ["beginPath"],
+        ["rect", 50, 50, 100, 100],
+        ["clip"],
+        ["strokeStyle", "#ffffff"],
+        ["lineWidth", 4],
+        ["beginPath"],
+        ["arc", 100, 100, 80, 0, 6.283185, false],
+        ["stroke"],
+        ["restore"]
+      ]
+    },
+
+    "drawimage_inline_basic": {
+      "description": "drawImage with inline 4x4 checkerboard at natural size",
+      "threshold": 0.0,
+      "commands": [
+        ["fillStyle", "#222222"],
+        ["fillRect", 0, 0, 200, 200],
+        ["drawImage", "__inline", 20, 20, 4, 4,
+          255,0,0,255, 0,255,0,255, 255,0,0,255, 0,255,0,255,
+          0,255,0,255, 255,0,0,255, 0,255,0,255, 255,0,0,255,
+          255,0,0,255, 0,255,0,255, 255,0,0,255, 0,255,0,255,
+          0,255,0,255, 255,0,0,255, 0,255,0,255, 255,0,0,255
+        ]
+      ]
+    },
+    "drawimage_inline_scaled": {
+      "description": "drawImage 5-arg: scale a 4x4 checkerboard up to 80x80",
+      "threshold": 0.01,
+      "commands": [
+        ["fillStyle", "#111111"],
+        ["fillRect", 0, 0, 200, 200],
+        ["imageSmoothingEnabled", false],
+        ["drawImage", "__inline5", 60, 60, 80, 80, 4, 4,
+          255,0,0,255, 0,0,255,255, 255,0,0,255, 0,0,255,255,
+          0,0,255,255, 255,0,0,255, 0,0,255,255, 255,0,0,255,
+          255,0,0,255, 0,0,255,255, 255,0,0,255, 0,0,255,255,
+          0,0,255,255, 255,0,0,255, 0,0,255,255, 255,0,0,255
+        ]
+      ]
+    },
+    "drawimage_crop_9arg": {
+      "description": "drawImage 9-arg: crop center 2x2 from a 4x4 source, scale to 80x80",
+      "threshold": 0.01,
+      "commands": [
+        ["fillStyle", "#111111"],
+        ["fillRect", 0, 0, 200, 200],
+        ["imageSmoothingEnabled", false],
+        ["drawImage", "__inline9", 1, 1, 2, 2, 60, 60, 80, 80, 4, 4,
+          255,0,0,255,   0,255,0,255,   255,255,0,255, 0,0,255,255,
+          0,255,0,255,   128,0,128,255, 255,128,0,255, 0,255,0,255,
+          255,255,0,255, 255,128,0,255, 0,128,255,255, 255,0,0,255,
+          0,0,255,255,   0,255,0,255,   255,0,0,255,   255,255,255,255
+        ]
+      ]
+    },
+    "drawimage_with_transform": {
+      "description": "drawImage inline with rotation and scaling transforms applied",
+      "threshold": 0.03,
+      "commands": [
+        ["fillStyle", "#111111"],
+        ["fillRect", 0, 0, 200, 200],
+        ["imageSmoothingEnabled", false],
+        ["save"],
+        ["translate", 100, 100],
+        ["rotate", 0.785398],
+        ["scale", 10, 10],
+        ["drawImage", "__inline", -2, -2, 4, 4,
+          255,0,0,255, 255,255,0,255, 255,0,0,255, 255,255,0,255,
+          255,255,0,255, 0,0,255,255, 255,255,0,255, 0,0,255,255,
+          255,0,0,255, 255,255,0,255, 255,0,0,255, 255,255,0,255,
+          255,255,0,255, 0,0,255,255, 255,255,0,255, 0,0,255,255
+        ],
+        ["restore"]
+      ]
+    },
+    "drawimage_clip": {
+      "description": "drawImage clipped by a circular clip path",
+      "threshold": 0.08,
+      "commands": [
+        ["fillStyle", "#111111"],
+        ["fillRect", 0, 0, 200, 200],
+        ["imageSmoothingEnabled", false],
+        ["save"],
+        ["beginPath"],
+        ["arc", 100, 100, 40, 0, 6.283185, false],
+        ["clip"],
+        ["scale", 12.5, 12.5],
+        ["drawImage", "__inline", 4, 4, 8, 8,
+          255,0,0,255, 0,128,255,255, 255,0,0,255, 0,128,255,255, 255,0,0,255, 0,128,255,255, 255,0,0,255, 0,128,255,255,
+          0,128,255,255, 255,0,0,255, 0,128,255,255, 255,0,0,255, 0,128,255,255, 255,0,0,255, 0,128,255,255, 255,0,0,255,
+          255,0,0,255, 0,128,255,255, 255,0,0,255, 0,128,255,255, 255,0,0,255, 0,128,255,255, 255,0,0,255, 0,128,255,255,
+          0,128,255,255, 255,0,0,255, 0,128,255,255, 255,0,0,255, 0,128,255,255, 255,0,0,255, 0,128,255,255, 255,0,0,255,
+          255,0,0,255, 0,128,255,255, 255,0,0,255, 0,128,255,255, 255,0,0,255, 0,128,255,255, 255,0,0,255, 0,128,255,255,
+          0,128,255,255, 255,0,0,255, 0,128,255,255, 255,0,0,255, 0,128,255,255, 255,0,0,255, 0,128,255,255, 255,0,0,255,
+          255,0,0,255, 0,128,255,255, 255,0,0,255, 0,128,255,255, 255,0,0,255, 0,128,255,255, 255,0,0,255, 0,128,255,255,
+          0,128,255,255, 255,0,0,255, 0,128,255,255, 255,0,0,255, 0,128,255,255, 255,0,0,255, 0,128,255,255, 255,0,0,255
+        ],
+        ["restore"]
+      ]
+    },
+    "putimagedata_basic": {
+      "description": "putImageData writing a 4x4 color grid directly to canvas",
+      "threshold": 0.0,
+      "commands": [
+        ["fillStyle", "#222222"],
+        ["fillRect", 0, 0, 200, 200],
+        ["putImageData", "__inline", 20, 20, 4, 4,
+          255,0,0,255,   0,255,0,255,   0,0,255,255,   255,255,0,255,
+          255,128,0,255, 128,0,255,255, 0,255,255,255, 255,0,255,255,
+          128,128,128,255, 255,255,255,255, 0,0,0,255, 64,128,255,255,
+          255,64,64,255, 64,255,64,255, 64,64,255,255, 200,200,200,255
+        ]
+      ]
+    },
+    "putimagedata_ignores_transform": {
+      "description": "putImageData should ignore canvas transform (per spec)",
+      "threshold": 0.0,
+      "commands": [
+        ["fillStyle", "#222222"],
+        ["fillRect", 0, 0, 200, 200],
+        ["save"],
+        ["translate", 50, 50],
+        ["rotate", 0.5],
+        ["scale", 3, 3],
+        ["putImageData", "__inline", 80, 80, 4, 4,
+          255,0,0,255, 0,255,0,255, 0,0,255,255, 255,255,0,255,
+          0,255,0,255, 0,0,255,255, 255,255,0,255, 255,0,0,255,
+          0,0,255,255, 255,255,0,255, 255,0,0,255, 0,255,0,255,
+          255,255,0,255, 255,0,0,255, 0,255,0,255, 0,0,255,255
+        ],
+        ["restore"]
+      ]
+    },
+    "shadow_alpha_interaction": {
+      "description": "Shadow rendering affected by globalAlpha",
+      "threshold": 0.02,
+      "commands": [
+        ["fillStyle", "#ffffff"],
+        ["fillRect", 0, 0, 200, 200],
+        ["shadowColor", "rgba(0, 0, 0, 0.8)"],
+        ["shadowBlur", 10],
+        ["shadowOffsetX", 5],
+        ["shadowOffsetY", 5],
+        ["globalAlpha", 0.5],
+        ["fillStyle", "#ff0000"],
+        ["fillRect", 30, 30, 80, 80],
+        ["globalAlpha", 1.0],
+        ["shadowColor", "rgba(0, 0, 0, 0)"],
+        ["shadowBlur", 0],
+        ["shadowOffsetX", 0],
+        ["shadowOffsetY", 0],
+        ["fillStyle", "#0000ff"],
+        ["fillRect", 120, 30, 60, 60]
+      ]
+    },
+    "shadow_on_stroked_path": {
+      "description": "Shadow applied to a stroked arc path",
+      "threshold": 0.02,
+      "commands": [
+        ["fillStyle", "#ffffff"],
+        ["fillRect", 0, 0, 200, 200],
+        ["shadowColor", "rgba(0, 0, 200, 0.6)"],
+        ["shadowBlur", 8],
+        ["shadowOffsetX", 4],
+        ["shadowOffsetY", 4],
+        ["strokeStyle", "#ff6600"],
+        ["lineWidth", 4],
+        ["beginPath"],
+        ["arc", 100, 100, 60, 0, 4.712],
+        ["stroke"]
+      ]
+    },
+    "radial_gradient_offset_center": {
+      "description": "Radial gradient with different inner and outer circle centers",
+      "threshold": 0.002,
+      "commands": [
+        ["fillStyle", "#222222"],
+        ["fillRect", 0, 0, 200, 200],
+        ["_createRadialGradient", "g1", 60, 60, 10, 100, 100, 90],
+        ["_addColorStop", "g1", 0, "#ffff00"],
+        ["_addColorStop", "g1", 0.5, "#ff0000"],
+        ["_addColorStop", "g1", 1, "#000066"],
+        ["_setFillGradient", "g1"],
+        ["fillRect", 0, 0, 200, 200]
+      ]
+    },
+    "radial_gradient_concentric_tight": {
+      "description": "Radial gradient with very small inner radius to large outer radius",
+      "threshold": 0.002,
+      "commands": [
+        ["fillStyle", "#000000"],
+        ["fillRect", 0, 0, 200, 200],
+        ["_createRadialGradient", "g1", 100, 100, 1, 100, 100, 95],
+        ["_addColorStop", "g1", 0, "#ffffff"],
+        ["_addColorStop", "g1", 0.3, "#ff00ff"],
+        ["_addColorStop", "g1", 0.7, "#00ffff"],
+        ["_addColorStop", "g1", 1, "#000000"],
+        ["_setFillGradient", "g1"],
+        ["fillRect", 0, 0, 200, 200]
+      ]
+    },
+    "text_shadow_blur_extremes": {
+      "description": "fillText with shadowBlur 0, 100, and 150 side by side",
+      "threshold": 0.08,
+      "commands": [
+        ["fillStyle", "#ffffff"],
+        ["fillRect", 0, 0, 200, 200],
+        ["font", "16px 'DejaVu Sans'"],
+        ["fillStyle", "#000000"],
+        ["shadowColor", "rgba(255, 0, 0, 1)"],
+        ["shadowOffsetX", 0],
+        ["shadowOffsetY", 0],
+        ["shadowBlur", 0],
+        ["fillText", "A", 20, 60],
+        ["shadowBlur", 100],
+        ["fillText", "A", 90, 60],
+        ["shadowBlur", 150],
+        ["fillText", "A", 155, 60],
+        ["shadowBlur", 0],
+        ["shadowColor", "rgba(0, 0, 0, 0)"]
+      ]
+    },
+    "text_large_font": {
+      "description": "fillText with font size 72px validates large glyph rendering",
+      "threshold": 0.08,
+      "commands": [
+        ["fillStyle", "#f0f0f0"],
+        ["fillRect", 0, 0, 200, 200],
+        ["font", "72px 'DejaVu Sans'"],
+        ["fillStyle", "#cc0000"],
+        ["fillText", "Ag", 10, 120]
+      ]
+    },
+    "clip_after_transform": {
+      "description": "Clip path respects current transform (rotate 45 deg then clip circle)",
+      "threshold": 0.01,
+      "commands": [
+        ["fillStyle", "#cccccc"],
+        ["fillRect", 0, 0, 200, 200],
+        ["save"],
+        ["translate", 100, 100],
+        ["rotate", 0.7854],
+        ["beginPath"],
+        ["arc", 0, 0, 60, 0, 6.2832],
+        ["clip"],
+        ["fillStyle", "#ff0000"],
+        ["fillRect", -80, -80, 160, 160],
+        ["fillStyle", "#0000ff"],
+        ["fillRect", -80, 0, 160, 80],
+        ["restore"]
+      ]
+    },
+    "nested_clip_transform": {
+      "description": "Nested clip paths with transforms at each level",
+      "threshold": 0.002,
+      "commands": [
+        ["fillStyle", "#eeeeee"],
+        ["fillRect", 0, 0, 200, 200],
+        ["save"],
+        ["translate", 50, 50],
+        ["beginPath"],
+        ["rect_path", -40, -40, 120, 120],
+        ["clip"],
+        ["fillStyle", "#00cc00"],
+        ["fillRect", -100, -100, 300, 300],
+        ["save"],
+        ["rotate", 0.5236],
+        ["beginPath"],
+        ["rect_path", -30, -30, 80, 80],
+        ["clip"],
+        ["fillStyle", "#cc0000"],
+        ["fillRect", -100, -100, 300, 300],
+        ["restore"],
+        ["restore"]
+      ]
+    },
+    "save_restore_style_leak": {
+      "description": "Deep save/restore verifies all style properties restored correctly",
+      "threshold": 0.002,
+      "commands": [
+        ["fillStyle", "#ffffff"],
+        ["fillRect", 0, 0, 200, 200],
+        ["fillStyle", "#ff0000"],
+        ["strokeStyle", "#00ff00"],
+        ["globalAlpha", 1.0],
+        ["lineWidth", 1],
+        ["fillRect", 10, 10, 40, 40],
+        ["save"],
+        ["fillStyle", "#0000ff"],
+        ["strokeStyle", "#ffff00"],
+        ["globalAlpha", 0.5],
+        ["lineWidth", 5],
+        ["fillRect", 60, 10, 40, 40],
+        ["save"],
+        ["fillStyle", "#ff00ff"],
+        ["strokeStyle", "#00ffff"],
+        ["globalAlpha", 0.3],
+        ["lineWidth", 10],
+        ["fillRect", 110, 10, 40, 40],
+        ["restore"],
+        ["fillRect", 10, 80, 40, 40],
+        ["strokeRect", 60, 80, 40, 40],
+        ["restore"],
+        ["fillRect", 10, 140, 40, 40],
+        ["strokeRect", 60, 140, 40, 40]
+      ]
+    },
+    "composite_source_in": {
+      "description": "globalCompositeOperation source-in — only intersection of new and existing",
+      "threshold": 0.02,
+      "commands": [
+        ["fillStyle", "#0000ff"],
+        ["fillRect", 20, 20, 100, 100],
+        ["globalCompositeOperation", "source-in"],
+        ["fillStyle", "#ff0000"],
+        ["fillRect", 70, 70, 100, 100]
+      ]
+    },
+    "composite_destination_out_punch": {
+      "description": "globalCompositeOperation destination-out — punch a hole with overlapping shape",
+      "threshold": 0.02,
+      "commands": [
+        ["fillStyle", "#3366ff"],
+        ["beginPath"],
+        ["arc", 80, 100, 60, 0, 6.2832],
+        ["fill"],
+        ["globalCompositeOperation", "destination-out"],
+        ["fillStyle", "#ff0000"],
+        ["fillRect", 60, 60, 80, 80]
+      ]
+    },
+    "clearrect_after_transform": {
+      "description": "clearRect respects current transform (scale + translate)",
+      "threshold": 0.0,
+      "commands": [
+        ["fillStyle", "#ff6600"],
+        ["fillRect", 0, 0, 200, 200],
+        ["save"],
+        ["scale", 2, 2],
+        ["translate", 10, 10],
+        ["clearRect", 10, 10, 40, 40],
+        ["restore"]
+      ]
+    }
+  }
+}

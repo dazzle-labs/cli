@@ -2,6 +2,8 @@
 
 For complete architecture, build, deployment, and development guidance, see **[docs/index.md](docs/index.md)**.
 
+For the stage runtime (Rust GPU renderer), see **[docs/architecture-stage-runtime.md](docs/architecture-stage-runtime.md)**.
+
 ## Quick Start
 
 ```bash

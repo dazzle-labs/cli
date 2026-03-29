@@ -172,6 +172,11 @@ func (a *Agent) CreateStage(stageID, userID string, r2Endpoint, r2AccessKey, r2S
 		fmt.Sprintf("STAGE_GID=%d", slot.uid),
 	}
 
+	// Renderer selection: "chrome" (default) or "native" (stage-runtime)
+	if renderer := os.Getenv("RENDERER"); renderer != "" {
+		env = append(env, fmt.Sprintf("RENDERER=%s", renderer))
+	}
+
 	// Pass through Chrome flags
 	if flags := os.Getenv("CHROME_FLAGS"); flags != "" {
 		env = append(env, fmt.Sprintf("CHROME_FLAGS=%s", flags))
