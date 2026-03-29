@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
+	"github.com/gofrs/uuid/v5"
 	sidecarv1 "github.com/browser-streamer/sidecar/gen/api/v1"
 	sidecarv1connect "github.com/browser-streamer/sidecar/gen/api/v1/sidecarv1connect"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -203,7 +204,7 @@ func (c *GPUStageController) handleScheduling(ctx context.Context, gs *unstructu
 		return c.setStagePhase(ctx, gs, "Failed", "no GPU node available and DEFAULT_GPU_NODE_CLASS not set")
 	}
 
-	newNodeName := "gpu-auto-" + targetClass
+	newNodeName := "runpod-" + targetClass + "-" + uuid.Must(uuid.NewV7()).String()[:8]
 	newNode := &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": "dazzle.fm/v1",
@@ -220,7 +221,7 @@ func (c *GPUStageController) handleScheduling(ctx context.Context, gs *unstructu
 		},
 	}
 	_, err = c.dynamicClient.Resource(gpuNodeGVR).Namespace(c.namespace).Create(ctx, newNode, metav1.CreateOptions{})
-	if err != nil && !strings.Contains(err.Error(), "already exists") {
+	if err != nil {
 		return fmt.Errorf("create GPUNode: %w", err)
 	}
 
