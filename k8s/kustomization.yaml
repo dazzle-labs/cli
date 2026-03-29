@@ -10,15 +10,18 @@ resources:
   - control-plane/swiftshader-configmap.yaml
   - control-plane/service.yaml
   - control-plane/pdb.yaml
+  - control-plane/network-policy.yaml
   - ingest/configmap.yaml
   - ingest/deployment.yaml
   - ingest/service.yaml
   - ingest/pdb.yaml
+  - ingest/network-policy.yaml
+  - infrastructure/network-policy.yaml
+  - networking/default-deny.yaml
+  - networking/streamer-network-policy.yaml
   - networking/ingress.yaml
   - networking/cloudflare-middleware.yaml
   - networking/traefik-config.yaml
-  - networking/network-policies.yaml
-  - networking/cilium-network-policies.yaml
   - monitoring/streamer-podmonitor.yaml
   - scheduling/priority-classes.yaml
   - scheduling/placeholder.yaml

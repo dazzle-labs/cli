@@ -1,15 +1,53 @@
-# CiliumNetworkPolicy for egress rules that need destination-aware selectors.
-# Standard K8s NetworkPolicy egress selectors (podSelector, namespaceSelector,
-# ipBlock) don't work with Cilium kube-proxy replacement — eBPF rewrites the
-# ClusterIP destination before policy evaluation. CiliumNetworkPolicy uses
-# toEntities, toEndpoints, toServices, and toFQDNs which evaluate correctly.
-#
-# Standard NetworkPolicies (network-policies.yaml) still handle:
-#   - Default deny (ingress + egress)
-#   - Ingress allow rules (unaffected by kube-proxy replacement)
-#   - Egress for pods that only need DNS + simple external access
+# Control-plane ingress: Traefik, Prometheus, kubelet probes, ingest callbacks.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-control-plane
+  namespace: browser-streamer
+spec:
+  podSelector:
+    matchLabels:
+      app: control-plane
+  policyTypes:
+    - Ingress
+  ingress:
+    # Kubelet health/readiness probes (sent from node host IPs).
+    - from:
+        - ipBlock:
+            cidr: 10.0.0.0/8
+      ports:
+        - protocol: TCP
+          port: 8080
+    # Traefik ingress controller
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: traefik
+      ports:
+        - protocol: TCP
+          port: 8080
+    # Prometheus scraping
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - protocol: TCP
+          port: 8080
+    # Ingest pod RTMP callbacks (internal port)
+    - from:
+        - podSelector:
+            matchLabels:
+              app: ingest
+      ports:
+        - protocol: TCP
+          port: 9090
 ---
 # Control-plane egress: DNS + k8s API + postgres + streamer + ingest + external FQDN.
+# Uses CiliumNetworkPolicy because Cilium kube-proxy replacement rewrites
+# ClusterIP destinations via eBPF before K8s NetworkPolicy evaluation,
+# making podSelector/ipBlock egress rules unreliable. CiliumNetworkPolicy
+# uses toEntities/toEndpoints/toFQDNs which evaluate correctly.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -54,7 +92,7 @@ spec:
         - ports:
             - port: "8080"
               protocol: TCP
-    # --- Ingest pods (HLS proxy) ---
+    # --- Ingest pods (HLS proxy + RTMP callbacks) ---
     - toEndpoints:
         - matchLabels:
             app: ingest
@@ -125,10 +163,7 @@ spec:
         - ports:
             - port: "443"
               protocol: TCP
-    # --- GPU sidecar mTLS (RunPod public IPs) ---
-    # RunPod pods get dynamic public IPs — can't use FQDN.
-    # Allow HTTPS to any external IP on port 8080 (sidecar ConnectRPC).
-    # RFC1918 excluded to prevent cluster-internal lateral movement.
+    # --- GPU sidecar mTLS (RunPod dynamic public IPs) ---
     - toCIDRSet:
         - cidr: 0.0.0.0/0
           except:
@@ -138,30 +173,4 @@ spec:
       toPorts:
         - ports:
             - port: "8080"
-              protocol: TCP
----
-# Streamer pods: restrict external egress to HTTP/HTTPS only.
-# Chrome loads user content over 80/443 — no reason to allow other ports.
-# RTMP to ingest is already handled by the standard NetworkPolicy (pod selector).
-apiVersion: cilium.io/v2
-kind: CiliumNetworkPolicy
-metadata:
-  name: streamer-egress-ports
-  namespace: browser-streamer
-spec:
-  endpointSelector:
-    matchLabels:
-      app: streamer-stage
-  egress:
-    - toCIDRSet:
-        - cidr: 0.0.0.0/0
-          except:
-            - 10.0.0.0/8
-            - 172.16.0.0/12
-            - 192.168.0.0/16
-      toPorts:
-        - ports:
-            - port: "80"
-              protocol: TCP
-            - port: "443"
               protocol: TCP

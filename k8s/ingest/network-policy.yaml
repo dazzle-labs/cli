@@ -1,0 +1,59 @@
+# Ingest ingress: RTMP from LB / local pods, HLS from control-plane.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-ingest
+  namespace: browser-streamer
+spec:
+  podSelector:
+    matchLabels:
+      app: ingest
+  policyTypes:
+    - Ingress
+  ingress:
+    # RTMP from dedicated ingest LB (external GPU sidecars)
+    # and from local streamer pods (same-cluster stages).
+    # LB traffic enters via node port so we allow all on 1935.
+    - ports:
+        - protocol: TCP
+          port: 1935
+    # HLS from control-plane (viewer proxy)
+    - from:
+        - podSelector:
+            matchLabels:
+              app: control-plane
+      ports:
+        - protocol: TCP
+          port: 8080
+---
+# Ingest egress: DNS + control-plane (on_publish callbacks).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ingest-egress
+  namespace: browser-streamer
+spec:
+  podSelector:
+    matchLabels:
+      app: ingest
+  policyTypes:
+    - Egress
+  egress:
+    # DNS
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Control-plane RTMP callbacks (internal port)
+    - to:
+        - podSelector:
+            matchLabels:
+              app: control-plane
+      ports:
+        - protocol: TCP
+          port: 9090
