@@ -210,65 +210,9 @@ spec:
       ports:
         - protocol: TCP
           port: 9090
----
-# Control-plane egress: DNS + k8s API + postgres + streamer + ingest + external.
-# Blocks lateral movement to other namespaces/services within the cluster.
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: control-plane-egress
-  namespace: browser-streamer
-spec:
-  podSelector:
-    matchLabels:
-      app: control-plane
-  policyTypes:
-    - Egress
-  egress:
-    # DNS (kube-dns in kube-system)
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: kube-system
-      ports:
-        - protocol: UDP
-          port: 53
-        - protocol: TCP
-          port: 53
-    # Kubernetes API server (GPUNode/GPUNodeClass CRDs, pod management,
-    # leader election leases). Allow all egress on API server ports —
-    # Cilium's kube-proxy replacement rewrites ClusterIP destinations
-    # via eBPF before NetworkPolicy evaluation, making ipBlock matching
-    # unreliable for service IPs.
-    - ports:
-        - protocol: TCP
-          port: 443
-        - protocol: TCP
-          port: 6443
-    # Postgres
-    - ports:
-        - protocol: TCP
-          port: 5432
-    # Streamer pods (management API via ConnectRPC over mTLS)
-    - ports:
-        - protocol: TCP
-          port: 8080
-    # Ingest pods (HLS proxy — also on 8080, covered above)
-    # Ingest RTMP callbacks on port 9090
-    - ports:
-        - protocol: TCP
-          port: 9090
-    # External HTTPS egress is handled by CiliumNetworkPolicy
-    # (cilium-network-policies.yaml) with FQDN-based restrictions.
-    # Fallback for non-Cilium clusters (e.g. local Kind):
-    # uncomment the ipBlock rule below.
-    # - to:
-    #     - ipBlock:
-    #         cidr: 0.0.0.0/0
-    #         except:
-    #           - 10.0.0.0/8
-    #           - 172.16.0.0/12
-    #           - 192.168.0.0/16
+    # Control-plane egress is handled entirely by CiliumNetworkPolicy
+    # (cilium-network-policies.yaml) which supports destination-aware
+    # selectors that work correctly with Cilium kube-proxy replacement.
 ---
 # Postgres egress: DNS only. No outbound connections needed.
 apiVersion: networking.k8s.io/v1

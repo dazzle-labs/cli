@@ -1,30 +1,80 @@
-# CiliumNetworkPolicy for FQDN-based egress restrictions.
-# These supplement the standard NetworkPolicies with DNS-aware rules
-# that Cilium enforces via eBPF. Requires cni_plugin = "cilium".
+# CiliumNetworkPolicy for egress rules that need destination-aware selectors.
+# Standard K8s NetworkPolicy egress selectors (podSelector, namespaceSelector,
+# ipBlock) don't work with Cilium kube-proxy replacement — eBPF rewrites the
+# ClusterIP destination before policy evaluation. CiliumNetworkPolicy uses
+# toEntities, toEndpoints, toServices, and toFQDNs which evaluate correctly.
 #
-# Standard NetworkPolicies (network-policies.yaml) handle:
+# Standard NetworkPolicies (network-policies.yaml) still handle:
 #   - Default deny (ingress + egress)
-#   - Intra-cluster allow rules (pod-to-pod, pod-to-namespace)
-#
-# CiliumNetworkPolicies below handle:
-#   - External HTTPS egress locked to specific FQDNs
+#   - Ingress allow rules (unaffected by kube-proxy replacement)
+#   - Egress for pods that only need DNS + simple external access
 ---
-# Control-plane: restrict external HTTPS to only the services it needs.
-# Replaces the broad 0.0.0.0/0 ipBlock rule in standard NetworkPolicy.
+# Control-plane egress: DNS + k8s API + postgres + streamer + ingest + external FQDN.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
-  name: control-plane-egress-fqdn
+  name: control-plane-egress
   namespace: browser-streamer
 spec:
   endpointSelector:
     matchLabels:
       app: control-plane
   egress:
+    # --- DNS ---
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+    # --- Kubernetes API server ---
+    - toEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "6443"
+              protocol: TCP
+    # --- Postgres ---
+    - toEndpoints:
+        - matchLabels:
+            app: postgres
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+    # --- Streamer pods (ConnectRPC management API) ---
+    - toEndpoints:
+        - matchLabels:
+            app: streamer-stage
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+    # --- Ingest pods (HLS proxy) ---
+    - toEndpoints:
+        - matchLabels:
+            app: ingest
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+            - port: "9090"
+              protocol: TCP
     # --- Auth (Clerk) ---
     - toFQDNs:
         - matchName: "api.clerk.com"
         - matchName: "api.clerk.dev"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+    # --- Clerk JWKS (may use CDN subdomains) ---
+    - toFQDNs:
+        - matchPattern: "*.clerk.accounts.dev"
       toPorts:
         - ports:
             - port: "443"
@@ -36,8 +86,7 @@ spec:
         - ports:
             - port: "443"
               protocol: TCP
-    # --- Object storage (Cloudflare R2) ---
-    # Pinned to our account's R2 endpoint, not all of Cloudflare.
+    # --- Object storage (Cloudflare R2, pinned to our account) ---
     - toFQDNs:
         - matchName: "d7190540717efd7404fee7b5263e1443.r2.cloudflarestorage.com"
       toPorts:
@@ -72,13 +121,6 @@ spec:
     # --- OAuth: Restream ---
     - toFQDNs:
         - matchName: "api.restream.io"
-      toPorts:
-        - ports:
-            - port: "443"
-              protocol: TCP
-    # --- Clerk JWKS (may use CDN subdomains) ---
-    - toFQDNs:
-        - matchPattern: "*.clerk.accounts.dev"
       toPorts:
         - ports:
             - port: "443"
