@@ -93,12 +93,14 @@ impl Encoder {
         // Create new pipelines — only keep outputs whose pipelines succeed
         let mut successful_outputs = Vec::new();
         for dest in outputs {
+            log::info!("Creating output pipeline for {} -> {}", dest.name, dest.url);
             match create_pipeline(&self.config, &dest.url) {
                 Ok(p) => {
+                    log::info!("Output pipeline for {} created successfully", dest.name);
                     self.pipelines.push(p);
                     successful_outputs.push(dest);
                 }
-                Err(e) => log::error!("Failed to create output pipeline for {}: {}", dest.name, e),
+                Err(e) => log::error!("Failed to create output pipeline for {}: {} (errno {:?})", dest.name, e, e),
             }
         }
         self.outputs = successful_outputs;
@@ -213,7 +215,11 @@ fn create_pipeline(
         log::error!("Rejected output URL with unsupported scheme: {}", url);
         return Err(ffmpeg_next::Error::Bug);
     }
-    let mut octx = format::output_as(url, "flv")?;
+    log::info!("Opening output format for URL: {}", url);
+    let mut octx = format::output_as(url, "flv").map_err(|e| {
+        log::error!("format::output_as failed for {}: {} (errno {:?})", url, e, e);
+        e
+    })?;
     let global_header = octx.format().flags().contains(format::Flags::GLOBAL_HEADER);
 
     // --- Video stream: H.264 ---
@@ -314,7 +320,12 @@ fn create_pipeline(
     )?);
 
     // --- Write header (triggers RTMP handshake for RTMP URLs) ---
-    octx.write_header()?;
+    log::info!("Writing header (RTMP handshake)...");
+    octx.write_header().map_err(|e| {
+        log::error!("write_header failed: {} (errno {:?})", e, e);
+        e
+    })?;
+    log::info!("Header written successfully");
 
     let video_time_base = octx.stream(video_stream_idx)
         .ok_or(ffmpeg_next::Error::StreamNotFound)?.time_base();
