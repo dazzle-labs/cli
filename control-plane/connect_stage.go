@@ -223,7 +223,7 @@ func (s *stageServer) GetStage(ctx context.Context, req *connect.Request[apiv1.G
 }
 
 func (s *stageServer) DeleteStage(ctx context.Context, req *connect.Request[apiv1.DeleteStageRequest]) (*connect.Response[apiv1.DeleteStageResponse], error) {
-	info, row, err := requireStage(ctx, s.mgr, req.Msg.Id)
+	_, row, err := requireStage(ctx, s.mgr, req.Msg.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -250,14 +250,14 @@ func (s *stageServer) DeleteStage(ctx context.Context, req *connect.Request[apiv
 
 	// Best-effort R2 cleanup
 	if s.mgr.r2Client != nil {
-		prefix := "users/" + info.UserID + "/stages/" + stageID + "/"
+		prefix := "users/" + row.UserID + "/stages/" + stageID + "/"
 		if err := s.mgr.r2Client.DeletePrefix(cleanupCtx, prefix); err != nil {
 			log.Printf("WARN: r2 cleanup for stage %s: %v", stageID, err)
 		}
 	}
 
 	// Remove DB record
-	if err := dbDeleteStage(s.mgr.db, stageID, info.UserID); err != nil {
+	if err := dbDeleteStage(s.mgr.db, stageID, row.UserID); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
@@ -265,14 +265,14 @@ func (s *stageServer) DeleteStage(ctx context.Context, req *connect.Request[apiv
 }
 
 func (s *stageServer) AttachStageDestination(ctx context.Context, req *connect.Request[apiv1.AttachStageDestinationRequest]) (*connect.Response[apiv1.AttachStageDestinationResponse], error) {
-	info, row, err := requireStage(ctx, s.mgr, req.Msg.StageId)
+	_, row, err := requireStage(ctx, s.mgr, req.Msg.StageId)
 	if err != nil {
 		return nil, err
 	}
 	stageID := row.ID
 
 	if req.Msg.DestinationId != "" {
-		dest, err := dbGetStreamDestForUser(s.mgr.db, req.Msg.DestinationId, info.UserID)
+		dest, err := dbGetStreamDestForUser(s.mgr.db, req.Msg.DestinationId, row.UserID)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
@@ -288,7 +288,7 @@ func (s *stageServer) AttachStageDestination(ctx context.Context, req *connect.R
 	}
 
 	// Sync pipeline outputs if stage is running
-	s.mgr.syncStageOutputsIfRunning(stageID, info.UserID)
+	s.mgr.syncStageOutputsIfRunning(stageID, row.UserID)
 
 	updated, err := dbGetStage(s.mgr.db, stageID)
 	if err != nil {
@@ -301,14 +301,14 @@ func (s *stageServer) AttachStageDestination(ctx context.Context, req *connect.R
 }
 
 func (s *stageServer) DetachStageDestination(ctx context.Context, req *connect.Request[apiv1.DetachStageDestinationRequest]) (*connect.Response[apiv1.DetachStageDestinationResponse], error) {
-	info, row, err := requireStage(ctx, s.mgr, req.Msg.StageId)
+	_, row, err := requireStage(ctx, s.mgr, req.Msg.StageId)
 	if err != nil {
 		return nil, err
 	}
 	stageID := row.ID
 
 	// Dazzle destinations can't be removed — disable instead
-	if dest, err := dbGetStreamDestForUser(s.mgr.db, req.Msg.DestinationId, info.UserID); err == nil && dest != nil && dest.Platform == "dazzle" {
+	if dest, err := dbGetStreamDestForUser(s.mgr.db, req.Msg.DestinationId, row.UserID); err == nil && dest != nil && dest.Platform == "dazzle" {
 		if err := dbSetStageDestinationEnabled(s.mgr.db, stageID, req.Msg.DestinationId, false); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
@@ -319,7 +319,7 @@ func (s *stageServer) DetachStageDestination(ctx context.Context, req *connect.R
 	}
 
 	// Sync pipeline outputs if stage is running
-	s.mgr.syncStageOutputsIfRunning(stageID, info.UserID)
+	s.mgr.syncStageOutputsIfRunning(stageID, row.UserID)
 
 	updated, err := dbGetStage(s.mgr.db, stageID)
 	if err != nil {
@@ -364,7 +364,7 @@ func (s *stageServer) RemoveStageDestination(ctx context.Context, req *connect.R
 }
 
 func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[apiv1.ActivateStageRequest]) (*connect.Response[apiv1.ActivateStageResponse], error) {
-	info, row, err := requireStage(ctx, s.mgr, req.Msg.Id)
+	_, row, err := requireStage(ctx, s.mgr, req.Msg.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -399,15 +399,17 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 	}
 
 	// Enforce per-user active stage limits from DB (fallback: 2 CPU, 1 GPU).
+	// Use the stage owner's limits, not the caller's (relevant for admin bypass).
+	ownerID := row.UserID
 	maxActiveCPU, maxActiveGPU := 2, 1
 	if s.mgr.db != nil {
 		var cpuLimit, gpuLimit int
-		if err := s.mgr.db.QueryRow("SELECT max_active_cpu_stages, max_active_gpu_stages FROM users WHERE id=$1", info.UserID).Scan(&cpuLimit, &gpuLimit); err == nil {
+		if err := s.mgr.db.QueryRow("SELECT max_active_cpu_stages, max_active_gpu_stages FROM users WHERE id=$1", ownerID).Scan(&cpuLimit, &gpuLimit); err == nil {
 			maxActiveCPU = cpuLimit
 			maxActiveGPU = gpuLimit
 		}
 	}
-	allStages, listErr := dbListStages(s.mgr.db, info.UserID)
+	allStages, listErr := dbListStages(s.mgr.db, ownerID)
 	if listErr != nil {
 		stageMu.Unlock()
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to check stage limits"))
@@ -437,7 +439,7 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 	// Activate asynchronously — return immediately with starting status.
 	// Unlock after goroutine starts; the inner activateStage/activateGPUStage
 	// re-acquires the per-stage lock for the actual provisioning.
-	go s.mgr.activateStageAsync(stageID, info.UserID, isGPU)
+	go s.mgr.activateStageAsync(stageID, ownerID, isGPU)
 	stageMu.Unlock()
 
 	// Return stage in starting state
@@ -478,7 +480,7 @@ func (s *stageServer) UpdateStage(ctx context.Context, req *connect.Request[apiv
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("update_mask is required"))
 	}
 
-	info, row, err := requireStage(ctx, s.mgr, req.Msg.Stage.Id)
+	_, row, err := requireStage(ctx, s.mgr, req.Msg.Stage.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -493,7 +495,7 @@ func (s *stageServer) UpdateStage(ctx context.Context, req *connect.Request[apiv
 			if err := validateName(req.Msg.Stage.Name); err != nil {
 				return nil, err
 			}
-			if _, err := dbRenameStage(s.mgr.db, stageID, info.UserID, req.Msg.Stage.Name); err != nil {
+			if _, err := dbRenameStage(s.mgr.db, stageID, row.UserID, req.Msg.Stage.Name); err != nil {
 				return nil, connect.NewError(connect.CodeNotFound, err)
 			}
 		case "slug":
@@ -504,7 +506,7 @@ func (s *stageServer) UpdateStage(ctx context.Context, req *connect.Request[apiv
 			if err := validateSlug(slug); err != nil {
 				return nil, err
 			}
-			if err := dbUpdateSlug(s.mgr.db, stageID, info.UserID, slug); err != nil {
+			if err := dbUpdateSlug(s.mgr.db, stageID, row.UserID, slug); err != nil {
 				if errors.Is(err, errSlugTaken) {
 					return nil, connect.NewError(connect.CodeAlreadyExists, err)
 				}
