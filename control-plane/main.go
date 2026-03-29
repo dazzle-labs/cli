@@ -513,18 +513,22 @@ func (m *Manager) createStage(requestedID, userID string, capabilities []string)
 		initEnv = append(initEnv, corev1.EnvVar{Name: "RENDERER", Value: "native"})
 	}
 
+	streamerEnv := streamerEnvVars(id, userID)
+
 	// Native renderer mode: streamer and sidecar communicate via CDP FIFOs
 	// instead of Chrome's WebSocket on port 9222. Add a shared volume for
 	// the named pipes and pass pipe paths to both containers.
 	if useNativeRenderer {
+		cdpPipeEnv := []corev1.EnvVar{
+			{Name: "CDP_PIPE_IN", Value: "/tmp/cdp/in"},
+			{Name: "CDP_PIPE_OUT", Value: "/tmp/cdp/out"},
+			{Name: "RENDERER", Value: "native"},
+		}
 		cdpVolMount := corev1.VolumeMount{Name: "cdp-pipes", MountPath: "/tmp/cdp"}
 		streamerVolMounts = append(streamerVolMounts, cdpVolMount)
 		sidecarVolMounts = append(sidecarVolMounts, cdpVolMount)
-		sidecarEnv = append(sidecarEnv,
-			corev1.EnvVar{Name: "CDP_PIPE_IN", Value: "/tmp/cdp/in"},
-			corev1.EnvVar{Name: "CDP_PIPE_OUT", Value: "/tmp/cdp/out"},
-			corev1.EnvVar{Name: "RENDERER", Value: "native"},
-		)
+		streamerEnv = append(streamerEnv, cdpPipeEnv...)
+		sidecarEnv = append(sidecarEnv, cdpPipeEnv...)
 		volumes = append(volumes, corev1.Volume{
 			Name: "cdp-pipes",
 			VolumeSource: corev1.VolumeSource{
@@ -582,7 +586,7 @@ func (m *Manager) createStage(requestedID, userID string, capabilities []string)
 				{
 					Name:         "streamer",
 					Image:        m.streamerImage,
-					Env:          streamerEnvVars(id, userID),
+					Env:          streamerEnv,
 					VolumeMounts: streamerVolMounts,
 					SecurityContext: &corev1.SecurityContext{
 						AllowPrivilegeEscalation: boolPtr(false),
