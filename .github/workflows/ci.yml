@@ -212,8 +212,53 @@ jobs:
     outputs:
       image_tag: ${{ steps.tags.outputs.short_sha }}
 
+  stage-runtime:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set Up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log In To Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Generate Image Tags
+        id: tags
+        run: |
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          BRANCH=$(echo "${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" | sed 's/[^a-zA-Z0-9._-]/-/g')
+          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "branch=${BRANCH}" >> $GITHUB_OUTPUT
+
+      - name: Build stage-runtime builder
+        uses: docker/build-push-action@v5
+        with:
+          context: stage-runtime/
+          file: stage-runtime/Dockerfile
+          target: builder
+          platforms: linux/amd64
+          push: true
+          tags: |
+            dazzlefm/stage-runtime-builder:${{ steps.tags.outputs.short_sha }}
+            dazzlefm/stage-runtime-builder:${{ steps.tags.outputs.branch }}
+          cache-from: |
+            type=registry,ref=dazzlefm/stage-runtime-builder:buildcache-${{ steps.tags.outputs.branch }}
+            type=registry,ref=dazzlefm/stage-runtime-builder:buildcache-main
+          cache-to: type=registry,ref=dazzlefm/stage-runtime-builder:buildcache-${{ steps.tags.outputs.branch }},mode=max
+
+    outputs:
+      image_tag: ${{ steps.tags.outputs.short_sha }}
+
   streamer:
-    needs: [sidecar]
+    needs: [sidecar, stage-runtime]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -266,6 +311,8 @@ jobs:
           tags: |
             ${{ steps.tags.outputs.image_tag }}
             ${{ steps.tags.outputs.branch_tag }}
+          build-args: |
+            STAGE_RUNTIME_IMAGE=dazzlefm/stage-runtime-builder:${{ needs.stage-runtime.outputs.image_tag }}
           cache-from: |
             type=registry,ref=${{ env.STREAMER_REPO }}:buildcache-${{ steps.tags.outputs.branch }}
             type=registry,ref=${{ env.STREAMER_REPO }}:buildcache-main
@@ -288,6 +335,7 @@ jobs:
       image_tag: ${{ steps.tags.outputs.short_sha }}
 
   sidecar:
+    needs: [stage-runtime]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -345,6 +393,7 @@ jobs:
           build-args: |
             VARIANT=gpu
             SIDECAR_IMAGE=${{ env.SIDECAR_REPO }}:${{ steps.tags.outputs.short_sha }}
+            STAGE_RUNTIME_IMAGE=dazzlefm/stage-runtime-builder:${{ needs.stage-runtime.outputs.image_tag }}
           cache-from: |
             type=registry,ref=${{ env.GPU_NODE_REPO }}:buildcache-${{ steps.tags.outputs.branch }}
             type=registry,ref=${{ env.GPU_NODE_REPO }}:buildcache-main
