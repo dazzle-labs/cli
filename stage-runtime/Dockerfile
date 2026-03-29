@@ -36,6 +36,9 @@ WORKDIR /build
 # Copy manifest first for dependency caching
 COPY Cargo.toml Cargo.lock ./
 
+# Copy benches (Cargo.toml references them, manifest parse fails without them)
+COPY benches/ benches/
+
 # Create dummy main.rs to build deps
 RUN mkdir -p src/runtime && \
     echo 'fn main() { println!("dummy"); }' > src/main.rs && \
