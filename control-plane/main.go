@@ -400,7 +400,7 @@ func (m *Manager) recoverStages() error {
 	return nil
 }
 
-func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
+func (m *Manager) createStage(requestedID, userID string, capabilities []string) (*Stage, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -430,7 +430,9 @@ func (m *Manager) createStage(requestedID, userID string) (*Stage, error) {
 	}
 	podName := "streamer-" + id
 
-	useNativeRenderer := os.Getenv("STREAMER_RENDERER") == "native"
+	// Native renderer: enabled per-stage via x-native-runtime capability,
+	// or globally via STREAMER_RENDERER=native env var.
+	useNativeRenderer := hasCapability(capabilities, "x-native-runtime") || os.Getenv("STREAMER_RENDERER") == "native"
 
 	streamerVolMounts := []corev1.VolumeMount{
 		{Name: "dshm", MountPath: "/dev/shm"},
@@ -896,7 +898,7 @@ func (m *Manager) doDeactivateStage(id string) error {
 
 // activateStageAsync runs stage activation in a background goroutine.
 // On failure it cleans up and resets the stage to inactive.
-func (m *Manager) activateStageAsync(stageID, userID string, isGPU bool) {
+func (m *Manager) activateStageAsync(stageID, userID string, isGPU bool, capabilities []string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	m.activateCancel.Store(stageID, cancel)
@@ -906,7 +908,7 @@ func (m *Manager) activateStageAsync(stageID, userID string, isGPU bool) {
 	if isGPU {
 		_, err = m.activateGPUStage(ctx, stageID, userID)
 	} else {
-		_, err = m.activateStage(ctx, stageID, userID)
+		_, err = m.activateStage(ctx, stageID, userID, capabilities)
 	}
 	if err != nil {
 		log.Printf("ERROR: async activation failed for stage %s: %v", stageID, err)
@@ -919,7 +921,7 @@ func (m *Manager) activateStageAsync(stageID, userID string, isGPU bool) {
 
 // activateStage creates a pod for an existing inactive stage record.
 // On failure (timeout, pod crash, etc.), it cleans up and resets the stage to inactive.
-func (m *Manager) activateStage(ctx context.Context, id, userID string) (*Stage, error) {
+func (m *Manager) activateStage(ctx context.Context, id, userID string, capabilities []string) (*Stage, error) {
 	// Per-stage lock prevents concurrent activations from racing
 	val, _ := m.activateMu.LoadOrStore(id, &sync.Mutex{})
 	mu := val.(*sync.Mutex)
@@ -941,7 +943,7 @@ func (m *Manager) activateStage(ctx context.Context, id, userID string) (*Stage,
 		}
 	}
 
-	stage, err := m.createStage(id, userID)
+	stage, err := m.createStage(id, userID, capabilities)
 	if err != nil {
 		return nil, err
 	}

@@ -442,7 +442,7 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 	// Activate asynchronously — return immediately with starting status.
 	// Unlock after goroutine starts; the inner activateStage/activateGPUStage
 	// re-acquires the per-stage lock for the actual provisioning.
-	go s.mgr.activateStageAsync(stageID, ownerID, isGPU)
+	go s.mgr.activateStageAsync(stageID, ownerID, isGPU, row.Capabilities)
 	stageMu.Unlock()
 
 	// Return stage in starting state
