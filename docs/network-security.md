@@ -8,10 +8,16 @@ All pods in the `browser-streamer` namespace operate under **default-deny ingres
 
 ## CNI
 
-Production runs **Cilium** (v1.17.0) on k3s with WireGuard encryption. Cilium provides:
+Production runs **Cilium** (v1.17.0) on k3s with:
+- VXLAN tunnel mode (Hetzner nodes are in separate /24 subnets — native routing doesn't work)
+- WireGuard encryption (all pod-to-pod traffic encrypted)
+- Kube-proxy replacement (eBPF-based service routing)
 - Standard Kubernetes NetworkPolicy enforcement
 - FQDN-based egress rules (`CiliumNetworkPolicy` with `toFQDNs`)
-- eBPF-level enforcement (no sidecar proxy overhead)
+
+Cilium config: `k8s/networking/cilium-values.yaml`. Managed via `make prod/k8s/cilium/install` (not part of CI deploy — one-time install).
+
+**Key limitation: Cilium's kube-proxy replacement rewrites ClusterIP destinations via eBPF *before* NetworkPolicy evaluation.** This means egress rules using `podSelector`, `namespaceSelector`, or `ipBlock` on ClusterIP addresses don't match. Control-plane egress rules use port-only selectors (no `to:` field) as a workaround. Ingress rules are unaffected.
 
 Local development uses Kind with kindnet (no NetworkPolicy enforcement).
 
@@ -35,14 +41,14 @@ The public-facing API server. Most restricted egress of any pod.
 | Prometheus (monitoring namespace) | 8080 | Metrics scraping |
 | Ingest pods | 9090 | RTMP on_publish callbacks |
 
-**Egress (cluster-internal):**
-| Destination | Port | Purpose |
-|-------------|------|---------|
-| kube-system (DNS) | 53 UDP/TCP | Name resolution |
-| default namespace (k8s API) | 443, 6443 | CRD management, pod lifecycle, leader election |
-| postgres | 5432 | Database |
-| streamer-stage pods | 8080 | ConnectRPC management API |
-| ingest pods | 8080 | HLS proxy |
+**Egress (cluster-internal, port-only rules due to Cilium kube-proxy replacement):**
+| Port | Purpose |
+|------|---------|
+| 53 UDP/TCP (to kube-system) | Name resolution |
+| 443, 6443 | K8s API — CRD management, pod lifecycle, leader election |
+| 5432 | Postgres database |
+| 8080 | Streamer management API + ingest HLS proxy |
+| 9090 | Ingest RTMP callbacks |
 
 **Egress (external, FQDN-locked via Cilium):**
 | Host | Port | Purpose |
@@ -106,9 +112,11 @@ RTMP receiver (nginx-rtmp).
 
 ## Known Limitations
 
+- **Control-plane egress uses port-only rules** — Cilium's kube-proxy replacement DNATs ClusterIP destinations before policy eval, so `podSelector`/`ipBlock` matching is unreliable for service traffic. Port-only rules are less restrictive but functional. Ingress policies are unaffected since traffic arrives at the pod IP directly.
 - **Ingest RTMP (port 1935) has no source restriction** — Hetzner LB uses SNAT, so the original client IP is lost by the time traffic reaches the pod. Fixing this requires enabling proxy protocol on the LB, which nginx-rtmp doesn't support natively.
 - **GPU sidecar mTLS uses CIDR-based rules** — RunPod pods get dynamic public IPs that aren't DNS-resolvable. The rule allows port 8080 to any non-RFC1918 IP. mTLS with CA verification provides the authentication layer.
 - **Local dev (Kind) has no NetworkPolicy enforcement** — kindnet doesn't support it. Policies are only enforced in production with Cilium.
+- **Pods created before Cilium migration have stale networking** — Any pod from the Flannel era must be restarted to get Cilium-managed interfaces. Symptoms: `no route to host` for cross-node traffic.
 
 ## Adding a New External Dependency
 
