@@ -49,6 +49,9 @@ func (s *runtimeServer) requireRunningStageForUser(stageID, userID string) (*Sta
 // Admin users (ADMIN_USER_IDS) can access any stage.
 // Does NOT require the stage to be running. Returns the DB row.
 func (s *runtimeServer) requireStageForUser(stageID, userID string) (*stageRow, error) {
+	if stageID == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("stage ID is required"))
+	}
 	if id, err := resolveStageID(s.mgr, stageID); err == nil {
 		stageID = id
 	}

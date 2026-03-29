@@ -59,6 +59,9 @@ type stageServer struct {
 // Admin users (ADMIN_USER_IDS env var) can access any stage.
 func requireStage(ctx context.Context, mgr *Manager, idOrSlug string) (authInfo, *stageRow, error) {
 	info := mustAuth(ctx)
+	if idOrSlug == "" {
+		return info, nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("stage ID is required"))
+	}
 	if id, err := resolveStageID(mgr, idOrSlug); err == nil {
 		idOrSlug = id
 	}
