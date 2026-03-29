@@ -48,6 +48,8 @@ spec:
           env:
             - name: ENVIRONMENT
               value: production
+            - name: ADMIN_USER_IDS
+              value: "user_30c3c7k5BZEPCbq5iiEldepVQMP"
             - name: CLERK_SECRET_KEY
               valueFrom:
                 secretKeyRef:

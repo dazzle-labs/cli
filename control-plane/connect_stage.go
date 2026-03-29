@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -15,6 +16,18 @@ import (
 
 	apiv1 "github.com/dazzle-labs/cli/gen/api/v1"
 )
+
+var adminUserIDs = func() map[string]bool {
+	m := make(map[string]bool)
+	for _, id := range strings.Split(os.Getenv("ADMIN_USER_IDS"), ",") {
+		if id = strings.TrimSpace(id); id != "" {
+			m[id] = true
+		}
+	}
+	return m
+}()
+
+func isAdmin(userID string) bool { return adminUserIDs[userID] }
 
 // resolveStageID resolves a slug or UUID to a stage UUID.
 // UUIDs (36 chars with dashes) pass through unchanged; anything else is
@@ -43,6 +56,7 @@ type stageServer struct {
 }
 
 // requireStage resolves slug/UUID, authenticates, and verifies ownership in one call.
+// Admin users (ADMIN_USER_IDS env var) can access any stage.
 func requireStage(ctx context.Context, mgr *Manager, idOrSlug string) (authInfo, *stageRow, error) {
 	info := mustAuth(ctx)
 	if id, err := resolveStageID(mgr, idOrSlug); err == nil {
@@ -52,7 +66,10 @@ func requireStage(ctx context.Context, mgr *Manager, idOrSlug string) (authInfo,
 	if err != nil {
 		return info, nil, connect.NewError(connect.CodeInternal, err)
 	}
-	if row == nil || row.UserID != info.UserID {
+	if row == nil {
+		return info, nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("stage not found"))
+	}
+	if row.UserID != info.UserID && !isAdmin(info.UserID) {
 		return info, nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("stage not found"))
 	}
 	return info, row, nil

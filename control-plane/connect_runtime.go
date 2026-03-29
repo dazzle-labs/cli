@@ -46,6 +46,7 @@ func (s *runtimeServer) requireRunningStageForUser(stageID, userID string) (*Sta
 }
 
 // requireStageForUser looks up a stage by ID or slug and verifies it belongs to the user.
+// Admin users (ADMIN_USER_IDS) can access any stage.
 // Does NOT require the stage to be running. Returns the DB row.
 func (s *runtimeServer) requireStageForUser(stageID, userID string) (*stageRow, error) {
 	if id, err := resolveStageID(s.mgr, stageID); err == nil {
@@ -55,7 +56,10 @@ func (s *runtimeServer) requireStageForUser(stageID, userID string) (*stageRow, 
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	if row == nil || row.UserID != userID {
+	if row == nil {
+		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("stage not found"))
+	}
+	if row.UserID != userID && !isAdmin(userID) {
 		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("stage not found"))
 	}
 	return row, nil
