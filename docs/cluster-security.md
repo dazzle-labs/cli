@@ -6,6 +6,32 @@
 
 Production runs a 3-node HA k3s cluster on Hetzner Cloud, provisioned via OpenTofu + kube-hetzner module. This document covers infrastructure hardening, CI/CD authentication, secrets management, pod security, and RBAC. For per-pod network policies, see [Network Security](./network-security.md).
 
+## Defense in Depth
+
+Seven layers, each independent — compromising one layer does not bypass the others:
+
+| Layer | What | How |
+|-------|------|-----|
+| **1. Network** | Firewall | SSH locked to single IP. K8s API open but protected by layers 2-4. Outbound restricted to RTMP + RunPod only. |
+| **2. Transport** | TLS + WireGuard | All k8s API traffic TLS with CA verification. All pod-to-pod traffic encrypted via Cilium WireGuard. RunPod GPU comms use mTLS with CA pinning. |
+| **3. Authentication** | Identity | Developers: client cert via kubeconfig (derived from encrypted tfstate at runtime). CI: GitHub OIDC tokens (short-lived, per-run). No long-lived cluster credentials stored anywhere. |
+| **4. Authorization** | RBAC | CI user scoped to specific namespaces and resource types. Control-plane ServiceAccount scoped to pod lifecycle + CRDs. No cluster-admin in normal operations. |
+| **5. Pod Security** | Container hardening | PSS baseline enforced. All pods: non-root, read-only rootfs, all capabilities dropped, seccomp RuntimeDefault. No privilege escalation. |
+| **6. Network Policy** | Pod-to-pod isolation | Default-deny ingress + egress. Per-pod allowlists. Cilium L7 FQDN-based egress locks control-plane to specific external APIs. See [Network Security](./network-security.md). |
+| **7. Audit** | Observability | kube-apiserver audit logging. Secrets and RBAC changes at RequestResponse level. All mutations at Metadata level. |
+
+### Threat model
+
+| Target | What an attacker needs |
+|--------|----------------------|
+| Cluster via CI | Compromise a GitHub Actions runner for `dazzle-labs/agent-streamer` on `main` branch (OIDC token is scoped to repo + ref) |
+| Cluster via developer | Steal an age private key + have network access to API server IP |
+| App secrets only | Steal any one age private key (cannot grant cluster access — OIDC replaced that path) |
+| Pod escape | Break out of non-root, read-only rootfs, no-capabilities, seccomp container, then past network policies |
+| Lateral movement | Bypass default-deny network policies + Cilium FQDN restrictions |
+
+No single secret grants full access. OIDC tokens are ephemeral, the age key only decrypts app secrets (not cluster auth), and the kubeconfig doesn't exist as a file.
+
 ## Infrastructure Hardening
 
 ### Firewall (Hetzner Cloud)
@@ -188,15 +214,14 @@ Config: `k8s/control-plane/rbac.yaml`
 
 ### CI RBAC
 
-> **Status:** RBAC manifests are deployed. CI authenticates via OIDC and these bindings control what it can do. The OIDC + RBAC pipeline is being validated — if permission gaps are found, the Role rules below will be adjusted.
-
-The OIDC-authenticated CI user has scoped permissions across three namespaces:
+The OIDC-authenticated CI user has scoped permissions across four namespaces:
 
 | Namespace | Resources | Verbs |
 |-----------|-----------|-------|
 | `browser-streamer` | Pods, services, configmaps, secrets, deployments, statefulsets, PDBs, network policies, Cilium policies, Traefik middlewares, RBAC, Dazzle CRs, PodMonitors | Full CRUD |
-| `monitoring` | Secrets | Get, create, update, patch |
-| `kube-system` | ConfigMaps, ServiceAccounts, services, deployments, RBAC | Full CRUD (scheduler-plugins Helm chart) |
+| `monitoring` | Secrets, RBAC | Get, create, update, patch |
+| `kube-system` | ConfigMaps, ServiceAccounts, services, deployments, RBAC, HelmChartConfigs | Full CRUD (scheduler-plugins + Traefik config) |
+| `default` | Dazzle CRs, RBAC | Full CRUD (GPU node classes have no namespace specified) |
 
 Cluster-scoped: CRDs (get, create, update, patch), namespaces (get, create), PriorityClasses (full CRUD), ClusterRoles/Bindings (full CRUD for scheduler-plugins).
 
