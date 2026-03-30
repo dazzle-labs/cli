@@ -17,7 +17,7 @@ jobs:
         run: |
           TOKEN=$(curl -sH "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
             "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=kubernetes" | jq -r .value)
-          echo "${{ secrets.K8S_CA_CERT }}" > /tmp/k8s-ca.crt
+          echo "${{ secrets.K8S_CA_CERT }}" | base64 -d > /tmp/k8s-ca.crt
           kubectl config set-cluster prod \
             --server=${{ vars.K8S_API_SERVER }} \
             --certificate-authority=/tmp/k8s-ca.crt
