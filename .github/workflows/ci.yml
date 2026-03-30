@@ -500,10 +500,12 @@ jobs:
           chmod 600 ~/.config/sops/age/keys.txt
 
       - name: Authenticate to k8s via OIDC
+        env:
+          K8S_CA_CERT_B64: ${{ secrets.K8S_CA_CERT }}
         run: |
           TOKEN=$(curl -sH "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
             "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=kubernetes" | jq -r .value)
-          echo "${{ secrets.K8S_CA_CERT }}" | base64 -d > /tmp/k8s-ca.crt
+          python3 -c "import base64,os; open('/tmp/k8s-ca.crt','wb').write(base64.b64decode(os.environ['K8S_CA_CERT_B64']))"
           kubectl config set-cluster prod \
             --server=${{ vars.K8S_API_SERVER }} \
             --certificate-authority=/tmp/k8s-ca.crt
