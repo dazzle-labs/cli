@@ -58,7 +58,7 @@ spec:
     matchLabels:
       app: control-plane
   egress:
-    # --- DNS ---
+    # --- DNS (with proxy for toFQDNs resolution) ---
     - toEndpoints:
         - matchLabels:
             k8s:io.kubernetes.pod.namespace: kube-system
@@ -69,6 +69,9 @@ spec:
               protocol: UDP
             - port: "53"
               protocol: TCP
+          rules:
+            dns:
+              - matchPattern: "*"
     # --- Kubernetes API server ---
     - toEntities:
         - kube-apiserver
@@ -103,9 +106,12 @@ spec:
             - port: "9090"
               protocol: TCP
     # --- Auth (Clerk) ---
+    # api.clerk.com → CNAME api.clerk.dev → CNAME cf-bapi-prod.clerk.dev.cdn.cloudflare.net
+    # Cilium toFQDNs must include the full CNAME chain for IP resolution.
     - toFQDNs:
         - matchName: "api.clerk.com"
         - matchName: "api.clerk.dev"
+        - matchName: "cf-bapi-prod.clerk.dev.cdn.cloudflare.net"
       toPorts:
         - ports:
             - port: "443"
@@ -113,6 +119,7 @@ spec:
     # --- Clerk JWKS (may use CDN subdomains) ---
     - toFQDNs:
         - matchPattern: "*.clerk.accounts.dev"
+        - matchPattern: "*.clerk.dev.cdn.cloudflare.net"
       toPorts:
         - ports:
             - port: "443"
