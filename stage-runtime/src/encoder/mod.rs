@@ -443,17 +443,27 @@ fn encode_audio_samples(
     p.audio_pts += num_samples as i64;
 
     // Run through resampler — converts packed→planar and buffers to AAC frame size (1024)
-    let mut resampled = frame::Audio::empty();
+    let mut resampled = frame::Audio::new(
+        Sample::F32(ffmpeg_next::format::sample::Type::Planar),
+        1024, // AAC frame size
+        channel_layout::ChannelLayout::STEREO,
+    );
     p.audio_resampler.run(&src_frame, &mut resampled)?;
     if resampled.samples() > 0 {
+        resampled.set_rate(src_frame.rate());
         p.audio_encoder.send_frame(&resampled)?;
         drain_audio_packets(p)?;
     }
     // Drain any buffered frames from the resampler
     while p.audio_resampler.delay().is_some_and(|d| d.output >= 1024) {
-        let mut extra = frame::Audio::empty();
+        let mut extra = frame::Audio::new(
+            Sample::F32(ffmpeg_next::format::sample::Type::Planar),
+            1024,
+            channel_layout::ChannelLayout::STEREO,
+        );
         p.audio_resampler.flush(&mut extra)?;
         if extra.samples() > 0 {
+            extra.set_rate(src_frame.rate());
             p.audio_encoder.send_frame(&extra)?;
             drain_audio_packets(p)?;
         }
