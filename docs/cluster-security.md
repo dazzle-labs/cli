@@ -218,11 +218,19 @@ The OIDC-authenticated CI user has scoped permissions across four namespaces:
 
 | Namespace | Resources | Verbs |
 |-----------|-----------|-------|
-| `browser-streamer` | Pods, services, configmaps, secrets, deployments, statefulsets, PDBs, network policies, Cilium policies, Traefik middlewares, RBAC, Dazzle CRs, PodMonitors | Full CRUD |
-| `monitoring` | Secrets, RBAC | Get, create, update, patch |
-| `kube-system` | ConfigMaps, ServiceAccounts, services, deployments, RBAC, HelmChartConfigs | Full CRUD (scheduler-plugins + Traefik config) |
-| `default` | Dazzle CRs, RBAC | Full CRUD (GPU node classes have no namespace specified) |
+| `browser-streamer` | Pods, services, configmaps, serviceaccounts, PVCs, deployments, statefulsets, PDBs, Traefik middlewares, Dazzle CRs, PodMonitors | Full CRUD |
+| `browser-streamer` | Secrets | Write-only (create, update, patch — CI applies SOPS-decrypted manifests, never reads back) |
+| `browser-streamer` | Network policies, Cilium policies | No delete (create, update, patch — prevent CI from removing network isolation) |
+| `browser-streamer` | RBAC (roles, rolebindings) | Full CRUD, scoped to `resourceNames: [control-plane, ci-deploy]` |
+| `monitoring` | Secrets | Write-only (create, update, patch) |
+| `monitoring` | RBAC | Full CRUD, scoped to `resourceNames: [ci-deploy]` |
+| `kube-system` | ConfigMaps, ServiceAccounts, services, deployments, HelmChartConfigs | Full CRUD (scheduler-plugins + Traefik config) |
+| `kube-system` | RBAC | Full CRUD, scoped to `resourceNames: [ci-deploy]` |
+| `default` | Dazzle CRs | Full CRUD (GPU node classes have no namespace specified) |
+| `default` | RBAC | Full CRUD, scoped to `resourceNames: [ci-deploy]` |
 
-Cluster-scoped: CRDs (get, create, update, patch), namespaces (get, create), PriorityClasses (full CRUD), ClusterRoles/Bindings (full CRUD for scheduler-plugins).
+Cluster-scoped: CRDs (get, create, update, patch), namespaces (get, create, update, patch), PriorityClasses (full CRUD), ClusterRoles/Bindings (full CRUD, scoped to `resourceNames: [scheduler-plugins-controller, scheduler-plugins-scheduler, scheduler-plugins-metrics-reader, ci-deploy, control-plane-crds]`).
+
+**Security constraints:** `resourceNames` does not restrict `create` (Kubernetes ignores it for that verb), but it blocks CI from modifying or deleting any Role/ClusterRole other than the named ones — closing the privilege escalation path where a compromised runner could bind itself to `cluster-admin`.
 
 Config: `k8s/control-plane/ci-rbac.yaml`

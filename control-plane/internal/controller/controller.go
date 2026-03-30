@@ -105,6 +105,13 @@ func (c *GPUNodeController) reconcileAll(ctx context.Context) error {
 			log.Printf("GPUNode %s reconcile error: %v", list.Items[i].GetName(), err)
 		}
 	}
+
+	// Reconcile CiliumNetworkPolicy with current GPU node IPs.
+	// Non-fatal: mTLS provides primary auth; policy is defense-in-depth.
+	if err := reconcileGPUNodeEgressPolicy(ctx, c.dynamicClient, c.namespace, list.Items); err != nil {
+		log.Printf("GPU egress policy reconcile error: %v", err)
+	}
+
 	return nil
 }
 
@@ -538,6 +545,14 @@ func (c *GPUNodeController) RecoverNodes(ctx context.Context) {
 		} else if pod.DesiredStatus == "EXITED" {
 			log.Printf("GPUNode %s: RunPod pod %s exited, marking Failed", name, podID)
 			c.transitionPhase(ctx, node, "Failed")
+		}
+	}
+
+	// Sync egress policy with recovered node IPs
+	freshList, err := c.dynamicClient.Resource(gpuNodeGVR).Namespace(c.namespace).List(ctx, metav1.ListOptions{})
+	if err == nil {
+		if err := reconcileGPUNodeEgressPolicy(ctx, c.dynamicClient, c.namespace, freshList.Items); err != nil {
+			log.Printf("GPU egress policy reconcile on recovery: %v", err)
 		}
 	}
 }

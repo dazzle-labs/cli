@@ -12,8 +12,12 @@ metadata:
 rules:
   # Core resources applied by kustomize
   - apiGroups: [""]
-    resources: ["pods", "services", "configmaps", "secrets", "serviceaccounts", "persistentvolumeclaims"]
+    resources: ["pods", "services", "configmaps", "serviceaccounts", "persistentvolumeclaims"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Secrets — write-only (CI decrypts via SOPS and applies, never reads back)
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["create", "update", "patch"]
   # Deployments, StatefulSets, PDBs
   - apiGroups: ["apps"]
     resources: ["deployments", "statefulsets"]
@@ -21,20 +25,21 @@ rules:
   - apiGroups: ["policy"]
     resources: ["poddisruptionbudgets"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-  # Networking
+  # Networking — no delete (prevent CI from removing network isolation)
   - apiGroups: ["networking.k8s.io"]
     resources: ["networkpolicies", "ingresses"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
   - apiGroups: ["cilium.io"]
     resources: ["ciliumnetworkpolicies"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
   - apiGroups: ["traefik.io", "traefik.containo.us"]
     resources: ["middlewares", "ingressroutes"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-  # RBAC within namespace
+  # RBAC within namespace — scoped to known role names only
   - apiGroups: ["rbac.authorization.k8s.io"]
     resources: ["roles", "rolebindings"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    resourceNames: ["control-plane", "ci-deploy"]
   # Dazzle CRs
   - apiGroups: ["dazzle.fm"]
     resources: ["*"]
@@ -71,12 +76,14 @@ metadata:
   name: ci-deploy
   namespace: monitoring
 rules:
+  # Secrets — write-only (CI decrypts via SOPS and applies, never reads back)
   - apiGroups: [""]
     resources: ["secrets"]
-    verbs: ["get", "list", "watch", "create", "update", "patch"]
+    verbs: ["create", "update", "patch"]
   - apiGroups: ["rbac.authorization.k8s.io"]
     resources: ["roles", "rolebindings"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    resourceNames: ["ci-deploy"]
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -107,6 +114,7 @@ rules:
   - apiGroups: ["rbac.authorization.k8s.io"]
     resources: ["roles", "rolebindings"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    resourceNames: ["ci-deploy"]
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -140,6 +148,7 @@ rules:
   - apiGroups: ["rbac.authorization.k8s.io"]
     resources: ["roles", "rolebindings"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    resourceNames: ["ci-deploy"]
   # Traefik HelmChartConfig
   - apiGroups: ["helm.cattle.io"]
     resources: ["helmchartconfigs"]
@@ -179,10 +188,12 @@ rules:
   - apiGroups: ["scheduling.k8s.io"]
     resources: ["priorityclasses"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-  # Scheduler-plugins ClusterRoles/Bindings
+  # Scheduler-plugins ClusterRoles/Bindings — scoped to named resources only
+  # (resourceNames doesn't restrict 'create', but blocks modify/delete of other ClusterRoles)
   - apiGroups: ["rbac.authorization.k8s.io"]
     resources: ["clusterroles", "clusterrolebindings"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    resourceNames: ["scheduler-plugins-controller", "scheduler-plugins-scheduler", "scheduler-plugins-metrics-reader", "ci-deploy", "control-plane-crds"]
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1

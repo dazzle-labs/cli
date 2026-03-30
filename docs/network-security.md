@@ -61,7 +61,7 @@ The public-facing API server. Most restricted egress of any pod.
 | `accounts.google.com`, `oauth2.googleapis.com`, `www.googleapis.com` | 443 | YouTube OAuth + API |
 | `id.kick.com`, `api.kick.com` | 443 | Kick OAuth + API |
 | `api.restream.io` | 443 | Restream OAuth + API |
-| Any non-RFC1918 IP | 8080 | GPU sidecar mTLS (RunPod pods have dynamic public IPs) |
+| GPU node IPs (dynamic /32 allowlist) | any | GPU sidecar mTLS — managed by `control-plane-egress-gpu-nodes` CiliumNetworkPolicy |
 
 All other external egress is **denied**. No SSH, SMTP, or arbitrary HTTPS to unlisted hosts.
 
@@ -114,7 +114,7 @@ RTMP receiver (nginx-rtmp).
 
 - **Control-plane egress uses port-only rules** — Cilium's kube-proxy replacement DNATs ClusterIP destinations before policy eval, so `podSelector`/`ipBlock` matching is unreliable for service traffic. Port-only rules are less restrictive but functional. Ingress policies are unaffected since traffic arrives at the pod IP directly.
 - **Ingest RTMP (port 1935) has no source restriction** — Hetzner LB uses SNAT, so the original client IP is lost by the time traffic reaches the pod. Fixing this requires enabling proxy protocol on the LB, which nginx-rtmp doesn't support natively.
-- **GPU sidecar mTLS uses CIDR-based rules** — RunPod pods get dynamic public IPs that aren't DNS-resolvable. The rule allows port 8080 to any non-RFC1918 IP. mTLS with CA verification provides the authentication layer.
+- **GPU sidecar egress uses dynamic IP allowlisting** — The GPU node controller manages a CiliumNetworkPolicy (`control-plane-egress-gpu-nodes`) that restricts egress to only the `/32` IPs of known GPU nodes. The allowlist is reconciled every 10 seconds and on startup recovery. mTLS with CA verification provides the authentication layer on top of the network restriction.
 - **Local dev (Kind) has no NetworkPolicy enforcement** — kindnet doesn't support it. Policies are only enforced in production with Cilium.
 - **Pods created before Cilium migration have stale networking** — Any pod from the Flannel era must be restarted to get Cilium-managed interfaces. Symptoms: `no route to host` for cross-node traffic.
 

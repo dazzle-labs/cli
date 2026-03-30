@@ -163,13 +163,7 @@ spec:
         - ports:
             - port: "443"
               protocol: TCP
-    # --- GPU sidecar mTLS (RunPod dynamic public IPs, dynamic ports) ---
-    # RunPod pods get random public IPs and high ports. mTLS with CA
-    # verification provides the auth layer. RFC1918 excluded to prevent
-    # cluster-internal lateral movement.
-    - toCIDRSet:
-        - cidr: 0.0.0.0/0
-          except:
-            - 10.0.0.0/8
-            - 172.16.0.0/12
-            - 192.168.0.0/16
+    # --- GPU sidecar mTLS ---
+    # Dynamically managed by the GPU node controller as
+    # CiliumNetworkPolicy "control-plane-egress-gpu-nodes".
+    # Only known GPU node /32 IPs are allowed (no more 0.0.0.0/0).
