@@ -59,9 +59,9 @@ struct OutputPipeline {
     video_pts: i64,
     audio_pts: i64,
     total_bytes: u64,
-    /// Resampler: converts packed f32 stereo → planar f32 stereo and handles
-    /// AAC frame size buffering (1024 samples per frame).
-    audio_resampler: ffmpeg_next::software::resampling::Context,
+    /// Buffer for accumulating interleaved stereo f32 samples until we have
+    /// enough for one AAC frame (1024 samples per channel).
+    audio_buf: Vec<f32>,
 }
 
 impl Encoder {
@@ -119,7 +119,7 @@ impl Encoder {
             }
             if let Some(samples) = audio_samples {
                 let samples_per_frame = (self.config.audio_sample_rate / self.config.fps) as usize;
-                if let Err(e) = encode_audio_samples(pipeline, samples, samples_per_frame) {
+                if let Err(e) = encode_audio_samples(pipeline, samples, samples_per_frame, self.config.audio_sample_rate) {
                     log::error!("Audio encode error: {}", e);
                 }
             }
@@ -332,17 +332,6 @@ fn create_pipeline(
     let audio_time_base = octx.stream(audio_stream_idx)
         .ok_or(ffmpeg_next::Error::StreamNotFound)?.time_base();
 
-    // Resampler: packed f32 stereo → planar f32 stereo.
-    // Also handles AAC frame size buffering (1024 samples) via delay()/run().
-    let audio_resampler = software::resampling::Context::get(
-        Sample::F32(format::sample::Type::Packed),
-        channel_layout::ChannelLayout::STEREO,
-        config.audio_sample_rate,
-        Sample::F32(format::sample::Type::Planar),
-        channel_layout::ChannelLayout::STEREO,
-        config.audio_sample_rate,
-    )?;
-
     Ok(OutputPipeline {
         octx,
         video_encoder,
@@ -357,7 +346,7 @@ fn create_pipeline(
         video_pts: 0,
         audio_pts: 0,
         total_bytes: 0,
-        audio_resampler,
+        audio_buf: Vec::with_capacity(4096),
     })
 }
 
@@ -417,56 +406,52 @@ fn encode_audio_samples(
     p: &mut OutputPipeline,
     pcm_data: &[f32],
     num_samples: usize,
+    sample_rate: u32,
 ) -> Result<(), ffmpeg_next::Error> {
     use ffmpeg_next::{channel_layout, frame};
     use ffmpeg_next::util::format::sample::Sample;
 
-    let required = num_samples * 2; // stereo
+    let required = num_samples * 2; // stereo interleaved
     if pcm_data.len() < required {
         return Ok(());
     }
 
-    // Build packed f32 stereo input frame
-    let mut src_frame = frame::Audio::new(
-        Sample::F32(ffmpeg_next::format::sample::Type::Packed),
-        num_samples,
-        channel_layout::ChannelLayout::STEREO,
-    );
-    let byte_len = required * std::mem::size_of::<f32>();
-    let src_bytes = unsafe {
-        std::slice::from_raw_parts(pcm_data.as_ptr() as *const u8, byte_len)
-    };
-    let dst = src_frame.data_mut(0);
-    let copy_len = src_bytes.len().min(dst.len());
-    dst[..copy_len].copy_from_slice(&src_bytes[..copy_len]);
-    src_frame.set_pts(Some(p.audio_pts));
-    p.audio_pts += num_samples as i64;
+    // Append interleaved samples to buffer
+    p.audio_buf.extend_from_slice(&pcm_data[..required]);
 
-    // Run through resampler — converts packed→planar and buffers to AAC frame size (1024)
-    let mut resampled = frame::Audio::new(
-        Sample::F32(ffmpeg_next::format::sample::Type::Planar),
-        1024, // AAC frame size
-        channel_layout::ChannelLayout::STEREO,
-    );
-    p.audio_resampler.run(&src_frame, &mut resampled)?;
-    if resampled.samples() > 0 {
-        resampled.set_rate(src_frame.rate());
-        p.audio_encoder.send_frame(&resampled)?;
-        drain_audio_packets(p)?;
-    }
-    // Drain any buffered frames from the resampler
-    while p.audio_resampler.delay().is_some_and(|d| d.output >= 1024) {
-        let mut extra = frame::Audio::new(
+    // AAC frame size: 1024 samples per channel = 2048 interleaved f32s
+    const AAC_FRAME: usize = 1024;
+    const AAC_INTERLEAVED: usize = AAC_FRAME * 2;
+
+    // Drain complete 1024-sample frames from the buffer
+    while p.audio_buf.len() >= AAC_INTERLEAVED {
+        let mut frame = frame::Audio::new(
             Sample::F32(ffmpeg_next::format::sample::Type::Planar),
-            1024,
+            AAC_FRAME,
             channel_layout::ChannelLayout::STEREO,
         );
-        p.audio_resampler.flush(&mut extra)?;
-        if extra.samples() > 0 {
-            extra.set_rate(src_frame.rate());
-            p.audio_encoder.send_frame(&extra)?;
-            drain_audio_packets(p)?;
+        frame.set_rate(sample_rate);
+        frame.set_pts(Some(p.audio_pts));
+        p.audio_pts += AAC_FRAME as i64;
+
+        // Deinterleave [L0,R0,L1,R1,...] into plane0=[L0,L1,...] plane1=[R0,R1,...]
+        unsafe {
+            let ptr0 = frame.data_mut(0).as_mut_ptr();
+            let ptr1 = frame.data_mut(1).as_mut_ptr();
+            let plane0 = std::slice::from_raw_parts_mut(ptr0, AAC_FRAME * 4);
+            let plane1 = std::slice::from_raw_parts_mut(ptr1, AAC_FRAME * 4);
+            for i in 0..AAC_FRAME {
+                let off = i * 4;
+                plane0[off..off + 4].copy_from_slice(&p.audio_buf[i * 2].to_le_bytes());
+                plane1[off..off + 4].copy_from_slice(&p.audio_buf[i * 2 + 1].to_le_bytes());
+            }
         }
+
+        // Remove consumed samples
+        p.audio_buf.drain(..AAC_INTERLEAVED);
+
+        p.audio_encoder.send_frame(&frame)?;
+        drain_audio_packets(p)?;
     }
     Ok(())
 }
