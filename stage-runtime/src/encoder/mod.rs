@@ -407,7 +407,7 @@ fn encode_audio_samples(
     use ffmpeg_next::util::format::sample::Sample;
 
     let mut src_frame = frame::Audio::new(
-        Sample::F32(ffmpeg_next::format::sample::Type::Packed),
+        Sample::F32(ffmpeg_next::format::sample::Type::Planar),
         num_samples,
         channel_layout::ChannelLayout::STEREO,
     );
