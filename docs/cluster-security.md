@@ -219,11 +219,11 @@ The OIDC-authenticated CI user has scoped permissions across four namespaces:
 | Namespace | Resources | Verbs |
 |-----------|-----------|-------|
 | `browser-streamer` | Pods, services, configmaps, serviceaccounts, PVCs, deployments, statefulsets, PDBs, Traefik middlewares, Dazzle CRs, PodMonitors | Full CRUD |
-| `browser-streamer` | Secrets | Write-only (create, update, patch — CI applies SOPS-decrypted manifests, never reads back) |
+| `browser-streamer` | Secrets | get, create, update, patch (no list/delete — `get` needed for `kubectl apply` diff, but secrets aren't enumerable) |
 | `browser-streamer` | Network policies | No delete (create, update, patch — prevent CI from removing network isolation) |
 | `browser-streamer` | Cilium policies | Full CRUD (delete needed — control-plane Role grants ciliumnetworkpolicies:delete, RBAC escalation check requires CI to hold it too) |
 | `browser-streamer` | RBAC (roles, rolebindings) | Full CRUD, scoped to `resourceNames: [control-plane, ci-deploy]` |
-| `monitoring` | Secrets | Write-only (create, update, patch) |
+| `monitoring` | Secrets | get, create, update, patch (no list/delete) |
 | `monitoring` | RBAC | Full CRUD, scoped to `resourceNames: [ci-deploy]` |
 | `kube-system` | ConfigMaps, ServiceAccounts, services, deployments, HelmChartConfigs | Full CRUD (scheduler-plugins + Traefik config) |
 | `kube-system` | RBAC | Full CRUD, scoped to `resourceNames: [ci-deploy, sched-plugins::extension-apiserver-authentication-reader]` |

@@ -14,10 +14,11 @@ rules:
   - apiGroups: [""]
     resources: ["pods", "services", "configmaps", "serviceaccounts", "persistentvolumeclaims"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-  # Secrets — write-only (CI decrypts via SOPS and applies, never reads back)
+  # Secrets — get required for kubectl apply (diff), but no list/delete.
+  # CI decrypts via SOPS and applies; get is per-name only, not enumerable.
   - apiGroups: [""]
     resources: ["secrets"]
-    verbs: ["create", "update", "patch"]
+    verbs: ["get", "create", "update", "patch"]
   # Deployments, StatefulSets, PDBs
   - apiGroups: ["apps"]
     resources: ["deployments", "statefulsets"]
@@ -84,10 +85,10 @@ metadata:
   name: ci-deploy
   namespace: monitoring
 rules:
-  # Secrets — write-only (CI decrypts via SOPS and applies, never reads back)
+  # Secrets — get required for kubectl apply (diff), but no list/delete
   - apiGroups: [""]
     resources: ["secrets"]
-    verbs: ["create", "update", "patch"]
+    verbs: ["get", "create", "update", "patch"]
   - apiGroups: ["rbac.authorization.k8s.io"]
     resources: ["roles", "rolebindings"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
