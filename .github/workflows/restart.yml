@@ -22,7 +22,8 @@ jobs:
           python3 -c "import base64,os; open('/tmp/k8s-ca.crt','wb').write(base64.b64decode(os.environ['K8S_CA_CERT_B64']))"
           kubectl config set-cluster prod \
             --server=${{ vars.K8S_API_SERVER }} \
-            --certificate-authority=/tmp/k8s-ca.crt
+            --certificate-authority=/tmp/k8s-ca.crt \
+            --embed-certs=true
           kubectl config set-credentials ci --token="$TOKEN"
           kubectl config set-context prod --cluster=prod --user=ci
           kubectl config use-context prod
