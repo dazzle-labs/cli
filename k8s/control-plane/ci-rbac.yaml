@@ -25,16 +25,24 @@ rules:
   - apiGroups: ["policy"]
     resources: ["poddisruptionbudgets"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-  # Networking — no delete (prevent CI from removing network isolation)
+  # Networking — no delete on NetworkPolicy objects (prevent CI from removing network isolation)
   - apiGroups: ["networking.k8s.io"]
     resources: ["networkpolicies", "ingresses"]
     verbs: ["get", "list", "watch", "create", "update", "patch"]
+  # CiliumNetworkPolicy — includes delete because the control-plane Role grants
+  # ciliumnetworkpolicies:delete (for dynamic GPU egress policy), and Kubernetes
+  # RBAC escalation prevention requires CI to hold all permissions it grants via Roles.
   - apiGroups: ["cilium.io"]
     resources: ["ciliumnetworkpolicies"]
-    verbs: ["get", "list", "watch", "create", "update", "patch"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: ["traefik.io", "traefik.containo.us"]
     resources: ["middlewares", "ingressroutes"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Leases — CI doesn't use these directly, but must hold the permission to
+  # grant it via the control-plane Role (RBAC escalation prevention).
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "create", "update"]
   # RBAC within namespace — scoped to known role names only
   - apiGroups: ["rbac.authorization.k8s.io"]
     resources: ["roles", "rolebindings"]
@@ -148,7 +156,7 @@ rules:
   - apiGroups: ["rbac.authorization.k8s.io"]
     resources: ["roles", "rolebindings"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-    resourceNames: ["ci-deploy"]
+    resourceNames: ["ci-deploy", "sched-plugins::extension-apiserver-authentication-reader"]
   # Traefik HelmChartConfig
   - apiGroups: ["helm.cattle.io"]
     resources: ["helmchartconfigs"]
