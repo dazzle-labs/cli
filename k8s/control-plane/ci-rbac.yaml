@@ -64,7 +64,7 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 
 ---
-# Permissions in monitoring namespace (apply-secrets applies secrets there)
+# Permissions in monitoring namespace (apply-secrets + ci-rbac itself)
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -74,6 +74,9 @@ rules:
   - apiGroups: [""]
     resources: ["secrets"]
     verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["roles", "rolebindings"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -81,6 +84,33 @@ kind: RoleBinding
 metadata:
   name: ci-deploy
   namespace: monitoring
+subjects:
+  - kind: User
+    name: "github:repo:dazzle-labs/agent-streamer:ref:refs/heads/main"
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: ci-deploy
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# Permissions in default namespace (GPU node classes are namespaced CRs without explicit namespace)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ci-deploy
+  namespace: default
+rules:
+  - apiGroups: ["dazzle.fm"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ci-deploy
+  namespace: default
 subjects:
   - kind: User
     name: "github:repo:dazzle-labs/agent-streamer:ref:refs/heads/main"
