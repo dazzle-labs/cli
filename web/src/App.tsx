@@ -42,6 +42,12 @@ function AuthSetup() {
         email: user.primaryEmailAddress.emailAddress,
       }),
     });
+
+    // Fire X signup conversion for users created in the last 60 seconds
+    const age = Date.now() - (user.createdAt?.getTime() ?? 0);
+    if (age < 60_000 && typeof window.twq === "function") {
+      window.twq("event", "tw-rbof3-137cj0", {});
+    }
   }, [posthog, user]);
 
   return null;
