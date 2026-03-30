@@ -6,16 +6,24 @@ on:
 jobs:
   restart:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
 
     steps:
       - name: Set up kubectl
         uses: azure/setup-kubectl@v4
 
-      - name: Configure k3s Kubeconfig
+      - name: Authenticate to k8s via OIDC
         run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.K3S_KUBECONFIG }}" > ~/.kube/config
-          chmod 600 ~/.kube/config
+          TOKEN=$(curl -sH "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=kubernetes" | jq -r .value)
+          echo "${{ secrets.K8S_CA_CERT }}" | base64 -d > /tmp/k8s-ca.crt
+          kubectl config set-cluster prod \
+            --server=${{ vars.K8S_API_SERVER }} \
+            --certificate-authority=/tmp/k8s-ca.crt
+          kubectl config set-credentials ci --token="$TOKEN"
+          kubectl config set-context prod --cluster=prod --user=ci
+          kubectl config use-context prod
 
       - name: Restart deployment
         run: kubectl rollout restart deployment/control-plane -n browser-streamer

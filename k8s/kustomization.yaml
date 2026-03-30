@@ -6,6 +6,7 @@ resources:
   - infrastructure/postgres.yaml
   - infrastructure/pdb.yaml
   - control-plane/rbac.yaml
+  - control-plane/ci-rbac.yaml
   - control-plane/deployment.yaml
   - control-plane/swiftshader-configmap.yaml
   - control-plane/service.yaml

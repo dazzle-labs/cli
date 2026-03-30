@@ -22,6 +22,7 @@ module "kube-hetzner" {
   ssh_public_key  = file("${path.module}/ssh_key.pub")
   ssh_private_key = local.ssh_private_key
 
+  ssh_port       = var.ssh_port
   network_region = var.network_region
 
   # --- Control Plane (3 nodes for HA / etcd quorum) ---
@@ -132,6 +133,53 @@ module "kube-hetzner" {
       destination_ips = ["0.0.0.0/0", "::/0"]
     },
   ]
+
+  # --- Audit Logging ---
+  preinstall_exec = [
+    "mkdir -p /etc/k3s",
+    <<-EOT
+    cat > /etc/k3s/audit-policy.yaml << 'AUDIT'
+    apiVersion: audit.k8s.io/v1
+    kind: Policy
+    rules:
+      # Skip noisy system components
+      - level: None
+        users: ["system:kube-proxy"]
+        verbs: ["watch"]
+      - level: None
+        resources: [{group: "", resources: ["events"]}]
+      # Skip read-only operations
+      - level: None
+        verbs: ["get", "list", "watch"]
+      # Log secrets access with full request/response
+      - level: RequestResponse
+        resources: [{group: "", resources: ["secrets"]}]
+      # Log RBAC changes with full request/response
+      - level: RequestResponse
+        resources: [{group: "rbac.authorization.k8s.io"}]
+      # Log all other mutations at metadata level
+      - level: Metadata
+        verbs: ["create", "update", "patch", "delete"]
+      # Catch-all: skip everything else
+      - level: None
+    AUDIT
+    EOT
+  ]
+
+  k3s_exec_server_args = join(" ", [
+    # Audit logging
+    "--kube-apiserver-arg=audit-policy-file=/etc/k3s/audit-policy.yaml",
+    "--kube-apiserver-arg=audit-log-path=/var/log/k3s-audit.log",
+    "--kube-apiserver-arg=audit-log-maxage=7",
+    "--kube-apiserver-arg=audit-log-maxbackup=3",
+    "--kube-apiserver-arg=audit-log-maxsize=100",
+    # GitHub Actions OIDC authentication
+    "--kube-apiserver-arg=oidc-issuer-url=https://token.actions.githubusercontent.com",
+    "--kube-apiserver-arg=oidc-client-id=kubernetes",
+    "--kube-apiserver-arg=oidc-username-claim=sub",
+    "--kube-apiserver-arg=oidc-username-prefix=github:",
+    "--kube-apiserver-arg=oidc-groups-claim=repository",
+  ])
 
   # --- Misc ---
   allow_scheduling_on_control_plane = false

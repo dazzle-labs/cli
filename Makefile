@@ -390,6 +390,9 @@ prod/k8s/%: ## Run k8s/ Makefile target against prod (e.g. make prod/k8s/prometh
 		sops -d --input-type yaml --output-type yaml k8s/hetzner/kubeconfig.yaml.enc > $$tmpkc && \
 		KUBECONFIG=$$tmpkc $(MAKE) -C k8s $*
 
+ci/k8s/%: ## Run k8s/ target using KUBECONFIG from environment (CI with OIDC auth)
+	$(MAKE) -C k8s $*
+
 # ══════════════════════════════════════════════════════
 # Production infrastructure (OpenTofu) — CAUTION
 # These targets modify live production infrastructure.

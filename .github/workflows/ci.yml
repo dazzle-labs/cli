@@ -465,6 +465,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write
 
     steps:
       - name: Checkout Code
@@ -498,6 +499,20 @@ jobs:
           echo "${{ secrets.AGE_SECRET_KEY }}" > ~/.config/sops/age/keys.txt
           chmod 600 ~/.config/sops/age/keys.txt
 
+      - name: Authenticate to k8s via OIDC
+        run: |
+          TOKEN=$(curl -sH "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=kubernetes" | jq -r .value)
+          kubectl config set-cluster prod \
+            --server=${{ vars.K8S_API_SERVER }} \
+            --certificate-authority=/dev/null \
+            --insecure-skip-tls-verify=false
+          echo "${{ secrets.K8S_CA_CERT }}" | base64 -d > /tmp/k8s-ca.crt
+          kubectl config set-cluster prod --certificate-authority=/tmp/k8s-ca.crt
+          kubectl config set-credentials ci --token="$TOKEN"
+          kubectl config set-context prod --cluster=prod --user=ci
+          kubectl config use-context prod
+
       - name: Compare Image Digests
         id: compare
         run: |
@@ -515,7 +530,7 @@ jobs:
           }
 
           # Check control-plane
-          CP_CURRENT_IMAGE=$(make prod/k8s/current-cp-image)
+          CP_CURRENT_IMAGE=$(make ci/k8s/current-cp-image)
           CP_CURRENT_TAG="${CP_CURRENT_IMAGE##*:}"
 
           CP_CURRENT_DIGEST=""
@@ -591,11 +606,11 @@ jobs:
           kustomize edit add patch --path ci-env-patch.yaml
 
           cd ..
-          make prod/k8s/deploy
+          make ci/k8s/deploy
 
       - name: Verify Deployment
         if: steps.compare.outputs.changed == 'true'
-        run: make prod/k8s/verify
+        run: make ci/k8s/verify
 
       - name: Notify Discord
         if: success()

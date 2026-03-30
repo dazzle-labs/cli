@@ -23,6 +23,12 @@ variable "agent_server_type" {
   default     = "ccx43" # 16 dedicated vCPU / 64 GB RAM
 }
 
+variable "ssh_port" {
+  description = "SSH port for cluster nodes (non-standard to reduce scanner noise)"
+  type        = number
+  default     = 2222
+}
+
 variable "firewall_ssh_source" {
   description = "CIDR ranges allowed to SSH into nodes (default: blocked)"
   type        = list(string)
