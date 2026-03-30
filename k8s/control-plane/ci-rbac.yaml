@@ -94,7 +94,7 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 
 ---
-# Permissions in default namespace (GPU node classes are namespaced CRs without explicit namespace)
+# Permissions in default namespace (GPU node classes + ci-rbac itself)
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -103,6 +103,9 @@ metadata:
 rules:
   - apiGroups: ["dazzle.fm"]
     resources: ["*"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["roles", "rolebindings"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
 ---
@@ -136,6 +139,10 @@ rules:
     verbs: ["get", "list", "watch", "create", "update", "patch"]
   - apiGroups: ["rbac.authorization.k8s.io"]
     resources: ["roles", "rolebindings"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Traefik HelmChartConfig
+  - apiGroups: ["helm.cattle.io"]
+    resources: ["helmchartconfigs"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
 ---
