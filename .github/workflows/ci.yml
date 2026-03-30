@@ -505,7 +505,7 @@ jobs:
         run: |
           TOKEN=$(curl -sH "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
             "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=kubernetes" | jq -r .value)
-          python3 -c "import base64,os; open('/tmp/k8s-ca.crt','wb').write(base64.b64decode(os.environ['K8S_CA_CERT_B64']))"
+          python3 -c "import base64,os; d=base64.b64decode(os.environ['K8S_CA_CERT_B64']); open('/tmp/k8s-ca.crt','wb').write(d); print(f'CA cert: {len(d)} bytes')"
           kubectl config set-cluster prod \
             --server=${{ vars.K8S_API_SERVER }} \
             --certificate-authority=/tmp/k8s-ca.crt \
@@ -513,6 +513,7 @@ jobs:
           kubectl config set-credentials ci --token="$TOKEN"
           kubectl config set-context prod --cluster=prod --user=ci
           kubectl config use-context prod
+          kubectl cluster-info 2>&1 || true
 
       - name: Compare Image Digests
         id: compare
