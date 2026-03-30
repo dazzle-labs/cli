@@ -30,6 +30,7 @@ define _confirm
 endef
 OK       = @printf "$(_bold)$(_green)✓ %s$(_reset)\n"
 
+export SOPS_AGE_KEY_FILE ?= $(HOME)/.age/key.txt
 RKCTL = kubectl --kubeconfig <(sops -d --input-type yaml --output-type yaml k8s/hetzner/kubeconfig.yaml.enc)
 INFRA_DIR := k8s/hetzner
 TFSTATE   := $(INFRA_DIR)/terraform.tfstate

@@ -22,7 +22,6 @@ module "kube-hetzner" {
   ssh_public_key  = file("${path.module}/ssh_key.pub")
   ssh_private_key = local.ssh_private_key
 
-  ssh_port       = var.ssh_port
   network_region = var.network_region
 
   # --- Control Plane (3 nodes for HA / etcd quorum) ---
