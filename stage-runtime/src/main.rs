@@ -43,8 +43,8 @@ struct Args {
     #[arg(long, default_value = "30")]
     fps: u32,
 
-    /// Video codec (h264_nvenc or libx264)
-    #[arg(long, default_value = "h264_nvenc")]
+    /// Video codec (auto, h264_nvenc, or libx264)
+    #[arg(long, default_value = "auto", env = "VIDEO_CODEC")]
     video_codec: String,
 
     /// GPU device index
