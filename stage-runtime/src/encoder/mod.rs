@@ -287,7 +287,7 @@ fn create_pipeline(
 
     audio_enc.set_rate(config.audio_sample_rate as i32);
     audio_enc.set_channel_layout(channel_layout::ChannelLayout::STEREO);
-    audio_enc.set_format(Sample::F32(format::sample::Type::Packed));
+    audio_enc.set_format(Sample::F32(format::sample::Type::Planar));
     audio_enc.set_bit_rate(config.audio_bitrate as usize);
     audio_enc.set_time_base(Rational(1, config.audio_sample_rate as i32));
 
@@ -425,23 +425,24 @@ fn encode_audio_samples(
         );
         return Ok(()); // skip this frame rather than sending partial/uninitialized data
     }
-    let dst_bytes = src_frame.data_mut(0);
-    let Some(byte_len) = required_samples.checked_mul(std::mem::size_of::<f32>()) else {
-        log::warn!("Audio byte length overflow");
-        return Ok(());
-    };
-    if byte_len > pcm_data.len() * std::mem::size_of::<f32>() {
-        log::warn!("Audio byte length exceeds source buffer");
-        return Ok(());
+    // Deinterleave stereo f32 samples into planar format (fltp):
+    // Input: [L0, R0, L1, R1, ...] interleaved
+    // Output: plane 0 = [L0, L1, ...], plane 1 = [R0, R1, ...]
+    //
+    // Use raw pointers because ffmpeg's data_mut borrows the whole frame,
+    // preventing two simultaneous mutable plane references.
+    unsafe {
+        let ptr0 = src_frame.data_mut(0).as_mut_ptr();
+        let ptr1 = src_frame.data_mut(1).as_mut_ptr();
+        let plane_bytes = num_samples * 4; // 4 bytes per f32
+        let plane0 = std::slice::from_raw_parts_mut(ptr0, plane_bytes);
+        let plane1 = std::slice::from_raw_parts_mut(ptr1, plane_bytes);
+        for i in 0..num_samples {
+            let off = i * 4;
+            plane0[off..off + 4].copy_from_slice(&pcm_data[i * 2].to_le_bytes());
+            plane1[off..off + 4].copy_from_slice(&pcm_data[i * 2 + 1].to_le_bytes());
+        }
     }
-    let src_bytes = unsafe {
-        std::slice::from_raw_parts(
-            pcm_data.as_ptr() as *const u8,
-            byte_len,
-        )
-    };
-    let copy_len = src_bytes.len().min(dst_bytes.len());
-    dst_bytes[..copy_len].copy_from_slice(&src_bytes[..copy_len]);
 
     src_frame.set_pts(Some(p.audio_pts));
     p.audio_pts += num_samples as i64;
