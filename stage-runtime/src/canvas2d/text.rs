@@ -194,8 +194,9 @@ pub fn render_text(
 
     let bold = is_bold(state);
 
-    // Try custom font from registry first, then fall back to embedded DejaVu Sans
-    let custom_font_guard;
+    // Try custom font from registry first, then fall back to embedded DejaVu Sans.
+    // `_custom_font_guard` keeps the MutexGuard alive so the font reference remains valid.
+    let _custom_font_guard;
     let font: &fontdue::Font = {
         let family = &state.font_family;
         if family != "sans-serif" && family != "serif" && family != "monospace" && !family.is_empty() {
@@ -203,17 +204,17 @@ pub fn render_text(
             let found = guard.contains_key(family.as_str())
                 || guard.contains_key(&family.to_lowercase());
             if found {
-                custom_font_guard = Some(guard);
-                let g = custom_font_guard.as_ref().unwrap();
+                _custom_font_guard = Some(guard);
+                let g = _custom_font_guard.as_ref().unwrap();
                 g.get(family.as_str())
                     .or_else(|| g.get(&family.to_lowercase()))
                     .unwrap()
             } else {
-                custom_font_guard = None;
+                _custom_font_guard = None;
                 get_font(bold)
             }
         } else {
-            custom_font_guard = None;
+            _custom_font_guard = None;
             get_font(bold)
         }
     };

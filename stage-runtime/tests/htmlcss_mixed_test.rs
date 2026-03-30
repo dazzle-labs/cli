@@ -317,12 +317,12 @@ fn html_only_no_scripts() {
 // External script loading tests
 // ---------------------------------------------------------------------------
 
-fn make_runtime_with_dir(w: u32, h: u32) -> (dazzle_render::runtime::Runtime, tempfile::TempDir) {
+fn make_runtime_with_dir(w: u32, h: u32) -> (stage_runtime::runtime::Runtime, tempfile::TempDir) {
     let dir = tempfile::tempdir().unwrap();
     let store = Arc::new(Mutex::new(
-        dazzle_render::storage::Storage::new(&dir.path().join("storage.json")).unwrap(),
+        stage_runtime::storage::Storage::new(&dir.path().join("storage.json")).unwrap(),
     ));
-    let rt = dazzle_render::runtime::Runtime::new(w, h, 30, store).unwrap();
+    let rt = stage_runtime::runtime::Runtime::new(w, h, 30, store).unwrap();
     (rt, dir)
 }
 

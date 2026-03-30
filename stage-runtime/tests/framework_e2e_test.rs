@@ -15,7 +15,7 @@ use test_harness::*;
 
 /// Helper: evaluate JS and return the result value as a string.
 #[cfg(feature = "v8-runtime")]
-fn eval_str(rt: &mut dazzle_render::runtime::Runtime, js: &str) -> String {
+fn eval_str(rt: &mut stage_runtime::runtime::Runtime, js: &str) -> String {
     let val = rt.evaluate(js).unwrap();
     val["result"]["value"].as_str().unwrap_or("").to_string()
 }
@@ -38,7 +38,7 @@ fn threejs_pattern_lit_cube() {
     }
     // Try to check for GPU — if this panics/aborts, the test runner dies.
     // On machines where this is known to fail, set DAZZLE_SKIP_GPU_TESTS=1.
-    if !dazzle_render::webgl2::gpu_available() {
+    if !stage_runtime::webgl2::gpu_available() {
         eprintln!("  Skipping threejs_pattern_lit_cube: no GPU adapter");
         return;
     }
@@ -554,7 +554,7 @@ fn analyser_node_produces_fft_data() {
 
 #[test]
 fn z_index_stacking_order() {
-    use dazzle_render::htmlcss;
+    use stage_runtime::htmlcss;
     // Red (z-index: 1) is FIRST in DOM but green (z-index: 0) is SECOND.
     // Without z-index, green would paint on top of red.
     // With z-index, red should be on top.

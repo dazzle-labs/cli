@@ -455,7 +455,7 @@ fn paint_node_inner(node: &LayoutNode, pixmap: &mut Pixmap, depth: u32, overflow
         && node.style.border_top_style == node.style.border_right_style
         && node.style.border_right_style == node.style.border_bottom_style
         && node.style.border_bottom_style == node.style.border_left_style;
-    let has_radius = radii.iter().any(|(rx, ry)| *rx > 0.0 || *ry > 0.0);
+    let _has_radius = radii.iter().any(|(rx, ry)| *rx > 0.0 || *ry > 0.0);
     if bt > 0.0 || br > 0.0 || bb > 0.0 || bl > 0.0 {
         if uniform_border {
             // Use paint_border for all uniform-border cases (handles radius and all styles correctly)
@@ -1675,7 +1675,7 @@ fn box_blur_rgba(data: &mut [u8], w: usize, h: usize, radius: usize) {
                 sum += data[off + i as usize * 4 + ch] as i64;
             }
             // Edge pixels are repeated (clamp mode)
-            for i in 1..=r {
+            for _i in 1..=r {
                 sum += data[off + ch] as i64; // clamp left edge
             }
 
@@ -1697,7 +1697,7 @@ fn box_blur_rgba(data: &mut [u8], w: usize, h: usize, radius: usize) {
             for i in 0..=r.min(h as i64 - 1) {
                 sum += tmp[i as usize * w * 4 + col * 4 + ch] as i64;
             }
-            for i in 1..=r {
+            for _i in 1..=r {
                 sum += tmp[col * 4 + ch] as i64; // clamp top edge
             }
             for row in 0..h {

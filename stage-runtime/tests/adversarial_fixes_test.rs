@@ -11,7 +11,7 @@ mod test_harness;
 // ============================================================================
 
 mod ssrf {
-    use dazzle_render::content::resolve_and_check_url;
+    use stage_runtime::content::resolve_and_check_url;
 
     #[test]
     fn blocks_localhost() {
@@ -63,13 +63,13 @@ mod ssrf {
 
     #[test]
     fn blocks_file_scheme() {
-        let result = dazzle_render::content::fetch_url("file:///etc/passwd");
+        let result = stage_runtime::content::fetch_url("file:///etc/passwd");
         assert!(result.is_err(), "should reject file:// scheme");
     }
 
     #[test]
     fn blocks_unsupported_scheme() {
-        let result = dazzle_render::content::fetch_url("ftp://example.com/");
+        let result = stage_runtime::content::fetch_url("ftp://example.com/");
         assert!(result.is_err(), "should reject ftp:// scheme");
     }
 }
@@ -79,7 +79,7 @@ mod ssrf {
 // ============================================================================
 
 mod integer_overflow {
-    use dazzle_render::canvas2d::Canvas2D;
+    use stage_runtime::canvas2d::Canvas2D;
 
     #[test]
     fn get_image_data_rejects_overflow_dimensions() {
@@ -110,8 +110,8 @@ mod integer_overflow {
 // ============================================================================
 
 mod dimension_caps {
-    use dazzle_render::canvas2d::Canvas2D;
-    use dazzle_render::content::decode_image;
+    use stage_runtime::canvas2d::Canvas2D;
+    use stage_runtime::content::decode_image;
     use serde_json::json;
 
     #[test]
@@ -130,7 +130,7 @@ mod dimension_caps {
 
     #[test]
     fn webgl2_rejects_oversized_texture() {
-        let mut gl = dazzle_render::webgl2::WebGL2::new(64, 64);
+        let mut gl = stage_runtime::webgl2::WebGL2::new(64, 64);
         // Create and bind a texture, then attempt texImage2D with huge dimensions.
         // The tex_image_2d_raw path is used by native callbacks, so test it directly.
         let cmds = json!([
@@ -271,7 +271,7 @@ mod inject_event {
 // ============================================================================
 
 mod css_nesting {
-    use dazzle_render::htmlcss;
+    use stage_runtime::htmlcss;
 
     #[test]
     fn at_media_does_not_corrupt_subsequent_rules() {
@@ -319,7 +319,7 @@ mod ref_map {
 
     #[test]
     fn ref_map_cleared_on_take_frame_dirty() {
-        let mut gl = dazzle_render::webgl2::WebGL2::new(64, 64);
+        let mut gl = stage_runtime::webgl2::WebGL2::new(64, 64);
         // Create several objects (each inserts into ref_map)
         let cmds = json!([
             ["createBuffer", "__ret_b1"],
@@ -345,7 +345,7 @@ mod alloc_id {
 
     #[test]
     fn many_allocations_do_not_panic() {
-        let mut gl = dazzle_render::webgl2::WebGL2::new(64, 64);
+        let mut gl = stage_runtime::webgl2::WebGL2::new(64, 64);
         // Allocate many objects — should not panic even with wrapping
         for i in 0..1000 {
             let cmds = json!([

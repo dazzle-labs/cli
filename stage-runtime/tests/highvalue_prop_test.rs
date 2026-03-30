@@ -12,14 +12,14 @@
 //! 9. Text glyph rasterization — bounds, negative coords, alpha compositing
 //! 10. HTML script extraction — malformed tags, nested scripts, edge cases
 
-use dazzle_render::canvas2d::state::parse_color;
-use dazzle_render::content::loader::{
+use stage_runtime::canvas2d::state::parse_color;
+use stage_runtime::content::loader::{
     safe_content_path_pub, url_to_content_path, extract_link_stylesheets,
 };
-use dazzle_render::htmlcss::style::{
+use stage_runtime::htmlcss::style::{
     apply_declaration, ComputedStyle, Viewport, parse_css_rules,
 };
-use dazzle_render::canvas2d::text::{measure_text_full, box_blur_rgba};
+use stage_runtime::canvas2d::text::{measure_text_full, box_blur_rgba};
 use proptest::prelude::*;
 use tiny_skia::Pixmap;
 

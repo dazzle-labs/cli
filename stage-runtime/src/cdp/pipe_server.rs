@@ -9,7 +9,7 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
-use crate::storage::Storage;
+use stage_runtime::storage::Storage;
 
 pub const TARGET_ID: &str = "stage-runtime-page-target";
 pub const SESSION_ID: &str = "stage-runtime-session-1";
@@ -20,7 +20,7 @@ const MAX_MESSAGE_SIZE: usize = 1 * 1024 * 1024; // 1MB hard limit per message
 // V8-based CDP server
 // ============================================================================
 
-use crate::runtime::{self, FramePacer, RendererState};
+use stage_runtime::runtime::{self, FramePacer, RendererState};
 
 /// Serve the CDP pipe protocol (V8 runtime). Blocks forever.
 ///
@@ -149,7 +149,7 @@ fn open_pipes(cdp_pipe_in: &Path, cdp_pipe_out: &Path) -> Result<(mpsc::Receiver
 }
 
 /// Emit console log entries as CDP Runtime.consoleAPICalled events.
-fn emit_console_entries(entries: &[crate::runtime_common::ConsoleEntry], out: &mut File) {
+fn emit_console_entries(entries: &[stage_runtime::runtime_common::ConsoleEntry], out: &mut File) {
     for entry in entries {
         let event = json!({
             "method": "Runtime.consoleAPICalled",

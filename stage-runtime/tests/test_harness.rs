@@ -7,13 +7,13 @@
 use std::sync::{Arc, Mutex};
 
 /// Create a Runtime with the given dimensions at 30fps.
-pub fn make_runtime(w: u32, h: u32) -> dazzle_render::runtime::Runtime {
+pub fn make_runtime(w: u32, h: u32) -> stage_runtime::runtime::Runtime {
     let dir = tempfile::tempdir().unwrap();
     let dir = Box::leak(Box::new(dir));
     let store = Arc::new(Mutex::new(
-        dazzle_render::storage::Storage::new(&dir.path().join("storage.json")).unwrap(),
+        stage_runtime::storage::Storage::new(&dir.path().join("storage.json")).unwrap(),
     ));
-    dazzle_render::runtime::Runtime::new(w, h, 30, store).unwrap()
+    stage_runtime::runtime::Runtime::new(w, h, 30, store).unwrap()
 }
 
 /// Get pixel RGBA at (x, y) from a framebuffer.

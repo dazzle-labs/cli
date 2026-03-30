@@ -98,7 +98,7 @@ impl AudioGraph {
     pub fn render_frame(&mut self) -> Vec<f32> {
         // Commit pending commands for this frame
         let cmds = std::mem::take(&mut self.pending_cmds);
-        let has_cmds = !cmds.is_empty();
+        let _has_cmds = !cmds.is_empty();
         self.per_frame_cmds.push(cmds);
 
         // Fast path: no audio commands have ever been received → return cached silence.

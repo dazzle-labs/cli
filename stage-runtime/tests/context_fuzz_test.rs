@@ -1,7 +1,7 @@
 //! Property-based fuzz tests for the WebGL2 context public API.
 //! Tests: WebGL2::new(), process_commands(), read_pixels().
 
-use dazzle_render::webgl2::WebGL2;
+use stage_runtime::webgl2::WebGL2;
 use proptest::prelude::*;
 use serde_json::json;
 

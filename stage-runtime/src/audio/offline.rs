@@ -247,7 +247,7 @@ fn chrome_periodic_wave(
     // This is sufficient for accurate waveform reproduction (Chrome typically uses ~1000)
     const MAX_PERIODIC_WAVE_HARMONICS: usize = 8192;
     let n = max_harmonics.min(MAX_PERIODIC_WAVE_HARMONICS);
-    let mut real = vec![0.0f32; n + 1];
+    let real = vec![0.0f32; n + 1];
     let mut imag = vec![0.0f32; n + 1];
 
     match waveform {

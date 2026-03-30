@@ -80,7 +80,7 @@ fn run_scene(name: &str) {
     let (rw, rh, ref_px) = load_png(&ref_path);
     assert_eq!((rw, rh), (w, h), "reference size mismatch for {}", name);
 
-    let mut canvas = dazzle_render::canvas2d::Canvas2D::new(w, h);
+    let mut canvas = stage_runtime::canvas2d::Canvas2D::new(w, h);
     canvas.process_commands(cmds);
     let mut rendered = vec![0u8; (w * h * 4) as usize];
     canvas.read_pixels(&mut rendered);

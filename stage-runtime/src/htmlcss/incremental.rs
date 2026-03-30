@@ -4,7 +4,6 @@
 //! Phase 1: only inline style mutations (el.style.X = Y) are handled incrementally.
 //! Structural changes (appendChild/removeChild) fall back to full re-render.
 
-use std::collections::HashMap;
 use tiny_skia::Pixmap;
 
 use super::layout::LayoutNode;

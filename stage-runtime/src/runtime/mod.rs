@@ -54,7 +54,7 @@ const JS_EXECUTION_TIMEOUT_SECS: u64 = 5;
 /// The watchdog thread sleeps until `arm()` is called; `disarm()` cancels.
 pub struct ExecutionWatchdog {
     armed: Arc<AtomicBool>,
-    isolate_handle: v8::IsolateHandle,
+    _isolate_handle: v8::IsolateHandle,
     notify: Arc<(std::sync::Mutex<bool>, std::sync::Condvar)>,
 }
 
@@ -94,7 +94,7 @@ impl ExecutionWatchdog {
             }
         }).expect("failed to spawn watchdog thread");
 
-        Self { armed, isolate_handle, notify }
+        Self { armed, _isolate_handle: isolate_handle, notify }
     }
 
     /// Arm the watchdog. If not disarmed within the timeout, V8 execution is terminated.
@@ -1135,8 +1135,6 @@ fn drain_websocket_requests(scope: &mut v8::PinScope, state: &mut RendererState)
         id: u32,
         url: String,
         data: String,
-        code: u16,
-        reason: String,
     }
 
     let mut requests = Vec::new();
@@ -1169,21 +1167,7 @@ fn drain_websocket_requests(scope: &mut v8::PinScope, state: &mut RendererState)
                 .map(|s| s.to_rust_string_lossy(scope))
                 .unwrap_or_default()
         };
-        let code = {
-            let k = v8::String::new(scope, "code").unwrap();
-            obj.get(scope, k.into())
-                .and_then(|v| v.uint32_value(scope))
-                .unwrap_or(1000) as u16
-        };
-        let reason = {
-            let k = v8::String::new(scope, "reason").unwrap();
-            obj.get(scope, k.into())
-                .and_then(|v| v.to_string(scope))
-                .map(|s| s.to_rust_string_lossy(scope))
-                .unwrap_or_default()
-        };
-
-        requests.push(WsRequest { req_type, id, url, data, code, reason });
+        requests.push(WsRequest { req_type, id, url, data });
     }
 
     // Clear the array

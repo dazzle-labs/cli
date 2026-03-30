@@ -12,7 +12,7 @@ mod test_harness;
 use test_harness::*;
 
 /// Helper: evaluate JS and return the result value as a string.
-fn eval_str(rt: &mut dazzle_render::runtime::Runtime, js: &str) -> String {
+fn eval_str(rt: &mut stage_runtime::runtime::Runtime, js: &str) -> String {
     let val = rt.evaluate(js).unwrap();
     val["result"]["value"].as_str().unwrap_or("").to_string()
 }
@@ -24,7 +24,7 @@ fn eval_str(rt: &mut dazzle_render::runtime::Runtime, js: &str) -> String {
 #[test]
 fn html_transform_rotate_renders() {
     // Test via htmlcss directly (the unit-test path that works)
-    use dazzle_render::htmlcss;
+    use stage_runtime::htmlcss;
     let html = r#"<!DOCTYPE html>
     <html><head><style>
         body { margin: 0; background: #000; }
@@ -46,7 +46,7 @@ fn html_transform_rotate_renders() {
 
 #[test]
 fn html_transform_scale_renders() {
-    use dazzle_render::htmlcss;
+    use stage_runtime::htmlcss;
     let html = r#"<!DOCTYPE html>
     <html><head><style>
         body { margin: 0; background: #000; }
@@ -99,7 +99,7 @@ fn svg_image_decode() {
         <rect width="64" height="64" fill="red"/>
     </svg>"#;
 
-    let decoded = dazzle_render::content::decode_image(svg).unwrap();
+    let decoded = stage_runtime::content::decode_image(svg).unwrap();
     assert_eq!(decoded.width, 64);
     assert_eq!(decoded.height, 64);
     assert!(decoded.rgba[0] > 200, "R should be high");
@@ -115,7 +115,7 @@ fn svg_with_xml_declaration_decodes() {
         <circle cx="16" cy="16" r="16" fill="blue"/>
     </svg>"#;
 
-    let decoded = dazzle_render::content::decode_image(svg).unwrap();
+    let decoded = stage_runtime::content::decode_image(svg).unwrap();
     assert_eq!(decoded.width, 32);
     assert_eq!(decoded.height, 32);
 }
@@ -129,7 +129,7 @@ fn non_svg_still_decodes() {
         pixmap.encode_png().unwrap()
     };
 
-    let decoded = dazzle_render::content::decode_image(&png_data).unwrap();
+    let decoded = stage_runtime::content::decode_image(&png_data).unwrap();
     assert_eq!(decoded.width, 1);
     assert_eq!(decoded.height, 1);
 }
@@ -147,7 +147,7 @@ fn local_script_src_still_works() {
         r#"<html><body><script src="lib.js"></script></body></html>"#,
     ).unwrap();
 
-    let (_, js) = dazzle_render::content::load_content_with_html(dir.path()).unwrap();
+    let (_, js) = stage_runtime::content::load_content_with_html(dir.path()).unwrap();
     assert!(js.contains("CDN_LOADED"), "Local script should be loaded");
 }
 
@@ -438,7 +438,7 @@ fn css_transition_e2e() {
 
 #[test]
 fn transform_css_parsing() {
-    use dazzle_render::htmlcss;
+    use stage_runtime::htmlcss;
 
     let html = r#"<!DOCTYPE html>
     <html><head><style>
@@ -464,7 +464,7 @@ fn transform_css_parsing() {
 
 #[test]
 fn css_var_basic() {
-    use dazzle_render::htmlcss;
+    use stage_runtime::htmlcss;
 
     let html = r#"<!DOCTYPE html>
     <html><head><style>
@@ -486,7 +486,7 @@ fn css_var_basic() {
 
 #[test]
 fn css_var_with_fallback() {
-    use dazzle_render::htmlcss;
+    use stage_runtime::htmlcss;
 
     let html = r#"<!DOCTYPE html>
     <html><head><style>
@@ -506,7 +506,7 @@ fn css_var_with_fallback() {
 
 #[test]
 fn css_var_inheritance() {
-    use dazzle_render::htmlcss;
+    use stage_runtime::htmlcss;
 
     let html = r#"<!DOCTYPE html>
     <html><head><style>
@@ -530,7 +530,7 @@ fn css_var_inheritance() {
 
 #[test]
 fn css_calc_width() {
-    use dazzle_render::htmlcss;
+    use stage_runtime::htmlcss;
 
     // calc(64px - 20px) = 44px wide box
     let html = r#"<!DOCTYPE html>
@@ -560,7 +560,7 @@ fn css_calc_width() {
 
 #[test]
 fn backdrop_filter_blur_applied() {
-    use dazzle_render::htmlcss;
+    use stage_runtime::htmlcss;
 
     let html = r#"<!DOCTYPE html>
     <html><head><style>
@@ -593,7 +593,7 @@ fn backdrop_filter_blur_applied() {
 
 #[test]
 fn box_shadow_renders() {
-    use dazzle_render::htmlcss;
+    use stage_runtime::htmlcss;
 
     let html = r#"<!DOCTYPE html>
     <html><head><style>
@@ -722,7 +722,7 @@ fn worker_message_round_trip() {
 
 #[test]
 fn link_stylesheet_local() {
-    use dazzle_render::htmlcss;
+    use stage_runtime::htmlcss;
 
     let dir = tempfile::tempdir().unwrap();
     std::fs::write(dir.path().join("style.css"), ".box { width: 32px; height: 32px; background: #00ff00; }").unwrap();
@@ -1702,8 +1702,8 @@ fn dom_style_mutation_updates_framebuffer() {
 // ===========================================================================
 
 /// Helper: create a Runtime with a specific storage path (not leaked tempdir).
-fn make_runtime_with_storage(w: u32, h: u32, store: std::sync::Arc<std::sync::Mutex<dazzle_render::storage::Storage>>) -> dazzle_render::runtime::Runtime {
-    dazzle_render::runtime::Runtime::new(w, h, 30, store).unwrap()
+fn make_runtime_with_storage(w: u32, h: u32, store: std::sync::Arc<std::sync::Mutex<stage_runtime::storage::Storage>>) -> stage_runtime::runtime::Runtime {
+    stage_runtime::runtime::Runtime::new(w, h, 30, store).unwrap()
 }
 
 #[test]
@@ -1711,7 +1711,7 @@ fn localstorage_setitem_syncs_to_rust_storage() {
     let dir = tempfile::tempdir().unwrap();
     let store_path = dir.path().join("storage.json");
     let store = std::sync::Arc::new(std::sync::Mutex::new(
-        dazzle_render::storage::Storage::new(&store_path).unwrap(),
+        stage_runtime::storage::Storage::new(&store_path).unwrap(),
     ));
     let mut rt = make_runtime_with_storage(64, 64, store.clone());
 
@@ -1738,7 +1738,7 @@ fn localstorage_survives_restart() {
     // Session 1: write data
     {
         let store = std::sync::Arc::new(std::sync::Mutex::new(
-            dazzle_render::storage::Storage::new(&store_path).unwrap(),
+            stage_runtime::storage::Storage::new(&store_path).unwrap(),
         ));
         let mut rt = make_runtime_with_storage(64, 64, store.clone());
         rt.evaluate("localStorage.setItem('name', 'dazzle')").unwrap();
@@ -1749,7 +1749,7 @@ fn localstorage_survives_restart() {
     // Session 2: read data back
     {
         let store = std::sync::Arc::new(std::sync::Mutex::new(
-            dazzle_render::storage::Storage::new(&store_path).unwrap(),
+            stage_runtime::storage::Storage::new(&store_path).unwrap(),
         ));
         let mut rt = make_runtime_with_storage(64, 64, store);
         let val = eval_str(&mut rt, "localStorage.getItem('name')");
@@ -1762,7 +1762,7 @@ fn indexeddb_persists_via_localstorage() {
     let dir = tempfile::tempdir().unwrap();
     let store_path = dir.path().join("storage.json");
     let store = std::sync::Arc::new(std::sync::Mutex::new(
-        dazzle_render::storage::Storage::new(&store_path).unwrap(),
+        stage_runtime::storage::Storage::new(&store_path).unwrap(),
     ));
     let mut rt = make_runtime_with_storage(64, 64, store.clone());
 
@@ -1779,7 +1779,7 @@ fn localstorage_and_dazzle_storage_isolated() {
     let dir = tempfile::tempdir().unwrap();
     let store_path = dir.path().join("storage.json");
     let store = std::sync::Arc::new(std::sync::Mutex::new(
-        dazzle_render::storage::Storage::new(&store_path).unwrap(),
+        stage_runtime::storage::Storage::new(&store_path).unwrap(),
     ));
     let mut rt = make_runtime_with_storage(64, 64, store.clone());
 
@@ -2101,7 +2101,7 @@ fn inline_svg_renders_colored_rect_htmlcss() {
     // Test SVG rendering via htmlcss directly.
     // The SVG element needs explicit CSS dimensions since the layout engine
     // may not infer size from SVG width/height attributes.
-    use dazzle_render::htmlcss;
+    use stage_runtime::htmlcss;
     let html = r##"<!DOCTYPE html><html><head><style>body{margin:0;background:#000;} svg{display:block;width:64px;height:64px;}</style></head><body><svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect x="0" y="0" width="64" height="64" fill="#ff0000"/></svg></body></html>"##;
 
     let mut pixmap = tiny_skia::Pixmap::new(64, 64).unwrap();
@@ -2341,7 +2341,7 @@ fn indexeddb_persistence_across_restarts() {
     // Session 1: write data
     {
         let store = std::sync::Arc::new(std::sync::Mutex::new(
-            dazzle_render::storage::Storage::new(&store_path).unwrap(),
+            stage_runtime::storage::Storage::new(&store_path).unwrap(),
         ));
         let mut rt = make_runtime_with_storage(64, 64, store.clone());
 
@@ -2369,7 +2369,7 @@ fn indexeddb_persistence_across_restarts() {
     // Session 2: read data back from fresh runtime with same storage
     {
         let store = std::sync::Arc::new(std::sync::Mutex::new(
-            dazzle_render::storage::Storage::new(&store_path).unwrap(),
+            stage_runtime::storage::Storage::new(&store_path).unwrap(),
         ));
         let mut rt = make_runtime_with_storage(64, 64, store);
 
@@ -2487,7 +2487,7 @@ fn indexeddb_version_upgrade() {
 /// CSS child combinator (>) renders correctly
 #[test]
 fn css_child_combinator_renders() {
-    use dazzle_render::htmlcss;
+    use stage_runtime::htmlcss;
     let html = r#"<!DOCTYPE html>
     <html><head><style>
         body { margin: 0; background: #000; }
@@ -2515,7 +2515,7 @@ fn css_child_combinator_renders() {
 /// CSS child combinator (>) does NOT match grandchildren
 #[test]
 fn css_child_combinator_skips_grandchild() {
-    use dazzle_render::htmlcss;
+    use stage_runtime::htmlcss;
     let html = r#"<!DOCTYPE html>
     <html><head><style>
         body { margin: 0; background: #000; }
@@ -2540,7 +2540,7 @@ fn css_child_combinator_skips_grandchild() {
 /// CSS adjacent sibling combinator (+)
 #[test]
 fn css_adjacent_sibling_renders() {
-    use dazzle_render::htmlcss;
+    use stage_runtime::htmlcss;
     let html = r#"<!DOCTYPE html>
     <html><head><style>
         body { margin: 0; background: #000; }
@@ -2567,7 +2567,7 @@ fn css_adjacent_sibling_renders() {
 /// CSS general sibling combinator (~)
 #[test]
 fn css_general_sibling_renders() {
-    use dazzle_render::htmlcss;
+    use stage_runtime::htmlcss;
     let html = r#"<!DOCTYPE html>
     <html><head><style>
         body { margin: 0; background: #000; }
@@ -2592,7 +2592,7 @@ fn css_general_sibling_renders() {
 /// CSS attribute selector [data-x="y"]
 #[test]
 fn css_attribute_selector_renders() {
-    use dazzle_render::htmlcss;
+    use stage_runtime::htmlcss;
     let html = r#"<!DOCTYPE html>
     <html><head><style>
         body { margin: 0; background: #000; }
@@ -2618,7 +2618,7 @@ fn css_attribute_selector_renders() {
 /// CSS attribute existence selector [disabled]
 #[test]
 fn css_attribute_existence_selector() {
-    use dazzle_render::htmlcss;
+    use stage_runtime::htmlcss;
     let html = r#"<!DOCTYPE html>
     <html><head><style>
         body { margin: 0; background: #000; }
@@ -2641,7 +2641,7 @@ fn css_attribute_existence_selector() {
 /// Multiple box-shadow rendering
 #[test]
 fn css_multiple_box_shadows() {
-    use dazzle_render::htmlcss;
+    use stage_runtime::htmlcss;
     let html = r#"<!DOCTYPE html>
     <html><head><style>
         body { margin: 0; background: #000; }
@@ -2872,7 +2872,7 @@ fn tonejs_dom_api_compat() {
 /// CSS attribute prefix selector [attr^="val"]
 #[test]
 fn css_attribute_prefix_selector() {
-    use dazzle_render::htmlcss;
+    use stage_runtime::htmlcss;
     let html = r#"<!DOCTYPE html>
     <html><head><style>
         body { margin: 0; background: #000; }

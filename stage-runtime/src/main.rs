@@ -1,18 +1,10 @@
-mod audio;
-mod canvas2d;
 mod cdp;
-mod limits;
-mod htmlcss;
 #[allow(clippy::module_inception)]
 mod compositor;
-mod content;
-mod encoder;
-mod runtime_common;
-mod runtime;
 #[allow(clippy::module_inception)]
 mod stats;
-mod storage;
-mod webgl2;
+
+use stage_runtime as lib;
 
 use anyhow::Result;
 use clap::Parser;
@@ -95,7 +87,7 @@ fn main() -> Result<()> {
 
 fn main_v8(args: Args) -> Result<()> {
     // Initialize V8 platform
-    runtime::init_v8();
+    lib::runtime::init_v8();
 
     // Create V8 isolate and scopes — all in main() to match v8 scope lifetime requirements
     let params = v8::CreateParams::default()
@@ -113,10 +105,10 @@ fn main_v8(args: Args) -> Result<()> {
 
     // Initialize persistent storage (after V8 scopes to avoid drop ordering issues)
     let storage_path = args.data_dir.join("storage.json");
-    let store = Arc::new(Mutex::new(storage::Storage::new(&storage_path)?));
+    let store = Arc::new(Mutex::new(lib::storage::Storage::new(&storage_path)?));
 
     // Create renderer state
-    let mut state = runtime::RendererState::with_codec(
+    let mut state = lib::runtime::RendererState::with_codec(
         args.width,
         args.height,
         args.fps,
@@ -132,20 +124,20 @@ fn main_v8(args: Args) -> Result<()> {
     state.set_watchdog(isolate_handle);
 
     // Initialize polyfills and browser globals
-    runtime::init_globals(&mut scope, &mut state)?;
+    lib::runtime::init_globals(&mut scope, &mut state)?;
 
     // Register native V8 callbacks (pointer-based — state must not move after this)
-    runtime::register_native_callbacks(&mut scope, &mut state);
-    runtime::freeze_late_native_callbacks(&mut scope);
+    lib::runtime::register_native_callbacks(&mut scope, &mut state);
+    lib::runtime::freeze_late_native_callbacks(&mut scope);
 
     // Load initial content
     if args.content_dir.exists() {
-        let (html, js) = content::load_content_with_html(&args.content_dir)?;
+        let (html, js) = lib::content::load_content_with_html(&args.content_dir)?;
         if let Some(ref html_str) = html {
             state.render_html_background_with_dir(html_str, &args.content_dir);
         }
         if !js.is_empty() {
-            runtime::eval_script(&mut scope, "<content>", &js)?;
+            lib::runtime::eval_script(&mut scope, "<content>", &js)?;
         }
     }
 

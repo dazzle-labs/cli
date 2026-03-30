@@ -7,7 +7,7 @@
 //! Generate reference data: cd tests/audio_fixtures && node generate_reference.cjs
 //! Run: cargo test --test audio_reference_test
 
-use dazzle_render::audio::AudioGraph;
+use stage_runtime::audio::AudioGraph;
 use serde_json::{json, Value};
 use std::path::Path;
 

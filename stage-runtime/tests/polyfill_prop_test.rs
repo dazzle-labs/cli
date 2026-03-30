@@ -1339,7 +1339,7 @@ proptest! {
         ],
         n_enables in 1usize..5,
     ) {
-        let mut gl = dazzle_render::webgl2::WebGL2::new(4, 4);
+        let mut gl = stage_runtime::webgl2::WebGL2::new(4, 4);
         // Enable N times (idempotent)
         for _ in 0..n_enables {
             gl.process_commands(&json!([["enable", cap]]));
@@ -1360,7 +1360,7 @@ proptest! {
     fn prop_webgl_program_no_shaders(
         n_programs in 1usize..5,
     ) {
-        let mut gl = dazzle_render::webgl2::WebGL2::new(4, 4);
+        let mut gl = stage_runtime::webgl2::WebGL2::new(4, 4);
         for _ in 0..n_programs {
             gl.process_commands(&json!([
                 ["createProgram", "__ret_prog"],
@@ -1377,7 +1377,7 @@ proptest! {
         pname in any::<u32>(),
         param in any::<u32>(),
     ) {
-        let mut gl = dazzle_render::webgl2::WebGL2::new(4, 4);
+        let mut gl = stage_runtime::webgl2::WebGL2::new(4, 4);
         gl.process_commands(&json!([
             ["createTexture", "__ret_tex"],
             ["bindTexture", 0x0DE1, 1],
@@ -1490,7 +1490,7 @@ proptest! {
 
 // ── AudioParam Scheduling ───────────────────────────────────────────────
 
-use dazzle_render::audio::offline::render_offline;
+use stage_runtime::audio::offline::render_offline;
 
 const AUDIO_SAMPLE_RATE: u32 = 44100;
 const AUDIO_FPS: u32 = 30;
@@ -1796,7 +1796,7 @@ proptest! {
     fn prop_css_var_fallback_resolves(
         fallback in css_value(),
     ) {
-        use dazzle_render::htmlcss;
+        use stage_runtime::htmlcss;
         let html = format!(r#"<!DOCTYPE html>
         <html><head><style>
             body {{ margin: 0; background: #000; }}
@@ -1816,7 +1816,7 @@ proptest! {
         name in css_var_name(),
         value in css_value(),
     ) {
-        use dazzle_render::htmlcss;
+        use stage_runtime::htmlcss;
         let html = format!(r#"<!DOCTYPE html>
         <html><head><style>
             :root {{ {}: {}; }}
@@ -1836,7 +1836,7 @@ proptest! {
     fn prop_css_var_nested_no_panic(
         val in css_value(),
     ) {
-        use dazzle_render::htmlcss;
+        use stage_runtime::htmlcss;
         let html = format!(r#"<!DOCTYPE html>
         <html><head><style>
             :root {{ --a: {}; --b: var(--a); --c: var(--b); }}
@@ -1875,7 +1875,7 @@ proptest! {
     fn prop_css_calc_no_panic(
         expr in calc_expr(),
     ) {
-        use dazzle_render::htmlcss;
+        use stage_runtime::htmlcss;
         let html = format!(r#"<!DOCTYPE html>
         <html><head><style>
             body {{ margin: 0; background: #000; }}
@@ -1894,7 +1894,7 @@ proptest! {
         a in 5.0f64..50.0,
         b in 5.0f64..50.0,
     ) {
-        use dazzle_render::htmlcss;
+        use stage_runtime::htmlcss;
         let html = format!(r#"<!DOCTYPE html>
         <html><head><style>
             body {{ margin: 0; background: #000; }}
@@ -1931,7 +1931,7 @@ proptest! {
     fn prop_backdrop_filter_blur_no_panic(
         blur in 0.0f64..100.0,
     ) {
-        use dazzle_render::htmlcss;
+        use stage_runtime::htmlcss;
         let html = format!(r#"<!DOCTYPE html>
         <html><head><style>
             body {{ margin: 0; background: #ff0000; }}
@@ -1970,7 +1970,7 @@ proptest! {
         b in 0u8..=255,
         a_pct in 0.0f64..1.0,
     ) {
-        use dazzle_render::htmlcss;
+        use stage_runtime::htmlcss;
         let html = format!(r#"<!DOCTYPE html>
         <html><head><style>
             body {{ margin: 0; background: #000; }}
@@ -1994,7 +1994,7 @@ proptest! {
         count in 1usize..5,
         blur in 0.0f64..20.0,
     ) {
-        use dazzle_render::htmlcss;
+        use stage_runtime::htmlcss;
         let shadows: Vec<String> = (0..count).map(|i| {
             format!("{}px {}px {}px rgba(255,0,0,0.5)", i * 2, i * 2, blur)
         }).collect();
@@ -2141,7 +2141,7 @@ proptest! {
     fn prop_link_stylesheet_missing_no_panic(
         href in "[a-z]{1,10}\\.css",
     ) {
-        use dazzle_render::htmlcss;
+        use stage_runtime::htmlcss;
         let dir = tempfile::tempdir().unwrap();
 
         let html = format!(r#"<!DOCTYPE html>
@@ -2161,7 +2161,7 @@ proptest! {
     fn prop_linked_css_random_values_no_panic(
         prop_val in "[a-z\\-]{1,15}: [a-z0-9#%()., ]{1,30}",
     ) {
-        use dazzle_render::htmlcss;
+        use stage_runtime::htmlcss;
         let dir = tempfile::tempdir().unwrap();
 
         let css = format!(".test {{ {}; }}", prop_val);
@@ -2232,7 +2232,7 @@ fn serialize_dom_includes_attrs() {
 
 #[test]
 fn extract_scripts_survives_deep_nesting() {
-    use dazzle_render::htmlcss;
+    use stage_runtime::htmlcss;
     let open: String = (0..100).map(|_| "<div>").collect();
     let close: String = (0..100).map(|_| "</div>").collect();
     let html = format!("<html><body>{}{}</body></html>", open, close);
@@ -2242,7 +2242,7 @@ fn extract_scripts_survives_deep_nesting() {
 
 #[test]
 fn render_html_survives_deep_nesting() {
-    use dazzle_render::htmlcss;
+    use stage_runtime::htmlcss;
     let open: String = (0..100).map(|_| "<div>").collect();
     let close: String = (0..100).map(|_| "</div>").collect();
     let html = format!("<html><body>{}{}</body></html>", open, close);
@@ -2252,7 +2252,7 @@ fn render_html_survives_deep_nesting() {
 
 #[test]
 fn offset_children_survives_deep_nesting() {
-    use dazzle_render::htmlcss;
+    use stage_runtime::htmlcss;
     let mut html = String::from("<html><body>");
     for i in 0..100 {
         html.push_str(&format!("<div style='transform:translate({}px,0)'>", i));

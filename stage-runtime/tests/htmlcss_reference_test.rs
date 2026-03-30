@@ -83,7 +83,7 @@ fn run_scene(name: &str) {
 
     // Render through our HTML/CSS pipeline
     let mut pixmap = tiny_skia::Pixmap::new(w, h).unwrap();
-    dazzle_render::htmlcss::render_html(html, &mut pixmap);
+    stage_runtime::htmlcss::render_html(html, &mut pixmap);
 
     // Convert premultiplied RGBA to straight RGBA for comparison.
     // Chrome screenshots are straight RGBA; tiny-skia uses premultiplied internally.
@@ -291,7 +291,7 @@ ref_scenes! { ref:
 fn debug_container_style() {
     let html = r#"<!DOCTYPE html><html><head><style>body { margin: 0; background: #111; font-family: sans-serif; padding: 10px; } .container { line-height: 80px; background: #1a1a2e; } .box { display: inline-block; vertical-align: middle; background: #e94560; } .small { width: 20px; height: 20px; } .med { width: 30px; height: 40px; } .tall { width: 25px; height: 60px; }</style></head><body><div class="container"><span class="box small"></span><span class="box med"></span><span class="box tall"></span></div></body></html>"#;
     let mut pixmap = tiny_skia::Pixmap::new(256, 256).unwrap();
-    dazzle_render::htmlcss::render_html(html, &mut pixmap);
+    stage_runtime::htmlcss::render_html(html, &mut pixmap);
     let data = pixmap.data();
     // Scan column x=12 (inside container, inside small box region) for navy vs red
     eprintln!("Col x=12: (inside small box region horizontally)");

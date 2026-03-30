@@ -7,8 +7,8 @@
 //! 4. CSS parsing edge cases (dimensions, colors, gradients, shorthands)
 //! 5. Audio command processing (owned vs borrowed equivalence)
 
-use dazzle_render::webgl2::WebGL2;
-use dazzle_render::canvas2d::Canvas2D;
+use stage_runtime::webgl2::WebGL2;
+use stage_runtime::canvas2d::Canvas2D;
 use proptest::prelude::*;
 use serde_json::json;
 
@@ -345,7 +345,7 @@ proptest! {
             input, input, input, input
         );
         let mut pixmap = tiny_skia::Pixmap::new(200, 200).unwrap();
-        dazzle_render::htmlcss::render_html(&html, &mut pixmap);
+        stage_runtime::htmlcss::render_html(&html, &mut pixmap);
         // Should not panic — invalid values should be ignored
     }
 
@@ -356,7 +356,7 @@ proptest! {
             input, input,
         );
         let mut pixmap = tiny_skia::Pixmap::new(200, 200).unwrap();
-        dazzle_render::htmlcss::render_html(&html, &mut pixmap);
+        stage_runtime::htmlcss::render_html(&html, &mut pixmap);
     }
 
     #[test]
@@ -370,7 +370,7 @@ proptest! {
         let grad = format!("linear-gradient({} {} {}, {} {})", angle, color1, stop1, color2, stop2);
         let html = format!(r#"<div style="background: {}; width: 100px; height: 100px;">x</div>"#, grad);
         let mut pixmap = tiny_skia::Pixmap::new(200, 200).unwrap();
-        dazzle_render::htmlcss::render_html(&html, &mut pixmap);
+        stage_runtime::htmlcss::render_html(&html, &mut pixmap);
     }
 }
 
@@ -390,7 +390,7 @@ proptest! {
             shorthand, shorthand,
         );
         let mut pixmap = tiny_skia::Pixmap::new(200, 200).unwrap();
-        dazzle_render::htmlcss::render_html(&html, &mut pixmap);
+        stage_runtime::htmlcss::render_html(&html, &mut pixmap);
     }
 
     #[test]
@@ -405,7 +405,7 @@ proptest! {
             border,
         );
         let mut pixmap = tiny_skia::Pixmap::new(200, 200).unwrap();
-        dazzle_render::htmlcss::render_html(&html, &mut pixmap);
+        stage_runtime::htmlcss::render_html(&html, &mut pixmap);
     }
 }
 
@@ -416,7 +416,7 @@ fn css_grid_repeat_zero() {
         <div>a</div>
     </div>"#;
     let mut pixmap = tiny_skia::Pixmap::new(200, 200).unwrap();
-    dazzle_render::htmlcss::render_html(html, &mut pixmap);
+    stage_runtime::htmlcss::render_html(html, &mut pixmap);
 }
 
 #[test]
@@ -426,7 +426,7 @@ fn css_grid_repeat_huge() {
         <div>a</div>
     </div>"#;
     let mut pixmap = tiny_skia::Pixmap::new(200, 200).unwrap();
-    dazzle_render::htmlcss::render_html(html, &mut pixmap);
+    stage_runtime::htmlcss::render_html(html, &mut pixmap);
 }
 
 // =========================================================================
@@ -440,7 +440,7 @@ proptest! {
         gain in 0.0f64..1.0,
         n_frames in 1usize..10,
     ) {
-        use dazzle_render::audio::AudioGraph;
+        use stage_runtime::audio::AudioGraph;
 
         let cmds = vec![
             vec![json!("osc_start"), json!(1), json!("sine"), json!(freq), json!(0)],

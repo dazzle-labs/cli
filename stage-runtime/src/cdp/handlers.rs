@@ -4,9 +4,9 @@ use serde_json::{json, Value};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 
-use crate::content;
-use crate::runtime::{self, RendererState};
-use crate::storage::Storage;
+use stage_runtime::content;
+use stage_runtime::runtime::{self, RendererState};
+use stage_runtime::storage::Storage;
 
 use super::pipe_server::{TARGET_ID, SESSION_ID};
 
@@ -108,13 +108,13 @@ pub fn handle_command(
             }
 
             // For reload, re-load from current content_dir; for navigate, resolve URL to path
-            let (path, parent);
+            let nav_path;
+            let parent;
             if is_reload {
-                path = content_dir.to_path_buf();
                 parent = content_dir;
             } else {
-                path = content::url_to_content_path(url, content_dir);
-                parent = path.parent().unwrap_or(content_dir);
+                nav_path = content::url_to_content_path(url, content_dir);
+                parent = nav_path.parent().unwrap_or(content_dir);
             }
 
             // Clear JS state: timers, rAF, user globals, event listeners, log buffer.
@@ -202,7 +202,7 @@ pub fn handle_command(
             info!("CDP: StageRuntime.setOutputs: {} outputs", count);
 
             {
-                let dests: Vec<crate::encoder::OutputDest> = outputs
+                let dests: Vec<stage_runtime::encoder::OutputDest> = outputs
                     .map(|arr| arr.iter().filter_map(|o| {
                         let url = o.get("url")?.as_str()?;
                         // Only allow rtmp:// and rtmps:// output URLs to prevent
@@ -211,7 +211,7 @@ pub fn handle_command(
                             log::warn!("Blocked non-RTMP output URL: {}", url);
                             return None;
                         }
-                        Some(crate::encoder::OutputDest {
+                        Some(stage_runtime::encoder::OutputDest {
                             name: o.get("name")?.as_str()?.to_string(),
                             url: url.to_string(),
                             watermarked: o.get("watermarked").and_then(|v| v.as_bool()).unwrap_or(false),

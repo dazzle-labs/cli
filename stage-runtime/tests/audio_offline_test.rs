@@ -3,7 +3,7 @@
 //! Uses the same Chrome reference data as audio_reference_test.rs but renders via
 //! the web-audio-api crate's OfflineAudioContext for tighter Chrome alignment.
 
-use dazzle_render::audio::offline::render_offline;
+use stage_runtime::audio::offline::render_offline;
 use serde_json::{json, Value};
 use std::path::Path;
 

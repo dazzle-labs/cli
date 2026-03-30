@@ -795,7 +795,7 @@ impl WebGL2 {
     }
 
     /// Upload buffer data directly from a raw byte slice (zero-copy from TypedArray).
-    pub fn buffer_data_raw(&mut self, target: u32, data: &[u8], elem_size: usize, usage: u32) {
+    pub fn buffer_data_raw(&mut self, target: u32, data: &[u8], _elem_size: usize, usage: u32) {
         self.mark_dirty();
         if !Self::is_valid_buffer_target(target) {
             self.record_error(GL_INVALID_ENUM);
@@ -1794,7 +1794,7 @@ impl WebGL2 {
                     if let Some(prog) = self.programs.get(&prog_id) {
                         // Sorted for deterministic order across calls
                         let mut uniforms: Vec<_> = prog.uniform_locations.iter().collect();
-                        uniforms.sort_by_key(|(name, _)| name.clone());
+                        uniforms.sort_by_key(|(name, _)| (*name).clone());
                         if (index as usize) < uniforms.len() {
                             let (name, loc) = uniforms[index as usize];
                             let gl_type = prog.uniform_types.get(loc).copied().unwrap_or(GL_FLOAT);
@@ -3201,7 +3201,7 @@ impl WebGL2 {
             let pos_attrib_idx = attribs.iter().position(|(loc, _, _, _, _, _, _)| *loc == 0);
 
             if let Some(pos_idx) = pos_attrib_idx {
-                let (_loc, pos_size, _dtype, _norm, stride, pos_offset, _buf) = &attribs[pos_idx];
+                let (_loc, pos_size, _dtype, _norm, _stride, _pos_offset, _buf) = &attribs[pos_idx];
                 let pos_components = *pos_size as usize; // typically 2 or 3
 
                 // Expand each point into 4 vertices with offset positions

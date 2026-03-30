@@ -7,7 +7,7 @@ fn test_texture_shader() {
     let fs_glsl = "#version 300 es\nprecision mediump float;\nuniform sampler2D u_texture;\nin vec2 v_texcoord;\nout vec4 fragColor;\nvoid main() {\n    fragColor = texture(u_texture, v_texcoord);\n}";
 
     // Use our preprocessor
-    let (preprocessed, _) = dazzle_render::webgl2::preprocess_glsl(fs_glsl, naga::ShaderStage::Fragment);
+    let (preprocessed, _) = stage_runtime::webgl2::preprocess_glsl(fs_glsl, naga::ShaderStage::Fragment);
     eprintln!("=== Preprocessed GLSL ===\n{}", &preprocessed);
 
     let mut parser = glsl::Frontend::default();

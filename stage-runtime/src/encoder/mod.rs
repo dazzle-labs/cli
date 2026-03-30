@@ -159,23 +159,20 @@ impl Drop for Encoder {
 
 /// Resolve the video codec name: if "auto", pick the best HW encoder for this platform.
 fn resolve_video_codec(requested: &str) -> String {
-    use ffmpeg_next::encoder;
-
     if requested != "auto" {
         return requested.to_string();
     }
 
-    // Try platform-specific HW encoders, fall back to libx264
-    let candidates = if cfg!(target_os = "macos") {
-        &["h264_videotoolbox", "libx264"][..]
-    } else {
-        &["h264_nvenc", "libx264"][..]
-    };
-
-    for &name in candidates {
-        if encoder::find_by_name(name).is_some() {
-            return name.to_string();
+    // Check VIDEO_CODEC env var (set by control-plane via STREAMER_VIDEO_CODEC)
+    if let Ok(codec) = std::env::var("VIDEO_CODEC") {
+        if !codec.is_empty() {
+            return codec;
         }
+    }
+
+    // Auto-detect: use NVENC if any NVIDIA GPU is present
+    if (0..8).any(|i| std::path::Path::new(&format!("/dev/nvidia{}", i)).exists()) {
+        return "h264_nvenc".to_string();
     }
 
     "libx264".to_string()
@@ -455,7 +452,7 @@ fn encode_audio_samples(
 }
 
 fn drain_video_packets(p: &mut OutputPipeline) -> Result<(), ffmpeg_next::Error> {
-    use ffmpeg_next::{Packet, Rational};
+    use ffmpeg_next::Packet;
 
     let mut packet = Packet::empty();
     while p.video_encoder.receive_packet(&mut packet).is_ok() {
@@ -471,7 +468,7 @@ fn drain_video_packets(p: &mut OutputPipeline) -> Result<(), ffmpeg_next::Error>
 }
 
 fn drain_audio_packets(p: &mut OutputPipeline) -> Result<(), ffmpeg_next::Error> {
-    use ffmpeg_next::{Packet, Rational};
+    use ffmpeg_next::Packet;
 
     let mut packet = Packet::empty();
     while p.audio_encoder.receive_packet(&mut packet).is_ok() {

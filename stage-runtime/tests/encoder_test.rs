@@ -11,7 +11,7 @@
 
 extern crate ffmpeg_next as ffmpeg;
 
-use dazzle_render::encoder::{Encoder, EncoderConfig, OutputDest};
+use stage_runtime::encoder::{Encoder, EncoderConfig, OutputDest};
 use std::path::Path;
 
 fn test_config(width: u32, height: u32) -> EncoderConfig {

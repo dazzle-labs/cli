@@ -1,7 +1,7 @@
 //! Property-based fuzz tests for the GLSL preprocessing pipeline.
 //! Tests the public API: preprocess_glsl, compile_glsl_to_wgsl.
 
-use dazzle_render::webgl2::{preprocess_glsl, compile_glsl_to_wgsl};
+use stage_runtime::webgl2::{preprocess_glsl, compile_glsl_to_wgsl};
 use proptest::prelude::*;
 
 // -- Strategies for generating GLSL-like fragments --

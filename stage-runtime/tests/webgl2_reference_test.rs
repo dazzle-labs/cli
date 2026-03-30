@@ -85,7 +85,7 @@ fn save_png(path: &Path, width: u32, height: u32, rgba: &[u8]) {
 ///
 /// We use the batch approach: process one command at a time, collecting returns.
 fn run_scene(name: &str) {
-    if !dazzle_render::webgl2::gpu_available() {
+    if !stage_runtime::webgl2::gpu_available() {
         eprintln!("  {} SKIPPED (no GPU adapter)", name);
         return;
     }
@@ -110,7 +110,7 @@ fn run_scene(name: &str) {
     let (rw, rh, ref_px) = load_png(&ref_path);
     assert_eq!((rw, rh), (w, h), "reference size mismatch for {}", name);
 
-    let mut gl = dazzle_render::webgl2::WebGL2::new(w, h);
+    let mut gl = stage_runtime::webgl2::WebGL2::new(w, h);
 
     // Track return values: name -> JSON value
     let mut refs: HashMap<String, serde_json::Value> = HashMap::new();

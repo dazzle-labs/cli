@@ -20,7 +20,7 @@ mod canvas2d {
 
     #[test]
     fn get_image_data_returns_pixel_data() {
-        let mut canvas = dazzle_render::canvas2d::Canvas2D::new(100, 100);
+        let mut canvas = stage_runtime::canvas2d::Canvas2D::new(100, 100);
         canvas.process_commands(&json!([
             ["fillStyle", "#ff0000"],
             ["fillRect", 10, 10, 20, 20]
@@ -39,7 +39,7 @@ mod canvas2d {
 
     #[test]
     fn draw_image_blits_pixels() {
-        let mut canvas = dazzle_render::canvas2d::Canvas2D::new(100, 100);
+        let mut canvas = stage_runtime::canvas2d::Canvas2D::new(100, 100);
 
         canvas.process_commands(&json!([
             ["fillStyle", "#0000ff"],
@@ -67,7 +67,7 @@ mod canvas2d {
 
     #[test]
     fn create_pattern_tile() {
-        let mut canvas = dazzle_render::canvas2d::Canvas2D::new(100, 100);
+        let mut canvas = stage_runtime::canvas2d::Canvas2D::new(100, 100);
 
         canvas.process_commands(&json!([
             ["_createPattern", "pat1", "repeat", 2, 2,
@@ -90,7 +90,7 @@ mod canvas2d {
 
     #[test]
     fn measure_text_returns_real_width() {
-        let canvas = dazzle_render::canvas2d::Canvas2D::new(100, 100);
+        let canvas = stage_runtime::canvas2d::Canvas2D::new(100, 100);
         let metrics = canvas.measure_text("Hello World", "20px sans-serif");
         assert!(
             metrics.width > 0.0,
@@ -101,7 +101,7 @@ mod canvas2d {
 
     #[test]
     fn measure_text_proportional_widths() {
-        let canvas = dazzle_render::canvas2d::Canvas2D::new(100, 100);
+        let canvas = stage_runtime::canvas2d::Canvas2D::new(100, 100);
 
         let wide = canvas.measure_text("WWWWW", "20px sans-serif");
         let narrow = canvas.measure_text("iiiii", "20px sans-serif");
@@ -125,7 +125,7 @@ mod asset_loading {
     fn decode_png_image() {
         let png_data = create_minimal_png(1, 1, &[255, 0, 0, 255]);
 
-        let result = dazzle_render::content::decode_image(&png_data);
+        let result = stage_runtime::content::decode_image(&png_data);
         assert!(result.is_ok(), "should decode PNG: {:?}", result.err());
 
         let img = result.unwrap();
@@ -137,7 +137,7 @@ mod asset_loading {
     #[test]
     fn decode_jpeg_image() {
         let png_data = create_minimal_png(1, 1, &[0, 255, 0, 255]);
-        let result = dazzle_render::content::decode_image(&png_data);
+        let result = stage_runtime::content::decode_image(&png_data);
         assert!(result.is_ok(), "valid PNG should decode when decode_image is implemented");
     }
 
@@ -149,14 +149,14 @@ mod asset_loading {
         std::fs::write(&json_path, r#"{"key": "value"}"#).unwrap();
 
         let url = format!("file://{}", json_path.display());
-        let result = dazzle_render::content::fetch_url(&url);
+        let result = stage_runtime::content::fetch_url(&url);
         assert!(result.is_err(), "file:// URLs should be rejected");
         assert!(result.unwrap_err().to_string().contains("file://"));
     }
 
     #[test]
     fn load_custom_font() {
-        let result = dazzle_render::canvas2d::text::load_font(
+        let result = stage_runtime::canvas2d::text::load_font(
             include_bytes!("../src/canvas2d/fonts/DejaVuSans.ttf"),
             "CustomTestFont",
         );
@@ -185,7 +185,7 @@ mod audio {
 
     #[test]
     fn audio_js_has_rust_bindings() {
-        let audio_js = dazzle_render::audio::AUDIO_JS;
+        let audio_js = stage_runtime::audio::AUDIO_JS;
         assert!(
             audio_js.contains("__dz_audio_cmds") || audio_js.contains("__dz_audio_create"),
             "audio.js should have Rust-backed command buffer, not just stub constructors"
@@ -194,7 +194,7 @@ mod audio {
 
     #[test]
     fn audio_graph_renders_samples() {
-        let mut graph = dazzle_render::audio::AudioGraph::new(44100, 30);
+        let mut graph = stage_runtime::audio::AudioGraph::new(44100, 30);
 
         // Simulate JS: osc = ctx.createOscillator(); osc.connect(ctx.destination); osc.start();
         graph.process_commands(&[
@@ -213,7 +213,7 @@ mod audio {
 
     #[test]
     fn audio_graph_gain_node() {
-        let mut graph = dazzle_render::audio::AudioGraph::new(44100, 30);
+        let mut graph = stage_runtime::audio::AudioGraph::new(44100, 30);
 
         // osc -> gain(0.5) -> destination
         graph.process_commands(&[
@@ -230,7 +230,7 @@ mod audio {
 
     #[test]
     fn audio_graph_stop_oscillator() {
-        let mut graph = dazzle_render::audio::AudioGraph::new(44100, 30);
+        let mut graph = stage_runtime::audio::AudioGraph::new(44100, 30);
 
         graph.process_commands(&[
             vec![json!("osc_start"), json!(1), json!("sine"), json!(440), json!(0)],
@@ -271,8 +271,8 @@ mod encoder {
         let dir = tempfile::tempdir().unwrap();
         let output_path = dir.path().join("test_output.flv");
 
-        let mut enc = dazzle_render::encoder::Encoder::new(
-            dazzle_render::encoder::EncoderConfig {
+        let mut enc = stage_runtime::encoder::Encoder::new(
+            stage_runtime::encoder::EncoderConfig {
                 width: 64,
                 height: 64,
                 fps: 30,
@@ -286,7 +286,7 @@ mod encoder {
         ).expect("failed to create encoder");
 
         enc.set_outputs(vec![
-            dazzle_render::encoder::OutputDest {
+            stage_runtime::encoder::OutputDest {
                 name: "test".to_string(),
                 url: format!("file:{}", output_path.display()),
                 watermarked: false,
@@ -324,8 +324,8 @@ mod encoder {
         let dir = tempfile::tempdir().unwrap();
         let output_path = dir.path().join("test_output2.flv");
 
-        let mut enc = dazzle_render::encoder::Encoder::new(
-            dazzle_render::encoder::EncoderConfig {
+        let mut enc = stage_runtime::encoder::Encoder::new(
+            stage_runtime::encoder::EncoderConfig {
                 width: 64,
                 height: 64,
                 fps: 30,
@@ -341,7 +341,7 @@ mod encoder {
         assert_eq!(enc.output_count(), 0);
 
         enc.set_outputs(vec![
-            dazzle_render::encoder::OutputDest {
+            stage_runtime::encoder::OutputDest {
                 name: "ingest".to_string(),
                 url: format!("file:{}", output_path.display()),
                 watermarked: false,
@@ -373,12 +373,12 @@ mod encoder {
 mod integration {
     use std::sync::{Arc, Mutex};
 
-    fn make_runtime() -> dazzle_render::runtime::Runtime {
+    fn make_runtime() -> stage_runtime::runtime::Runtime {
         let dir = tempfile::tempdir().unwrap();
         let store = Arc::new(Mutex::new(
-            dazzle_render::storage::Storage::new(&dir.path().join("storage.json")).unwrap(),
+            stage_runtime::storage::Storage::new(&dir.path().join("storage.json")).unwrap(),
         ));
-        dazzle_render::runtime::Runtime::new(64, 64, 30, store).unwrap()
+        stage_runtime::runtime::Runtime::new(64, 64, 30, store).unwrap()
     }
 
     #[test]
