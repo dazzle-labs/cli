@@ -47,6 +47,8 @@ patches:
                     value: ""
                   - name: PRIORITY_CLASS_NAME
                     value: ""
+                  - name: ENVIRONMENT
+                    value: "local"
   - target:
       kind: Service
       name: control-plane
