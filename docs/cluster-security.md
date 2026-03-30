@@ -102,21 +102,41 @@ The CA cert is passed via environment variable and decoded with python to avoid 
 
 ## Secrets Management
 
-All secrets are SOPS-encrypted with Age keys, stored in the repository.
+### Design principle: derive, don't store
 
-### Encryption recipients
+Secrets that can be derived from other encrypted sources are not stored separately. The cluster kubeconfig is an output of the Terraform state — rather than maintaining a separate encrypted copy, it is extracted from the encrypted tfstate at runtime and never written to disk beyond the lifetime of a single command.
 
-`.sops.yaml` defines creation rules mapping file patterns to Age public keys. All recipients can decrypt; any single recipient's private key is sufficient.
+### What's in the repository
 
-### Secret categories
+| File | Purpose | Why it's here |
+|------|---------|---------------|
+| `k8s/hetzner/terraform.tfstate.enc` | Encrypted Terraform state | Source of truth for all infra state. Contains kubeconfig, node IPs, resource IDs. No remote state backend. |
+| `k8s/hetzner/ssh_key.enc` | Encrypted SSH private key | Terraform input — needed by kube-hetzner module during `tofu apply` to provision nodes. Cannot be derived from state. |
+| `k8s/hetzner/ssh_key.pub` | SSH public key | Not secret. |
+| `k8s/secrets/*.secrets.yaml` | Application secrets (DB passwords, API keys, TLS certs) | SOPS-encrypted k8s Secret manifests. Decrypted at deploy time via `sops --decrypt \| kubectl apply`. |
+| `k8s/local/local.secrets.yaml` | Local dev secrets | Same as above, for Kind cluster. |
 
-| Pattern | Location | Encryption scope |
-|---------|----------|-----------------|
-| `*.secrets.yaml` | `k8s/secrets/`, `k8s/local/` | `stringData` or `data` fields only |
-| `*.env` | Various | Entire file |
-| `kubeconfig.yaml.enc` | `k8s/hetzner/` | Entire file |
-| `ssh_key.enc` | `k8s/hetzner/` | Entire file (binary) |
-| `terraform.tfstate.enc` | `k8s/hetzner/` | Entire file |
+All secrets are SOPS-encrypted with Age keys. `.sops.yaml` defines creation rules mapping file patterns to Age public keys. Any single recipient's private key is sufficient to decrypt.
+
+### What's NOT in the repository
+
+| Secret | Where it lives | How it's accessed |
+|--------|---------------|-------------------|
+| Cluster kubeconfig | Derived from `terraform.tfstate.enc` at runtime | Makefile extracts via `sops -d \| python3`, passes as temp file to kubectl, cleaned up on exit |
+| CI cluster credentials | GitHub Actions OIDC token (ephemeral) | Minted per-workflow-run, expires automatically |
+| CA certificate | GitHub Secret (`K8S_CA_CERT`) | Extracted from tfstate, stored as base64 in GitHub |
+
+### Developer access to production cluster
+
+The Makefile `prod/*` targets extract the kubeconfig from encrypted tfstate on the fly:
+
+```
+make prod/status      # Decrypts tfstate → extracts kubeconfig → runs kubectl → cleans up
+make prod/kubectl ARGS="get pods -n browser-streamer"
+make prod/k8s/deploy  # Same pattern, passes KUBECONFIG to k8s/Makefile
+```
+
+The kubeconfig exists only as a temp file for the duration of the command. Developers need their Age private key at `~/.age/key.txt` (configured via `SOPS_AGE_KEY_FILE` in the Makefile).
 
 ### Key rotation
 
@@ -124,10 +144,7 @@ To rotate Age keys:
 1. Update `.sops.yaml` with new public keys
 2. Run `sops updatekeys -y` on each encrypted file
 3. Run `sops updatekeys -y --input-type <type>` for `.enc` files (sops can't auto-detect the extension)
-
-### Developer access
-
-Developers store their Age private key at `~/.age/key.txt`. The Makefile sets `SOPS_AGE_KEY_FILE` to this path by default.
+4. After `tofu apply`, re-extract the CA cert and update the `K8S_CA_CERT` GitHub secret
 
 ## Pod Security
 
