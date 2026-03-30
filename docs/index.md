@@ -87,6 +87,7 @@
 - [Data Models](./data-models.md) — PostgreSQL schema, migration history, entity relationships
 
 ### Security
+- [Cluster Security](./cluster-security.md) — Infrastructure hardening, GitHub OIDC auth, SOPS secrets, pod security, RBAC
 - [Network Security](./network-security.md) — NetworkPolicy and CiliumNetworkPolicy rules, per-pod ingress/egress, FQDN-locked external access
 
 ### Operations
