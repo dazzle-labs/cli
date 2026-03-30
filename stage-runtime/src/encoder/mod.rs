@@ -59,6 +59,9 @@ struct OutputPipeline {
     video_pts: i64,
     audio_pts: i64,
     total_bytes: u64,
+    /// Resampler: converts packed f32 stereo → planar f32 stereo and handles
+    /// AAC frame size buffering (1024 samples per frame).
+    audio_resampler: ffmpeg_next::software::resampling::Context,
 }
 
 impl Encoder {
@@ -329,6 +332,17 @@ fn create_pipeline(
     let audio_time_base = octx.stream(audio_stream_idx)
         .ok_or(ffmpeg_next::Error::StreamNotFound)?.time_base();
 
+    // Resampler: packed f32 stereo → planar f32 stereo.
+    // Also handles AAC frame size buffering (1024 samples) via delay()/run().
+    let audio_resampler = software::resampling::Context::get(
+        Sample::F32(format::sample::Type::Packed),
+        channel_layout::ChannelLayout::STEREO,
+        config.audio_sample_rate,
+        Sample::F32(format::sample::Type::Planar),
+        channel_layout::ChannelLayout::STEREO,
+        config.audio_sample_rate,
+    )?;
+
     Ok(OutputPipeline {
         octx,
         video_encoder,
@@ -343,6 +357,7 @@ fn create_pipeline(
         video_pts: 0,
         audio_pts: 0,
         total_bytes: 0,
+        audio_resampler,
     })
 }
 
@@ -406,49 +421,43 @@ fn encode_audio_samples(
     use ffmpeg_next::{channel_layout, frame};
     use ffmpeg_next::util::format::sample::Sample;
 
+    let required = num_samples * 2; // stereo
+    if pcm_data.len() < required {
+        return Ok(());
+    }
+
+    // Build packed f32 stereo input frame
     let mut src_frame = frame::Audio::new(
-        Sample::F32(ffmpeg_next::format::sample::Type::Planar),
+        Sample::F32(ffmpeg_next::format::sample::Type::Packed),
         num_samples,
         channel_layout::ChannelLayout::STEREO,
     );
-
-    // Copy interleaved f32 PCM into frame data.
-    // Validate that pcm_data has enough samples (stereo = 2 channels).
-    let Some(required_samples) = num_samples.checked_mul(2) else {
-        log::warn!("Audio sample count overflow: {}", num_samples);
-        return Ok(());
+    let byte_len = required * std::mem::size_of::<f32>();
+    let src_bytes = unsafe {
+        std::slice::from_raw_parts(pcm_data.as_ptr() as *const u8, byte_len)
     };
-    if pcm_data.len() < required_samples {
-        log::warn!(
-            "Audio buffer too small: need {} samples (stereo), got {}",
-            required_samples, pcm_data.len()
-        );
-        return Ok(()); // skip this frame rather than sending partial/uninitialized data
-    }
-    // Deinterleave stereo f32 samples into planar format (fltp):
-    // Input: [L0, R0, L1, R1, ...] interleaved
-    // Output: plane 0 = [L0, L1, ...], plane 1 = [R0, R1, ...]
-    //
-    // Use raw pointers because ffmpeg's data_mut borrows the whole frame,
-    // preventing two simultaneous mutable plane references.
-    unsafe {
-        let ptr0 = src_frame.data_mut(0).as_mut_ptr();
-        let ptr1 = src_frame.data_mut(1).as_mut_ptr();
-        let plane_bytes = num_samples * 4; // 4 bytes per f32
-        let plane0 = std::slice::from_raw_parts_mut(ptr0, plane_bytes);
-        let plane1 = std::slice::from_raw_parts_mut(ptr1, plane_bytes);
-        for i in 0..num_samples {
-            let off = i * 4;
-            plane0[off..off + 4].copy_from_slice(&pcm_data[i * 2].to_le_bytes());
-            plane1[off..off + 4].copy_from_slice(&pcm_data[i * 2 + 1].to_le_bytes());
-        }
-    }
-
+    let dst = src_frame.data_mut(0);
+    let copy_len = src_bytes.len().min(dst.len());
+    dst[..copy_len].copy_from_slice(&src_bytes[..copy_len]);
     src_frame.set_pts(Some(p.audio_pts));
     p.audio_pts += num_samples as i64;
 
-    p.audio_encoder.send_frame(&src_frame)?;
-    drain_audio_packets(p)?;
+    // Run through resampler — converts packed→planar and buffers to AAC frame size (1024)
+    let mut resampled = frame::Audio::empty();
+    p.audio_resampler.run(&src_frame, &mut resampled)?;
+    if resampled.samples() > 0 {
+        p.audio_encoder.send_frame(&resampled)?;
+        drain_audio_packets(p)?;
+    }
+    // Drain any buffered frames from the resampler
+    while p.audio_resampler.delay().is_some_and(|d| d.output >= 1024) {
+        let mut extra = frame::Audio::empty();
+        p.audio_resampler.flush(&mut extra)?;
+        if extra.samples() > 0 {
+            p.audio_encoder.send_frame(&extra)?;
+            drain_audio_packets(p)?;
+        }
+    }
     Ok(())
 }
 
