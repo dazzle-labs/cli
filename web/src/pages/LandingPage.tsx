@@ -4,13 +4,10 @@ import { SignIn } from "@clerk/react";
 import { motion, useInView } from "motion/react";
 import {
   ArrowRight,
-  Check,
   ChevronDown,
-  Copy,
   Download,
   Globe,
   Radio,
-  Sparkles,
 } from "lucide-react";
 import { installCommand } from "@/lib/cli-commands";
 import { Button } from "@/components/ui/button";
@@ -161,62 +158,6 @@ const FRAMEWORKS = [
 
 const ease = [0.25, 0.1, 0.25, 1] as const;
 
-function LlmsTxtCallout() {
-  const [copied, setCopied] = useState(false);
-
-  async function handleCopy() {
-    const resp = await fetch("/llms.txt");
-    const text = await resp.text();
-    await navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
-  }
-
-  return (
-    <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/[0.03] p-6 md:p-8">
-      <div className="flex items-start gap-4">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
-          <Sparkles className="h-5 w-5" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="text-base font-semibold text-white mb-1">
-            Building with an AI agent?
-          </h3>
-          <p className="text-sm text-zinc-400 leading-relaxed mb-4">
-            Copy our setup prompt — paste it into Claude, GPT, or any agent and
-            it handles the rest.
-          </p>
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={handleCopy}
-              className="inline-flex items-center gap-2 rounded-lg bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/20 cursor-pointer"
-            >
-              {copied ? (
-                <>
-                  <Check className="h-4 w-4" />
-                  Copied!
-                </>
-              ) : (
-                <>
-                  <Copy className="h-4 w-4" />
-                  Copy setup prompt
-                </>
-              )}
-            </button>
-            <a
-              href="/llms.txt"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-zinc-500 hover:text-zinc-300 font-mono transition-colors"
-            >
-              view llms.txt
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export function LandingPage() {
   const [signInOpen, setSignInOpen] = useState(false);
@@ -443,19 +384,6 @@ export function LandingPage() {
             </div>
           </motion.div>
         </div>
-      </section>
-
-      {/* ── llms.txt callout ── */}
-      <section className="relative z-10 px-6 pb-20 md:pb-28">
-        <motion.div
-          className="mx-auto max-w-2xl"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-60px" }}
-          transition={{ duration: 0.7 }}
-        >
-          <LlmsTxtCallout />
-        </motion.div>
       </section>
 
       {/* ── Final CTA ── */}
