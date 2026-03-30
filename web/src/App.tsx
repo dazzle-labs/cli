@@ -13,6 +13,7 @@ import { StageDetail } from "./pages/StageDetail.js";
 import { StreamConfig } from "./pages/StreamConfig.js";
 import { ApiKeys } from "./pages/ApiKeys.js";
 import { LivePage } from "./pages/LivePage.js";
+import { PublicLivePage } from "./pages/PublicLivePage.js";
 import { Docs } from "./pages/Docs.js";
 import { PublicDocs } from "./pages/PublicDocs.js";
 import { LandingPage } from "./pages/LandingPage.js";
@@ -71,6 +72,24 @@ function DocsRouter() {
   );
 }
 
+function LiveRouter() {
+  return (
+    <>
+      <Show when="signed-out">
+        <PublicLivePage />
+      </Show>
+      <Show when="signed-in">
+        <AuthSetup />
+        <TooltipProvider>
+          <Layout>
+            <LivePage />
+          </Layout>
+        </TooltipProvider>
+      </Show>
+    </>
+  );
+}
+
 function AuthenticatedApp() {
   return (
     <>
@@ -105,6 +124,7 @@ export function App() {
         <Route path="/docs" element={<DocsRouter />} />
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/live" element={<LiveRouter />} />
         <Route path="*" element={<AuthenticatedApp />} />
       </Routes>
     </BrowserRouter>

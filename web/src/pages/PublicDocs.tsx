@@ -97,6 +97,12 @@ export function PublicDocs() {
           </Link>
           <div className="flex items-center gap-5">
             <Link
+              to="/live"
+              className="text-zinc-400 hover:text-white text-sm transition-colors"
+            >
+              Live
+            </Link>
+            <Link
               to="/docs"
               className="text-zinc-400 hover:text-white text-sm transition-colors"
             >
@@ -257,6 +263,9 @@ export function PublicDocs() {
           <div className="flex items-center justify-center gap-4 text-xs text-zinc-600">
             <span>dazzle.fm &middot; &copy; 2026 Dazzle</span>
             <span className="text-zinc-800">&middot;</span>
+            <Link to="/live" className="hover:text-zinc-400 transition-colors">
+              Live
+            </Link>
             <Link to="/docs" className="hover:text-zinc-400 transition-colors">
               Docs
             </Link>
