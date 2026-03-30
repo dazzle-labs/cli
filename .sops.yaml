@@ -25,7 +25,7 @@ creation_rules:
       age1emw2e5x3d4cu0x4g0q4lrw8nj2fdv0qfzta6g62m5y24j02zu44sflkxln,
       age1x9049ry5hz876qratphuc9gdxzuv4nnd06076842zdukl4unvazszfnjf6,
       age1y5txpqz0vyyq03yyysmzuyvuyh8uzzpcw30cp5q3twxnwenfzpvs48ts0z
-  - path_regex: k8s/hetzner/(ssh_key(\.enc)?|kubeconfig\.yaml(\.enc)?)$
+  - path_regex: k8s/hetzner/ssh_key(\.enc)?$
     age: >-
       age18r3vk6aecpcd69ey7fhgjylg6z37ksfeff6c497mxgv4nwmnyupq4gsfua,
       age1emw2e5x3d4cu0x4g0q4lrw8nj2fdv0qfzta6g62m5y24j02zu44sflkxln,
