@@ -31,8 +31,14 @@ endef
 OK       = @printf "$(_bold)$(_green)✓ %s$(_reset)\n"
 
 export SOPS_AGE_KEY_FILE ?= $(HOME)/.age/key.txt
-RKCTL = kubectl --kubeconfig <(sops -d --input-type yaml --output-type yaml k8s/hetzner/kubeconfig.yaml.enc)
 INFRA_DIR := k8s/hetzner
+# Extract kubeconfig from encrypted tfstate without writing to disk
+define _prod_kc
+	tmpkc=$$(mktemp) && trap "rm -f $$tmpkc" EXIT && \
+	sops -d $(INFRA_DIR)/terraform.tfstate.enc | \
+		python3 -c "import sys,json; open('$$tmpkc','w').write(json.load(sys.stdin)['outputs']['kubeconfig']['value'])" && \
+	KUBECONFIG=$$tmpkc
+endef
 TFSTATE   := $(INFRA_DIR)/terraform.tfstate
 TFSTATE_ENC := $(INFRA_DIR)/terraform.tfstate.enc
 
@@ -366,30 +372,24 @@ status: check-cluster ## Show pods and services in Kind
 # ══════════════════════════════════════════════════════
 
 prod/helm: ## Run helm against prod cluster (use ARGS="list -A")
-	@tmpkc=$$(mktemp) && \
-		trap "rm -f $$tmpkc" EXIT && \
-		sops -d --input-type yaml --output-type yaml k8s/hetzner/kubeconfig.yaml.enc > $$tmpkc && \
-		KUBECONFIG=$$tmpkc helm $(ARGS)
+	@$(_prod_kc) helm $(ARGS)
 
 prod/kubectl: ## Run kubectl against prod cluster (use ARGS="get pods")
-	@bash -c '$(RKCTL) $(ARGS)'
+	@$(_prod_kc) kubectl $(ARGS)
 
 prod/status: ## Show prod cluster nodes and pods
-	@bash -c '\
+	@$(_prod_kc) bash -c '\
 		echo "── Nodes ──"; \
-		$(RKCTL) get nodes -o wide; \
+		kubectl --kubeconfig $$KUBECONFIG get nodes -o wide; \
 		echo ""; \
 		echo "── Pods (all namespaces) ──"; \
-		$(RKCTL) get pods -A'
+		kubectl --kubeconfig $$KUBECONFIG get pods -A'
 
 prod/nodes: ## Show prod cluster nodes
-	@bash -c '$(RKCTL) get nodes -o wide'
+	@$(_prod_kc) kubectl get nodes -o wide
 
 prod/k8s/%: ## Run k8s/ Makefile target against prod (e.g. make prod/k8s/prometheus)
-	@tmpkc=$$(mktemp) && \
-		trap "rm -f $$tmpkc" EXIT && \
-		sops -d --input-type yaml --output-type yaml k8s/hetzner/kubeconfig.yaml.enc > $$tmpkc && \
-		KUBECONFIG=$$tmpkc $(MAKE) -C k8s $*
+	@$(_prod_kc) $(MAKE) -C k8s $*
 
 ci/k8s/%: ## Run k8s/ target using KUBECONFIG from environment (CI with OIDC auth)
 	$(MAKE) -C k8s $*
