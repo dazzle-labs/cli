@@ -30,7 +30,10 @@ define _confirm
 endef
 OK       = @printf "$(_bold)$(_green)✓ %s$(_reset)\n"
 
-export SOPS_AGE_KEY_FILE ?= $(HOME)/.age/key.txt
+# Set SOPS_AGE_KEY_FILE for local dev only (CI uses ~/.config/sops/age/keys.txt)
+ifneq ($(wildcard $(HOME)/.age/key.txt),)
+  export SOPS_AGE_KEY_FILE ?= $(HOME)/.age/key.txt
+endif
 INFRA_DIR := k8s/hetzner
 # Extract kubeconfig from encrypted tfstate without writing to disk
 define _prod_kc
