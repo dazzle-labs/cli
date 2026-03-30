@@ -22,11 +22,14 @@ import { CliAuth } from "./pages/CliAuth.js";
 import { TermsOfService } from "./pages/TermsOfService.js";
 import { PrivacyPolicy } from "./pages/PrivacyPolicy.js";
 import { TooltipProvider } from "./components/ui/tooltip.js";
+import { useOrganizationActivation } from "./hooks/use-organization-activation.js";
 
 function AuthSetup() {
   const { getToken } = useAuth();
   const { user } = useUser();
   const posthog = PostHog.use();
+
+  useOrganizationActivation();
 
   useEffect(() => {
     setTokenGetter(getToken);

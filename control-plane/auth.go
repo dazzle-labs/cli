@@ -23,9 +23,25 @@ const (
 )
 
 type authInfo struct {
-	UserID string
-	Method authMethod
-	KeyID  string // only set for API key auth
+	UserID      string
+	Method      authMethod
+	KeyID       string   // only set for API key auth
+	OrgID       string   // Clerk active organization ID
+	Permissions []string // Clerk org permissions (e.g. "org:access:developer")
+}
+
+// Org permissions — must match what's configured in Clerk dashboard.
+const (
+	PermDeveloper = "org:access:developer"
+)
+
+func (a authInfo) HasPermission(p string) bool {
+	for _, perm := range a.Permissions {
+		if perm == p {
+			return true
+		}
+	}
+	return false
 }
 
 type authInfoKeyType struct{}
@@ -150,7 +166,12 @@ func (a *authenticator) verifyClerkJWT(ctx context.Context, token string) (*auth
 		}
 	}
 
-	return &authInfo{UserID: claims.Subject, Method: authMethodClerk}, nil
+	return &authInfo{
+		UserID:      claims.Subject,
+		Method:      authMethodClerk,
+		OrgID:       claims.ActiveOrganizationID,
+		Permissions: claims.ActiveOrganizationPermissions,
+	}, nil
 }
 
 // extractBearerToken gets the token from Authorization header or query param.
