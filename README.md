@@ -296,11 +296,11 @@ Optionally set `DAZZLE_STAGE` in `env` to pin a specific stage, or omit it to au
 | `cli` | Run a dazzle CLI command. Use ["--help"] to discover available commands. Output is JSON. |
 | `edit_file` | Edit a file in the stage workspace by exact string replacement. The old_string must match exactly once in the file. Use read_file first to see the current content. |
 | `guide` | Get the Dazzle quick-start guide — platform overview, setup, CLI basics, and links to full docs. Read this first before creating or modifying stage content. |
-| `list_files` | List all files in the stage workspace (~/.dazzle/stages/<stage>/). Returns relative paths, one per line. |
-| `read_file` | Read a file from the stage workspace (~/.dazzle/stages/<stage>/<path>). |
+| `list_files` | List all files in the stage workspace (~/.dazzle/stages/{stage}/). Returns relative paths, one per line. |
+| `read_file` | Read a file from the stage workspace (~/.dazzle/stages/{stage}/{path}). |
 | `screenshot` | Capture a screenshot of the stage's current browser output. Returns a PNG image. |
-| `sync` | Sync the stage workspace (~/.dazzle/stages/<stage>/) to the live stage. Run this after writing files to push content. Equivalent to 'dazzle stage sync <workspace-dir>'. |
-| `write_file` | Write a file to the stage workspace (~/.dazzle/stages/<stage>/<path>). Creates parent directories as needed. Use this to build up content that can then be synced to the stage. |
+| `sync` | Sync the stage workspace (~/.dazzle/stages/{stage}/) to the live stage. Run this after writing files to push content. Equivalent to 'dazzle stage sync {workspace-dir}'. |
+| `write_file` | Write a file to the stage workspace (~/.dazzle/stages/{stage}/{path}). Creates parent directories as needed. Use this to build up content that can then be synced to the stage. |
 ### Workspace tools
 
 The workspace tools (`write_file`, `read_file`, `edit_file`, `list_files`, `sync`) store files in `~/.dazzle/stages/<stage-id>/` on the host filesystem. This bridges sandboxed environments (e.g. Claude Desktop) where the agent's shell runs in an isolated container and can't share files with the CLI process.

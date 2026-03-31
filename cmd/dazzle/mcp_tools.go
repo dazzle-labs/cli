@@ -193,14 +193,14 @@ func registerTools(s *mcp.Server, appCtx *Context) {
 	})
 
 	// --- Workspace file tools ---
-	// These tools provide read/write access to ~/.dazzle/stages/<stage>/,
+	// These tools provide read/write access to ~/.dazzle/stages/{stage}/,
 	// a host-local workspace that bridges sandboxed environments (e.g. Claude Desktop)
 	// with the dazzle CLI's filesystem. Less powerful than full shell access,
 	// but works when the agent's bash runs in a sandbox.
 
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "write_file",
-		Description: "Write a file to the stage workspace (~/.dazzle/stages/<stage>/<path>). Creates parent directories as needed. Use this to build up content that can then be synced to the stage.",
+		Description: "Write a file to the stage workspace (~/.dazzle/stages/{stage}/{path}). Creates parent directories as needed. Use this to build up content that can then be synced to the stage.",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, in writeFileInput) (*mcp.CallToolResult, any, error) {
 		if err := validateRelPath(in.Path); err != nil {
 			return nil, nil, err
@@ -229,7 +229,7 @@ func registerTools(s *mcp.Server, appCtx *Context) {
 
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "read_file",
-		Description: "Read a file from the stage workspace (~/.dazzle/stages/<stage>/<path>).",
+		Description: "Read a file from the stage workspace (~/.dazzle/stages/{stage}/{path}).",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, in readFileInput) (*mcp.CallToolResult, any, error) {
 		if err := validateRelPath(in.Path); err != nil {
 			return nil, nil, err
@@ -294,7 +294,7 @@ func registerTools(s *mcp.Server, appCtx *Context) {
 
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "list_files",
-		Description: "List all files in the stage workspace (~/.dazzle/stages/<stage>/). Returns relative paths, one per line.",
+		Description: "List all files in the stage workspace (~/.dazzle/stages/{stage}/). Returns relative paths, one per line.",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, in listFilesInput) (*mcp.CallToolResult, any, error) {
 		wsDir, err := stageWorkspaceDir(appCtx, in.Stage)
 		if err != nil {
@@ -333,7 +333,7 @@ func registerTools(s *mcp.Server, appCtx *Context) {
 
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "sync",
-		Description: "Sync the stage workspace (~/.dazzle/stages/<stage>/) to the live stage. Run this after writing files to push content. Equivalent to 'dazzle stage sync <workspace-dir>'.",
+		Description: "Sync the stage workspace (~/.dazzle/stages/{stage}/) to the live stage. Run this after writing files to push content. Equivalent to 'dazzle stage sync {workspace-dir}'.",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, in syncInput) (*mcp.CallToolResult, any, error) {
 		// stageWorkspaceDir resolves the stage and sets appCtx.StageID.
 		wsDir, err := stageWorkspaceDir(appCtx, in.Stage)

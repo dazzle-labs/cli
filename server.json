@@ -29,11 +29,11 @@
     },
     {
       "name": "list_files",
-      "description": "List all files in the stage workspace (~/.dazzle/stages/\u003cstage\u003e/). Returns relative paths, one per line."
+      "description": "List all files in the stage workspace (~/.dazzle/stages/{stage}/). Returns relative paths, one per line."
     },
     {
       "name": "read_file",
-      "description": "Read a file from the stage workspace (~/.dazzle/stages/\u003cstage\u003e/\u003cpath\u003e)."
+      "description": "Read a file from the stage workspace (~/.dazzle/stages/{stage}/{path})."
     },
     {
       "name": "screenshot",
@@ -41,11 +41,11 @@
     },
     {
       "name": "sync",
-      "description": "Sync the stage workspace (~/.dazzle/stages/\u003cstage\u003e/) to the live stage. Run this after writing files to push content. Equivalent to 'dazzle stage sync \u003cworkspace-dir\u003e'."
+      "description": "Sync the stage workspace (~/.dazzle/stages/{stage}/) to the live stage. Run this after writing files to push content. Equivalent to 'dazzle stage sync {workspace-dir}'."
     },
     {
       "name": "write_file",
-      "description": "Write a file to the stage workspace (~/.dazzle/stages/\u003cstage\u003e/\u003cpath\u003e). Creates parent directories as needed. Use this to build up content that can then be synced to the stage."
+      "description": "Write a file to the stage workspace (~/.dazzle/stages/{stage}/{path}). Creates parent directories as needed. Use this to build up content that can then be synced to the stage."
     }
   ],
   "resources": [
