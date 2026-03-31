@@ -133,7 +133,7 @@ func mcpMeta(bin string) ([]mcpTool, []mcpResource) {
 		`{"jsonrpc":"2.0","id":3,"method":"resources/list","params":{}}`,
 	}
 	for _, msg := range messages {
-		fmt.Fprintln(stdin, msg)
+		fmt.Fprintln(stdin, msg) //nolint:errcheck
 	}
 
 	// Wait for responses, then clean up.
