@@ -47,7 +47,7 @@ const AGENTS_TERMINAL: TermLine[] = [
   { type: "cmd", text: "npm run build" },
   { type: "out", text: "\u2713 Built in 0.6s" },
   { type: "cmd", text: "dazzle stage up --stage flight-globe" },
-  { type: "out", text: "\u2713 Stage activated \u2014 GPU rendering at 60 FPS" },
+  { type: "out", text: "\u2713 Stage activated \u2014 GPU rendering at 30 FPS." },
   { type: "cmd", text: "dazzle stage sync ./dist --stage flight-globe" },
   { type: "out", text: "4 files synced." },
   { type: "out", text: "" },
