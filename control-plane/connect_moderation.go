@@ -53,10 +53,12 @@ func (s *moderationServer) GetStageOwner(ctx context.Context, req *connect.Reque
 				}
 				name += *clerkUser.LastName
 			}
-			for _, ea := range clerkUser.EmailAddresses {
-				if ea.ID == *clerkUser.PrimaryEmailAddressID {
-					email = ea.EmailAddress
-					break
+			if clerkUser.PrimaryEmailAddressID != nil {
+				for _, ea := range clerkUser.EmailAddresses {
+					if ea.ID == *clerkUser.PrimaryEmailAddressID {
+						email = ea.EmailAddress
+						break
+					}
 				}
 			}
 		}
