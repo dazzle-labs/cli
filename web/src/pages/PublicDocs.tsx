@@ -13,6 +13,7 @@ import {
   INSTALL_TABS,
   QUICK_START_STEPS,
   MULTI_STAGE_SNIPPET,
+  FRAMEWORK_EXAMPLES,
   EVENTS_HTML_SNIPPET,
   EVENTS_CLI_SNIPPET,
   PERSISTENCE_SNIPPET,
@@ -202,6 +203,34 @@ export function PublicDocs() {
                     )}
                   </motion.div>
                 ))}
+              </div>
+            </section>
+
+            {/* Works with any framework */}
+            <section className="mb-10">
+              <h2 className="text-xl tracking-[-0.02em] text-white font-display mb-3">
+                Use any framework
+              </h2>
+              <p className="text-sm text-zinc-400 mb-5 leading-relaxed">
+                A stage is a browser. If it runs in a browser, it runs on Dazzle. Build with whatever you want, then sync the output.
+              </p>
+
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                {FRAMEWORK_EXAMPLES.map((fw) => (
+                  <div
+                    key={fw.name}
+                    className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3"
+                  >
+                    <span className="text-sm font-medium text-white">{fw.name}</span>
+                    <pre className="mt-2 text-xs text-zinc-500 font-mono whitespace-pre leading-relaxed">{fw.cmd}</pre>
+                  </div>
+                ))}
+              </div>
+
+              <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/[0.04] px-4 py-3">
+                <p className="text-sm text-zinc-200 leading-relaxed">
+                  Three.js, D3, p5.js, GSAP, Tone.js, TailwindCSS — any library that works in a browser works on a stage. Load from CDN or bundle it.
+                </p>
               </div>
             </section>
 

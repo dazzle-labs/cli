@@ -48,6 +48,20 @@ export const QUICK_START_STEPS: QuickStartStep[] = [
   { n: 6, label: "Check status", cmd: cli.stageStatus.full },
 ];
 
+export const FRAMEWORK_SNIPPET = `# React, Next.js, Svelte, Vue, Astro — anything with a build step
+npm run build
+${cli.stageSync.base} ./dist
+
+# Or plain HTML — no build step needed
+${cli.stageSync.base} ./my-stage`;
+
+export const FRAMEWORK_EXAMPLES: { name: string; cmd: string }[] = [
+  { name: "React / Vite", cmd: "npm create vite@latest my-stage -- --template react\ncd my-stage && npm install && npm run build\ndazzle stage sync ./dist" },
+  { name: "Next.js", cmd: "npx create-next-app@latest my-stage\ncd my-stage && npm run build && npx next export\ndazzle stage sync ./out" },
+  { name: "Svelte", cmd: "npx sv create my-stage\ncd my-stage && npm install && npm run build\ndazzle stage sync ./build" },
+  { name: "Plain HTML", cmd: "mkdir my-stage\n# create my-stage/index.html\ndazzle stage sync ./my-stage" },
+];
+
 export const EVENTS_HTML_SNIPPET = `<!-- my-stage/index.html -->
 <!DOCTYPE html>
 <html>
