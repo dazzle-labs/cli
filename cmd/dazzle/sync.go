@@ -29,12 +29,18 @@ const (
 // SyncCmd syncs a local directory to a stage.
 // This is the primary (and only) way to push content to a stage.
 type SyncCmd struct {
-	Dir     string `arg:"" help:"Local directory to sync (must contain an index.html entry point)." type:"existingdir"`
+	Dir     string `arg:"" help:"Local directory to sync (must contain an index.html entry point)."`
 	Watch bool   `help:"Watch for file changes and automatically re-sync." short:"w"`
 	Entry string `help:"HTML entry point file (default: index.html)." default:"index.html"`
 }
 
 func (c *SyncCmd) Run(ctx *Context) error {
+	// Validate directory at runtime (not parse-time) so errors get JSON formatting
+	info, err := os.Stat(c.Dir)
+	if err != nil || !info.IsDir() {
+		return fmt.Errorf("directory %q does not exist or is not a directory", c.Dir)
+	}
+
 	if err := ctx.requireAuth(); err != nil {
 		return err
 	}
