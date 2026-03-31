@@ -34,17 +34,17 @@ func (c *GuideCmd) Run(ctx *Context) error {
 const guideText = `# Dazzle Content Authoring Guide
 
 Your content runs in a cloud browser captured at 1280x720 @ 30 fps. There is no
-hardware GPU — rendering is done in software on shared CPU. This guide helps you
+hardware GPU — rendering is done in software. This guide helps you
 write content that looks great within these constraints.
 
 ## Environment at a Glance
 
   Resolution:    1280x720 (fixed)
-  Frame rate:    30 fps (captured via x11grab -> x264)
+  Frame rate:    30 fps
   Renderer:      Software OpenGL (no hardware GPU)
   CPU budget:    ~50%% used by capture/encode at idle; your content gets the rest
-  Browser:       Headless Chrome, kiosk mode, full viewport
-  Audio:         PulseAudio capture (Web Audio API works)
+  Browser:       Chrome, full viewport
+  Audio:         Web Audio API supported, audio captured to stream
   Persistence:   localStorage and IndexedDB survive stage restarts
 
 ## Page Setup
@@ -111,7 +111,7 @@ resolution the stage is running at.
     - Use mesh complexity (more triangles) instead of shader complexity
 
   Web Audio API
-    - Oscillators, gain nodes, audio buffers — captured by PulseAudio
+    - Oscillators, gain nodes, audio buffers — captured to the stream
     - Good for music visualizers, sound effects, generative audio
 
   CDN libraries
@@ -166,7 +166,7 @@ resolution the stage is running at.
   Colors & contrast
     - Dark backgrounds (#000 or near-black) are the stage default
     - Use bold, saturated colors — subtlety gets lost in compression
-    - Avoid fine gradients that may band in x264 encoding
+    - Avoid fine gradients that may band in video encoding
 
   Layout
     - Design for 16:9 (1280x720) — no scrolling, no overflow
@@ -177,7 +177,7 @@ resolution the stage is running at.
   Animation
     - Target 30 fps or below — anything faster is wasted (capture is 30 fps)
     - Ease-in-out curves look smoother than linear at low frame rates
-    - Avoid very fast motion that causes x264 motion blur artifacts
+    - Avoid very fast motion that causes encoder motion blur artifacts
 
 ## Performance Monitoring
 
