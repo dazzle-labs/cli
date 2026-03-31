@@ -26,6 +26,9 @@ var cli struct {
 	// Resource commands
 	Stage_      StageCmd       `cmd:"" name:"stage" aliases:"s" help:"Manage stages — create, sync content, screenshot, stream."`
 	Destination DestinationCmd `cmd:"" name:"destination" aliases:"dest" help:"Manage broadcast destinations (Twitch, YouTube, etc)."`
+
+	// Integration
+	Mcp McpCmd `cmd:"" name:"mcp" help:"Start MCP server on stdin/stdout for AI agent integration." hidden:""`
 }
 
 func main() {

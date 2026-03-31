@@ -35,10 +35,10 @@ func pollCliSession(apiURL, sessionID string, timeout time.Duration) (*pollResul
 
 			var result pollResult
 			if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-				resp.Body.Close()
+				_ = resp.Body.Close()
 				continue // malformed response, retry
 			}
-			resp.Body.Close()
+			_ = resp.Body.Close()
 
 			switch result.Status {
 			case "complete":

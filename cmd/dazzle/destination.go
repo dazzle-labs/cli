@@ -224,7 +224,7 @@ func (c *DestinationAddCmd) runOAuthFlow(ctx *Context, platform string) error {
 	if err != nil {
 		return fmt.Errorf("create session: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	var session struct {
 		SessionID  string `json:"session_id"`

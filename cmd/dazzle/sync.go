@@ -161,7 +161,7 @@ func (c *SyncCmd) watchLoop(ctx *Context) error {
 	if err != nil {
 		return fmt.Errorf("creating watcher: %w", err)
 	}
-	defer watcher.Close()
+	defer watcher.Close() //nolint:errcheck
 
 	// Add all directories recursively
 	if err := addWatchDirs(watcher, c.Dir); err != nil {
