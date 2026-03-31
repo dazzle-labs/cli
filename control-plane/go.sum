@@ -44,6 +44,8 @@ github.com/dazzle-labs/cli v0.2.2-0.20260329201413-86ce43f994bf h1:EfefmllaOqtgg
 github.com/dazzle-labs/cli v0.2.2-0.20260329201413-86ce43f994bf/go.mod h1:AuphucsmRXt72WkppSaTGPmLaD+F1fJkCwkhEEsX+Hc=
 github.com/dazzle-labs/cli v0.3.0 h1:emPfYf8OG6tT++Dh50zS1FO14QYlT+yHgV3b2U4ZcL0=
 github.com/dazzle-labs/cli v0.3.0/go.mod h1:AuphucsmRXt72WkppSaTGPmLaD+F1fJkCwkhEEsX+Hc=
+github.com/dazzle-labs/cli v0.4.0 h1:AnF23mhdu/qh/BMn/sF3E5m1n5jgzJZb9vVfOtX6zyY=
+github.com/dazzle-labs/cli v0.4.0/go.mod h1:6eXDZtjH0Z1/ABEditUD0T2GZqZorttez9Nx8W2e55g=
 github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
 github.com/emicklei/go-restful/v3 v3.11.0 h1:rAQeMHw1c7zTmncogyy8VvRZwtkmkZ4FxERmMY4rD+g=
