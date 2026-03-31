@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
+	"github.com/clerk/clerk-sdk-go/v2"
 	expirable "github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/google/uuid"
 	corev1 "k8s.io/api/core/v1"
@@ -178,6 +179,7 @@ func NewManager() (*Manager, error) {
 	if clerkSecretKey == "" {
 		return nil, fmt.Errorf("CLERK_SECRET_KEY is required")
 	}
+	clerk.SetKey(clerkSecretKey)
 
 	encKeyHex := os.Getenv("ENCRYPTION_KEY")
 	if encKeyHex == "" {

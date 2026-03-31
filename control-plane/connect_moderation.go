@@ -43,7 +43,9 @@ func (s *moderationServer) GetStageOwner(ctx context.Context, req *connect.Reque
 
 	// DB often has empty email/name — fall back to Clerk API
 	if email == "" && name == "" {
-		if clerkUser, err := user.Get(ctx, row.UserID); err == nil && clerkUser != nil {
+		if clerkUser, err := user.Get(ctx, row.UserID); err != nil {
+			log.Printf("WARN: Clerk user lookup failed for %s: %v", row.UserID, err)
+		} else if clerkUser != nil {
 			if clerkUser.FirstName != nil {
 				name = *clerkUser.FirstName
 			}
