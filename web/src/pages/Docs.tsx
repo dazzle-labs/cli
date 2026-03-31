@@ -15,7 +15,7 @@ import {
   EVENTS_CLI_SNIPPET,
 } from "./docs-content";
 import type { InstallTab } from "./docs-content";
-import { cli } from "@/lib/cli-commands";
+import { useCliReference } from "@/hooks/use-cli-reference";
 
 function detectDefaultTab(): InstallTab {
   const ua = navigator.userAgent.toLowerCase();
@@ -33,6 +33,7 @@ function StepBadge({ n }: { n: number }) {
 
 export function Docs() {
   const [installTab, setInstallTab] = useState<InstallTab>(detectDefaultTab);
+  const cliRef = useCliReference();
   const activeInstall = INSTALL_TABS.find((t) => t.id === installTab)!;
 
   return (
@@ -169,7 +170,7 @@ export function Docs() {
 
       {/* CLI reference — collapsible */}
       <CollapsibleSection title="Full CLI reference">
-        <TerminalBlock code={`# All top-level commands\n${cli.help.full}\n\n# Stage commands\n${cli.stageHelp.full}\n\n# Sync commands\n${cli.stageSyncHelp.full}`} />
+        <TerminalBlock code={cliRef || "Loading..."} />
       </CollapsibleSection>
     </AnimatedPage>
   );

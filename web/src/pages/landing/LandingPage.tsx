@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useFeaturedStreams, FeaturedCarousel } from "@/components/FeaturedStream";
+import { useLiveCount } from "@/hooks/use-live-count";
 import { LiveText } from "./LiveText";
 import { DemoSection } from "./DemoSection";
 import { PERSONAS, DEFAULT_PERSONA } from "./personas";
@@ -45,6 +46,7 @@ export function LandingPage() {
   const [signInOpen, setSignInOpen] = useState(false);
   const openSignIn = () => setSignInOpen(true);
   const featuredStreams = useFeaturedStreams();
+  const liveCount = useLiveCount();
 
   return (
     <div className="relative min-h-screen bg-zinc-950 overflow-hidden selection:bg-emerald-500/30">
@@ -69,8 +71,17 @@ export function LandingPage() {
           Dazzle
         </Link>
         <div className="flex items-center gap-5">
-          <Link to="/live" className="text-zinc-400 hover:text-white text-sm transition-colors">
+          <Link to="/live" className="text-zinc-400 hover:text-white text-sm transition-colors inline-flex items-center gap-1.5">
             Live
+            {liveCount > 0 && (
+              <span className="inline-flex items-center gap-1">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-full w-full bg-emerald-400" />
+                </span>
+                <span className="text-emerald-400 text-xs">{liveCount}</span>
+              </span>
+            )}
           </Link>
           <Link to="/docs" className="text-zinc-400 hover:text-white text-sm transition-colors">
             Docs

@@ -18,7 +18,8 @@ import {
   EVENTS_CLI_SNIPPET,
 } from "./docs-content";
 import type { InstallTab } from "./docs-content";
-import { cli } from "@/lib/cli-commands";
+import { useLiveCount } from "@/hooks/use-live-count";
+import { useCliReference } from "@/hooks/use-cli-reference";
 
 const ease = [0.25, 0.1, 0.25, 1] as const;
 
@@ -76,6 +77,8 @@ export function PublicDocs() {
   const [signInOpen, setSignInOpen] = useState(false);
   const [installTab, setInstallTab] = useState<InstallTab>(detectDefaultTab);
   const openSignIn = () => setSignInOpen(true);
+  const liveCount = useLiveCount();
+  const cliRef = useCliReference();
   const activeInstall = INSTALL_TABS.find((t) => t.id === installTab)!;
 
   return (
@@ -98,9 +101,18 @@ export function PublicDocs() {
           <div className="flex items-center gap-5">
             <Link
               to="/live"
-              className="text-zinc-400 hover:text-white text-sm transition-colors"
+              className="text-zinc-400 hover:text-white text-sm transition-colors inline-flex items-center gap-1.5"
             >
               Live
+              {liveCount > 0 && (
+                <span className="inline-flex items-center gap-1">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-full w-full bg-emerald-400" />
+                  </span>
+                  <span className="text-emerald-400 text-xs">{liveCount}</span>
+                </span>
+              )}
             </Link>
             <Link
               to="/docs"
@@ -264,7 +276,7 @@ export function PublicDocs() {
 
             {/* CLI reference — collapsible */}
             <CollapsibleSection title="Full CLI reference">
-              <TerminalBlock code={`# All top-level commands\n${cli.help.full}\n\n# Stage commands\n${cli.stageHelp.full}\n\n# Sync commands\n${cli.stageSyncHelp.full}`} />
+              <TerminalBlock code={cliRef || "Loading..."} />
             </CollapsibleSection>
           </motion.div>
         </TooltipProvider>

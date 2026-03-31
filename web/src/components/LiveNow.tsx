@@ -1,10 +1,8 @@
-import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "motion/react";
-import { stageClient } from "@/client";
-import { StageFilter } from "@/gen/api/v1/stage_pb";
 import { cn } from "@/lib/utils";
 import { springs } from "@/lib/motion";
+import { useLiveCount } from "@/hooks/use-live-count";
 import {
   SidebarGroup,
   SidebarMenu,
@@ -13,29 +11,9 @@ import {
 } from "@/components/ui/sidebar";
 
 export function LiveNow() {
-  const [count, setCount] = useState(0);
+  const count = useLiveCount();
   const location = useLocation();
   const active = location.pathname === "/live";
-
-  useEffect(() => {
-    let cancelled = false;
-
-    function poll() {
-      stageClient
-        .listStages({ filters: [StageFilter.LIVE] })
-        .then((res) => {
-          if (!cancelled) setCount(res.stages.filter((s) => s.slug).length);
-        })
-        .catch(() => {});
-    }
-
-    poll();
-    const interval = setInterval(poll, 30_000);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, []);
 
   if (count === 0) return null;
 
