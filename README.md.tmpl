@@ -95,6 +95,54 @@ dazzle destination attach my-destination
 {{ .HelpDestination }}
 ```
 
+## MCP Server
+
+The CLI includes a built-in MCP server for AI agent integration. Any MCP-compatible client (Claude Desktop, Claude Code, VS Code, Cursor, etc.) can control stages natively.
+
+### Setup
+
+Add to your MCP client config (Claude Desktop: `~/Library/Application Support/Claude/claude_desktop_config.json`, VS Code: `.vscode/mcp.json`, etc.):
+
+```json
+{
+  "mcpServers": {
+    "dazzle": {
+      "command": "dazzle",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+Optionally set `DAZZLE_STAGE` in `env` to pin a specific stage, or omit it to auto-select (works when you have one stage).
+
+### Tools
+
+| Tool | Description |
+|------|------------|
+| `cli` | Run any dazzle CLI command. Pass `["--help"]` to discover commands. Output is JSON. |
+| `screenshot` | Capture the stage's current browser output as a JPEG image. |
+| `write_file` | Write a file to the stage workspace (`~/.dazzle/stages/<id>/`). |
+| `read_file` | Read a file from the stage workspace. |
+| `edit_file` | Edit a file by exact string replacement. |
+| `list_files` | List all files in the stage workspace. |
+| `sync` | Push the stage workspace to the live stage. |
+| `guide` | Fetch the Dazzle quick-start guide. |
+
+### Workspace tools
+
+The workspace tools (`write_file`, `read_file`, `edit_file`, `list_files`, `sync`) store files in `~/.dazzle/stages/<stage-id>/` on the host filesystem. This bridges sandboxed environments (e.g. Claude Desktop) where the agent's shell runs in an isolated container and can't share files with the CLI process.
+
+**Workflow:** `write_file` → `edit_file` (iterate) → `sync` → `screenshot` (verify)
+
+**Limitations:** No shell/exec — can't run build tools (npm, tailwind, etc.) in the workspace. Content must be pre-built HTML/CSS/JS. Agents with full filesystem access (e.g. Claude Code) should use `dazzle stage sync` directly.
+
+### Resources
+
+| URI | Description |
+|-----|------------|
+| `dazzle://llms-full` | Complete reference (getting started, CLI help, content guide). |
+
 ## Stage Resolution
 
 For stage-scoped commands, the stage is resolved in this order:
