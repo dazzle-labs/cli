@@ -1,36 +1,37 @@
-import { useEffect, useState } from "react";
+import { create } from "zustand";
 import { stageClient } from "@/client";
 import { StageFilter } from "@/gen/api/v1/stage_pb";
 
-// Module-level cache so the count survives component remounts during routing.
-let cachedCount = 0;
+interface LiveCountState {
+  count: number;
+}
 
-/** Poll the number of live stages every 30s. Persists across remounts. */
+const useLiveCountStore = create<LiveCountState>()(() => ({ count: 0 }));
+
+// Single global poller — starts once, never tears down.
+let polling = false;
+
+function startPolling() {
+  if (polling) return;
+  polling = true;
+
+  function poll() {
+    stageClient
+      .listStages({ filters: [StageFilter.LIVE] })
+      .then((res) => {
+        useLiveCountStore.setState({
+          count: res.stages.filter((s) => s.slug).length,
+        });
+      })
+      .catch(() => {});
+  }
+
+  poll();
+  setInterval(poll, 30_000);
+}
+
+/** Returns the number of live stages. Polling starts on first call. */
 export function useLiveCount(): number {
-  const [count, setCount] = useState(cachedCount);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    function poll() {
-      stageClient
-        .listStages({ filters: [StageFilter.LIVE] })
-        .then((res) => {
-          if (cancelled) return;
-          const n = res.stages.filter((s) => s.slug).length;
-          cachedCount = n;
-          setCount(n);
-        })
-        .catch(() => {});
-    }
-
-    poll();
-    const interval = setInterval(poll, 30_000);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, []);
-
-  return count;
+  startPolling();
+  return useLiveCountStore((s) => s.count);
 }

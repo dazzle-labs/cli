@@ -81,13 +81,10 @@ function LiveRouter() {
       <Show when="signed-out">
         <PublicLivePage />
       </Show>
+      {/* Signed-in users get redirected to / which renders LivePage
+          inside AuthenticatedApp's persistent Layout — no sidebar remount. */}
       <Show when="signed-in">
-        <AuthSetup />
-        <TooltipProvider>
-          <Layout>
-            <LivePage />
-          </Layout>
-        </TooltipProvider>
+        <Navigate to="/" replace />
       </Show>
     </>
   );

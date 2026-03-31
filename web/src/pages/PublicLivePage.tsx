@@ -8,6 +8,7 @@ import type { Stage } from "@/gen/api/v1/stage_pb";
 import { StageFilter } from "@/gen/api/v1/stage_pb";
 import { StageThumbnail } from "@/components/StageThumbnail";
 import { useFeaturedStreams, FeaturedCarousel } from "@/components/FeaturedStream";
+import { useLiveCount } from "@/hooks/use-live-count";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Spinner } from "@/components/ui/spinner";
@@ -100,6 +101,7 @@ function EmptyState({ openSignIn }: { openSignIn: () => void }) {
 export function PublicLivePage() {
   const [signInOpen, setSignInOpen] = useState(false);
   const openSignIn = () => setSignInOpen(true);
+  const liveCount = useLiveCount();
 
   const [streams, setStreams] = useState<Stage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -157,13 +159,13 @@ export function PublicLivePage() {
             className="text-white text-sm font-medium inline-flex items-center gap-1.5"
           >
             Live
-            {streams.length > 0 && (
+            {liveCount > 0 && (
               <span className="inline-flex items-center gap-1 ml-0.5">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                   <span className="relative inline-flex rounded-full h-full w-full bg-emerald-400" />
                 </span>
-                <span className="text-emerald-400 text-xs">{streams.length}</span>
+                <span className="text-emerald-400 text-xs">{liveCount}</span>
               </span>
             )}
           </Link>
