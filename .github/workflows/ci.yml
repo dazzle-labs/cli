@@ -42,10 +42,10 @@ jobs:
           cache: true
       - name: Regenerate README
         run: make readme
-      - name: Check README is up-to-date
+      - name: Check generated files are up-to-date
         run: |
-          if ! git diff --exit-code README.md; then
+          if ! git diff --exit-code README.md server.json; then
             echo ""
-            echo "README.md is stale. Run 'make readme' and commit the result."
+            echo "Generated files are stale. Run 'make readme' and commit the result."
             exit 1
           fi

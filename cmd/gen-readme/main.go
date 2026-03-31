@@ -16,11 +16,40 @@ type data struct {
 	HelpStageScreenshot string
 	HelpStageEvent      string
 	HelpDestination     string
+	Version             string
 }
 
 func help(bin string, args ...string) string {
 	out, _ := exec.Command(bin, append(args, "--help")...).CombinedOutput()
 	return strings.TrimRight(string(out), "\n")
+}
+
+func version(bin string) string {
+	out, _ := exec.Command(bin, "version", "--json").CombinedOutput()
+	// Extract version string — output is JSON like {"version":"0.5.0",...}
+	s := string(out)
+	if i := strings.Index(s, `"version":"`); i >= 0 {
+		s = s[i+len(`"version":"`):]
+		if j := strings.Index(s, `"`); j >= 0 {
+			return s[:j]
+		}
+	}
+	return "dev"
+}
+
+func generate(tmplFile, outFile string, d data) {
+	tmpl, err := template.ParseFiles(tmplFile)
+	if err != nil {
+		panic(err)
+	}
+	out, err := os.Create(outFile)
+	if err != nil {
+		panic(err)
+	}
+	defer out.Close() //nolint:errcheck
+	if err := tmpl.Execute(out, d); err != nil {
+		panic(err)
+	}
 }
 
 func main() {
@@ -43,20 +72,9 @@ func main() {
 		HelpStageScreenshot: help(bin.Name(), "stage", "screenshot"),
 		HelpStageEvent:      help(bin.Name(), "stage", "event"),
 		HelpDestination:     help(bin.Name(), "destination"),
+		Version:             version(bin.Name()),
 	}
 
-	tmpl, err := template.ParseFiles("README.md.tmpl")
-	if err != nil {
-		panic(err)
-	}
-
-	out, err := os.Create("README.md")
-	if err != nil {
-		panic(err)
-	}
-	defer out.Close() //nolint:errcheck
-
-	if err := tmpl.Execute(out, d); err != nil {
-		panic(err)
-	}
+	generate("README.md.tmpl", "README.md", d)
+	generate("server.json.tmpl", "server.json", d)
 }
