@@ -1,6 +1,10 @@
-# dazzle CLI
+# dazzle
 
-The official CLI for [Dazzle](https://dazzle.fm) — manage your cloud stages from the terminal.
+The official CLI and MCP server for [Dazzle](https://dazzle.fm) — cloud stages for AI agents and live streaming.
+
+One binary, two interfaces:
+- **CLI** — full shell access for coding agents (Claude Code, Cursor, terminals) and automation
+- **MCP server** (`dazzle mcp`) — stdio integration for sandboxed clients (Claude Desktop, VS Code, any MCP host)
 
 <p align="center">
   <img src="https://dazzle.fm/static/demo.gif" alt="Dazzle CLI demo" width="700" />
@@ -14,52 +18,89 @@ The official CLI for [Dazzle](https://dazzle.fm) — manage your cloud stages fr
 curl -sSL https://dazzle.fm/install.sh | sh
 ```
 
-Installs to `~/.local/bin/dazzle`. Override with `INSTALL_DIR`:
-
-```bash
-INSTALL_DIR=/usr/local/bin curl -sSL https://dazzle.fm/install.sh | sh
-```
-
 ### Windows (PowerShell)
 
 ```powershell
 irm https://dazzle.fm/install.ps1 | iex
 ```
 
-Or download `dazzle_Windows_x86_64.exe` (or `arm64`) from the [releases page](https://github.com/dazzle-labs/cli/releases) and add it to your `PATH`.
-
-### go install
+### Other options
 
 ```bash
 go install github.com/dazzle-labs/cli/cmd/dazzle@latest
 ```
 
-### GitHub Releases
+Pre-built binaries for macOS (arm64/amd64), Linux (amd64/arm64), and Windows (amd64/arm64) are on the [releases page](https://github.com/dazzle-labs/cli/releases).
 
-Pre-built binaries for macOS (arm64/amd64), Linux (amd64/arm64), and Windows (amd64/arm64) are available on the [releases page](https://github.com/dazzle-labs/cli/releases).
-
-## Quick Start
+## Quick Start (CLI)
 
 ```bash
-# Authenticate (opens browser for OAuth sign-in)
-dazzle login
-
-# Create and activate a stage
-dazzle stage create my-stage
-dazzle stage up
-
-# Sync a local directory to the stage
-dazzle stage sync ./my-app --watch
-
-# Take a screenshot to verify
-dazzle stage screenshot -o preview.png
-
-# Add a broadcast destination and go live
-dazzle destination add
-dazzle destination attach my-destination
+dazzle login                              # authenticate (opens browser)
+dazzle stage create my-stage              # create a stage
+dazzle stage up                           # activate — starts streaming
+dazzle stage sync ./my-app --watch        # push content, auto-refresh on changes
+dazzle stage screenshot -o preview.png    # verify output
+dazzle destination add                    # add Twitch/Kick/custom RTMP
+dazzle destination attach my-destination  # go live
 ```
 
-## Commands
+## Quick Start (MCP)
+
+Add to your MCP client config:
+
+```json
+{
+  "mcpServers": {
+    "dazzle": {
+      "command": "dazzle",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+The MCP server starts without credentials — agents can call `guide` to learn the platform and `cli ["login"]` to authenticate.
+
+## MCP Tools
+
+| Tool | Description |
+|------|------------|
+| `cli` | Run a dazzle CLI command. Use ["--help"] to discover available commands. Output is JSON. |
+| `edit_file` | Edit a file in the stage workspace by exact string replacement. The old_string must match exactly once in the file. Use read_file first to see the current content. |
+| `guide` | Get the Dazzle quick-start guide — platform overview, setup, CLI basics, and links to full docs. Read this first before creating or modifying stage content. |
+| `list_files` | List all files in the stage workspace (~/.dazzle/stages/{stage}/). Returns relative paths, one per line. |
+| `read_file` | Read a file from the stage workspace (~/.dazzle/stages/{stage}/{path}). |
+| `screenshot` | Capture a screenshot of the stage's current browser output. Returns a PNG image. |
+| `sync` | Sync the stage workspace (~/.dazzle/stages/{stage}/) to the live stage. Run this after writing files to push content. Equivalent to 'dazzle stage sync {workspace-dir}'. |
+| `write_file` | Write a file to the stage workspace (~/.dazzle/stages/{stage}/{path}). Creates parent directories as needed. Use this to build up content that can then be synced to the stage. |
+
+### Workspace tools
+
+The workspace tools (`write_file`, `read_file`, `edit_file`, `list_files`, `sync`) store files in `~/.dazzle/stages/{stage-id}/` on the host filesystem. This bridges sandboxed environments (e.g. Claude Desktop) where the agent's bash runs in an isolated container and can't share files with the CLI process.
+
+**Workflow:** `write_file` → `edit_file` (iterate) → `sync` → `screenshot` (verify)
+
+**Limitations:** No shell/exec — can't run build tools (npm, tailwind, etc.) in the workspace. Content must be pre-built HTML/CSS/JS. Agents with full filesystem and shell access (e.g. Claude Code) should use `dazzle stage sync` directly for the full experience.
+
+### MCP Resources
+
+| URI | Description |
+|-----|------------|
+| `https://dazzle.fm/llms-full.txt` | Complete Dazzle reference — getting started, CLI help, and content authoring guide. |
+| `https://dazzle.fm/llms.txt` | Dazzle quick-start guide — platform overview, setup, CLI basics, and doc links. |
+
+## CLI vs MCP — which to use?
+
+| | CLI | MCP |
+|---|-----|-----|
+| **Best for** | Coding agents, terminals, CI/CD | Claude Desktop, VS Code, sandboxed clients |
+| **Filesystem** | Full access — write anywhere, run build tools | Workspace only (`~/.dazzle/stages/{id}/`) |
+| **Shell** | Yes — npm, tailwind, any toolchain | No — pre-built content only |
+| **Content sync** | `dazzle stage sync ./dir` | `write_file` + `sync` |
+| **Screenshot** | `dazzle stage screenshot -o file.png` | `screenshot` tool (returns JPEG) |
+| **Auth** | `dazzle login` or `DAZZLE_API_KEY` | `cli ["login"]` via MCP |
+
+## CLI Reference
 
 ```
 Usage: dazzle <command> [flags]
@@ -140,7 +181,8 @@ Commands:
 Run "dazzle <command> --help" for more information on a command.
 ```
 
-### Stage subcommands
+<details>
+<summary>Stage subcommands</summary>
 
 ```
 Usage: dazzle stage (s) <command> [flags]
@@ -243,7 +285,10 @@ Commands:
                                    etc.) without re-syncing or reloading.
 ```
 
-### Destination subcommands
+</details>
+
+<details>
+<summary>Destination subcommands</summary>
 
 ```
 Usage: dazzle destination (dest) <command> [flags]
@@ -268,53 +313,8 @@ Commands:
                                   Detach a destination from a stage.
 ```
 
-## MCP Server
+</details>
 
-The CLI includes a built-in MCP server for AI agent integration. Any MCP-compatible client (Claude Desktop, Claude Code, VS Code, Cursor, etc.) can control stages natively.
-
-### Setup
-
-Add to your MCP client config (Claude Desktop: `~/Library/Application Support/Claude/claude_desktop_config.json`, VS Code: `.vscode/mcp.json`, etc.):
-
-```json
-{
-  "mcpServers": {
-    "dazzle": {
-      "command": "dazzle",
-      "args": ["mcp"]
-    }
-  }
-}
-```
-
-Optionally set `DAZZLE_STAGE` in `env` to pin a specific stage, or omit it to auto-select (works when you have one stage).
-
-### Tools
-
-| Tool | Description |
-|------|------------|
-| `cli` | Run a dazzle CLI command. Use ["--help"] to discover available commands. Output is JSON. |
-| `edit_file` | Edit a file in the stage workspace by exact string replacement. The old_string must match exactly once in the file. Use read_file first to see the current content. |
-| `guide` | Get the Dazzle quick-start guide — platform overview, setup, CLI basics, and links to full docs. Read this first before creating or modifying stage content. |
-| `list_files` | List all files in the stage workspace (~/.dazzle/stages/{stage}/). Returns relative paths, one per line. |
-| `read_file` | Read a file from the stage workspace (~/.dazzle/stages/{stage}/{path}). |
-| `screenshot` | Capture a screenshot of the stage's current browser output. Returns a PNG image. |
-| `sync` | Sync the stage workspace (~/.dazzle/stages/{stage}/) to the live stage. Run this after writing files to push content. Equivalent to 'dazzle stage sync {workspace-dir}'. |
-| `write_file` | Write a file to the stage workspace (~/.dazzle/stages/{stage}/{path}). Creates parent directories as needed. Use this to build up content that can then be synced to the stage. |
-### Workspace tools
-
-The workspace tools (`write_file`, `read_file`, `edit_file`, `list_files`, `sync`) store files in `~/.dazzle/stages/<stage-id>/` on the host filesystem. This bridges sandboxed environments (e.g. Claude Desktop) where the agent's shell runs in an isolated container and can't share files with the CLI process.
-
-**Workflow:** `write_file` → `edit_file` (iterate) → `sync` → `screenshot` (verify)
-
-**Limitations:** No shell/exec — can't run build tools (npm, tailwind, etc.) in the workspace. Content must be pre-built HTML/CSS/JS. Agents with full filesystem access (e.g. Claude Code) should use `dazzle stage sync` directly.
-
-### Resources
-
-| URI | Description |
-|-----|------------|
-| `https://dazzle.fm/llms-full.txt` | Complete Dazzle reference — getting started, CLI help, and content authoring guide. |
-| `https://dazzle.fm/llms.txt` | Dazzle quick-start guide — platform overview, setup, CLI basics, and doc links. |
 ## Stage Resolution
 
 For stage-scoped commands, the stage is resolved in this order:
@@ -323,18 +323,11 @@ For stage-scoped commands, the stage is resolved in this order:
 2. Auto-select if you have exactly one stage
 
 ```bash
-# Specify which stage to use
-dazzle stage sync ./app --stage my-stage
-dazzle stage status --stage my-stage
-
-# Or set for your session
-export DAZZLE_STAGE=my-stage
-dazzle stage sync ./app
+dazzle stage sync ./app --stage my-stage   # explicit
+export DAZZLE_STAGE=my-stage               # or set for your session
 ```
 
 ## Configuration
-
-Config files are stored in `~/.config/dazzle/`:
 
 ```
 ~/.config/dazzle/
@@ -344,13 +337,11 @@ Config files are stored in `~/.config/dazzle/`:
 
 ## Security
 
-- Your API key is stored in `~/.config/dazzle/credentials.json` with file permissions `0600` (owner read/write only)
-- The API key is transmitted as a `Bearer` token in the `Authorization` header over HTTPS
-- The API key is **never logged**, **never echoed to the terminal**, and **never sent to any third party**
-- Input is hidden during interactive `dazzle login` (no shell history exposure)
-- **No telemetry**: the CLI does not collect usage data, crash reports, or analytics of any kind
-- All source code is open source and auditable: `github.com/dazzle-labs/cli`
-- All dependencies are minimal and listed in `go.sum`: only `kong` (CLI framework), `connectrpc` (RPC client), `protobuf` (serialization), and `golang.org/x/term` (hidden input)
+- API key stored at `~/.config/dazzle/credentials.json` with `0600` permissions
+- Transmitted as `Bearer` token over HTTPS only
+- **Never logged, never echoed, never sent to third parties**
+- **No telemetry** — no usage data, crash reports, or analytics
+- All source code is open source and auditable
 
 ## License
 
