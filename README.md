@@ -313,7 +313,7 @@ The workspace tools (`write_file`, `read_file`, `edit_file`, `list_files`, `sync
 
 | URI | Description |
 |-----|------------|
-| `dazzle://llms-full` | Complete Dazzle reference — getting started, CLI help, and content authoring guide. |
+| `https://dazzle.fm/llms-full.txt` | Complete Dazzle reference — getting started, CLI help, and content authoring guide. |
 ## Stage Resolution
 
 For stage-scoped commands, the stage is resolved in this order:

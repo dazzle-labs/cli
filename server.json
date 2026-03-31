@@ -50,7 +50,7 @@
   ],
   "resources": [
     {
-      "uri": "dazzle://llms-full",
+      "uri": "https://dazzle.fm/llms-full.txt",
       "description": "Complete Dazzle reference — getting started, CLI help, and content authoring guide."
     }
   ]

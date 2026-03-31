@@ -43,12 +43,12 @@ const llmsFullURL = "https://dazzle.fm/llms-full.txt"
 // registerResources adds MCP resources (read-only content).
 func registerResources(s *mcp.Server) {
 	s.AddResource(&mcp.Resource{
-		URI:         "dazzle://llms-full",
+		URI:         llmsFullURL,
 		Name:        "llms-full",
 		Description: "Complete Dazzle reference — getting started, CLI help, and content authoring guide.",
 		MIMEType:    "text/markdown",
 	}, func(ctx context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
-		httpClient := &http.Client{Timeout: 5 * time.Second}
+		httpClient := &http.Client{Timeout: 10 * time.Second}
 		resp, err := httpClient.Get(llmsFullURL)
 		if err != nil {
 			return nil, fmt.Errorf("fetch llms-full.txt: %w", err)
@@ -63,7 +63,7 @@ func registerResources(s *mcp.Server) {
 		}
 		return &mcp.ReadResourceResult{
 			Contents: []*mcp.ResourceContents{{
-				URI:      "dazzle://llms-full",
+				URI:      llmsFullURL,
 				MIMEType: "text/markdown",
 				Text:     string(body),
 			}},
