@@ -93,12 +93,14 @@ export function StageCardMenu({
               e.preventDefault();
               e.stopPropagation();
             }}
+            onPointerDown={(e) => e.stopPropagation()}
           >
             <MoreVertical className="size-3.5" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
           align="end"
+          className="min-w-48"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
