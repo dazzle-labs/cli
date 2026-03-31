@@ -17,9 +17,9 @@ import (
 type McpCmd struct{}
 
 func (c *McpCmd) Run(appCtx *Context) error {
-	if err := appCtx.requireAuth(); err != nil {
-		return err
-	}
+	// Don't require auth at startup — the agent may need to call `guide` or
+	// `cli ["login"]` before credentials exist. Tools that need auth will
+	// fail with a clear error message when invoked.
 
 	// stdout is the MCP transport — all diagnostic output must go to stderr.
 	log.SetOutput(os.Stderr)

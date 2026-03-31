@@ -120,14 +120,9 @@ Optionally set `DAZZLE_STAGE` in `env` to pin a specific stage, or omit it to au
 
 | Tool | Description |
 |------|------------|
-| `cli` | Run any dazzle CLI command. Pass `["--help"]` to discover commands. Output is JSON. |
-| `screenshot` | Capture the stage's current browser output as a JPEG image. |
-| `write_file` | Write a file to the stage workspace (`~/.dazzle/stages/<id>/`). |
-| `read_file` | Read a file from the stage workspace. |
-| `edit_file` | Edit a file by exact string replacement. |
-| `list_files` | List all files in the stage workspace. |
-| `sync` | Push the stage workspace to the live stage. |
-| `guide` | Fetch the Dazzle quick-start guide. |
+{{ range .Tools -}}
+| `{{ .Name }}` | {{ .Description }} |
+{{ end -}}
 
 ### Workspace tools
 
@@ -141,7 +136,9 @@ The workspace tools (`write_file`, `read_file`, `edit_file`, `list_files`, `sync
 
 | URI | Description |
 |-----|------------|
-| `dazzle://llms-full` | Complete reference (getting started, CLI help, content guide). |
+{{ range .Resources -}}
+| `{{ .URI }}` | {{ .Description }} |
+{{ end -}}
 
 ## Stage Resolution
 

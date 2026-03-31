@@ -17,35 +17,35 @@
   "tools": [
     {
       "name": "cli",
-      "description": "Run any dazzle CLI command with JSON output."
-    },
-    {
-      "name": "screenshot",
-      "description": "Capture the stage browser output as a JPEG image."
-    },
-    {
-      "name": "write_file",
-      "description": "Write a file to the stage workspace on the host."
-    },
-    {
-      "name": "read_file",
-      "description": "Read a file from the stage workspace."
+      "description": "Run a dazzle CLI command. Use [\"--help\"] to discover available commands. Output is JSON."
     },
     {
       "name": "edit_file",
-      "description": "Edit a file by exact string replacement."
-    },
-    {
-      "name": "list_files",
-      "description": "List all files in the stage workspace."
-    },
-    {
-      "name": "sync",
-      "description": "Push the stage workspace to the live stage."
+      "description": "Edit a file in the stage workspace by exact string replacement. The old_string must match exactly once in the file. Use read_file first to see the current content."
     },
     {
       "name": "guide",
-      "description": "Fetch the Dazzle quick-start guide."
+      "description": "Get the Dazzle quick-start guide — platform overview, setup, CLI basics, and links to full docs. Read this first before creating or modifying stage content."
+    },
+    {
+      "name": "list_files",
+      "description": "List all files in the stage workspace (~/.dazzle/stages/\u003cstage\u003e/). Returns relative paths, one per line."
+    },
+    {
+      "name": "read_file",
+      "description": "Read a file from the stage workspace (~/.dazzle/stages/\u003cstage\u003e/\u003cpath\u003e)."
+    },
+    {
+      "name": "screenshot",
+      "description": "Capture a screenshot of the stage's current browser output. Returns a PNG image."
+    },
+    {
+      "name": "sync",
+      "description": "Sync the stage workspace (~/.dazzle/stages/\u003cstage\u003e/) to the live stage. Run this after writing files to push content. Equivalent to 'dazzle stage sync \u003cworkspace-dir\u003e'."
+    },
+    {
+      "name": "write_file",
+      "description": "Write a file to the stage workspace (~/.dazzle/stages/\u003cstage\u003e/\u003cpath\u003e). Creates parent directories as needed. Use this to build up content that can then be synced to the stage."
     }
   ],
   "resources": [
