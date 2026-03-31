@@ -12,7 +12,6 @@ import {
 import hljs from "highlight.js/lib/core";
 import typescript from "highlight.js/lib/languages/typescript";
 import glsl from "highlight.js/lib/languages/glsl";
-import { installCommand } from "@/lib/cli-commands";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -34,179 +33,259 @@ function LiveText({ children = "live" }: { children?: string }) {
   );
 }
 
-function getTerminalLines(): { type: "cmd" | "out"; text: string }[] {
+type TermLine = { type: "cmd" | "exec" | "out" | "agent" | "user"; text: string };
+
+function getTerminalLines(): TermLine[] {
   return [
-  { type: "cmd", text: installCommand() },
+  { type: "user", text: "read dazzle.fm/llms.txt — build a live SF sports dashboard and stream it" },
+  { type: "out", text: "" },
+  { type: "agent", text: "I'll read the Dazzle docs. First you'll need to install and log in:" },
+  { type: "out", text: "" },
+  { type: "exec", text: "curl -sSL https://dazzle.fm/install.sh | sh" },
   { type: "out", text: "Dazzle CLI installed." },
   { type: "out", text: "" },
-  { type: "cmd", text: "dazzle login" },
+  { type: "exec", text: "dazzle login" },
   { type: "out", text: "\u2713 Logged in as you@example.com" },
   { type: "out", text: "" },
-  { type: "cmd", text: "dazzle stage create aurora" },
-  { type: "out", text: 'Stage "aurora" created.' },
+  { type: "user", text: "done, go ahead" },
+  { type: "out", text: "" },
+  { type: "cmd", text: "dazzle stage create sf-sports" },
+  { type: "out", text: 'Stage "sf-sports" created.' },
+  { type: "out", text: "" },
+  { type: "agent", text: "Wrote Dashboard.tsx, Ticker.tsx, connected ESPN API" },
   { type: "out", text: "" },
   { type: "cmd", text: "npm run build" },
-  { type: "out", text: "\u2713 Built in 0.8s \u2014 dist/index.html (42 KB)" },
+  { type: "out", text: "\u2713 Built in 0.9s" },
   { type: "out", text: "" },
-  { type: "cmd", text: "dazzle stage sync ./dist" },
-  { type: "out", text: "3 files synced." },
+  { type: "cmd", text: "dazzle stage up --stage sf-sports" },
+  { type: "out", text: "\u2713 Stage activated." },
   { type: "out", text: "" },
-  { type: "cmd", text: "dazzle stage up" },
-  { type: "out", text: "Stage is live at https://dazzle.fm/s/aurora" },
+  { type: "cmd", text: "dazzle stage sync ./dist --stage sf-sports" },
+  { type: "out", text: "4 files synced." },
+  { type: "out", text: "" },
+  { type: "agent", text: "Your stage is live at dazzle.fm/s/sf-sports" },
+  { type: "out", text: "" },
+  { type: "user", text: "now stream it to twitch" },
+  { type: "out", text: "" },
+  { type: "cmd", text: "dazzle destination add twitch" },
+  { type: "out", text: "\u2713 Destination \"twitch\" added." },
+  { type: "out", text: "" },
+  { type: "cmd", text: "dazzle destination attach twitch --stage sf-sports" },
+  { type: "out", text: "\u2713 Streaming to twitch.tv" },
   ];
 }
 
-const REACT_CODE = `import { useRef, useMemo } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
-import { Points, PointMaterial } from '@react-three/drei'
-import { fragment } from './warp.glsl'
+const REACT_CODE = `import { useState, useEffect } from 'react'
+import { Ticker } from './Ticker'
 
-function Particles({ count = 4000 }) {
-  const ref = useRef<Points>(null)
-  const positions = useMemo(() => {
-    const p = new Float32Array(count * 3)
-    for (let i = 0; i < count; i++) {
-      const theta = Math.random() * Math.PI * 2
-      const r = 1.5 + Math.random() * 3
-      p[i * 3] = Math.cos(theta) * r
-      p[i * 3 + 1] = (Math.random() - 0.5) * 4
-      p[i * 3 + 2] = Math.sin(theta) * r
+const SF_TEAMS = [
+  { name: '49ers', league: 'NFL', color: '#aa0000' },
+  { name: 'Warriors', league: 'NBA', color: '#1d428a' },
+  { name: 'Giants', league: 'MLB', color: '#fd5a1e' },
+]
+
+export default function Dashboard() {
+  const [games, setGames] = useState([])
+  const [ticker, setTicker] = useState([])
+
+  useEffect(() => {
+    async function fetchScores() {
+      const res = await fetch(
+        'https://site.api.espn.com/apis/site/v2'
+        + '/sports/football/nfl/scoreboard'
+      )
+      const data = await res.json()
+      setGames(filterSFGames(data))
     }
-    return p
-  }, [count])
-
-  useFrame((_, dt) => {
-    ref.current!.rotation.y += dt * 0.08
-    ref.current!.rotation.x = Math.sin(Date.now() * 0.0003) * 0.2
-  })
+    fetchScores()
+    const id = setInterval(fetchScores, 30000)
+    return () => clearInterval(id)
+  }, [])
 
   return (
-    <Points ref={ref} positions={positions} stride={3}>
-      <PointMaterial size={0.02} color="#34d399"
-        transparent opacity={0.8} sizeAttenuation />
-    </Points>
-  )
-}
-
-export default function Stage() {
-  return (
-    <Canvas camera={{ position: [0, 0, 5], fov: 60 }}>
-      <color attach="background" args={['#050505']} />
-      <Particles />
-      <mesh scale={[20, 20, 1]} position={[0, 0, -3]}>
-        <planeGeometry />
-        <shaderMaterial fragmentShader={fragment}
-          uniforms={{ uTime: { value: 0 } }} />
-      </mesh>
-    </Canvas>
+    <div className="dashboard">
+      <header>
+        <h1>SF Bay Area Sports</h1>
+        <Clock />
+      </header>
+      <div className="scores">
+        {games.map(game => (
+          <ScoreCard key={game.id} game={game} />
+        ))}
+      </div>
+      <Ticker items={ticker} />
+    </div>
   )
 }`;
 
-const SHADER_CODE = `precision highp float;
-uniform float uTime;
-varying vec2 vUv;
+const SHADER_CODE = `// Ticker.tsx — scrolling headline ticker
 
-// fbm noise for organic flow
-float hash(vec2 p) {
-  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5);
+import { useEffect, useRef, useState } from 'react'
+
+interface Props {
+  items: string[]
+  speed?: number  // pixels per second
 }
 
-float noise(vec2 p) {
-  vec2 i = floor(p), f = fract(p);
-  f = f * f * (3.0 - 2.0 * f);
-  return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x),
-             mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y);
-}
+export function Ticker({ items, speed = 60 }: Props) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [offset, setOffset] = useState(0)
 
-float fbm(vec2 p) {
-  float v = 0.0, a = 0.5;
-  for (int i = 0; i < 5; i++) {
-    v += a * noise(p);
-    p = p * 2.1 + vec2(1.7, 9.2);
-    a *= 0.5;
-  }
-  return v;
-}
+  useEffect(() => {
+    let raf: number
+    let last = performance.now()
 
-void main() {
-  vec2 uv = vUv * 3.0;
-  float t = uTime * 0.15;
+    function tick(now: number) {
+      const dt = (now - last) / 1000
+      last = now
+      setOffset(prev => {
+        const next = prev + speed * dt
+        const el = ref.current
+        if (!el) return next
+        // loop when fully scrolled
+        return next > el.scrollWidth / 2
+          ? 0 : next
+      })
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [speed])
 
-  float n1 = fbm(uv + vec2(t, -t * 0.7));
-  float n2 = fbm(uv + vec2(-t * 0.5, t) + n1 * 1.5);
+  // duplicate items for seamless loop
+  const doubled = [...items, ...items]
 
-  vec3 col = mix(
-    vec3(0.04, 0.12, 0.08),  // deep emerald
-    vec3(0.1, 0.9, 0.5),      // bright green
-    smoothstep(0.3, 0.7, n2)
-  );
-  col = mix(col, vec3(0.0, 0.3, 0.6), smoothstep(0.5, 0.9, n1));
-  col *= 0.6 + 0.4 * n2;
-
-  gl_FragColor = vec4(col, 1.0);
+  return (
+    <div className="ticker-wrap">
+      <div
+        ref={ref}
+        className="ticker-track"
+        style={{ transform: \`translateX(-\${offset}px)\` }}
+      >
+        {doubled.map((item, i) => (
+          <span key={i} className="ticker-item">
+            {item}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
 }`;
 
 const PREVIEW_HTML = `<!DOCTYPE html><html><head><meta charset="utf-8">
-<style>*{margin:0;overflow:hidden;background:#050505}canvas{position:absolute;top:0;left:0;width:100%;height:100%}</style>
+<style>
+*{margin:0;box-sizing:border-box}
+body{background:#0a0e1a;color:#fff;font-family:system-ui,-apple-system,sans-serif;overflow:hidden;height:100vh;display:flex;flex-direction:column}
+.header{display:flex;align-items:center;justify-content:space-between;padding:3% 4% 2%;flex-shrink:0}
+.title{font-size:clamp(10px,2.5vw,18px);font-weight:700;letter-spacing:0.05em;text-transform:uppercase}
+.title span{color:#f59e0b}
+.clock{font-size:clamp(9px,2vw,14px);color:rgba(255,255,255,0.5);font-variant-numeric:tabular-nums}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:clamp(3px,0.8vw,6px);padding:0 4% 2%;flex:1;min-height:0}
+.card{border-radius:clamp(3px,0.6vw,6px);padding:clamp(4px,1.2vw,10px);display:flex;flex-direction:column;position:relative;overflow:hidden}
+.card-header{font-size:clamp(5px,1vw,8px);text-transform:uppercase;letter-spacing:0.08em;opacity:0.5;margin-bottom:2px}
+.matchup{display:flex;align-items:center;justify-content:center;gap:clamp(3px,1vw,8px);flex:1}
+.team{text-align:center}
+.team-name{font-size:clamp(5px,1.1vw,9px);font-weight:600;margin-bottom:1px}
+.score{font-size:clamp(10px,2.8vw,22px);font-weight:800;font-variant-numeric:tabular-nums}
+.vs{font-size:clamp(5px,0.9vw,7px);opacity:0.3;text-transform:uppercase}
+.status{font-size:clamp(4px,0.8vw,7px);text-align:center;margin-top:auto;padding-top:2px}
+.live-dot{display:inline-block;width:clamp(3px,0.6vw,5px);height:clamp(3px,0.6vw,5px);background:#ef4444;border-radius:50%;margin-right:3px;animation:pulse 2s infinite}
+.ticker{background:rgba(255,255,255,0.05);padding:clamp(4px,1vw,8px) 0;overflow:hidden;white-space:nowrap;flex-shrink:0;font-size:clamp(6px,1.2vw,9px);color:rgba(255,255,255,0.5)}
+.ticker-track{display:inline-block;animation:scroll 25s linear infinite}
+.ticker-item{margin:0 clamp(8px,3vw,24px)}
+.ticker-item b{color:#f59e0b}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+@keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+</style>
 </head><body>
-<canvas id="bg"></canvas><canvas id="fg"></canvas>
+<div class="header">
+  <div class="title">SF Bay <span>Sports</span></div>
+  <div class="clock" id="clock"></div>
+</div>
+<div class="cards">
+  <div class="card" style="background:linear-gradient(135deg,rgba(170,0,0,0.2),rgba(170,0,0,0.05))">
+    <div class="card-header">NFL &bull; Q4 2:31</div>
+    <div class="matchup">
+      <div class="team"><div class="team-name">49ers</div><div class="score" style="color:#ef4444">28</div></div>
+      <div class="vs">&ndash;</div>
+      <div class="team"><div class="team-name">Rams</div><div class="score">21</div></div>
+    </div>
+    <div class="status"><span class="live-dot"></span>LIVE</div>
+  </div>
+  <div class="card" style="background:linear-gradient(135deg,rgba(29,66,138,0.2),rgba(29,66,138,0.05))">
+    <div class="card-header">NBA &bull; 3rd 8:45</div>
+    <div class="matchup">
+      <div class="team"><div class="team-name">Warriors</div><div class="score" style="color:#3b82f6">94</div></div>
+      <div class="vs">&ndash;</div>
+      <div class="team"><div class="team-name">Lakers</div><div class="score">88</div></div>
+    </div>
+    <div class="status"><span class="live-dot"></span>LIVE</div>
+  </div>
+  <div class="card" style="background:linear-gradient(135deg,rgba(253,90,30,0.2),rgba(253,90,30,0.05))">
+    <div class="card-header">MLB &bull; Top 6th</div>
+    <div class="matchup">
+      <div class="team"><div class="team-name">Giants</div><div class="score" style="color:#f97316">5</div></div>
+      <div class="vs">&ndash;</div>
+      <div class="team"><div class="team-name">Dodgers</div><div class="score">3</div></div>
+    </div>
+    <div class="status"><span class="live-dot"></span>LIVE</div>
+  </div>
+  <div class="card" style="background:linear-gradient(135deg,rgba(0,120,100,0.2),rgba(0,120,100,0.05))">
+    <div class="card-header">NHL &bull; 2nd 14:22</div>
+    <div class="matchup">
+      <div class="team"><div class="team-name">Sharks</div><div class="score" style="color:#00897b">2</div></div>
+      <div class="vs">&ndash;</div>
+      <div class="team"><div class="team-name">Kings</div><div class="score">2</div></div>
+    </div>
+    <div class="status"><span class="live-dot"></span>LIVE</div>
+  </div>
+  <div class="card" style="background:linear-gradient(135deg,rgba(0,0,0,0.15),rgba(0,0,0,0.05))">
+    <div class="card-header">MLS &bull; Tomorrow 4:30 PM</div>
+    <div class="matchup">
+      <div class="team"><div class="team-name">Earthquakes</div><div class="score" style="color:#68a">&ndash;</div></div>
+      <div class="vs">vs</div>
+      <div class="team"><div class="team-name">Galaxy</div><div class="score">&ndash;</div></div>
+    </div>
+    <div class="status" style="opacity:0.4">UPCOMING</div>
+  </div>
+  <div class="card" style="background:linear-gradient(135deg,rgba(0,100,60,0.2),rgba(0,100,60,0.05))">
+    <div class="card-header">MLB &bull; Final</div>
+    <div class="matchup">
+      <div class="team"><div class="team-name">A's</div><div class="score" style="color:#22c55e">7</div></div>
+      <div class="vs">&ndash;</div>
+      <div class="team"><div class="team-name">Mariners</div><div class="score">4</div></div>
+    </div>
+    <div class="status" style="opacity:0.5">FINAL</div>
+  </div>
+</div>
+<div class="ticker">
+  <div class="ticker-track" id="ticker"></div>
+</div>
 <script>
-const bg=document.getElementById('bg'),fg=document.getElementById('fg');
-const gl=bg.getContext('webgl'),ctx=fg.getContext('2d');
-
-function resize(){
-  const w=innerWidth,h=innerHeight;
-  bg.width=w;bg.height=h;fg.width=w;fg.height=h;
-  gl.viewport(0,0,w,h);
+function updateClock(){
+  const now=new Date();
+  const h=now.getHours(),m=now.getMinutes(),s=now.getSeconds();
+  document.getElementById('clock').textContent=
+    String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
 }
-resize();
-addEventListener('resize',resize);
+setInterval(updateClock,1000);updateClock();
 
-const vs=gl.createShader(gl.VERTEX_SHADER);
-gl.shaderSource(vs,'attribute vec2 p;varying vec2 vUv;void main(){vUv=p*.5+.5;gl_Position=vec4(p,0,1);}');
-gl.compileShader(vs);
-const fs=gl.createShader(gl.FRAGMENT_SHADER);
-gl.shaderSource(fs,\`precision highp float;uniform float uTime;varying vec2 vUv;
-float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5);}
-float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);
-return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);}
-float fbm(vec2 p){float v=0.0,a=0.5;for(int i=0;i<5;i++){v+=a*noise(p);p=p*2.1+vec2(1.7,9.2);a*=0.5;}return v;}
-void main(){vec2 uv=vUv*3.0;float t=uTime*0.15;
-float n1=fbm(uv+vec2(t,-t*0.7));float n2=fbm(uv+vec2(-t*0.5,t)+n1*1.5);
-vec3 col=mix(vec3(0.04,0.12,0.08),vec3(0.1,0.9,0.5),smoothstep(0.3,0.7,n2));
-col=mix(col,vec3(0.0,0.3,0.6),smoothstep(0.5,0.9,n1));col*=0.6+0.4*n2;
-gl_FragColor=vec4(col,1.0);}\`);
-gl.compileShader(fs);
-const pg=gl.createProgram();gl.attachShader(pg,vs);gl.attachShader(pg,fs);
-gl.linkProgram(pg);gl.useProgram(pg);
-const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);
-gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
-const loc=gl.getAttribLocation(pg,'p');gl.enableVertexAttribArray(loc);
-gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
-const tLoc=gl.getUniformLocation(pg,'uTime');
-
-const N=300,pts=[];
-for(let i=0;i<N;i++){const a=Math.random()*Math.PI*2,r=0.15+Math.random()*0.35;
-pts.push({a,r,s:0.3+Math.random()*0.7,sz:1+Math.random()*2});}
-
-let t=0;
-(function draw(){t+=0.016;
-gl.viewport(0,0,bg.width,bg.height);
-gl.uniform1f(tLoc,t);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
-const w=fg.width,h=fg.height;
-ctx.clearRect(0,0,w,h);
-for(const p of pts){
-const px=w/2+Math.cos(p.a+t*p.s)*p.r*w;
-const py=h/2+Math.sin(p.a+t*p.s*0.7)*p.r*h*0.6+Math.sin(t*0.3)*20;
-ctx.beginPath();ctx.arc(px,py,p.sz,0,7);
-ctx.fillStyle='rgba(52,211,153,'+(0.4+0.4*Math.sin(t+p.a))+')';ctx.fill();}
-requestAnimationFrame(draw)})();
+const headlines=[
+  '<b>49ers</b> Purdy 3 TD passes, defense forces 2 turnovers',
+  '<b>Warriors</b> Curry 32 pts, 8 ast in heated rivalry game',
+  '<b>Giants</b> acquire reliever from Cubs in trade deadline deal',
+  '<b>49ers</b> McCaffrey questionable for next week with knee',
+  '<b>Warriors</b> clinch playoff spot with win tonight',
+  '<b>Giants</b> Chapman homers in 3 straight — Oracle Park erupts',
+];
+const doubled=headlines.concat(headlines);
+document.getElementById('ticker').innerHTML=doubled.map(h=>'<span class="ticker-item">'+h+'</span>').join('');
 <\/script></body></html>`;
 
 type CodeFile = { name: string; code: string; language: string }
 const CODE_FILES: CodeFile[] = [
-  { name: "Aurora.tsx", code: REACT_CODE, language: "typescript" },
-  { name: "aurora.glsl", code: SHADER_CODE, language: "glsl" },
+  { name: "Dashboard.tsx", code: REACT_CODE, language: "typescript" },
+  { name: "Ticker.tsx", code: SHADER_CODE, language: "typescript" },
 ];
 
 function DemoSection() {
@@ -240,8 +319,9 @@ function DemoSection() {
     const currentLine = TERMINAL_LINES[visibleLines];
     if (!currentLine) return;
 
-    if (currentLine.type === "out" || (currentLine.type === "cmd" && typedChars >= currentLine.text.length)) {
-      const delay = currentLine.type === "cmd" ? 400 : currentLine.text === "" ? 200 : 300;
+    const isTyped = currentLine.type === "user";
+    if (currentLine.type === "out" || currentLine.type === "agent" || currentLine.type === "cmd" || currentLine.type === "exec" || (isTyped && typedChars >= currentLine.text.length)) {
+      const delay = isTyped ? 400 : (currentLine.type === "cmd" || currentLine.type === "exec") ? 300 : currentLine.type === "agent" ? 600 : currentLine.text === "" ? 200 : 300;
       const timer = setTimeout(() => {
         setVisibleLines((v) => v + 1);
         setTypedChars(0);
@@ -249,7 +329,7 @@ function DemoSection() {
       return () => clearTimeout(timer);
     }
 
-    const speed = 30 + Math.random() * 40;
+    const speed = 15 + Math.random() * 20;
     const timer = setTimeout(() => setTypedChars((c) => c + 1), speed);
     return () => clearTimeout(timer);
   }, [inView, visibleLines, typedChars]);
@@ -269,7 +349,7 @@ function DemoSection() {
             <div className="h-3 w-3 rounded-full bg-[#febc2e]" />
             <div className="h-3 w-3 rounded-full bg-[#28c840]" />
           </div>
-          <span className="flex-1 text-center text-xs text-zinc-500 font-sans">aurora — dazzle.fm</span>
+          <span className="flex-1 text-center text-xs text-zinc-500 font-sans">sf-sports — dazzle.fm</span>
         </div>
 
         {/* ── Editor area: code + preview side by side ── */}
@@ -314,7 +394,7 @@ function DemoSection() {
                 </div>
               </div>
             ) : (
-              <div className="overflow-auto max-h-[300px]">
+              <div className="overflow-auto max-h-[300px] vscode-scroll">
                 <table className="w-full border-collapse">
                   <tbody>
                     {codeLines.map((_, i) => (
@@ -364,9 +444,9 @@ function DemoSection() {
         <div className="border-b border-[#191919]">
           {/* Terminal tab bar */}
           <div className="flex items-center bg-[#252526] border-b border-[#191919] px-2">
-            <span className="px-3 py-1.5 text-[11px] font-mono text-zinc-400 uppercase tracking-wider">terminal</span>
+            <span className="px-3 py-1.5 text-[11px] font-mono text-zinc-400 uppercase tracking-wider">agent</span>
           </div>
-          <div ref={terminalRef} className="px-5 py-3 font-mono text-[13px] leading-relaxed bg-[#1e1e1e] h-[260px] overflow-auto">
+          <div ref={terminalRef} className="px-5 py-3 font-mono text-[13px] leading-relaxed bg-[#1e1e1e] h-[260px] overflow-auto vscode-scroll">
             {TERMINAL_LINES.slice(0, visibleLines + 1).map((line, i) => {
               const isCurrentLine = i === visibleLines;
               if (line.text === "" && !isCurrentLine) return <div key={i} className="h-4" />;
@@ -379,13 +459,39 @@ function DemoSection() {
                 );
               }
 
+              if (line.type === "agent" && i < visibleLines) {
+                return (
+                  <div key={i} className="text-sky-400/80 italic">
+                    {line.text}
+                  </div>
+                );
+              }
+
               if (line.type === "cmd") {
+                return (
+                  <div key={i} className={isCurrentLine ? "animate-in fade-in duration-200" : ""}>
+                    <span className="text-emerald-400">$ </span>
+                    <span className="text-zinc-200">{line.text}</span>
+                  </div>
+                );
+              }
+
+              if (line.type === "exec") {
+                return (
+                  <div key={i} className={isCurrentLine ? "animate-in fade-in duration-200" : ""}>
+                    <span className="text-red-400">! </span>
+                    <span className="text-zinc-200">{line.text}</span>
+                  </div>
+                );
+              }
+
+              if (line.type === "user") {
                 const chars = isCurrentLine ? typedChars : line.text.length;
                 const typed = line.text.slice(0, chars);
                 const showCursor = isCurrentLine && chars < line.text.length;
                 return (
                   <div key={i}>
-                    <span className="text-emerald-400">$ </span>
+                    <span className="text-amber-400">&gt; </span>
                     <span className="text-zinc-200">{typed}</span>
                     {showCursor && (
                       <span className={`inline-block w-[8px] h-[14px] -mb-[2px] ml-px ${cursorVisible ? "bg-emerald-400" : "bg-transparent"}`} />
@@ -394,9 +500,9 @@ function DemoSection() {
                 );
               }
 
-              if (isCurrentLine && line.type === "out") {
+              if (isCurrentLine && (line.type === "out" || line.type === "agent")) {
                 return (
-                  <div key={i} className="text-zinc-500 animate-in fade-in duration-200">
+                  <div key={i} className={`animate-in fade-in duration-200 ${line.type === "agent" ? "text-sky-400/80 italic" : "text-zinc-500"}`}>
                     {line.text}
                   </div>
                 );
