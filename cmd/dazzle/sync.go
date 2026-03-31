@@ -62,22 +62,48 @@ func (c *SyncCmd) Run(ctx *Context) error {
 }
 
 func (c *SyncCmd) syncOnce(appCtx *Context, rpcCtx context.Context) error {
-	// Walk directory and compute manifest (reads files once for both hash and tar)
-	manifest, entries, totalSize, fileCount, err := walkAndHash(c.Dir)
+	result, err := syncDir(appCtx, rpcCtx, c.Dir, c.Entry)
 	if err != nil {
-		return fmt.Errorf("scanning directory: %w", err)
+		return err
+	}
+
+	if appCtx.JSON {
+		printJSON(result)
+		return nil
+	}
+
+	if result.Synced == 0 && result.Deleted == 0 {
+		printText("Already up to date.")
+	} else {
+		if result.Synced > 0 {
+			printText("%d files synced.", result.Synced)
+		}
+		if result.Deleted > 0 {
+			printText("%d stale files removed.", result.Deleted)
+		}
+	}
+
+	return nil
+}
+
+// syncDir performs the sync RPC and returns the result without printing anything.
+func syncDir(appCtx *Context, rpcCtx context.Context, dir, entry string) (*SyncResponse, error) {
+	// Walk directory and compute manifest (reads files once for both hash and tar)
+	manifest, entries, totalSize, fileCount, err := walkAndHash(dir)
+	if err != nil {
+		return nil, fmt.Errorf("scanning directory: %w", err)
 	}
 
 	if fileCount > maxFileCount {
-		return fmt.Errorf("directory contains %d files (max %d)", fileCount, maxFileCount)
+		return nil, fmt.Errorf("directory contains %d files (max %d)", fileCount, maxFileCount)
 	}
 	if totalSize > maxSyncSize {
-		return fmt.Errorf("directory is %dMB (max %dMB)", totalSize/(1024*1024), maxSyncSize/(1024*1024))
+		return nil, fmt.Errorf("directory is %dMB (max %dMB)", totalSize/(1024*1024), maxSyncSize/(1024*1024))
 	}
 
 	// Validate entry point
-	if _, ok := manifest[c.Entry]; !ok {
-		return fmt.Errorf("entry point %q not found in directory", c.Entry)
+	if _, ok := manifest[entry]; !ok {
+		return nil, fmt.Errorf("entry point %q not found in directory", entry)
 	}
 
 	client := apiv1connect.NewRuntimeServiceClient(appCtx.HTTPClient, appCtx.APIURL)
@@ -86,12 +112,12 @@ func (c *SyncCmd) syncOnce(appCtx *Context, rpcCtx context.Context) error {
 	diffReq := connect.NewRequest(&apiv1.SyncDiffRequest{
 		StageId: appCtx.StageID,
 		Files:   manifest,
-		Entry:   c.Entry,
+		Entry:   entry,
 	})
 	diffReq.Header().Set("Authorization", appCtx.authHeader())
 	diffResp, err := client.SyncDiff(rpcCtx, diffReq)
 	if err != nil {
-		return fmt.Errorf("sync diff: %w", err)
+		return nil, fmt.Errorf("sync diff: %w", err)
 	}
 
 	need := diffResp.Msg.Need
@@ -103,7 +129,7 @@ func (c *SyncCmd) syncOnce(appCtx *Context, rpcCtx context.Context) error {
 	}
 	tarBuf, err := buildTar(entries, needSet)
 	if err != nil {
-		return fmt.Errorf("building tar: %w", err)
+		return nil, fmt.Errorf("building tar: %w", err)
 	}
 
 	// SyncPush via client streaming — always send even if need is empty
@@ -117,7 +143,7 @@ func (c *SyncCmd) syncOnce(appCtx *Context, rpcCtx context.Context) error {
 		if err := stream.Send(&apiv1.SyncPushRequest{
 			StageId: appCtx.StageID,
 		}); err != nil {
-			return fmt.Errorf("sync push send: %w", err)
+			return nil, fmt.Errorf("sync push send: %w", err)
 		}
 	} else {
 		for i := 0; i < len(tarData); i += chunkSize {
@@ -128,35 +154,19 @@ func (c *SyncCmd) syncOnce(appCtx *Context, rpcCtx context.Context) error {
 			msg := &apiv1.SyncPushRequest{Chunk: tarData[i:end]}
 			if i == 0 {
 				msg.StageId = appCtx.StageID
-				}
+			}
 			if err := stream.Send(msg); err != nil {
-				return fmt.Errorf("sync push send: %w", err)
+				return nil, fmt.Errorf("sync push send: %w", err)
 			}
 		}
 	}
 
 	resp, err := stream.CloseAndReceive()
 	if err != nil {
-		return fmt.Errorf("sync push: %w", err)
+		return nil, fmt.Errorf("sync push: %w", err)
 	}
 
-	if appCtx.JSON {
-		printJSON(SyncResponse{Synced: resp.Msg.Synced, Deleted: resp.Msg.Deleted})
-		return nil
-	}
-
-	if resp.Msg.Synced == 0 && resp.Msg.Deleted == 0 {
-		printText("Already up to date.")
-	} else {
-		if resp.Msg.Synced > 0 {
-			printText("%d files synced.", resp.Msg.Synced)
-		}
-		if resp.Msg.Deleted > 0 {
-			printText("%d stale files removed.", resp.Msg.Deleted)
-		}
-	}
-
-	return nil
+	return &SyncResponse{Synced: resp.Msg.Synced, Deleted: resp.Msg.Deleted}, nil
 }
 
 func (c *SyncCmd) watchLoop(ctx *Context) error {
