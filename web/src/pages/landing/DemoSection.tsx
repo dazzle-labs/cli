@@ -1,24 +1,14 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useInView } from "motion/react";
 import hljs from "highlight.js/lib/core";
+import typescript from "highlight.js/lib/languages/typescript";
+import javascript from "highlight.js/lib/languages/javascript";
+import xml from "highlight.js/lib/languages/xml";
 import type { PersonaConfig, TermLine, CodeFile } from "./personas";
 
-// Register languages lazily — track what's been registered
-const registeredLangs = new Set<string>();
-
-async function ensureLanguage(lang: string) {
-  if (registeredLangs.has(lang)) return;
-  registeredLangs.add(lang);
-  try {
-    const mod = await import(
-      /* @vite-ignore */ `../../../node_modules/highlight.js/es/languages/${lang}.js`
-    );
-    hljs.registerLanguage(lang, mod.default);
-  } catch {
-    // Fall back to plaintext if language module not found
-    registeredLangs.delete(lang);
-  }
-}
+hljs.registerLanguage("typescript", typescript);
+hljs.registerLanguage("javascript", javascript);
+hljs.registerLanguage("xml", xml);
 
 export function DemoSection({ persona }: { persona: PersonaConfig }) {
   const terminalLines = persona.terminalLines;
@@ -30,14 +20,7 @@ export function DemoSection({ persona }: { persona: PersonaConfig }) {
   const [cursorVisible, setCursorVisible] = useState(true);
   const [codeFileIdx, setCodeFileIdx] = useState(0);
   const [mobilePreview, setMobilePreview] = useState(false);
-  const [langsReady, setLangsReady] = useState(false);
   const terminalRef = useRef<HTMLDivElement>(null);
-
-  // Register all needed highlight.js languages
-  useEffect(() => {
-    const langs = [...new Set(codeFiles.map((f) => f.language))];
-    Promise.all(langs.map(ensureLanguage)).then(() => setLangsReady(true));
-  }, [codeFiles]);
 
   // Reset animation when persona changes
   useEffect(() => {
@@ -103,7 +86,6 @@ export function DemoSection({ persona }: { persona: PersonaConfig }) {
   const currentLang = codeFiles[codeFileIdx].language;
 
   function highlightLine(line: string, language: string): string {
-    if (!langsReady || !registeredLangs.has(language)) return escapeHtml(line);
     try {
       return hljs.highlight(line, { language }).value;
     } catch {
