@@ -120,7 +120,6 @@ message OutputTarget {
 
 message SetOutputsRequest {
   repeated OutputTarget outputs = 1;
-  bool watermarked = 2;  // When true, apply dazzle.fm watermark on external outputs
 }
 
 message SetOutputsResponse {}

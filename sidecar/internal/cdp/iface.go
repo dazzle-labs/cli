@@ -2,9 +2,8 @@ package cdp
 
 // OutputConfig describes an RTMP output destination.
 type OutputConfig struct {
-	Name        string `json:"name"`
-	URL         string `json:"url"`
-	Watermarked bool   `json:"watermarked"`
+	Name string `json:"name"`
+	URL  string `json:"url"`
 }
 
 // CDP is the interface for Chrome DevTools Protocol clients.

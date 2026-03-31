@@ -43,10 +43,9 @@ type Pipeline struct {
 	framerate  int
 
 	// Output settings
-	outputs          []Output // current active RTMP outputs
-	rtmpBitrate      int      // kbps
-	rtmpPreset       string   // x264 preset
-	watermarked bool // apply dazzle.fm watermark on external outputs
+	outputs     []Output // current active RTMP outputs
+	rtmpBitrate int      // kbps
+	rtmpPreset  string   // x264 preset
 
 	// Encoding settings
 	videoCodec     string // "libx264" (default) or "h264_nvenc"
@@ -126,8 +125,7 @@ func (p *Pipeline) SetStatsCallback(cb func(Stats)) {
 // SetOutputs updates the pipeline's RTMP output destinations.
 // If outputs changed, the pipeline is restarted with the new configuration.
 // If outputs is empty, the pipeline is stopped (no encoding when nobody is receiving).
-// When watermarked is true, external outputs get the dazzle.fm watermark overlay.
-func (p *Pipeline) SetOutputs(outputs []Output, watermarked bool) error {
+func (p *Pipeline) SetOutputs(outputs []Output) error {
 	for _, o := range outputs {
 		if err := validateRTMPURL(o.RtmpURL); err != nil {
 			return fmt.Errorf("invalid output %q: %w", o.Name, err)
@@ -138,13 +136,12 @@ func (p *Pipeline) SetOutputs(outputs []Output, watermarked bool) error {
 	defer p.mu.Unlock()
 
 	// Check if outputs actually changed
-	if outputsEqual(p.outputs, outputs) && p.watermarked == watermarked {
+	if outputsEqual(p.outputs, outputs) {
 		return nil
 	}
 
 	p.outputs = make([]Output, len(outputs))
 	copy(p.outputs, outputs)
-	p.watermarked = watermarked
 
 	// Stop existing pipeline
 	p.stopLocked()
@@ -275,16 +272,6 @@ func (p *Pipeline) buildArgs() []string {
 	gop := fmt.Sprintf("%d", p.framerate*2) // keyframe every 2 seconds
 	fpsStr := fmt.Sprintf("%d", p.framerate)
 
-	// Classify outputs: dazzle (clean) vs external (watermarked)
-	var dazzleIdxs, extIdxs []int
-	for i, o := range p.outputs {
-		if o.Name == "dazzle" {
-			dazzleIdxs = append(dazzleIdxs, i)
-		} else {
-			extIdxs = append(extIdxs, i)
-		}
-	}
-
 	var args []string
 
 	args = append(args,
@@ -311,60 +298,24 @@ func (p *Pipeline) buildArgs() []string {
 		"-progress", "pipe:1",
 	)
 
-	codecArgs := p.codecArgs(gop)
-	outArgs := []string{"-c:a", "aac", "-b:a", "128k", "-flags", "+global_header"}
-	allIdxs := append(dazzleIdxs, extIdxs...)
-
-	watermark := len(extIdxs) > 0 && p.watermarked
-
-	if watermark && len(dazzleIdxs) > 0 {
-		// Mixed: split video, drawtext on external branch, two encode paths.
-		// This doubles encoding cost but keeps the dazzle stream clean.
-		args = append(args,
-			"-filter_complex",
-			fmt.Sprintf("[0:v]split=2[clean][ext]; [ext]%s[wm]", watermarkFilter()),
-		)
-		// Output 1: clean → dazzle
-		args = append(args, "-map", "[clean]", "-map", "1:a")
-		args = append(args, codecArgs...)
-		args = append(args, outArgs...)
-		args = append(args, outputArgsForIdxs(dazzleIdxs)...)
-		// Output 2: watermarked → external
-		args = append(args, "-map", "[wm]", "-map", "1:a")
-		args = append(args, codecArgs...)
-		args = append(args, outArgs...)
-		args = append(args, outputArgsForIdxs(extIdxs)...)
-	} else if watermark {
-		// External only: drawtext filter on the single video path
-		args = append(args, "-map", "0:v", "-map", "1:a")
-		args = append(args, "-vf", watermarkFilter())
-		args = append(args, codecArgs...)
-		args = append(args, outArgs...)
-		args = append(args, outputArgsForIdxs(extIdxs)...)
-	} else {
-		// No watermark: dazzle-only, or watermark disabled for this stage
-		args = append(args, "-map", "0:v", "-map", "1:a")
-		args = append(args, codecArgs...)
-		args = append(args, outArgs...)
-		args = append(args, outputArgsForIdxs(allIdxs)...)
-	}
+	// Single encode, tee to all outputs
+	args = append(args, "-map", "0:v", "-map", "1:a")
+	args = append(args, p.codecArgs(gop)...)
+	args = append(args, "-c:a", "aac", "-b:a", "128k", "-flags", "+global_header")
+	args = append(args, p.outputArgs()...)
 
 	return args
 }
 
-// watermarkFilter returns the ffmpeg drawtext filter for the dazzle.fm watermark.
-// Semi-transparent white text in the bottom-right corner.
-func watermarkFilter() string {
-	return "drawtext=text=dazzle.fm:fontfile=/usr/share/fonts/dazzle.ttf:fontsize=20:fontcolor=white@0.4:x=w-tw-16:y=h-th-16"
-}
-
-// outputArgsForIdxs returns ffmpeg output arguments for a subset of output indices.
-func outputArgsForIdxs(idxs []int) []string {
-	if len(idxs) == 1 {
-		return []string{"-f", "flv", fmt.Sprintf("$RTMP_URL_%d", idxs[0])}
+// outputArgs returns ffmpeg output arguments for all configured outputs.
+// Single output uses -f flv directly; multiple outputs use the tee muxer
+// so the stream is encoded once and written to all destinations.
+func (p *Pipeline) outputArgs() []string {
+	if len(p.outputs) == 1 {
+		return []string{"-f", "flv", "$RTMP_URL_0"}
 	}
 	var teeOutputs []string
-	for _, i := range idxs {
+	for i := range p.outputs {
 		teeOutputs = append(teeOutputs, fmt.Sprintf("[f=flv:onfail=ignore]$RTMP_URL_%d", i))
 	}
 	return []string{"-f", "tee", strings.Join(teeOutputs, "|")}

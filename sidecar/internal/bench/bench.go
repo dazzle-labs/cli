@@ -272,7 +272,7 @@ func runScene(cfg Config, cdpClient *cdp.Client, scene Scene) (*Result, error) {
 
 	// Start pipeline with a dummy local output for benchmarking
 	os.MkdirAll("/tmp/bench-hls", 0o755)
-	if err := p.SetOutputs([]pipeline.Output{{Name: "bench", RtmpURL: "rtmp://localhost:1935/bench/test"}}, false); err != nil {
+	if err := p.SetOutputs([]pipeline.Output{{Name: "bench", RtmpURL: "rtmp://localhost:1935/bench/test"}}); err != nil {
 		os.Stderr = origStderr
 		stderrW.Close()
 		stderrR.Close()

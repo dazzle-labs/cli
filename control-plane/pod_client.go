@@ -215,16 +215,14 @@ type OutputTarget struct {
 
 // SetOutputs updates the sidecar pipeline's RTMP output destinations.
 // Pass an empty slice to stop all outputs.
-// When watermarked is true, external outputs get the dazzle.fm watermark overlay.
-func (p *podClient) SetOutputs(stage *Stage, outputs []OutputTarget, watermarked bool) error {
+func (p *podClient) SetOutputs(stage *Stage, outputs []OutputTarget) error {
 	client := sidecarv1connect.NewOutputPipelineServiceClient(p.httpClientForStage(stage), sidecarURLForStage(stage), p.connectOpts()...)
 	pbOutputs := make([]*sidecarv1.OutputTarget, len(outputs))
 	for i, o := range outputs {
 		pbOutputs[i] = &sidecarv1.OutputTarget{Name: o.Name, RtmpUrl: o.RtmpURL}
 	}
 	_, err := client.SetOutputs(context.Background(), connect.NewRequest(&sidecarv1.SetOutputsRequest{
-		Outputs:          pbOutputs,
-		Watermarked: watermarked,
+		Outputs: pbOutputs,
 	}))
 	if err != nil {
 		return fmt.Errorf("set outputs: %w", err)

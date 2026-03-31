@@ -22,9 +22,8 @@ func (h *outputServer) SetOutputs(ctx context.Context, req *connect.Request[side
 		cdpOutputs := make([]cdp.OutputConfig, len(req.Msg.Outputs))
 		for i, o := range req.Msg.Outputs {
 			cdpOutputs[i] = cdp.OutputConfig{
-				Name:        o.Name,
-				URL:         o.RtmpUrl,
-				Watermarked: req.Msg.Watermarked,
+				Name: o.Name,
+				URL:  o.RtmpUrl,
 			}
 		}
 		if err := h.s.cdpClient.SetOutputs(cdpOutputs); err != nil {
@@ -38,7 +37,7 @@ func (h *outputServer) SetOutputs(ctx context.Context, req *connect.Request[side
 	for i, o := range req.Msg.Outputs {
 		outputs[i] = pipeline.Output{Name: o.Name, RtmpURL: o.RtmpUrl}
 	}
-	if err := h.s.pipeline.SetOutputs(outputs, req.Msg.Watermarked); err != nil {
+	if err := h.s.pipeline.SetOutputs(outputs); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	return connect.NewResponse(&sidecarv1.SetOutputsResponse{}), nil
