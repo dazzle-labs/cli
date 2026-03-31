@@ -16,6 +16,7 @@ node_modules/
 .env
 agent/.env
 web/dist/
+web/tsconfig.tsbuildinfo
 .env.local
 .env*.local
 .age.key
