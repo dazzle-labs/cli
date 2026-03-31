@@ -79,26 +79,26 @@ const REACT_CODE = `import { useState, useEffect } from 'react'
 import { Ticker } from './Ticker'
 
 const SF_TEAMS = [
-  { name: '49ers', league: 'NFL', color: '#aa0000' },
-  { name: 'Warriors', league: 'NBA', color: '#1d428a' },
-  { name: 'Giants', league: 'MLB', color: '#fd5a1e' },
+  { name: '49ers',       league: 'nfl', color: '#aa0000' },
+  { name: 'Warriors',    league: 'nba', color: '#1d428a' },
+  { name: 'Giants',      league: 'mlb', color: '#fd5a1e' },
+  { name: 'Sharks',      league: 'nhl', color: '#00897b' },
+  { name: 'Earthquakes', league: 'mls', color: '#68a' },
+  { name: "A's",         league: 'mlb', color: '#006340' },
 ]
 
 export default function Dashboard() {
-  const [games, setGames] = useState([])
-  const [ticker, setTicker] = useState([])
+  const [games, setGames] = useState<Game[]>([])
 
   useEffect(() => {
-    async function fetchScores() {
-      const res = await fetch(
-        'https://site.api.espn.com/apis/site/v2'
-        + '/sports/football/nfl/scoreboard'
+    async function fetchAll() {
+      const all = await Promise.all(
+        SF_TEAMS.map(t => fetchScores(t))
       )
-      const data = await res.json()
-      setGames(filterSFGames(data))
+      setGames(all.flat())
     }
-    fetchScores()
-    const id = setInterval(fetchScores, 30000)
+    fetchAll()
+    const id = setInterval(fetchAll, 30000)
     return () => clearInterval(id)
   }, [])
 
@@ -108,12 +108,12 @@ export default function Dashboard() {
         <h1>SF Bay Area Sports</h1>
         <Clock />
       </header>
-      <div className="scores">
-        {games.map(game => (
-          <ScoreCard key={game.id} game={game} />
+      <div className="grid">
+        {games.map(g => (
+          <ScoreCard key={g.id} game={g} />
         ))}
       </div>
-      <Ticker items={ticker} />
+      <Ticker items={games.flatMap(g => g.headlines)} />
     </div>
   )
 }`;
