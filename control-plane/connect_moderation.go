@@ -41,6 +41,27 @@ func (s *moderationServer) GetStageOwner(ctx context.Context, req *connect.Reque
 		log.Printf("WARN: failed to look up user %s: %v", row.UserID, dbErr)
 	}
 
+	// DB often has empty email/name — fall back to Clerk API
+	if email == "" && name == "" {
+		if clerkUser, err := user.Get(ctx, row.UserID); err == nil && clerkUser != nil {
+			if clerkUser.FirstName != nil {
+				name = *clerkUser.FirstName
+			}
+			if clerkUser.LastName != nil {
+				if name != "" {
+					name += " "
+				}
+				name += *clerkUser.LastName
+			}
+			for _, ea := range clerkUser.EmailAddresses {
+				if ea.ID == *clerkUser.PrimaryEmailAddressID {
+					email = ea.EmailAddress
+					break
+				}
+			}
+		}
+	}
+
 	return connect.NewResponse(&apiv1internal.GetStageOwnerResponse{
 		UserId: row.UserID,
 		Email:  email,
