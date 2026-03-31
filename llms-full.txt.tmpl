@@ -132,12 +132,13 @@ Add to your MCP client config:
   "mcpServers": {
     "dazzle": {
       "command": "dazzle",
-      "args": ["mcp"],
-      "env": { "DAZZLE_STAGE": "my-stage" }
+      "args": ["mcp"]
     }
   }
 }
 ```
+
+Set `DAZZLE_STAGE` in `env` to pin a specific stage, or omit it to auto-select (works if you have one stage).
 
 ### Tools
 
