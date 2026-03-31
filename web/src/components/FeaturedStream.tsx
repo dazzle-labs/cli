@@ -137,7 +137,7 @@ function SideThumbnail({ data }: { data: FeaturedData }) {
         <img
           src={`/watch/${data.slug}/thumbnail.png`}
           alt={data.title}
-          className="w-full h-full object-contain"
+          className="w-full h-full object-cover"
           loading="lazy"
         />
       </div>
@@ -219,7 +219,7 @@ export function FeaturedStreamCard({ data }: { data: FeaturedData }) {
       <div className="relative aspect-video bg-black">
         <video
           ref={videoRef}
-          className={`w-full h-full object-contain ${!playing ? "opacity-0" : ""}`}
+          className={`w-full h-full object-cover ${!playing ? "opacity-0" : ""}`}
           autoPlay
           muted
           playsInline
