@@ -83,6 +83,7 @@ fi
 
 # Append per-slot runtime flags (display, data dir, window size, CDP pipe).
 # CHROME_FLAGS from the env contains only policy flags; runtime flags are managed here.
+CHROME_FLAGS="$CHROME_FLAGS --load-extension=/opt/cors-extension"
 CHROME_FLAGS="$CHROME_FLAGS --display=$DISPLAY --user-data-dir=$DATA_DIR/chrome"
 CHROME_FLAGS="$CHROME_FLAGS --window-size=${SCREEN_WIDTH},${SCREEN_HEIGHT} --window-position=0,0"
 

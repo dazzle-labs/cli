@@ -153,6 +153,9 @@ COPY docker/pulse-default.pa /etc/pulse/default.pa
 # Copy Xorg dummy driver config (30Hz display — halves Chrome rendering vs Xvfb's 60fps)
 COPY docker/xorg-dummy.conf /etc/X11/xorg-dummy.conf
 
+# Copy CORS/network-isolation Chrome extension
+COPY docker/cors-extension /opt/cors-extension
+
 # Copy entrypoint, prestop hook, and multi-tenant stage-start script
 COPY docker/entrypoint.sh /entrypoint.sh
 COPY docker/prestop.sh /scripts/prestop.sh

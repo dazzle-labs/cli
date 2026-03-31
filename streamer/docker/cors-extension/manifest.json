@@ -1,0 +1,15 @@
+{
+  "manifest_version": 2,
+  "name": "Dazzle CORS & Network Isolation",
+  "version": "1.0",
+  "description": "Adds permissive CORS headers to external responses and blocks local network requests",
+  "permissions": [
+    "webRequest",
+    "webRequestBlocking",
+    "<all_urls>"
+  ],
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": true
+  }
+}

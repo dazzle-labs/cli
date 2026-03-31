@@ -88,6 +88,7 @@ strip_runtime_flags() {
 CHROME_FLAGS="$(strip_runtime_flags "$CHROME_FLAGS")"
 
 # Append per-instance runtime flags
+CHROME_FLAGS="$CHROME_FLAGS --load-extension=/opt/cors-extension"
 CHROME_FLAGS="$CHROME_FLAGS --display=:99 --user-data-dir=/data/chrome"
 CHROME_FLAGS="$CHROME_FLAGS --window-size=${SCREEN_WIDTH},${SCREEN_HEIGHT} --window-position=0,0"
 CHROME_FLAGS="$CHROME_FLAGS --remote-debugging-port=9222 --remote-debugging-address=127.0.0.1"
