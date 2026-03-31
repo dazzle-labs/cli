@@ -144,8 +144,8 @@ Full guide with GPU vs CPU details: https://dazzle.fm/guide.md (also via `dazzle
 
 ### Stage tiers
 
-- **GPU stages** — NVIDIA RTX with hardware-accelerated WebGL and NVENC encoding. Shaders, raymarching, complex post-processing — all 30 FPS.
-- **CPU stages** — Software-rendered OpenGL on shared CPU. CSS, Canvas 2D, DOM, WebGL geometry all 30 FPS. Fragment-heavy shaders limited.
+- **GPU stages** — NVIDIA RTX with hardware-accelerated WebGL and video encoding. Shaders, raymarching, complex post-processing — all 30 FPS.
+- **CPU stages** — Software-rendered OpenGL, no hardware GPU. CSS, Canvas 2D, DOM, WebGL geometry all 30 FPS. Fragment-heavy shaders limited.
 
 ### Environment
 
@@ -154,9 +154,9 @@ Full guide with GPU vs CPU details: https://dazzle.fm/guide.md (also via `dazzle
 | Resolution  | 1280×720 (fixed)                               | 1280×720 (fixed)                   |
 | Frame rate  | 30 fps rendering + capture                     | 30 fps rendering + capture         |
 | Renderer    | NVIDIA RTX (hardware WebGL)                    | Software OpenGL (no hardware GPU)  |
-| Encoder     | NVENC, CBR 2500k                               | x264 (CPU), CBR 2500k             |
-| Browser     | Chrome, kiosk mode, full viewport              | Chrome, kiosk mode, full viewport  |
-| Audio       | PulseAudio capture (Web Audio API works)       | PulseAudio capture                 |
+| Encoder     | Hardware video encoder, CBR 2500k              | Software video encoder, CBR 2500k  |
+| Browser     | Chrome, full viewport                          | Chrome, full viewport              |
+| Audio       | Web Audio API supported, audio captured        | Web Audio API supported, audio captured |
 | Persistence | localStorage and IndexedDB survive restarts    | Same                               |
 
 ### Page setup
@@ -185,8 +185,14 @@ For canvas, size to the window (`canvas.width = window.innerWidth`) — do NOT h
 - **Canvas 2D** — Drawing, compositing, particle effects. Efficient even with 1000+ particles.
 - **DOM-heavy animation** — 200+ elements repositioned per frame via JS.
 - **WebGL shaders** — GPU: unlimited (raymarching, SDF, noise, bloom — all 30 FPS). CPU: geometry-only (500K+ tris at 30 fps, fragment shaders limited).
-- **Web Audio** — Oscillators, buffers, Tone.js. Audio captured by PulseAudio.
+- **Web Audio** — Oscillators, buffers, Tone.js. Audio captured to the stream.
 - **CDN libraries** — Three.js, D3, GSAP, p5.js, Tone.js all work via `<script>` tags.
+
+### Network access & CORS
+
+Stages run with **relaxed CORS** — your content can `fetch()` any external API without hitting cross-origin errors, even if the remote server doesn't send CORS headers. REST endpoints, WebSocket connections, preflight requests (POST with JSON, custom headers) — all work transparently. No proxy needed.
+
+This is more permissive than a standard browser. Code that fails locally due to CORS will work on a Dazzle stage.
 
 ### Performance tiers (GPU stages)
 

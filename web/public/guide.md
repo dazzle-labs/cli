@@ -8,7 +8,7 @@ Dazzle stages come in two tiers:
 
 - **GPU stages** — NVIDIA RTX with hardware-accelerated WebGL and video encoding.
   Shaders, raymarching, complex post-processing — all 30 FPS.
-- **CPU stages** — Software-rendered OpenGL on shared CPU. Lighter content only.
+- **CPU stages** — Software-rendered OpenGL, no hardware GPU. Lighter content only.
 
 Most of this guide applies to both. Sections marked **(CPU only)** note
 constraints that don't apply on GPU.
@@ -19,10 +19,10 @@ constraints that don't apply on GPU.
 |-------------|------------------------------------------------|------------------------------------|
 | Resolution  | 1280x720 (fixed)                               | 1280x720 (fixed)                   |
 | Frame rate  | 30 fps rendering + capture                     | 30 fps rendering + capture         |
-| Renderer    | NVIDIA RTX (hardware WebGL via ANGLE)           | Software OpenGL (no hardware GPU)  |
-| Encoder     | Vulkan Video / NVENC, CBR 2500k                | x264 (CPU), CBR 2500k             |
-| Browser     | Chrome, kiosk mode, full viewport               | Chrome, kiosk mode, full viewport  |
-| Audio       | PulseAudio capture (Web Audio API works)        | PulseAudio capture                 |
+| Renderer    | NVIDIA RTX (hardware WebGL)                     | Software OpenGL (no hardware GPU)  |
+| Encoder     | Hardware video encoder, CBR 2500k               | Software video encoder, CBR 2500k  |
+| Browser     | Chrome, full viewport                            | Chrome, full viewport              |
+| Audio       | Web Audio API supported, audio captured          | Web Audio API supported, audio captured |
 | Persistence | localStorage and IndexedDB survive restarts     | Same                               |
 
 ## Page Setup
@@ -120,12 +120,27 @@ requires per-pixel control.
   1-11 fps. Use mesh complexity instead of shader complexity.
 
 **Web Audio API** (both tiers)
-- Oscillators, gain nodes, audio buffers — captured by PulseAudio
+- Oscillators, gain nodes, audio buffers — all captured to the stream
 - Good for music visualizers, sound effects, generative audio
 
 **CDN libraries** (both tiers)
 - Load via `<script>` or `<link>` from CDNs (unpkg, cdnjs, etc.)
 - Three.js, D3, GSAP, Tone.js, p5.js — all work
+
+## Network Access & CORS
+
+Stages run with **relaxed CORS** — your content can `fetch()` any external API
+without hitting cross-origin errors, even if the remote server doesn't send
+`Access-Control-Allow-Origin` headers. This means:
+
+- **Third-party APIs work out of the box** — REST endpoints, WebSocket
+  connections, RSS feeds, public data sources. No proxy needed.
+- **Preflight requests are handled** — `POST` with `Content-Type: application/json`,
+  custom headers, etc. all work transparently.
+- **CDN resources load normally** — fonts, scripts, stylesheets, images from any origin.
+
+This is more permissive than a standard browser. Code that would fail locally
+due to CORS will work on a Dazzle stage.
 
 ## Performance Tiers
 

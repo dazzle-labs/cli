@@ -293,7 +293,7 @@ export const ENDPOINT_GROUPS: EndpointGroup[] = [
   {
     id: "http",
     name: "HTTP Endpoints",
-    description: "Standard HTTP endpoints for health checks, CDP access, and stage proxying.",
+    description: "Standard HTTP endpoints for health checks and stage proxying.",
     endpoints: [
       {
         id: "health",
