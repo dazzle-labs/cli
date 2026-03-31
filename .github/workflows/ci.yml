@@ -41,7 +41,9 @@ jobs:
           go-version: '1.25'
           cache: true
       - name: Regenerate README
-        run: make readme
+        run: |
+          VERSION=$(python3 -c "import json; print(json.load(open('server.json'))['version'])")
+          make readme VERSION="$VERSION"
       - name: Check generated files are up-to-date
         run: |
           if ! git diff --exit-code README.md server.json; then
