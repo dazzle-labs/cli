@@ -52,6 +52,10 @@
     {
       "uri": "https://dazzle.fm/llms-full.txt",
       "description": "Complete Dazzle reference — getting started, CLI help, and content authoring guide."
+    },
+    {
+      "uri": "https://dazzle.fm/llms.txt",
+      "description": "Dazzle quick-start guide — platform overview, setup, CLI basics, and doc links."
     }
   ]
 }
