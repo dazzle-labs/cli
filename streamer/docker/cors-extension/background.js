@@ -48,7 +48,7 @@ chrome.webRequest.onBeforeRequest.addListener(
     }
   },
   { urls: ["<all_urls>"] },
-  ["blocking"]
+  ["blocking", "extraHeaders"]
 );
 
 // --- CORS: add permissive headers to all responses ---
@@ -64,7 +64,7 @@ chrome.webRequest.onHeadersReceived.addListener(
     return { responseHeaders: headers };
   },
   { urls: ["<all_urls>"] },
-  ["blocking", "responseHeaders"]
+  ["blocking", "responseHeaders", "extraHeaders"]
 );
 
 console.log("[dazzle] CORS & network isolation extension loaded");
