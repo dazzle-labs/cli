@@ -131,11 +131,13 @@ Auth token is obtained lazily via `setTokenGetter()` — registered at app start
 
 ## Vite Dev Proxy
 
-In development, Vite proxies these paths to `http://localhost:8080` (control plane):
-- `/api.v1` — ConnectRPC
-- `/cdp` — CDP proxy
-- `/session` — Stage proxy
+In development, Vite proxies these paths to `http://localhost:38080` (control plane):
+- `/dazzle.v1` — Public ConnectRPC services
+- `/dazzle.internal.v1` — Internal ConnectRPC services
 - `/health` — Health endpoint
+- `/oauth` — OAuth callbacks
+- `/auth/cli/session` — CLI device auth
+- `/watch/*.{m3u8,ts,png}` — HLS/thumbnail proxy
 
 ---
 

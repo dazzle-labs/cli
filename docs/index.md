@@ -31,7 +31,7 @@
 
 ### control-plane (Go backend)
 - **Path:** `control-plane/`
-- **Role:** API server, K8s orchestration, auth, DB, CDP/WS proxy, RTMP ingest auth, serves web SPA
+- **Role:** API server, K8s orchestration, auth, DB, sidecar proxy, RTMP ingest auth, serves web SPA
 - **Entry:** `control-plane/main.go`
 - **Ports:** 8080 (public API + web), 9090 (internal — RTMP callbacks)
 
@@ -75,7 +75,7 @@
 ### Architecture
 - [Project Overview](./project-overview.md) — Product summary, tech stack, key capabilities
 - [Dazzle CLI Design](./dazzle-cli-design.md) — CLI commands, auth flow, proto service changes, implementation plan
-- [Architecture: Control Plane](./architecture-control-plane.md) — Go backend: routes, stage lifecycle, CDP proxy, MCP, env vars
+- [Architecture: Control Plane](./architecture-control-plane.md) — Go backend: routes, stage lifecycle, sidecar proxy, env vars
 - [Architecture: Web Frontend](./architecture-web.md) — React SPA: pages, routing, ConnectRPC client setup
 - [Architecture: Streamer Pod](./architecture-streamer.md) — Stage pod: Chrome, ffmpeg pipeline, sidecar
 - [Architecture: stage-runtime](./architecture-stage-runtime.md) — Rust stage runtime: V8 engine, Canvas 2D (tiny-skia), WebGL2 (wgpu), HTML/CSS, audio, encoding pipeline

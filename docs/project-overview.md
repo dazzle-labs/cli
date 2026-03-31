@@ -20,7 +20,7 @@ Primary use cases: AI agents that need a persistent browser (Claude Code, OpenAI
 | Part | Path | Language | Purpose |
 |------|------|----------|---------|
 | **cli** | `cli/` (git submodule → `dazzle-labs/cli`) | Go 1.25 | Primary interface for developers and AI agents — stage lifecycle, content sync, screenshots, streaming |
-| **control-plane** | `control-plane/` | Go 1.25 | Backend API, Kubernetes orchestration, auth, DB, CDP/WS proxy, serves web SPA |
+| **control-plane** | `control-plane/` | Go 1.25 | Backend API, Kubernetes orchestration, auth, DB, sidecar proxy, serves web SPA |
 | **web** | `web/` | TypeScript / React 19 | Web dashboard SPA (stage monitoring, API keys, stream destinations, account settings) |
 | **streamer** | `streamer/` | — | Per-stage infrastructure container: Xvfb, Chrome, PulseAudio. No custom application code. |
 | **sidecar** | `sidecar/` | Go 1.25 | Per-stage application logic: content sync API, CDP client (logs/events/screenshots), ffmpeg pipeline (HLS + RTMP), R2 persistence, Prometheus metrics, static content serving |
@@ -38,7 +38,7 @@ Primary use cases: AI agents that need a persistent browser (Claude Code, OpenAI
 | **Database** | PostgreSQL | 16 (Alpine) |
 | **Encryption** | AES-256-GCM (stream keys at rest) | — |
 | **K8s Client** | k8s.io/client-go | v0.29.3 |
-| **MCP** | mcp-go | v0.44.1 |
+| **MCP (CLI)** | mcp-go (in CLI) | v0.44.1 |
 | **Frontend Framework** | React | 19 |
 | **Build Tool** | Vite | 6.x |
 | **CSS** | Tailwind CSS | v4 |
@@ -65,8 +65,7 @@ Web UI ────────►         │
            │   ├── RtmpDestinationService (RTMP destinations)
            │   ├── UserService (profile)
            │   └── ApiKeyService (CRUD, Clerk JWT only)
-           ├── CDP Proxy (/stage/<stage-id>/cdp)
-           ├── Stage HTTP/WS Proxy (/stage/<id>/*)
+           ├── Watch/HLS proxy (/watch/<slug>/*)
            ├── Health (/health)
            └── Web SPA (fallback /)
                     │
@@ -92,8 +91,8 @@ Web UI ────────►         │
 1. **CLI (`dazzle`)** — Primary developer/agent interface: stage lifecycle, directory sync, screenshots, logs, broadcast control, destination management — all via ConnectRPC
 2. **Web UI** — Dashboard for stage monitoring, API key management, stream destination configuration, and account settings
 3. **Stage lifecycle** — Create/activate/deactivate/delete browser pods with status tracking (inactive → starting → running → stopping)
-4. **CDP access** — Full Chrome DevTools Protocol access proxied through control plane; WebSocket URL rewriting for external access
-5. **MCP server** *(legacy)* — Per-stage Model Context Protocol endpoint; being superseded by the CLI
+4. **CDP** — Internal-only between sidecar and Chrome within each pod (pipe or WebSocket mode); not exposed externally
+5. **MCP server** — Built into the CLI (`dazzle mcp`); provides tools for AI agent integration via stdin/stdout
 6. **Content sync** — Content synced from CLI as directory snapshots; sidecar serves content via HTTP, Chrome loads from sidecar
 7. **Stream destinations** — RTMP stream keys for Twitch, YouTube, Kick, custom; AES-256-GCM encrypted at rest
 8. **API keys** — `dzl_*` prefix format, HMAC-SHA256 hashed, with last-used tracking; used by CLI and programmatic clients

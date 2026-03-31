@@ -21,7 +21,6 @@ agent-streamer/                    # Monorepo root
 │   ├── connect_stream.go            # RtmpDestinationService RPC handler
 │   ├── connect_user.go              # UserService RPC handler
 │   ├── pod_client.go                # ConnectRPC client for sidecar communication
-│   ├── mcp.go                       # MCP server + tool definitions
 │   ├── go.mod / go.sum              # Go module definition
 │   ├── Makefile                     # Component build targets
 │   ├── proto/api/v1/                # ★ Protobuf service definitions
@@ -184,9 +183,7 @@ agent-streamer/                    # Monorepo root
 |----------|------------|
 | `control-plane/main.go: main()` | HTTP mux wiring — all routes registered here |
 | `control-plane/main.go: Manager.createStage()` | Kubernetes pod creation spec |
-| `control-plane/main.go: handleCDP()` | CDP proxy + URL rewriting |
 | `control-plane/auth.go: authenticate()` | Unified Clerk JWT + API key validation |
-| `control-plane/mcp.go: setupMCP()` | All MCP tool definitions |
 | `web/src/client.ts` | All ConnectRPC client instances + Clerk auth interceptor |
 | `control-plane/pod_client.go` | ConnectRPC client for sidecar communication |
 | `sidecar/internal/server/server.go` | Sidecar HTTP/RPC routing (sync, runtime, broadcast services) |

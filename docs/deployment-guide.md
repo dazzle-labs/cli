@@ -36,9 +36,7 @@ Traefik Ingress (HTTPS :443)
                                 │
                                 ├── Web SPA (static files)
                                 ├── ConnectRPC API (/api.v1.*)
-                                ├── MCP Server (/stage/*/mcp/*)
-                                ├── CDP Proxy (/stage/*/cdp)
-                                ├── Stage HTTP/WS Proxy (/stage/*/...)
+                                ├── Watch/HLS proxy (/watch/*/...)
                                 └── Creates → Streamer Pods (on-demand)
                                       ├── Init: restore from R2
                                       ├── Main: Chrome + Xvfb + PulseAudio
@@ -211,7 +209,6 @@ make prod/logs                 # Tail control-plane logs
 Control-plane logs include:
 - Pod creation/deletion events
 - Authentication events (Clerk JWT and API key)
-- MCP tool invocations
 - Stage GC activity (pods stuck >3 min)
 - DB migration status on startup
 - Stage recovery on restart

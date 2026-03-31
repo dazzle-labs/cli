@@ -33,14 +33,13 @@ On-demand cloud browser environments for AI-driven live streaming and automation
 │    /api.v1.UserService/*       user profile                         │
 │    /api.v1.ApiKeyService/*     API key management  [Clerk only]     │
 │                                                                     │
-│  Stage routes  (all require Clerk JWT or API key)                   │
-│    GET/WS /stage/<id>/cdp          CDP WebSocket proxy to Chrome    │
-│    GET    /stage/<id>/cdp/json/*   CDP discovery (WS URL rewritten) │
-│    *      /stage/<id>/hls/*        HLS live preview (m3u8 + .ts)    │
-│    *      /stage/<id>/*            HTTP/WS reverse proxy to pod     │
+│  Watch / HLS  (public, no auth)                                     │
+│    GET    /watch/<slug>/hls/*      HLS live stream (m3u8 + .ts)     │
+│    GET    /watch/<slug>            Watch page (HLS.js player)       │
 │                                                                     │
 │  Public                                                             │
 │    GET    /health                  health check                     │
+│    GET    /stage/*                 SPA (dashboard pages)            │
 │    GET    /*                       Web SPA (React, static files)    │
 │                                                                     │
 │  Internal                                                           │
@@ -76,8 +75,8 @@ On-demand cloud browser environments for AI-driven live streaming and automation
 
 | Part | Path | Language | Purpose |
 |------|------|----------|---------|
-| **cli** | `cli/` (git submodule) | Go 1.24 | Primary interface for developers and AI agents — stage lifecycle, directory sync, screenshots, streaming |
-| **control-plane** | `control-plane/` | Go 1.24 | API server, K8s orchestration, auth, DB, CDP proxy, serves web SPA |
+| **cli** | `cli/` (git submodule) | Go 1.25 | Primary interface for developers and AI agents — stage lifecycle, directory sync, screenshots, streaming, MCP server |
+| **control-plane** | `control-plane/` | Go 1.25 | API server, K8s orchestration, auth, DB, sidecar proxy, serves web SPA |
 | **web** | `web/` | TypeScript / React 19 | Dashboard — stage monitoring, API keys, stream destinations, account settings |
 | **streamer** | `streamer/` | — | Per-stage infrastructure container: Xvfb, Chrome, PulseAudio. No application code. |
 | **sidecar** | `sidecar/` | Go 1.25 | Per-stage application logic: content sync, CDP client, ffmpeg pipeline, R2 persistence, metrics, static content serving |
@@ -135,16 +134,15 @@ make prod/status    # Show prod cluster nodes and pods
 
 ## Key Capabilities
 
-- **CLI (`dazzle`)** — primary developer/agent interface: `dazzle stage up`, `dazzle stage sync`, `dazzle stage screenshot`, `dazzle stage info`, etc.
+- **CLI (`dazzle`)** — primary developer/agent interface: `dazzle stage up`, `dazzle stage sync`, `dazzle stage screenshot`, `dazzle dest attach`, etc.
+- **MCP server** — `dazzle mcp` starts a local MCP server on stdin/stdout for AI agent integration (Claude Desktop, Claude Code, VS Code, Cursor). Provides `cli`, `screenshot`, `guide`, and workspace file tools.
 - **Web UI** — dashboard for stage monitoring, API key management, stream destination configuration, and account settings
 - **Stage lifecycle** — browser pods move through states: `inactive → starting → running → stopping`. Bring stages up/down via CLI or Web UI; pods are ephemeral, DB records persist.
-- **CDP access** — full Chrome DevTools Protocol proxied through control plane at `/stage/<stage-id>/cdp`
-- **Panel system** — sync directories of HTML/CSS/JS to the stage; browser auto-refreshes on every sync
+- **Content sync** — sync directories of HTML/CSS/JS to the stage; browser auto-refreshes on every sync
 - **Stream destinations** — RTMP keys for Twitch, YouTube, Kick, custom; AES-256-GCM encrypted at rest
 - **API keys** — `dzl_*` prefix, HMAC-SHA256 hashed, with last-used tracking; used by CLI and programmatic clients
 - **Stage persistence** — content, Chrome localStorage, and IndexedDB are synced to Cloudflare R2 via a sidecar container and restored on stage activation
-- **HLS preview** — ffmpeg generates a low-latency HLS stream from the Xvfb display, proxied through the control plane for shareable preview URLs
-- **Preview URLs** — each stage gets a shareable `dpt_*` preview token for unauthenticated HLS viewing
+- **HLS streaming** — ffmpeg generates an HLS stream from the display, publicly viewable at `/watch/<slug>`
 - **Stage recovery** — on restart, reconciles in-memory state with live K8s pods and resets orphaned DB records
 
 ---

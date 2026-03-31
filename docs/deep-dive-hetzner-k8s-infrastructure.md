@@ -472,7 +472,7 @@ control-plane Pod
     |-- Serves web SPA
     |-- ConnectRPC API
     |-- Creates/manages streamer pods (via K8s API, RBAC)
-    |-- Proxies to streamer pods (CDP, MCP, HTTP, WS)
+    |-- Proxies to streamer pods (sidecar RPC)
     |
     +-> PostgreSQL Service (ClusterIP :5432)
          |

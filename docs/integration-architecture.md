@@ -26,24 +26,24 @@ Agent Streamer (Dazzle) is a monorepo with 7 parts. The **control plane** is the
 ┌──────────────────────────────────────────────────────────────┐
 │                   Control Plane (Go)                         │
 │                                                              │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐               │
-│  │  Web SPA │  │ConnectRPC│  │CDP/Stage │               │
-│  │ (GET /)  │  │  /api.v1 │  │  Proxy   │               │
-│  └──────────┘  └────┬─────┘  └────┬─────┘               │
-│                     │             │              │           │
-│  ┌──────────────────┴─────────────┴──────────────┘           │
+│  ┌──────────┐  ┌──────────┐                              │
+│  │  Web SPA │  │ConnectRPC│                              │
+│  │ (GET /)  │  │  /api.v1 │                              │
+│  └──────────┘  └────┬─────┘                              │
+│                     │                                    │
+│  ┌──────────────────┘                                    │
 │  │              Pod Lifecycle Manager                        │
 │  │  (create/delete/watch k8s pods)                           │
 │  │               + PostgreSQL                                │
-│  └──────────┬──────────────────────┬──────────────────────┐  │
-│             │                      │                      │  │
-│  ┌──────────▼──────┐   ┌───────────▼──────┐  ┌───────────▼┐ │
-│  │ HTTP Proxy      │   │  WS Proxy        │  │ PostgreSQL │ │
-│  │ /stage/<id>/*   │   │  /stage/<id>/cdp │  │ (users,    │ │
-│  └──────────┬──────┘   └──────────┬───────┘  │  api_keys, │ │
-└─────────────┼─────────────────────┼──────────│  stages,   ├──┘
-              │                     │          │  streams)  │
-              ▼                     ▼          └────────────┘
+│  └──────────┬────────────────────────────────────────────┐   │
+│             │                                            │   │
+│  ┌──────────▼──────┐                        ┌────────────▼┐  │
+│  │ Sidecar RPC     │                        │ PostgreSQL  │  │
+│  │ Proxy (internal)│                        │ (users,     │  │
+│  └──────────┬──────┘                        │  api_keys,  │  │
+└─────────────┼───────────────────────────────│  stages,    ├──┘
+              │                               │  streams)   │
+              ▼                               └─────────────┘
 ┌──────────────────────────────────────────────┐
 │           Streamer Pod (per stage)           │
 │                                              │
@@ -98,14 +98,13 @@ In development, Vite proxies these paths from `:5173` to `:8080`.
 
 **Auth:** In-cluster ServiceAccount with RBAC on `pods` resource (get, list, watch, create, delete).
 
-### 3. Control Plane → Streamer Pod (Proxy)
+### 3. Control Plane → Streamer Pod (Sidecar RPC)
+
+The control plane proxies CLI operations to the sidecar's ConnectRPC services on each pod. CDP is internal-only (sidecar ↔ Chrome within the pod, not exposed externally).
 
 | Protocol | Path Pattern | Destination | Description |
 |----------|-------------|-------------|-------------|
-| ConnectRPC | `/stage/<id>/_dz_9f7a3b1c/*` | `http://<podIP>:8080/_dz_9f7a3b1c/*` | Sidecar RPC proxy (sync, runtime, broadcast) |
-| WebSocket | `/stage/<id>/cdp` | `ws://<podIP>:8080/devtools/...` | CDP WebSocket (URL resolved via `/json/version`) |
-| HTTP | `/stage/<id>/cdp/json/*` | `http://<podIP>:8080/json/*` | CDP discovery (WS URL rewritten) |
-| HTTP | `/stage/<id>/mcp/*` | MCP server in control plane | MCP tool execution targeting this stage |
+| ConnectRPC | internal proxy | `http://<podIP>:8080/_dz_9f7a3b1c/*` | Sidecar RPC (sync, runtime, broadcast) |
 
 **Auth:** Internal `POD_TOKEN` passed as query parameter to streamer for pod-level requests.
 
@@ -162,24 +161,22 @@ When a stage is broadcasting, its HLS stream is publicly viewable at `/watch/{sl
 
 The control plane resolves the slug to a stage ID via DB lookup, then proxies HLS from the sidecar (same as the authenticated preview proxy, but without requiring a preview token or Clerk JWT).
 
-### 8. MCP Client → Control Plane *(legacy, being superseded by CLI)*
+### 8. MCP (via CLI)
 
-| Protocol | Path | Description |
-|----------|------|-------------|
-| HTTP (StreamableHTTP) | `/stage/<stage-id>/mcp/*` | MCP tool invocation for this stage |
+MCP integration is provided by the **CLI** (`dazzle mcp`), not the control plane. The CLI starts a local MCP server on stdin/stdout that communicates with the control plane via ConnectRPC — the same API path used by direct CLI commands. Works with Claude Desktop, Claude Code, VS Code, Cursor, and any MCP client.
 
-> **Note:** MCP is being superseded by the Dazzle CLI. All operations available via MCP are now accessible through `dazzle` CLI commands using ConnectRPC. The MCP endpoint remains functional but is no longer the recommended integration path.
+For setup, tools, and usage examples, see the [MCP section in llms-full.txt](https://dazzle.fm/llms-full.txt).
 
-### 7. Control Plane → Streamer Pod (Sidecar RPC)
+### 9. Sidecar Services (on each pod)
 
-The control plane proxies CLI/MCP operations to the sidecar's ConnectRPC services on port 8080, all behind the `/_dz_9f7a3b1c/` path prefix:
+The sidecar exposes ConnectRPC services on port 8080 behind the `/_dz_9f7a3b1c/` path prefix. The control plane proxies requests from the CLI/Web UI to these services:
 
 | Operation | ConnectRPC Service | Description |
 |-----------|-------------------|-------------|
 | Sync diff/push/refresh | `SyncService` | Diff, push content (auto-refreshes browser on sync) |
 | Emit event | `RuntimeService.EmitEvent` | Push event to Chrome via CDP |
 | Screenshot | `RuntimeService.Screenshot` | Capture PNG via CDP |
-| Broadcast control | `ObsService.Command` | Streaming control (start/stop broadcast, configure RTMP destination) |
+| Broadcast control | `BroadcastService` | Streaming control (start/stop broadcast, configure RTMP destination) |
 
 ---
 
@@ -195,8 +192,6 @@ The control plane proxies CLI/MCP operations to the sidecar's ConnectRPC service
 4. Client interacts via:
    - CLI (dazzle)    → ConnectRPC: stage lifecycle, sync, screenshots, broadcast, destinations
    - Web UI          → ConnectRPC: stage monitoring, API keys, destinations
-   - /stage/<id>/cdp → Chrome DevTools Protocol (programmatic access)
-   - /stage/<id>/*   → HTTP/WS proxy to streamer panel API
 5. Background GC loop (5s):
    - Refreshes pod statuses from k8s
    - Deletes stages stuck in "starting" >3 minutes

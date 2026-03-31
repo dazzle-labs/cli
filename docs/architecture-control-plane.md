@@ -16,7 +16,7 @@ The control plane is the central Go backend. It:
 - Proxies CDP (Chrome DevTools Protocol) and WebSocket connections from clients to the correct stage pod
 - Serves the compiled web SPA as a static file server
 - Runs DB migrations and persists all state to PostgreSQL
-- Hosts a legacy MCP server per stage (being superseded by CLI)
+- MCP integration is handled by the CLI (`dazzle mcp`), not the control plane
 
 ---
 
@@ -32,7 +32,6 @@ The control plane is the central Go backend. It:
 | Database | PostgreSQL via lib/pq | v1.11.2 |
 | K8s Client | k8s.io/client-go | v0.29.3 |
 | Encryption | AES-256-GCM (via `crypto/cipher`) | stdlib |
-| MCP Server | mcp-go | v0.44.1 |
 | Sidecar Client | ConnectRPC (sidecar proto) | — |
 | UUID | google/uuid (UUIDv7) | v1.6.0 |
 
@@ -59,7 +58,6 @@ control-plane/
 ├── connect_user.go      # UserService RPC handlers
 ├── live.go              # RTMP ingest auth (on_publish/on_publish_done) + public watch HLS proxy
 ├── r2.go                # R2Client (Cloudflare R2 via minio-go) + pod termination wait
-├── mcp.go               # MCP server setup and tool definitions
 ├── proto/
 │   └── api/v1/
 │       ├── stage.proto      # StageService definition
@@ -120,13 +118,10 @@ type Manager struct {
 | `/api.v1.ApiKeyService/*` | POST | Clerk JWT only | API key CRUD |
 | `/api.v1.RtmpDestinationService/*` | POST | Clerk JWT only | Stream destination CRUD |
 | `/api.v1.UserService/*` | POST | Clerk JWT only | User profile |
-| `/stage/<stage-id>/cdp` | WS | Clerk or API key | CDP WebSocket proxy to Chrome |
-| `/stage/<stage-id>/cdp/json/*` | GET | Clerk or API key | CDP discovery (URL-rewritten) |
-| `/stage/<id>/hls/*` | GET | preview token or Clerk | HLS proxy (authenticated preview) |
-| `/stage/<id>/*` | HTTP/WS | Clerk or API key | HTTP/WS proxy to sidecar on pod (port 8080) |
-| `/stage/<id>/mcp/*` | HTTP | Clerk or API key | MCP server (per-stage) |
-| `/watch/<slug>/hls/*` | GET | none | Public HLS proxy — resolves slug to stage, proxies sidecar HLS |
-| `/watch/<slug>` | GET | none | Watch page SPA (HLS.js player) |
+| `/watch/<slug>/hls/*` | GET | none | Public HLS proxy to sidecar |
+| `/watch/<slug>/thumbnail.jpg` | GET | none | Public thumbnail proxy |
+| `/watch/<slug>` | GET | none | Watch page SPA (HLS.js player, OG meta injection) |
+| `/stage/*` | GET | none | SPA (dashboard pages) |
 | `/*` | GET | none | Serve web SPA (fallback) |
 
 **Internal port (:9090) — cluster-only, not exposed via ingress:**
@@ -166,12 +161,14 @@ inactive ──► starting ──► running ──► stopping ──► (dele
 
 ---
 
-## CDP Proxy
+## CDP Access
 
-The control plane provides a stable, authenticated CDP endpoint at `/stage/<stage-id>/cdp`:
+The control plane does **not** expose CDP externally. CDP is used internally between the sidecar and Chrome within each streamer pod:
 
-- **WebSocket**: Resolves Chrome's real WS URL via `/json/version` on the pod, then raw TCP-proxies the WebSocket upgrade (hijacks both connections, bidirectional `io.Copy`)
-- **HTTP discovery** (`/cdp/json/*`): Proxies to pod with token auth; rewrites `webSocketDebuggerUrl` to deterministic external URL `wss://<host>/stage/<stage-id>/cdp`
+- **Pipe mode** (native renderer): sidecar communicates with Chrome via named FIFOs (`/tmp/cdp/in`, `/tmp/cdp/out`) — no TCP port exposed
+- **WebSocket mode** (standard): sidecar connects to Chrome's CDP on `localhost:9222` within the pod
+
+All operations that previously required CDP access (screenshots, logs, events) are available via the CLI's ConnectRPC API (RuntimeService).
 
 ---
 
@@ -199,7 +196,9 @@ Each stage pod has three containers:
 
 ## MCP Server
 
-The control plane hosts an MCP server at `/stage/<id>/mcp/*` using `mcp-go`. Each stage gets its own MCP endpoint. Tools are defined in `mcp.go` and allow AI agents to interact with the stage (emit events, take screenshots, control streaming via `obs` command, get logs).
+MCP integration is provided by the **CLI** (`dazzle mcp`), not the control plane. The CLI starts a local MCP server on stdin/stdout that communicates with the control plane via ConnectRPC — the same API path used by direct CLI commands. See `cli/cmd/dazzle/mcp.go` for the implementation.
+
+For setup and tool reference, see the [MCP section in llms-full.txt](https://dazzle.fm/llms-full.txt).
 
 ---
 

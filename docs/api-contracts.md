@@ -264,21 +264,12 @@ Response: { "status": "ok" }
          or (if authenticated): { "status": "ok", "stages": N, "maxStages": N }
 ```
 
-### CDP Proxy
+### Stage Routes
 ```
-GET  /stage/<stage-id>/cdp                Chrome version info (webSocketDebuggerUrl rewritten)
-GET  /stage/<stage-id>/cdp/json/version   Chrome version info (webSocketDebuggerUrl rewritten)
-GET  /stage/<stage-id>/cdp/json           Tab list (WS URLs rewritten)
-WS   /stage/<stage-id>/cdp               Full CDP WebSocket proxy to Chrome
+GET  /stage/*               SPA (dashboard pages)
 ```
-Auth: Clerk JWT or API key. The `webSocketDebuggerUrl` is rewritten to `wss://<host>/stage/<stage-id>/cdp`.
 
-### Stage Proxy
-```
-*    /stage/<id>/<path>     HTTP proxy to streamer pod (auth required)
-WS   /stage/<id>/*          WebSocket proxy to streamer pod
-POST /stage/<id>/mcp/*      MCP server for this stage
-```
+CDP is not exposed externally. All stage operations (screenshots, logs, events, sync) go through the ConnectRPC RuntimeService. CDP is internal-only between the sidecar and Chrome within each pod.
 
 ---
 
@@ -289,5 +280,4 @@ The Go sidecar in each streamer pod serves ConnectRPC APIs behind the `/_dz_9f7a
 **Service-Level Restrictions:**
 - StageService: Accepts both Clerk JWT and API key
 - ApiKeyService, RtmpDestinationService, UserService: Clerk JWT only
-- MCP endpoints: Accepts both Clerk JWT and API key
 - HTTP proxy/CDP endpoints: Accepts both

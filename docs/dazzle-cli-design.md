@@ -182,29 +182,15 @@ message ObsCommandResponse {
 - `RtmpDestinationService` — Clerk JWT or API key (change from Clerk-only, so CLI can manage destinations)
 - `UserService` — Clerk JWT or API key (change from Clerk-only, for `dazzle whoami`)
 
-## MCP (legacy)
+## MCP
 
-MCP is being superseded by the CLI. The MCP endpoint remains functional for backward compatibility but is no longer the recommended integration path. All operations available via MCP are accessible through `dazzle` CLI commands.
+The CLI includes a built-in MCP server (`dazzle mcp`) that runs on stdin/stdout and communicates with the control plane via the same ConnectRPC API used by direct CLI commands. The old per-stage MCP endpoint in the control plane has been removed.
 
-After the RuntimeService exists, MCP handlers become thin wrappers that call the same business logic as the Connect handlers.
+**Tools:** `cli`, `screenshot`, `guide` (core) + `write_file`, `read_file`, `edit_file`, `list_files`, `sync` (workspace tools for sandboxed agents).
 
-### Shared interface approach
-```go
-// runtimeOps is the internal interface both MCP and Connect call into.
-type runtimeOps interface {
-    SyncDiff(ctx context.Context, stageID string, files map[string]string, entry string) ([]string, error)
-    SyncPush(ctx context.Context, stageID string, tarData []byte) (synced, deleted int32, err error)
-    Refresh(ctx context.Context, stageID string) error
-    EmitEvent(ctx context.Context, stageID, event, data string) error
-    GetLogs(ctx context.Context, stageID string, limit int) ([]LogEntry, error)
-    Screenshot(ctx context.Context, stageID string) ([]byte, error)
-    ObsCommand(ctx context.Context, stageID string, args []string) (string, error)
-    ActivateStage(ctx context.Context, stageID, userID string) (*Stage, error)
-    DeactivateStage(ctx context.Context, stageID string) error
-}
-```
+Implementation: `cli/cmd/dazzle/mcp.go` + `cli/cmd/dazzle/mcp_tools.go`
 
-Both `runtimeServer` (Connect) and MCP handlers call this interface on the Manager.
+For setup, tools, and usage examples, see the [MCP section in llms-full.txt](https://dazzle.fm/llms-full.txt).
 
 ## CLI Tech Stack
 
@@ -221,8 +207,7 @@ Both `runtimeServer` (Connect) and MCP handlers call this interface on the Manag
 2. **Generate code** — `make proto` (Go + TypeScript)
 3. **Shared interface** — Extract `runtimeOps` from Manager, implement methods
 4. **Connect handlers** — `connect_runtime.go` implementing RuntimeService, expand stage server
-5. **Refactor MCP** — Make MCP handlers call through runtimeOps
-6. **Device auth** — DB table, REST endpoints, web page
+5. **Device auth** — DB table, REST endpoints, web page
 7. **CLI repo** — Init Go module, cobra commands, connect client, device auth flow
 8. **Git submodule** — Add CLI repo as submodule
 

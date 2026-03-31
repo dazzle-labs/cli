@@ -19,7 +19,7 @@
 
 ```
 agent-streamer/
-├── control-plane/      # Go backend (API, K8s orchestration, CDP proxy, MCP)
+├── control-plane/      # Go backend (API, K8s orchestration, sidecar proxy)
 │   ├── docker/         # Dockerfile for control-plane
 │   ├── migrations/     # PostgreSQL .up.sql files
 │   ├── proto/api/v1/   # Internal protobuf definitions (ApiKey)
