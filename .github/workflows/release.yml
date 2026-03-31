@@ -17,8 +17,17 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: '1.25'
           cache: true
+      - name: Validate server.json version matches tag
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          JSON_VERSION=$(python3 -c "import json; print(json.load(open('server.json'))['version'])")
+          if [ "$TAG_VERSION" != "$JSON_VERSION" ]; then
+            echo "server.json version ($JSON_VERSION) does not match tag ($TAG_VERSION)"
+            echo "Run: make readme VERSION=$TAG_VERSION"
+            exit 1
+          fi
       - uses: goreleaser/goreleaser-action@v6
         with:
           version: latest

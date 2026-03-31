@@ -1,6 +1,10 @@
-// gen-readme generates README.md and server.json from their .tmpl files
-// by embedding actual CLI help output and MCP tool metadata.
-// Run via: make readme
+// gen-readme generates README.md and server.json by embedding actual CLI help
+// output and MCP tool metadata.
+//
+// Usage:
+//
+//	go run ./cmd/gen-readme              # version from binary ("dev")
+//	go run ./cmd/gen-readme 0.5.1        # explicit version override
 package main
 
 import (
@@ -39,6 +43,16 @@ type data struct {
 func help(bin string, args ...string) string {
 	out, _ := exec.Command(bin, append(args, "--help")...).CombinedOutput()
 	return strings.TrimRight(string(out), "\n")
+}
+
+// resolveVersion returns the version to stamp in generated files.
+// If a version was passed as a CLI argument, use that. Otherwise fall back
+// to the version baked into the binary (which is "dev" during development).
+func resolveVersion(bin string) string {
+	if len(os.Args) > 1 {
+		return os.Args[1]
+	}
+	return version(bin)
 }
 
 func version(bin string) string {
@@ -180,7 +194,7 @@ func main() {
 		HelpStageScreenshot: help(bin.Name(), "stage", "screenshot"),
 		HelpStageEvent:      help(bin.Name(), "stage", "event"),
 		HelpDestination:     help(bin.Name(), "destination"),
-		Version:             version(bin.Name()),
+		Version:             resolveVersion(bin.Name()),
 		Tools:               tools,
 		Resources:           resources,
 	}

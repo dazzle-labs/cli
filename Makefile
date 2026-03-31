@@ -13,7 +13,7 @@ build: check-hooks
 	go build ./cmd/dazzle
 
 readme:
-	go run ./cmd/gen-readme
+	go run ./cmd/gen-readme $(VERSION)
 
 install-hooks:
 	git config core.hooksPath .githooks
