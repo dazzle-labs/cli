@@ -1,3 +1,5 @@
+CLERK_PK ?= pk_test_cmFyZS13YWxsZXllLTQ4LmNsZXJrLmFjY291bnRzLmRldiQ
+
 .PHONY: help build dev
 
 help: ## Show this help
@@ -11,4 +13,4 @@ build: ## Build web (Vite + React)
 # ── Dev ────────────────────────────────────────────────
 
 dev: ## Start dev server
-	. ~/.nvm/nvm.sh && nvm use && yarn dev
+	. ~/.nvm/nvm.sh && nvm use && VITE_CLERK_PUBLISHABLE_KEY=$(CLERK_PK) yarn dev
