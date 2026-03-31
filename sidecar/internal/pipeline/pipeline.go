@@ -201,7 +201,13 @@ func (p *Pipeline) startLocked() error {
 	shellCmd := "exec ffmpeg " + shellQuoteArgs(args)
 	cmd := exec.Command("sh", "-c", shellCmd)
 	cmd.Env = env
-	cmd.Stderr = os.Stderr // ffmpeg logs to stderr
+
+	// Capture stderr to detect tee slave failures (broken RTMP outputs).
+	// Lines not matching our patterns are forwarded to os.Stderr.
+	stderrPipe, err := cmd.StderrPipe()
+	if err != nil {
+		return fmt.Errorf("stderr pipe: %w", err)
+	}
 
 	// Use -progress pipe:1 for machine-readable stats on stdout
 	stdout, err := cmd.StdoutPipe()
@@ -216,6 +222,9 @@ func (p *Pipeline) startLocked() error {
 
 	// Parse progress output in background
 	go p.parseProgress(bufio.NewScanner(stdout))
+
+	// Watch stderr for tee slave failures — restart pipeline to reconnect
+	go p.watchStderr(bufio.NewScanner(stderrPipe), cmd)
 
 	// Monitor process — restart on unexpected exit
 	go p.monitor(cmd)
@@ -265,6 +274,34 @@ func (p *Pipeline) monitor(cmd *exec.Cmd) {
 	defer p.mu.Unlock()
 	if !p.stopped && len(p.outputs) > 0 {
 		p.startLocked()
+	}
+}
+
+// watchStderr scans ffmpeg's stderr for tee slave failures and triggers a
+// pipeline restart so dropped RTMP outputs reconnect. All other stderr lines
+// are forwarded to os.Stderr so ffmpeg warnings remain visible.
+func (p *Pipeline) watchStderr(scanner *bufio.Scanner, cmd *exec.Cmd) {
+	for scanner.Scan() {
+		line := scanner.Text()
+		fmt.Fprintln(os.Stderr, line)
+
+		// ffmpeg tee muxer logs: "[tee @ 0x...] Slave muxer #N failed: Broken pipe, continuing with M/K slaves."
+		if strings.Contains(line, "Slave muxer") && strings.Contains(line, "failed") {
+			log.Printf("ffmpeg pipeline: tee output failed, restarting in 5s to reconnect all outputs")
+			// Give a brief window before restarting — avoids tight loops if the
+			// destination is persistently unreachable.
+			time.Sleep(5 * time.Second)
+
+			p.mu.Lock()
+			if !p.stopped && p.cmd == cmd {
+				p.stopLocked()
+				if len(p.outputs) > 0 {
+					p.startLocked()
+				}
+			}
+			p.mu.Unlock()
+			return // old process is gone; new watchStderr is running
+		}
 	}
 }
 
