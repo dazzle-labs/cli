@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strings"
 	"time"
 
 	"connectrpc.com/connect"
@@ -85,10 +88,11 @@ type destAttachInput struct {
 	Stage       string `json:"stage,omitempty" jsonschema:"Stage name or ID. If omitted uses DAZZLE_STAGE env or auto-selects if you have one stage."`
 }
 
-type createCustomDestInput struct {
-	Name      string `json:"name" jsonschema:"required,Destination display name."`
-	RtmpURL   string `json:"rtmp_url" jsonschema:"required,RTMP ingest URL (e.g. rtmp://live.twitch.tv/app)."`
-	StreamKey string `json:"stream_key" jsonschema:"required,Stream key for the RTMP destination."`
+type addDestInput struct {
+	Platform  string `json:"platform" jsonschema:"required,Platform: twitch youtube kick restream or custom."`
+	Name      string `json:"name,omitempty" jsonschema:"Destination display name (required for custom platform)."`
+	RtmpURL   string `json:"rtmp_url,omitempty" jsonschema:"RTMP ingest URL (required for custom platform)."`
+	StreamKey string `json:"stream_key,omitempty" jsonschema:"Stream key (required for custom platform)."`
 }
 
 func registerTools(s *mcp.Server, appCtx *Context) {
@@ -264,22 +268,98 @@ func registerTools(s *mcp.Server, appCtx *Context) {
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
-		Name:        "create_destination",
-		Description: "Create a custom RTMP destination (for platforms not supported via OAuth). For Twitch/YouTube/Kick, use the dashboard or 'dazzle dest add' CLI command instead.",
-	}, func(ctx context.Context, req *mcp.CallToolRequest, in createCustomDestInput) (*mcp.CallToolResult, any, error) {
-		client := apiv1connect.NewRtmpDestinationServiceClient(appCtx.HTTPClient, appCtx.APIURL)
-		r := connect.NewRequest(&apiv1.CreateStreamDestinationRequest{
-			Name:      in.Name,
-			Platform:  "custom",
-			RtmpUrl:   in.RtmpURL,
-			StreamKey: in.StreamKey,
-		})
-		r.Header().Set("Authorization", appCtx.authHeader())
-		resp, err := client.CreateStreamDestination(ctx, r)
-		if err != nil {
-			return nil, nil, err
+		Name:        "add_destination",
+		Description: "Add a broadcast destination. For OAuth platforms (twitch, youtube, kick, restream), returns a URL the user must visit to authorize — present it to the user and wait for completion. For custom RTMP, provide name, rtmp_url, and stream_key.",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, in addDestInput) (*mcp.CallToolResult, any, error) {
+		platform := strings.ToLower(in.Platform)
+
+		if platform == "custom" {
+			if in.Name == "" || in.RtmpURL == "" || in.StreamKey == "" {
+				return nil, nil, fmt.Errorf("custom platform requires name, rtmp_url, and stream_key")
+			}
+			client := apiv1connect.NewRtmpDestinationServiceClient(appCtx.HTTPClient, appCtx.APIURL)
+			r := connect.NewRequest(&apiv1.CreateStreamDestinationRequest{
+				Name:      in.Name,
+				Platform:  "custom",
+				RtmpUrl:   in.RtmpURL,
+				StreamKey: in.StreamKey,
+			})
+			r.Header().Set("Authorization", appCtx.authHeader())
+			resp, err := client.CreateStreamDestination(ctx, r)
+			if err != nil {
+				return nil, nil, err
+			}
+			return mcpJSON(resp.Msg.Destination), nil, nil
 		}
-		return mcpJSON(resp.Msg.Destination), nil, nil
+
+		// OAuth flow for twitch/youtube/kick/restream
+		validPlatforms := map[string]string{
+			"twitch": "Twitch", "youtube": "YouTube",
+			"kick": "Kick", "restream": "Restream",
+		}
+		displayName, ok := validPlatforms[platform]
+		if !ok {
+			return nil, nil, fmt.Errorf("unknown platform %q — use twitch, youtube, kick, restream, or custom", platform)
+		}
+
+		verifyCode := generateVerifyCode()
+		body, _ := json.Marshal(map[string]string{
+			"type":        "destination",
+			"platform":    platform,
+			"verify_code": verifyCode,
+		})
+		httpReq, _ := http.NewRequestWithContext(ctx, "POST", appCtx.APIURL+"/auth/cli/session", bytes.NewReader(body))
+		httpReq.Header.Set("Content-Type", "application/json")
+		httpReq.Header.Set("Authorization", appCtx.authHeader())
+
+		resp, err := http.DefaultClient.Do(httpReq)
+		if err != nil {
+			return nil, nil, fmt.Errorf("create OAuth session: %w", err)
+		}
+		defer resp.Body.Close()
+
+		var session struct {
+			SessionID  string `json:"session_id"`
+			BrowserURL string `json:"browser_url"`
+			Error      string `json:"error"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&session); err != nil {
+			return nil, nil, fmt.Errorf("parse session: %w", err)
+		}
+		if session.Error != "" {
+			return nil, nil, fmt.Errorf("create session: %s", session.Error)
+		}
+
+		// Open the authorization URL in the user's browser.
+		openBrowser(session.BrowserURL)
+
+		// Send the URL to the agent via log notification so it can present it
+		// to the user if the browser didn't open.
+		if req.Session != nil {
+			_ = req.Session.Log(ctx, &mcp.LoggingMessageParams{
+				Level:  "info",
+				Logger: "dazzle",
+				Data: fmt.Sprintf(
+					"Opening browser for %s authorization.\nIf the browser didn't open, visit: %s\nVerification code: %s",
+					displayName, session.BrowserURL, verifyCode,
+				),
+			})
+		}
+
+		// Poll until the user completes OAuth in the browser (up to 5 min).
+		pollResult, err := pollCliSession(appCtx.APIURL, session.SessionID, 5*time.Minute)
+		if err != nil {
+			return nil, nil, fmt.Errorf(
+				"%s authorization failed. If the browser didn't open, visit: %s (code: %s). Error: %w",
+				displayName, session.BrowserURL, verifyCode, err,
+			)
+		}
+
+		return mcpJSON(map[string]string{
+			"status":            "connected",
+			"platform":          pollResult.Platform,
+			"platform_username": pollResult.PlatformUsername,
+		}), nil, nil
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
