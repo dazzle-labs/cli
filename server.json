@@ -1,0 +1,57 @@
+{
+  "$schema": "https://registry.modelcontextprotocol.io/schemas/server.json",
+  "name": "io.github.dazzle-labs/dazzle",
+  "description": "Cloud stages for AI agents and live streaming. Create, manage, and sync content to browser-based streaming environments.",
+  "version": "0.5.0",
+  "repository": {
+    "url": "https://github.com/dazzle-labs/cli",
+    "source": "https://github.com/dazzle-labs/cli/tree/main/cmd/dazzle"
+  },
+  "packages": [
+    {
+      "registry_name": "github-releases",
+      "name": "dazzle-labs/cli",
+      "version": "v0.5.0"
+    }
+  ],
+  "tools": [
+    {
+      "name": "cli",
+      "description": "Run any dazzle CLI command with JSON output."
+    },
+    {
+      "name": "screenshot",
+      "description": "Capture the stage browser output as a JPEG image."
+    },
+    {
+      "name": "write_file",
+      "description": "Write a file to the stage workspace on the host."
+    },
+    {
+      "name": "read_file",
+      "description": "Read a file from the stage workspace."
+    },
+    {
+      "name": "edit_file",
+      "description": "Edit a file by exact string replacement."
+    },
+    {
+      "name": "list_files",
+      "description": "List all files in the stage workspace."
+    },
+    {
+      "name": "sync",
+      "description": "Push the stage workspace to the live stage."
+    },
+    {
+      "name": "guide",
+      "description": "Fetch the Dazzle quick-start guide."
+    }
+  ],
+  "resources": [
+    {
+      "uri": "dazzle://llms-full",
+      "description": "Complete Dazzle reference — getting started, CLI help, and content authoring guide."
+    }
+  ]
+}
