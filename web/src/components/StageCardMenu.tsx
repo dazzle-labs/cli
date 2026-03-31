@@ -9,7 +9,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
@@ -106,15 +105,6 @@ export function StageCardMenu({
             e.stopPropagation();
           }}
         >
-          {ownerInfo && (
-            <>
-              <DropdownMenuLabel>
-                {ownerInfo.name || "Unknown"} &mdash;{" "}
-                {ownerInfo.email || "no email"}
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-            </>
-          )}
           <DropdownMenuItem onSelect={handleDeAnonymize}>
             <User className="size-4" />
             Show Owner
