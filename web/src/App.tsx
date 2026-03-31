@@ -128,6 +128,7 @@ export function App() {
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/live" element={<LiveRouter />} />
+        <Route path="/for/:personaId" element={<AuthenticatedApp />} />
         <Route path="*" element={<AuthenticatedApp />} />
       </Routes>
     </BrowserRouter>
