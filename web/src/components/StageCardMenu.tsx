@@ -41,11 +41,17 @@ export function StageCardMenu({
   const [showBanDialog, setShowBanDialog] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  async function fetchOwnerInfo() {
+    const res = await moderationClient.getStageOwner({ stageId });
+    const info = { userId: res.userId, email: res.email, name: res.name };
+    setOwnerInfo(info);
+    return info;
+  }
+
   async function handleDeAnonymize() {
     try {
-      const res = await moderationClient.getStageOwner({ stageId });
-      setOwnerInfo({ userId: res.userId, email: res.email, name: res.name });
-      toast.info(`Owner: ${res.name || "Unknown"} (${res.email || "no email"})`);
+      const info = await fetchOwnerInfo();
+      toast.info(`Owner: ${info.name || "Unknown"} (${info.email || "no email"})`);
     } catch {
       toast.error("Failed to get owner info");
     }
@@ -121,7 +127,9 @@ export function StageCardMenu({
             variant="destructive"
             onSelect={() => {
               if (!ownerInfo) {
-                handleDeAnonymize().then(() => setShowBanDialog(true));
+                fetchOwnerInfo()
+                  .then(() => setShowBanDialog(true))
+                  .catch(() => toast.error("Failed to get owner info"));
               } else {
                 setShowBanDialog(true);
               }
