@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -61,6 +62,16 @@ func mustAuth(ctx context.Context) authInfo {
 	return info
 }
 
+// requireDeveloper returns a PermissionDenied error if the caller lacks the
+// org:access:developer Clerk permission.
+func requireDeveloper(ctx context.Context) (authInfo, error) {
+	info := mustAuth(ctx)
+	if !info.HasPermission(PermDeveloper) {
+		return info, connect.NewError(connect.CodePermissionDenied, fmt.Errorf("insufficient permissions"))
+	}
+	return info, nil
+}
+
 // ensureUserFunc upserts a user row when Clerk auth succeeds.
 type ensureUserFunc func(userID string)
 
@@ -104,12 +115,19 @@ func (a *authenticator) authenticate(ctx context.Context, token string) (*authIn
 	if strings.HasPrefix(token, "dzl_") || strings.HasPrefix(token, "bstr_") {
 		hash := hashAPIKey(token)
 		if cached, ok := a.apiKeyCache.Get(hash); ok {
+			if banned, _ := dbIsUserBanned(a.db, cached.UserID); banned {
+				a.apiKeyCache.Remove(hash)
+				return nil, fmt.Errorf("user is banned")
+			}
 			go dbTouchAPIKey(a.db, cached.KeyID)
 			return &cached, nil
 		}
 		userID, keyID, err := dbLookupAPIKey(a.db, hash)
 		if err != nil {
 			return nil, err
+		}
+		if banned, _ := dbIsUserBanned(a.db, userID); banned {
+			return nil, fmt.Errorf("user is banned")
 		}
 		info := authInfo{UserID: userID, Method: authMethodAPIKey, KeyID: keyID}
 		a.apiKeyCache.Add(hash, info)

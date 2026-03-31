@@ -97,11 +97,13 @@ func runMigrations(db *sql.DB, dir string) error {
 
 // --- User queries ---
 
+// dbUpsertUser creates or updates a user row. Also clears the banned flag —
+// if the user has a valid Clerk session, they were unbanned in the dashboard.
 func dbUpsertUser(db *sql.DB, id, email, name string) error {
 	_, err := db.Exec(`
 		INSERT INTO users (id, email, name, updated_at)
 		VALUES ($1, $2, $3, NOW())
-		ON CONFLICT (id) DO UPDATE SET email=$2, name=$3, updated_at=NOW()`,
+		ON CONFLICT (id) DO UPDATE SET email=$2, name=$3, banned=FALSE, updated_at=NOW()`,
 		id, email, name)
 	return err
 }
@@ -113,6 +115,20 @@ func dbGetUserProfile(db *sql.DB, userID string) (email, name string, stageCount
 			(SELECT COUNT(*) FROM api_keys WHERE user_id=$1)
 		FROM users u WHERE u.id=$1`, userID).Scan(&email, &name, &stageCount, &apiKeyCount)
 	return
+}
+
+func dbBanUser(db *sql.DB, userID string) error {
+	_, err := db.Exec("UPDATE users SET banned=TRUE, updated_at=NOW() WHERE id=$1", userID)
+	return err
+}
+
+func dbIsUserBanned(db *sql.DB, userID string) (bool, error) {
+	var banned bool
+	err := db.QueryRow("SELECT banned FROM users WHERE id=$1", userID).Scan(&banned)
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+	return banned, err
 }
 
 // --- API key queries ---

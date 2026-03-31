@@ -254,7 +254,7 @@ export function Dashboard() {
                     whileTap={{ scale: 0.98 }}
                     transition={springs.quick}
                   >
-                    <div className="rounded-lg overflow-hidden">
+                    <div className="rounded-xl border border-white/[0.08] bg-white/[0.015] overflow-hidden transition-colors duration-300 hover:border-emerald-500/20 hover:bg-emerald-500/[0.01]">
                       <div className="relative aspect-video bg-black">
                         {isRunning ? (
                           <StageThumbnail slug={stage.slug} />
@@ -280,8 +280,8 @@ export function Dashboard() {
                           )}
                         </div>
                       </div>
-                      <div className="px-1 pt-2.5 pb-1">
-                        <h3 className="text-base font-semibold text-foreground truncate">
+                      <div className="px-4 py-3">
+                        <h3 className="text-sm font-medium text-white truncate">
                           {stage.name || "Untitled Stage"}
                         </h3>
                       </div>

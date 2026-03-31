@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
 import { stageClient } from "@/client";
@@ -6,35 +6,32 @@ import type { Stage } from "@/gen/api/v1/stage_pb";
 import { StageFilter } from "@/gen/api/v1/stage_pb";
 import { Spinner } from "@/components/ui/spinner";
 import { StageThumbnail } from "@/components/StageThumbnail";
+import { StageCardMenu } from "@/components/StageCardMenu";
 import { AnimatedPage } from "@/components/AnimatedPage";
 import { AnimatedList, AnimatedListItem } from "@/components/AnimatedList";
+import { useIsDeveloper } from "@/hooks/use-is-developer";
 import { springs } from "@/lib/motion";
 
 export function LivePage() {
   const [streams, setStreams] = useState<Stage[]>([]);
   const [loading, setLoading] = useState(true);
+  const isDev = useIsDeveloper();
+
+  const poll = useCallback(() => {
+    stageClient
+      .listStages({ filters: [StageFilter.LIVE] })
+      .then((res) => {
+        setStreams(res.stages.filter((s) => s.slug));
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
-
-    function poll() {
-      stageClient
-        .listStages({ filters: [StageFilter.LIVE] })
-        .then((res) => {
-          if (cancelled) return;
-          setStreams(res.stages.filter((s) => s.slug));
-          setLoading(false);
-        })
-        .catch(() => setLoading(false));
-    }
-
     poll();
     const interval = setInterval(poll, 30_000);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, []);
+    return () => clearInterval(interval);
+  }, [poll]);
 
   return (
     <AnimatedPage>
@@ -64,12 +61,19 @@ export function LivePage() {
                   whileTap={{ scale: 0.98 }}
                   transition={springs.quick}
                 >
-                  <div className="rounded-lg overflow-hidden">
+                  <div className="rounded-xl border border-white/[0.08] bg-white/[0.015] overflow-hidden transition-colors duration-300 hover:border-emerald-500/20 hover:bg-emerald-500/[0.01]">
                     <div className="relative aspect-video bg-black">
                       <StageThumbnail slug={stage.slug} />
+                      {isDev && (
+                        <StageCardMenu
+                          stageId={stage.slug}
+                          stageName={stage.name}
+                          onDeleted={poll}
+                        />
+                      )}
                     </div>
-                    <div className="px-1 pt-2.5 pb-1">
-                      <h3 className="text-base font-semibold text-foreground truncate">
+                    <div className="px-4 py-3">
+                      <h3 className="text-sm font-medium text-white truncate">
                         {stage.name}
                       </h3>
                     </div>

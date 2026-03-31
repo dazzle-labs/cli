@@ -49,7 +49,8 @@ var (
 	_ apiv1connect.RtmpDestinationServiceHandler  = (*rtmpDestinationServer)(nil)
 	_ apiv1connect.UserServiceHandler             = (*userServer)(nil)
 	_ apiv1connect.RuntimeServiceHandler          = (*runtimeServer)(nil)
-	_ apiv1internalconnect.FeaturedServiceHandler  = (*featuredServer)(nil)
+	_ apiv1internalconnect.FeaturedServiceHandler    = (*featuredServer)(nil)
+	_ apiv1internalconnect.ModerationServiceHandler = (*moderationServer)(nil)
 )
 
 type StageStatus string
@@ -1495,6 +1496,13 @@ func main() {
 		connect.WithInterceptors(authInterceptor, clerkOnly),
 	)
 	mux.Handle(apiKeyPath, cors(apiKeyHandler))
+
+	// ModerationService — Clerk JWT only, developer permission enforced in handlers
+	moderationPath, moderationHandler := apiv1internalconnect.NewModerationServiceHandler(
+		&moderationServer{mgr: mgr},
+		connect.WithInterceptors(authInterceptor, clerkOnly),
+	)
+	mux.Handle(moderationPath, cors(moderationHandler))
 
 	// RtmpDestinationService — Clerk JWT or API key
 	streamPath, streamHandler := apiv1connect.NewRtmpDestinationServiceHandler(
