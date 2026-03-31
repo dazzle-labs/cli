@@ -121,6 +121,14 @@ export function PublicDocs() {
               Docs
             </Link>
             <a
+              href="https://discord.gg/pHpAaSqtWK"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-zinc-400 hover:text-white text-sm transition-colors"
+            >
+              Discord
+            </a>
+            <a
               href="/llms.txt"
               target="_blank"
               rel="noopener noreferrer"
