@@ -43,7 +43,7 @@ func (c *ScreenshotCmd) Run(ctx *Context) error {
 			return fmt.Errorf("create temp file: %w", err)
 		}
 		path = f.Name()
-		f.Close()
+		_ = f.Close()
 	}
 
 	if err := os.WriteFile(path, resp.Msg.Image, 0644); err != nil {

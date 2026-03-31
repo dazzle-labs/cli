@@ -17,7 +17,7 @@ func (c *GuideCmd) Run(ctx *Context) error {
 	httpClient := &http.Client{Timeout: 3 * time.Second}
 	resp, err := httpClient.Get(guideURL)
 	if err == nil && resp.StatusCode == http.StatusOK {
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck
 		body, err := io.ReadAll(resp.Body)
 		if err == nil && len(body) > 0 {
 			fmt.Print(string(body))

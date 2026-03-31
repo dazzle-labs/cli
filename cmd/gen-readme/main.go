@@ -30,8 +30,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	bin.Close()
-	defer os.Remove(bin.Name())
+	_ = bin.Close()
+	defer os.Remove(bin.Name()) //nolint:errcheck
 
 	if out, err := exec.Command("go", "build", "-o", bin.Name(), "./cmd/dazzle").CombinedOutput(); err != nil {
 		panic(string(out))
@@ -56,7 +56,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer out.Close()
+	defer out.Close() //nolint:errcheck
 
 	if err := tmpl.Execute(out, d); err != nil {
 		panic(err)
