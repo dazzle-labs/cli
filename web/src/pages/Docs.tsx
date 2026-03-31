@@ -10,10 +10,9 @@ import {
   INSTALL_TABS,
   QUICK_START_STEPS,
   MULTI_STAGE_SNIPPET,
-  FRAMEWORK_EXAMPLES,
-  EVENTS_HTML_SNIPPET,
+  FRAMEWORKS,
+  EVENTS_JS_SNIPPET,
   EVENTS_CLI_SNIPPET,
-  PERSISTENCE_SNIPPET,
 } from "./docs-content";
 import type { InstallTab } from "./docs-content";
 import { cli } from "@/lib/cli-commands";
@@ -117,25 +116,21 @@ export function Docs() {
           Use any framework
         </h2>
         <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
-          A stage is a browser. If it runs in a browser, it runs on Dazzle. Build with whatever you want, then sync the output.
+          If it runs in a browser, it runs on Dazzle. Build with whatever you want, then sync the output.
         </p>
 
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          {FRAMEWORK_EXAMPLES.map((fw) => (
-            <div
-              key={fw.name}
-              className="rounded-lg border border-border bg-muted/30 p-3"
+        <div className="flex flex-wrap gap-2">
+          {FRAMEWORKS.map((name) => (
+            <span
+              key={name}
+              className="rounded-full border border-border bg-muted/30 px-3 py-1 text-xs font-medium text-muted-foreground"
             >
-              <span className="text-sm font-medium text-foreground">{fw.name}</span>
-              <pre className="mt-2 text-xs text-muted-foreground font-mono whitespace-pre leading-relaxed">{fw.cmd}</pre>
-            </div>
+              {name}
+            </span>
           ))}
-        </div>
-
-        <div className="rounded-lg border border-primary/20 bg-primary/[0.04] px-4 py-3">
-          <p className="text-sm text-foreground leading-relaxed">
-            Three.js, D3, p5.js, GSAP, Tone.js, TailwindCSS — any library that works in a browser works on a stage. Load from CDN or bundle it.
-          </p>
+          <span className="rounded-full border border-primary/20 bg-primary/[0.04] px-3 py-1 text-xs font-medium text-primary">
+            anything
+          </span>
         </div>
       </section>
 
@@ -148,36 +143,23 @@ export function Docs() {
           Push real-time data to your stage without re-syncing, and persist state across restarts with localStorage.
         </p>
 
-        <AnimatedList className="flex flex-col gap-5" delay={0.06}>
-          <AnimatedListItem>
-            <div className="flex items-center gap-2.5 mb-2">
-              <StepBadge n={1} />
-              <span className="text-base text-foreground">Add event handling to your page</span>
-            </div>
-            <CodeBlock code={EVENTS_HTML_SNIPPET} language="html" />
-          </AnimatedListItem>
+        <div className="flex flex-col gap-5">
+          <div>
+            <p className="text-sm text-muted-foreground mb-2">Add this to your page to receive live events:</p>
+            <CodeBlock code={EVENTS_JS_SNIPPET} language="javascript" />
+          </div>
 
-          <AnimatedListItem>
-            <div className="flex items-center gap-2.5 mb-2">
-              <StepBadge n={2} />
-              <span className="text-base text-foreground">Sync and send events</span>
-            </div>
+          <div>
+            <p className="text-sm text-muted-foreground mb-2">Then send events from the CLI:</p>
             <TerminalBlock code={EVENTS_CLI_SNIPPET} />
-          </AnimatedListItem>
+          </div>
 
-          <AnimatedListItem>
-            <div className="flex items-center gap-2.5 mb-2">
-              <StepBadge n={3} />
-              <span className="text-base text-foreground">State survives restarts</span>
-            </div>
-            <TerminalBlock code={PERSISTENCE_SNIPPET} />
-            <div className="mt-3 rounded-lg border border-primary/20 bg-primary/[0.04] px-4 py-3">
-              <p className="text-sm text-foreground leading-relaxed">
-                <span className="font-mono text-primary text-xs">localStorage</span> and <span className="font-mono text-primary text-xs">IndexedDB</span> are automatically backed up to cloud storage and restored when a stage comes back up — your app state survives across restarts without any extra work.
-              </p>
-            </div>
-          </AnimatedListItem>
-        </AnimatedList>
+          <div className="rounded-lg border border-primary/20 bg-primary/[0.04] px-4 py-3">
+            <p className="text-sm text-foreground leading-relaxed">
+              <span className="font-mono text-primary text-xs">localStorage</span> and <span className="font-mono text-primary text-xs">IndexedDB</span> are automatically backed up and restored across stage restarts — no extra work needed.
+            </p>
+          </div>
+        </div>
       </section>
 
       {/* Multi-stage — collapsible */}

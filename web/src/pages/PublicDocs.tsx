@@ -13,10 +13,9 @@ import {
   INSTALL_TABS,
   QUICK_START_STEPS,
   MULTI_STAGE_SNIPPET,
-  FRAMEWORK_EXAMPLES,
-  EVENTS_HTML_SNIPPET,
+  FRAMEWORKS,
+  EVENTS_JS_SNIPPET,
   EVENTS_CLI_SNIPPET,
-  PERSISTENCE_SNIPPET,
 } from "./docs-content";
 import type { InstallTab } from "./docs-content";
 import { cli } from "@/lib/cli-commands";
@@ -212,25 +211,21 @@ export function PublicDocs() {
                 Use any framework
               </h2>
               <p className="text-sm text-zinc-400 mb-5 leading-relaxed">
-                A stage is a browser. If it runs in a browser, it runs on Dazzle. Build with whatever you want, then sync the output.
+                If it runs in a browser, it runs on Dazzle. Build with whatever you want, then sync the output.
               </p>
 
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                {FRAMEWORK_EXAMPLES.map((fw) => (
-                  <div
-                    key={fw.name}
-                    className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3"
+              <div className="flex flex-wrap gap-2">
+                {FRAMEWORKS.map((name) => (
+                  <span
+                    key={name}
+                    className="rounded-full border border-white/[0.06] bg-white/[0.02] px-3 py-1 text-xs font-medium text-zinc-400"
                   >
-                    <span className="text-sm font-medium text-white">{fw.name}</span>
-                    <pre className="mt-2 text-xs text-zinc-500 font-mono whitespace-pre leading-relaxed">{fw.cmd}</pre>
-                  </div>
+                    {name}
+                  </span>
                 ))}
-              </div>
-
-              <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/[0.04] px-4 py-3">
-                <p className="text-sm text-zinc-200 leading-relaxed">
-                  Three.js, D3, p5.js, GSAP, Tone.js, TailwindCSS — any library that works in a browser works on a stage. Load from CDN or bundle it.
-                </p>
+                <span className="rounded-full border border-emerald-500/20 bg-emerald-500/[0.04] px-3 py-1 text-xs font-medium text-emerald-400">
+                  anything
+                </span>
               </div>
             </section>
 
@@ -245,32 +240,19 @@ export function PublicDocs() {
 
               <div className="flex flex-col gap-5">
                 <div>
-                  <div className="flex items-center gap-2.5 mb-2">
-                    <StepBadge n={1} />
-                    <span className="text-base text-white">Add event handling to your page</span>
-                  </div>
-                  <CodeBlock code={EVENTS_HTML_SNIPPET} language="html" />
+                  <p className="text-sm text-zinc-400 mb-2">Add this to your page to receive live events:</p>
+                  <CodeBlock code={EVENTS_JS_SNIPPET} language="javascript" />
                 </div>
 
                 <div>
-                  <div className="flex items-center gap-2.5 mb-2">
-                    <StepBadge n={2} />
-                    <span className="text-base text-white">Sync and send events</span>
-                  </div>
+                  <p className="text-sm text-zinc-400 mb-2">Then send events from the CLI:</p>
                   <TerminalBlock code={EVENTS_CLI_SNIPPET} />
                 </div>
 
-                <div>
-                  <div className="flex items-center gap-2.5 mb-2">
-                    <StepBadge n={3} />
-                    <span className="text-base text-white">State survives restarts</span>
-                  </div>
-                  <TerminalBlock code={PERSISTENCE_SNIPPET} />
-                  <div className="mt-3 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.04] px-4 py-3">
-                    <p className="text-sm text-zinc-200 leading-relaxed">
-                      <span className="font-mono text-emerald-400 text-xs">localStorage</span> and <span className="font-mono text-emerald-400 text-xs">IndexedDB</span> are automatically backed up to cloud storage and restored when a stage comes back up — your app state survives across restarts without any extra work.
-                    </p>
-                  </div>
+                <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/[0.04] px-4 py-3">
+                  <p className="text-sm text-zinc-200 leading-relaxed">
+                    <span className="font-mono text-emerald-400 text-xs">localStorage</span> and <span className="font-mono text-emerald-400 text-xs">IndexedDB</span> are automatically backed up and restored across stage restarts — no extra work needed.
+                  </p>
                 </div>
               </div>
             </section>
