@@ -31,6 +31,12 @@ dazzle dest attach my-twitch                     # stream to Twitch/Kick/Restrea
 { "mcpServers": { "dazzle": { "command": "dazzle", "args": ["mcp"] } } }
 ```
 
+**Tools:** `cli`, `screenshot`, `write_file`, `read_file`, `edit_file`, `list_files`, `sync`, `guide`.
+
+Workspace tools (`write_file`, `read_file`, `edit_file`, `list_files`, `sync`) operate on `~/.dazzle/stages/<stage-id>/` on the host. This bridges sandboxed environments (e.g. Claude Desktop) where the agent's bash can't share files with the CLI process.
+
+**Limitations vs full CLI access:** No shell/exec — can't run build tools (npm, npx, tailwind, etc.) in the workspace. Content must be pre-built HTML/CSS/JS. Agents with direct filesystem + shell access (e.g. Claude Code) should use `dazzle stage sync` directly instead.
+
 ## Notes
 
 - Stages are **public during beta** — viewers see rendered video, not source code

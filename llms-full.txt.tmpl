@@ -142,20 +142,41 @@ Set `DAZZLE_STAGE` in `env` to pin a specific stage, or omit it to auto-select (
 
 ### Tools
 
+**Core:**
 - **`cli`** — Run any dazzle CLI command. Pass `["--help"]` to discover available commands. Output is JSON.
-- **`screenshot`** — Capture a screenshot of the stage's current browser output. Returns a PNG image.
+- **`screenshot`** — Capture a screenshot of the stage's current browser output. Returns a JPEG image.
+- **`guide`** — Fetch the Dazzle quick-start guide (llms.txt). Read this first.
+
+**Workspace** (files stored in `~/.dazzle/stages/<stage-id>/` on the host):
+- **`write_file`** — Write a file to the stage workspace. Creates parent directories as needed.
+- **`read_file`** — Read a file from the stage workspace.
+- **`edit_file`** — Edit a file by exact string replacement (old_string must match uniquely).
+- **`list_files`** — List all files in the stage workspace.
+- **`sync`** — Push the workspace to the live stage. Run after writing/editing files.
 
 ### Resource
 
 - **`dazzle://llms-full`** — This complete reference document (getting started, CLI help, content guide).
 
+### Workspace tools vs direct CLI
+
+The workspace tools exist for **sandboxed environments** (e.g. Claude Desktop) where the agent's bash runs in an isolated container and can't share files with the `dazzle` CLI process on the host. Files written via `write_file` land in `~/.dazzle/stages/<stage-id>/` on the host filesystem where the CLI can see them.
+
+**Limitations:** No shell/exec capability — can't run build tools (npm, npx, tailwind, etc.) in the workspace. Content must be pre-built HTML/CSS/JS that doesn't require a build step. For anything needing a build pipeline, use an agent with direct filesystem and shell access (e.g. Claude Code) and `dazzle stage sync` directly.
+
+**If you have full filesystem access** (Claude Code, terminal): skip the workspace tools entirely. Write files with your normal tools and run `dazzle stage sync ./your-dir`.
+
 ### Example usage
 
 ```
+guide()                                         → read the quick-start guide first
 cli(["stage", "list"])                          → list all stages (JSON)
 cli(["stage", "up"])                            → activate stage
-cli(["stage", "sync", "./my-app"])              → sync local directory
-screenshot()                                    → capture PNG of current output
+write_file(stage="my-stage", path="index.html", content="<h1>Hello</h1>")
+sync(stage="my-stage")                          → push workspace to live stage
+screenshot()                                    → capture JPEG of current output
+edit_file(stage="my-stage", path="index.html", old_string="Hello", new_string="World")
+sync(stage="my-stage")                          → push edit
 cli(["stage", "event", "emit", "score", '{"points": 42}'])  → push live data
 cli(["--help"])                                 → discover all commands
 ```
