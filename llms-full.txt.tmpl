@@ -119,6 +119,46 @@ dazzle dest detach my-destination
 
 Multiple destinations can be attached simultaneously for multi-platform streaming. Destinations are user-scoped and reusable across stages.
 
+## MCP (Model Context Protocol)
+
+The CLI includes a built-in MCP server for AI agent integration. Any MCP-compatible client (Claude Desktop, Claude Code, VS Code, Cursor, etc.) can control stages natively.
+
+### Setup
+
+Add to your MCP client config:
+
+```json
+{
+  "mcpServers": {
+    "dazzle": {
+      "command": "dazzle",
+      "args": ["mcp"],
+      "env": { "DAZZLE_STAGE": "my-stage" }
+    }
+  }
+}
+```
+
+### Tools
+
+- **`cli`** — Run any dazzle CLI command. Pass `["--help"]` to discover available commands. Output is JSON.
+- **`screenshot`** — Capture a screenshot of the stage's current browser output. Returns a PNG image.
+
+### Resource
+
+- **`dazzle://llms-full`** — This complete reference document (getting started, CLI help, content guide).
+
+### Example usage
+
+```
+cli(["stage", "list"])                          → list all stages (JSON)
+cli(["stage", "up"])                            → activate stage
+cli(["stage", "sync", "./my-app"])              → sync local directory
+screenshot()                                    → capture PNG of current output
+cli(["stage", "event", "emit", "score", '{"points": 42}'])  → push live data
+cli(["--help"])                                 → discover all commands
+```
+
 ## CLI Reference
 
 ```

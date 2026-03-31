@@ -23,6 +23,14 @@ dazzle s ss -o preview.png                       # screenshot to verify
 dazzle dest attach my-twitch                     # stream to Twitch/Kick/Restream/custom RTMP
 ```
 
+## MCP Support
+
+`dazzle mcp` starts a local MCP server on stdin/stdout — works with Claude Desktop, Claude Code, VS Code, Cursor, and any MCP client:
+
+```json
+{ "mcpServers": { "dazzle": { "command": "dazzle", "args": ["mcp"] } } }
+```
+
 ## Notes
 
 - Stages are **public during beta** — viewers see rendered video, not source code
