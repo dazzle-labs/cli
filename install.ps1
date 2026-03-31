@@ -29,12 +29,18 @@ Invoke-WebRequest -Uri $url -OutFile $dest -UseBasicParsing
 
 Write-Host "Installed to $dest"
 
-# Add to PATH if not already there
+# Warn if not on PATH
 $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
 if ($userPath -notlike "*$installDir*") {
-    [Environment]::SetEnvironmentVariable("Path", "$userPath;$installDir", "User")
-    $env:Path = "$env:Path;$installDir"
-    Write-Host "Added $installDir to your PATH (restart your terminal to pick it up)."
+    Write-Host ""
+    Write-Host "WARNING: $installDir is not on your PATH." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "Add it by running:"
+    Write-Host ""
+    Write-Host "  [Environment]::SetEnvironmentVariable('Path', `"$userPath;$installDir`", 'User')"
+    Write-Host ""
+    Write-Host "Then restart your terminal."
+    Write-Host ""
 }
 
 Write-Host "Run 'dazzle login' to get started."

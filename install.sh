@@ -2,7 +2,15 @@
 set -e
 
 REPO="dazzle-labs/cli"
-INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
+
+# Default install dir: /usr/local/bin if writable, else ~/.local/bin
+if [ -z "$INSTALL_DIR" ]; then
+  if [ -d /usr/local/bin ] && [ -w /usr/local/bin ]; then
+    INSTALL_DIR="/usr/local/bin"
+  else
+    INSTALL_DIR="$HOME/.local/bin"
+  fi
+fi
 
 # Detect OS
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
@@ -38,9 +46,22 @@ mv /tmp/dazzle "$INSTALL_DIR/dazzle"
 
 echo "Installed to $INSTALL_DIR/dazzle"
 
+# Warn if not on PATH
 case ":$PATH:" in
   *":$INSTALL_DIR:"*) ;;
-  *) echo "Add $INSTALL_DIR to your PATH: export PATH=\"$INSTALL_DIR:\$PATH\"" ;;
+  *)
+    echo ""
+    echo "WARNING: $INSTALL_DIR is not on your PATH."
+    echo ""
+    echo "Add it to your shell profile:"
+    echo ""
+    echo "  echo 'export PATH=\"$INSTALL_DIR:\$PATH\"' >> ~/.$(basename "${SHELL:-sh}")rc"
+    echo ""
+    echo "Then restart your shell or run:"
+    echo ""
+    echo "  export PATH=\"$INSTALL_DIR:\$PATH\""
+    echo ""
+    ;;
 esac
 
 echo "Run 'dazzle login' to get started."
