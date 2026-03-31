@@ -38,29 +38,34 @@ func (c *McpCmd) Run(appCtx *Context) error {
 	return s.Run(ctx, &mcp.StdioTransport{})
 }
 
+const llmsFullURL = "https://dazzle.fm/llms-full.txt"
+
 // registerResources adds MCP resources (read-only content).
 func registerResources(s *mcp.Server) {
 	s.AddResource(&mcp.Resource{
-		URI:         "dazzle://guide",
-		Name:        "content-guide",
-		Description: "Content authoring guide — rendering tiers, performance tips, design best practices for 720p streaming.",
+		URI:         "dazzle://llms-full",
+		Name:        "llms-full",
+		Description: "Complete Dazzle reference — getting started, CLI help, and content authoring guide.",
 		MIMEType:    "text/markdown",
 	}, func(ctx context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
-		// Try fetching latest from server; fall back to embedded text.
-		text := guideText
-		httpClient := &http.Client{Timeout: 3 * time.Second}
-		resp, err := httpClient.Get(guideURL)
-		if err == nil && resp.StatusCode == http.StatusOK {
-			defer resp.Body.Close()
-			if body, err := io.ReadAll(resp.Body); err == nil && len(body) > 0 {
-				text = string(body)
-			}
+		httpClient := &http.Client{Timeout: 5 * time.Second}
+		resp, err := httpClient.Get(llmsFullURL)
+		if err != nil {
+			return nil, fmt.Errorf("fetch llms-full.txt: %w", err)
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("fetch llms-full.txt: HTTP %d", resp.StatusCode)
+		}
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("read llms-full.txt: %w", err)
 		}
 		return &mcp.ReadResourceResult{
 			Contents: []*mcp.ResourceContents{{
-				URI:      "dazzle://guide",
+				URI:      "dazzle://llms-full",
 				MIMEType: "text/markdown",
-				Text:     fmt.Sprintf("%s", text),
+				Text:     string(body),
 			}},
 		}, nil
 	})
