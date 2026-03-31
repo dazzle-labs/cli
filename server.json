@@ -1,0 +1,61 @@
+{
+  "$schema": "https://registry.modelcontextprotocol.io/schemas/server.json",
+  "name": "io.github.dazzle-labs/dazzle",
+  "description": "Cloud stages for AI agents and live streaming. Create, manage, and sync content to browser-based streaming environments.",
+  "version": "dev",
+  "repository": {
+    "url": "https://github.com/dazzle-labs/cli",
+    "source": "https://github.com/dazzle-labs/cli/tree/main/cmd/dazzle"
+  },
+  "packages": [
+    {
+      "registry_name": "github-releases",
+      "name": "dazzle-labs/cli",
+      "version": "vdev"
+    }
+  ],
+  "tools": [
+    {
+      "name": "cli",
+      "description": "Run a dazzle CLI command. Use [\"--help\"] to discover available commands. Output is JSON."
+    },
+    {
+      "name": "edit_file",
+      "description": "Edit a file in the stage workspace by exact string replacement. The old_string must match exactly once in the file. Use read_file first to see the current content."
+    },
+    {
+      "name": "guide",
+      "description": "Get the Dazzle quick-start guide — platform overview, setup, CLI basics, and links to full docs. Read this first before creating or modifying stage content."
+    },
+    {
+      "name": "list_files",
+      "description": "List all files in the stage workspace (~/.dazzle/stages/{stage}/). Returns relative paths, one per line."
+    },
+    {
+      "name": "read_file",
+      "description": "Read a file from the stage workspace (~/.dazzle/stages/{stage}/{path})."
+    },
+    {
+      "name": "screenshot",
+      "description": "Capture a screenshot of the stage's current browser output. Returns a PNG image."
+    },
+    {
+      "name": "sync",
+      "description": "Sync the stage workspace (~/.dazzle/stages/{stage}/) to the live stage. Run this after writing files to push content. Equivalent to 'dazzle stage sync {workspace-dir}'."
+    },
+    {
+      "name": "write_file",
+      "description": "Write a file to the stage workspace (~/.dazzle/stages/{stage}/{path}). Creates parent directories as needed. Use this to build up content that can then be synced to the stage."
+    }
+  ],
+  "resources": [
+    {
+      "uri": "https://dazzle.fm/llms-full.txt",
+      "description": "Complete Dazzle reference — getting started, CLI help, and content authoring guide."
+    },
+    {
+      "uri": "https://dazzle.fm/llms.txt",
+      "description": "Dazzle quick-start guide — platform overview, setup, CLI basics, and doc links."
+    }
+  ]
+}
