@@ -2,9 +2,12 @@ import { useEffect, useState } from "react";
 import { stageClient } from "@/client";
 import { StageFilter } from "@/gen/api/v1/stage_pb";
 
-/** Poll the number of live stages every 30s. Returns 0 while loading. */
+// Module-level cache so the count survives component remounts during routing.
+let cachedCount = 0;
+
+/** Poll the number of live stages every 30s. Persists across remounts. */
 export function useLiveCount(): number {
-  const [count, setCount] = useState(0);
+  const [count, setCount] = useState(cachedCount);
 
   useEffect(() => {
     let cancelled = false;
@@ -13,7 +16,10 @@ export function useLiveCount(): number {
       stageClient
         .listStages({ filters: [StageFilter.LIVE] })
         .then((res) => {
-          if (!cancelled) setCount(res.stages.filter((s) => s.slug).length);
+          if (cancelled) return;
+          const n = res.stages.filter((s) => s.slug).length;
+          cachedCount = n;
+          setCount(n);
         })
         .catch(() => {});
     }

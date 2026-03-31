@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import Hls from "hls.js";
-import { Volume2, VolumeOff } from "lucide-react";
+import { Volume2, VolumeOff, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { featuredClient } from "@/client";
 import type { FeaturedStream as FeaturedStreamProto } from "@/gen/api/v1/featured_pb";
@@ -42,12 +42,18 @@ const ROTATE_INTERVAL = 8000;
 
 export function FeaturedCarousel({ streams }: { streams: FeaturedData[] }) {
   const [active, setActive] = useState(0);
+  const paused = useRef(false);
+
+  const goNext = useCallback(() => setActive((i) => (i + 1) % streams.length), [streams.length]);
+  const goPrev = useCallback(() => setActive((i) => (i - 1 + streams.length) % streams.length), [streams.length]);
 
   useEffect(() => {
     if (streams.length <= 1) return;
-    const id = setInterval(() => setActive((i) => (i + 1) % streams.length), ROTATE_INTERVAL);
+    const id = setInterval(() => {
+      if (!paused.current) goNext();
+    }, ROTATE_INTERVAL);
     return () => clearInterval(id);
-  }, [streams.length]);
+  }, [streams.length, goNext]);
 
   if (streams.length === 0) return null;
 
@@ -61,7 +67,12 @@ export function FeaturedCarousel({ streams }: { streams: FeaturedData[] }) {
   }
 
   return (
-    <div className="w-full" style={{ perspective: "1200px" }}>
+    <div
+      className="w-full"
+      style={{ perspective: "1200px" }}
+      onMouseEnter={() => { paused.current = true; }}
+      onMouseLeave={() => { paused.current = false; }}
+    >
       <div className="relative flex items-center justify-center" style={{ height: "clamp(280px, 40vw, 440px)" }}>
         {streams.map((s, i) => {
           const offset = i - active;
@@ -106,6 +117,22 @@ export function FeaturedCarousel({ streams }: { streams: FeaturedData[] }) {
             </div>
           );
         })}
+
+        {/* Desktop arrow buttons */}
+        <button
+          onClick={goPrev}
+          className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm border border-white/[0.08] text-white/70 hover:text-white hover:bg-black/70 hover:border-white/[0.15] transition-all cursor-pointer"
+          aria-label="Previous stream"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+        <button
+          onClick={goNext}
+          className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm border border-white/[0.08] text-white/70 hover:text-white hover:bg-black/70 hover:border-white/[0.15] transition-all cursor-pointer"
+          aria-label="Next stream"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </button>
       </div>
       {streams.length > 2 && (
         <div className="flex justify-center gap-2 mt-4">
