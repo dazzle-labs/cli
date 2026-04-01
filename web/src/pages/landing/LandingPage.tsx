@@ -8,6 +8,12 @@ import {
   Download,
   Globe,
   Radio,
+  Gpu,
+  Zap,
+  RefreshCw,
+  Wifi,
+  HardDrive,
+  Monitor,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -246,6 +252,83 @@ export function LandingPage() {
                 <p className="text-sm leading-relaxed text-zinc-400 font-light">
                   {step.desc}
                 </p>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* ── Under the Hood ── */}
+          <motion.div
+            className="text-center mt-24 mb-14"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.4 }}
+          >
+            <h2 className="font-display text-3xl md:text-4xl text-white tracking-[-0.01em]">
+              Under the hood
+            </h2>
+            <p className="mt-3 text-zinc-500 text-sm max-w-xl mx-auto">
+              Every stage is a full browser in the cloud, GPU-rendered at 30 FPS and captured directly to a live stream.
+            </p>
+          </motion.div>
+
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3 mb-16">
+            {[
+              {
+                icon: Gpu,
+                title: "GPU-accelerated WebGL",
+                desc: "Hardware-accelerated rendering for shaders, three.js, raymarching, and complex fragment programs. CPU stages available for lighter content.",
+              },
+              {
+                icon: Zap,
+                title: "Live events",
+                desc: "Push JSON events from your agent to the browser in real time. No reload, no polling \u2014 the stream updates instantly.",
+                code: `dazzle stage event emit my-stage '{"score": 42}'`,
+              },
+              {
+                icon: RefreshCw,
+                title: "Sync, don't deploy",
+                desc: "Sync any folder to your stage. The browser auto-refreshes on every sync. Works with any build tool or none at all.",
+                code: "dazzle stage sync ./dist --stage my-stage",
+              },
+              {
+                icon: HardDrive,
+                title: "Persistent state",
+                desc: "localStorage and IndexedDB survive stage restarts. Your content picks up exactly where it left off \u2014 no cold starts.",
+              },
+              {
+                icon: Wifi,
+                title: "Unrestricted network",
+                desc: "Fetch any API without CORS errors. WebSockets, SSE, and REST all work out of the box. Your stage has full internet access.",
+              },
+              {
+                icon: Monitor,
+                title: "Multi-platform streaming",
+                desc: "Stream to Twitch, YouTube, Kick, or any custom RTMP server. Or share a dazzle.fm link \u2014 no streaming platform required.",
+              },
+            ].map((feature, i) => (
+              <motion.div
+                key={feature.title}
+                className="rounded-2xl border border-white/[0.06] bg-white/[0.015] p-6 transition-all duration-300 hover:border-emerald-500/20 hover:bg-emerald-500/[0.02]"
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-40px" }}
+                transition={{ duration: 0.5, delay: i * 0.06, ease }}
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 mb-4">
+                  <feature.icon className="h-4.5 w-4.5" />
+                </div>
+                <h3 className="text-[15px] font-semibold text-white mb-1.5">
+                  {feature.title}
+                </h3>
+                <p className="text-sm leading-relaxed text-zinc-400 font-light">
+                  {feature.desc}
+                </p>
+                {feature.code && (
+                  <pre className="mt-3 text-[11px] font-mono text-emerald-400/70 bg-emerald-500/[0.04] rounded-md px-3 py-2 overflow-x-auto">
+                    {feature.code}
+                  </pre>
+                )}
               </motion.div>
             ))}
           </div>
