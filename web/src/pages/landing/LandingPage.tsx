@@ -5,9 +5,6 @@ import { motion } from "motion/react";
 import {
   ArrowRight,
   ChevronDown,
-  Download,
-  Globe,
-  Radio,
   Gpu,
   Zap,
   RefreshCw,
@@ -172,7 +169,7 @@ export function LandingPage() {
             className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors flex items-center gap-1.5 cursor-pointer"
             onClick={() =>
               document
-                .getElementById("how-it-works")
+                .getElementById("under-the-hood")
                 ?.scrollIntoView({ behavior: "smooth" })
             }
           >
@@ -192,70 +189,8 @@ export function LandingPage() {
       </section>
 
       {/* ── How It Works ── */}
-      <section id="how-it-works" className="relative z-10 px-6 py-24 md:py-32">
+      <section id="under-the-hood" className="relative z-10 px-6 py-24 md:py-32">
         <div className="mx-auto max-w-5xl">
-          <motion.div
-            className="text-center mb-16"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.4 }}
-          >
-            <h2 className="font-display text-3xl md:text-4xl text-white tracking-[-0.01em]">
-              Live in 60 seconds
-            </h2>
-            <p className="mt-3 text-zinc-500 text-sm">
-              Install, create, go live.
-            </p>
-          </motion.div>
-
-          <div className="grid gap-6 md:grid-cols-3 mb-16">
-            {[
-              {
-                num: "01",
-                icon: Download,
-                title: "Install",
-                desc: "One command to install the Dazzle CLI. Authenticate with your account and you're ready to go.",
-              },
-              {
-                num: "02",
-                icon: Globe,
-                title: "Create",
-                desc: persona.stepCreateDesc,
-              },
-              {
-                num: "03",
-                icon: Radio,
-                title: "Go live",
-                desc: "Sync a folder, start streaming. Twitch, YouTube, or a shareable dazzle.fm link.",
-              },
-            ].map((step, i) => (
-              <motion.div
-                key={step.num}
-                className="group relative rounded-2xl border border-white/[0.06] bg-white/[0.015] p-8 transition-all duration-300 hover:border-emerald-500/20 hover:bg-emerald-500/[0.02]"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-60px" }}
-                transition={{ duration: 0.6, delay: i * 0.08, ease }}
-              >
-                <div className="flex items-center justify-between mb-5">
-                  <span className="font-display text-5xl text-emerald-500/[0.12] leading-none">
-                    {step.num}
-                  </span>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 transition-colors group-hover:bg-emerald-500/15">
-                    <step.icon className="h-5 w-5" />
-                  </div>
-                </div>
-                <h3 className="text-lg font-semibold text-white mb-2">
-                  {step.title}
-                </h3>
-                <p className="text-sm leading-relaxed text-zinc-400 font-light">
-                  {step.desc}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-
           {/* ── Under the Hood ── */}
           <motion.div
             className="text-center mt-24 mb-14"
@@ -268,7 +203,7 @@ export function LandingPage() {
               Under the hood
             </h2>
             <p className="mt-3 text-zinc-500 text-sm max-w-xl mx-auto">
-              Every stage is a full browser in the cloud, GPU-rendered at 30 FPS and captured directly to a live stream.
+              Every stage is a full browser in the cloud, captured directly to a live stream. Add a GPU when you need it.
             </p>
           </motion.div>
 
@@ -276,8 +211,8 @@ export function LandingPage() {
             {[
               {
                 icon: Gpu,
-                title: "GPU-accelerated WebGL",
-                desc: "Hardware-accelerated rendering for shaders, three.js, raymarching, and complex fragment programs. CPU stages available for lighter content.",
+                title: "GPU when you need it",
+                desc: "Stages run on CPU by default. Need WebGL, shaders, or three.js? Upgrade to a GPU stage for hardware-accelerated rendering.",
               },
               {
                 icon: Zap,
