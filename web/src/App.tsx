@@ -57,8 +57,13 @@ function AuthSetup() {
       firstSignIn > 0 &&
       Math.abs(firstSignIn - created) < 120_000;
     const key = `twq_signup_${user.id}`;
-    if (isNewUser && !localStorage.getItem(key) && typeof window.twq === "function") {
-      window.twq("event", "tw-rbof3-137cj0", {});
+    if (isNewUser && !localStorage.getItem(key)) {
+      if (typeof window.twq === "function") {
+        window.twq("event", "tw-rbof3-137cj0", {});
+      }
+      posthog?.capture("x_signup_conversion", {
+        pixel_fired: typeof window.twq === "function",
+      });
       localStorage.setItem(key, "1");
     }
   }, [posthog, user]);
