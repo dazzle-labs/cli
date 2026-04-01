@@ -55,7 +55,7 @@ const PLANS = [
       "GPU: $0.70/hr",
       "720p resolution",
       "5 external destinations",
-      "Public + private stages",
+      "Private stages (coming soon)",
     ],
   },
 ];

@@ -51,7 +51,7 @@ const FEATURES: { section: string; rows: FeatureRow[] }[] = [
       { label: "Projects (stages created)", free: "10", starter: "100", pro: "1,000" },
       { label: "Active stages (running)", free: "1", starter: "3", pro: "Unlimited" },
       { label: "Resolution", free: "720p", starter: "720p", pro: "720p" },
-      { label: "Privacy", free: "Public only", starter: "Public only", pro: "Public + private" },
+      { label: "Privacy", free: "Public only", starter: "Public only", pro: "Private stages (coming soon)" },
     ],
   },
   {
