@@ -250,17 +250,19 @@ export function LandingPage() {
                 viewport={{ once: true, margin: "-40px" }}
                 transition={{ duration: 0.5, delay: i * 0.06, ease }}
               >
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 mb-4">
-                  <feature.icon className="h-4.5 w-4.5" />
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
+                    <feature.icon className="h-4.5 w-4.5" />
+                  </div>
+                  <h3 className="text-[15px] font-semibold text-white">
+                    {feature.title}
+                  </h3>
                 </div>
-                <h3 className="text-[15px] font-semibold text-white mb-1.5">
-                  {feature.title}
-                </h3>
                 <p className="text-sm leading-relaxed text-zinc-400 font-light">
                   {feature.desc}
                 </p>
                 {feature.code && (
-                  <pre className="mt-3 text-[11px] font-mono text-emerald-400/70 bg-emerald-500/[0.04] rounded-md px-3 py-2 overflow-x-auto">
+                  <pre className="mt-3 text-[11px] font-mono text-emerald-400/70 bg-emerald-500/[0.04] rounded-md px-3 py-2 overflow-x-auto feature-scroll">
                     {feature.code}
                   </pre>
                 )}
