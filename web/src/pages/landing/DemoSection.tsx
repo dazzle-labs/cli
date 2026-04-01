@@ -334,7 +334,7 @@ export function DemoSection({ persona }: { persona: PersonaConfig }) {
             </div>
 
             {/* Preview pane */}
-            <div className="flex flex-col w-[40%] shrink-0">
+            <div className="flex flex-col w-1/2 shrink-0">
               {/* Preview tab bar */}
               <div className="flex items-center bg-[#252526] border-b border-[#191919]">
                 <span className="px-4 py-1.5 text-xs font-mono text-zinc-200 bg-[#1e1e1e] border-r border-[#191919] border-t-2 border-t-emerald-400 flex items-center gap-1.5">

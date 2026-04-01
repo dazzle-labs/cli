@@ -119,7 +119,7 @@ export function LandingPage() {
       </nav>
 
       {/* ── Hero ── */}
-      <section className="relative z-10 flex flex-col items-center px-6 pt-28 pb-12 md:pt-40 md:pb-16 text-center">
+      <section className="relative z-10 flex flex-col items-center px-6 pt-14 pb-8 md:pt-40 md:pb-16 text-center">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -127,7 +127,7 @@ export function LandingPage() {
         >
           <Badge
             variant="outline"
-            className="border-emerald-500/30 text-emerald-400 mb-8 text-xs px-3 py-1 h-auto"
+            className="border-emerald-500/30 text-emerald-400 mb-4 md:mb-8 text-xs px-3 py-1 h-auto"
           >
             Free during beta — stages are limited
           </Badge>
@@ -143,7 +143,7 @@ export function LandingPage() {
         </motion.h1>
 
         <motion.p
-          className="mt-6 text-lg md:text-xl text-zinc-400 max-w-2xl leading-relaxed font-light"
+          className="mt-3 md:mt-6 text-lg md:text-xl text-zinc-400 max-w-2xl leading-relaxed font-light"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.25, ease }}
@@ -152,7 +152,7 @@ export function LandingPage() {
         </motion.p>
 
         <motion.div
-          className="mt-10 flex flex-col sm:flex-row gap-4 items-center"
+          className="mt-5 md:mt-10 flex flex-col sm:flex-row gap-4 items-center"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4, ease }}
@@ -179,7 +179,7 @@ export function LandingPage() {
         </motion.div>
 
         <motion.div
-          className="mt-14 w-full max-w-5xl text-left"
+          className="mt-7 md:mt-14 w-full max-w-5xl text-left"
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.55, ease }}
