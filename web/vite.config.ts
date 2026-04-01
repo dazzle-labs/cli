@@ -39,6 +39,24 @@ function goTemplatePlugin(): Plugin {
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), goTemplatePlugin()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("node_modules")) {
+            if (id.includes("react-dom")) return "vendor-react";
+            if (id.includes("react-router")) return "vendor-react";
+            if (id.includes("@clerk/")) return "vendor-clerk";
+            if (id.includes("@bufbuild/") || id.includes("@connectrpc/")) return "vendor-proto";
+            if (id.includes("motion")) return "vendor-motion";
+            if (id.includes("posthog")) return "vendor-posthog";
+            if (id.includes("hls.js")) return "vendor-hls";
+            if (id.includes("highlight.js")) return "vendor-hljs";
+          }
+        },
+      },
+    },
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
