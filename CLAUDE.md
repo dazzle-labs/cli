@@ -84,6 +84,7 @@ To enable:
 ## Conventions
 
 - **UUIDv7 for all new IDs** — Use `uuid.Must(uuid.NewV7())` in Go, not `uuid.New()` or `uuid.NewString()`. UUIDv7 is time-ordered which improves index locality and makes IDs sortable by creation time. Existing UUIDv4 IDs in the DB are fine; only new code should use v7.
+- **Never use npm or yarn** — Use `pnpm` for all JS/TS projects. A PreToolUse hook blocks both `npm` and `yarn` commands.
 
 ## Feature Development Workflow
 

@@ -344,7 +344,7 @@ dev: up ## ★ Full local dev — build, deploy, watch everything
 	@printf "  $(_yellow)logs$(_reset)           control-plane log tail\n"
 	@echo ""
 	@trap 'exit 0' INT TERM; \
-	(cd web && VITE_CLERK_PUBLISHABLE_KEY=$(CLERK_PK) yarn dev) & \
+	(cd web && VITE_CLERK_PUBLISHABLE_KEY=$(CLERK_PK) pnpm dev) & \
 	$(KCTL) logs -f deployment/control-plane & \
 	wait; true
 

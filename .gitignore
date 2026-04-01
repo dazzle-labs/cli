@@ -2,13 +2,8 @@
 node_modules/
 *.age
 
-# Yarn
-**/.yarn/*
-!**/.yarn/patches
-!**/.yarn/plugins
-!**/.yarn/releases
-!**/.yarn/sdks
-!**/.yarn/versions
+# pnpm
+.pnpm-store/
 .playwright-mcp/
 *.png
 !web/public/og.png
