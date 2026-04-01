@@ -96,8 +96,8 @@ export function LandingPage() {
             <Link to="/docs" className="text-zinc-400 hover:text-white text-sm transition-colors">
               Docs
             </Link>
-            <Link to="/pricing" className="text-zinc-400 hover:text-white text-sm transition-colors">
-              Pricing
+            <Link to="/plans" className="text-zinc-400 hover:text-white text-sm transition-colors">
+              Plans
             </Link>
             <a
               href="https://discord.gg/pHpAaSqtWK"
@@ -151,8 +151,8 @@ export function LandingPage() {
             <Link to="/docs" className="text-zinc-400 hover:text-white text-sm transition-colors" onClick={() => setMobileMenuOpen(false)}>
               Docs
             </Link>
-            <Link to="/pricing" className="text-zinc-400 hover:text-white text-sm transition-colors" onClick={() => setMobileMenuOpen(false)}>
-              Pricing
+            <Link to="/plans" className="text-zinc-400 hover:text-white text-sm transition-colors" onClick={() => setMobileMenuOpen(false)}>
+              Plans
             </Link>
             <a
               href="https://discord.gg/pHpAaSqtWK"
@@ -425,7 +425,7 @@ export function LandingPage() {
           <span className="text-zinc-800">&middot;</span>
           <Link to="/live" className="hover:text-zinc-400 transition-colors">Live</Link>
           <Link to="/docs" className="hover:text-zinc-400 transition-colors">Docs</Link>
-          <Link to="/pricing" className="hover:text-zinc-400 transition-colors">Pricing</Link>
+          <Link to="/plans" className="hover:text-zinc-400 transition-colors">Pricing</Link>
           <Link to="/terms" className="hover:text-zinc-400 transition-colors">Terms</Link>
           <Link to="/privacy" className="hover:text-zinc-400 transition-colors">Privacy</Link>
           <a href="/llms.txt" target="_blank" rel="noopener noreferrer" className="font-mono hover:text-zinc-400 transition-colors">

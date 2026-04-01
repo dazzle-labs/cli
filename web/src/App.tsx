@@ -26,7 +26,7 @@ const CliAuth = lazy(() => import("./pages/CliAuth.js").then(m => ({ default: m.
 const TermsOfService = lazy(() => import("./pages/TermsOfService.js").then(m => ({ default: m.TermsOfService })));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy.js").then(m => ({ default: m.PrivacyPolicy })));
 const Billing = lazy(() => import("./pages/Billing.js").then(m => ({ default: m.Billing })));
-const Pricing = lazy(() => import("./pages/Pricing.js").then(m => ({ default: m.Pricing })));
+const Plans = lazy(() => import("./pages/Plans.js").then(m => ({ default: m.Plans })));
 
 function AuthSetup() {
   const { getToken } = useAuth();
@@ -146,7 +146,7 @@ export function App() {
           <Route path="/watch/:slug" element={<WatchPage />} />
           <Route path="/auth/cli/:sessionId" element={<CliAuth />} />
           <Route path="/docs" element={<DocsRouter />} />
-          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/plans" element={<Plans />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/live" element={<LiveRouter />} />
