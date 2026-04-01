@@ -47,10 +47,19 @@ function AuthSetup() {
       }),
     });
 
-    // Fire X signup conversion for users created in the last 60 seconds
-    const age = Date.now() - (user.createdAt?.getTime() ?? 0);
-    if (age < 60_000 && typeof window.twq === "function") {
+    // Fire X signup conversion once per new user.
+    // Clerk sets createdAt ≈ lastSignInAt on the very first session.
+    // We gate on a localStorage flag so it only fires once per browser.
+    const created = user.createdAt?.getTime() ?? 0;
+    const firstSignIn = user.lastSignInAt?.getTime() ?? 0;
+    const isNewUser =
+      created > 0 &&
+      firstSignIn > 0 &&
+      Math.abs(firstSignIn - created) < 120_000;
+    const key = `twq_signup_${user.id}`;
+    if (isNewUser && !localStorage.getItem(key) && typeof window.twq === "function") {
       window.twq("event", "tw-rbof3-137cj0", {});
+      localStorage.setItem(key, "1");
     }
   }, [posthog, user]);
 
