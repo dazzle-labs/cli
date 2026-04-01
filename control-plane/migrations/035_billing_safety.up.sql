@@ -1,6 +1,5 @@
--- Prevent duplicate open usage events for the same stage (race protection).
-CREATE UNIQUE INDEX IF NOT EXISTS idx_usage_events_stage_open
-  ON usage_events(stage_id) WHERE ended_at IS NULL;
+-- Unique index for open usage events already exists from migration 030
+-- (idx_usage_events_one_open_per_stage). No need to recreate.
 
 -- Ensure ended_at and duration_seconds are both null or both non-null.
 ALTER TABLE usage_events ADD CONSTRAINT chk_usage_events_ended_duration
