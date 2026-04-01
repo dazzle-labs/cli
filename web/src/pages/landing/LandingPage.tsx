@@ -174,22 +174,16 @@ export function LandingPage() {
             <ChevronDown className="h-3.5 w-3.5" />
           </button>
         </motion.div>
-      </section>
 
-      {/* ── Featured live streams ── */}
-      {featuredStreams.length > 0 && (
-        <section className="relative z-10 px-6 pb-28 md:pb-36">
-          <motion.div
-            className="relative mx-auto max-w-5xl"
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.55, ease }}
-          >
-            <FeaturedCarousel streams={featuredStreams} />
-            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-2/3 h-12 bg-emerald-500/[0.04] blur-2xl rounded-full pointer-events-none" />
-          </motion.div>
-        </section>
-      )}
+        <motion.div
+          className="mt-14 w-full max-w-5xl text-left"
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 0.55, ease }}
+        >
+          <DemoSection persona={persona} />
+        </motion.div>
+      </section>
 
       {/* ── How It Works ── */}
       <section id="how-it-works" className="relative z-10 px-6 py-24 md:py-32">
@@ -256,8 +250,6 @@ export function LandingPage() {
             ))}
           </div>
 
-          <DemoSection persona={persona} />
-
           {/* Framework pills */}
           <motion.div
             className="mt-14 text-center"
@@ -286,6 +278,36 @@ export function LandingPage() {
           </motion.div>
         </div>
       </section>
+
+      {/* ── Featured live streams ── */}
+      {featuredStreams.length > 0 && (
+        <section className="relative z-10 px-6 pb-28 md:pb-36">
+          <motion.div
+            className="text-center mb-12"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.4 }}
+          >
+            <h2 className="font-display text-3xl md:text-4xl text-white tracking-[-0.01em]">
+              See what people are building
+            </h2>
+            <p className="mt-3 text-zinc-500 text-sm">
+              Live right now on Dazzle
+            </p>
+          </motion.div>
+          <motion.div
+            className="relative mx-auto max-w-5xl"
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 1, ease }}
+          >
+            <FeaturedCarousel streams={featuredStreams} />
+            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-2/3 h-12 bg-emerald-500/[0.04] blur-2xl rounded-full pointer-events-none" />
+          </motion.div>
+        </section>
+      )}
 
       {/* ── Final CTA ── */}
       <section className="relative z-10 px-6 py-28 md:py-36 text-center">

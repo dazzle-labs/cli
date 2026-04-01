@@ -30,7 +30,7 @@ export interface PersonaConfig {
 // ─── Agents (default) ────────────────────────────────────────────────────────
 
 const AGENTS_TERMINAL: TermLine[] = [
-  { type: "user", text: "build a 3D flight tracker globe and stream it to youtube" },
+  { type: "user", text: "build a live space launch tracker and stream it \u2014 show upcoming launches and update the stream as you learn more about each one" },
   { type: "out", text: "" },
   { type: "agent", text: "On it. Reading dazzle.fm/llms.txt for the API..." },
   { type: "out", text: "" },
@@ -38,236 +38,225 @@ const AGENTS_TERMINAL: TermLine[] = [
   { type: "out", text: "Dazzle CLI v0.9.2 installed." },
   { type: "exec", text: "dazzle login" },
   { type: "out", text: "\u2713 Logged in" },
+  { type: "cmd", text: "dazzle stage create launch-tracker" },
+  { type: "out", text: 'Stage "launch-tracker" created.' },
   { type: "out", text: "" },
-  { type: "cmd", text: "dazzle stage create flight-globe" },
-  { type: "out", text: 'Stage "flight-globe" created.' },
+  { type: "agent", text: "Writing the frontend \u2014 React + GLSL shader background, listening for dazzle:event updates" },
   { type: "out", text: "" },
-  { type: "agent", text: "Writing globe.ts \u2014 three.js earth with live OpenSky flight arcs" },
-  { type: "out", text: "" },
+  { type: "exec", text: "npm create vite@latest . -- --template react-ts && npm i" },
+  { type: "out", text: "\u2713 Scaffolded React + TypeScript project" },
   { type: "cmd", text: "npm run build" },
-  { type: "out", text: "\u2713 Built in 0.6s" },
-  { type: "cmd", text: "dazzle stage up --stage flight-globe" },
+  { type: "out", text: "\u2713 Built in 0.8s" },
+  { type: "cmd", text: "dazzle stage up --stage launch-tracker" },
   { type: "out", text: "\u2713 Stage activated \u2014 GPU rendering at 30 FPS." },
-  { type: "cmd", text: "dazzle stage sync ./dist --stage flight-globe" },
-  { type: "out", text: "4 files synced." },
+  { type: "cmd", text: "dazzle stage sync ./dist --stage launch-tracker" },
+  { type: "out", text: "5 files synced." },
   { type: "out", text: "" },
-  { type: "agent", text: "Live at dazzle.fm/s/flight-globe \u2014 tracking 4,218 aircraft." },
+  { type: "agent", text: "Stage is live. Starting research loop \u2014 I'll search for news, analyze what's interesting, push findings to the stream, sleep, and repeat." },
   { type: "out", text: "" },
-  { type: "cmd", text: "dazzle destination add youtube" },
-  { type: "out", text: '\u2713 Destination "youtube" added.' },
-  { type: "cmd", text: "dazzle destination attach youtube --stage flight-globe" },
-  { type: "out", text: "\u2713 Streaming to youtube.com" },
+  { type: "agent", text: "\u23f0 Loop 1 \u2014 searching for upcoming launches..." },
+  { type: "exec", text: "curl -s api.spacexdata.com/v5/launches/upcoming | jq '.[0:5]'" },
+  { type: "out", text: "\u2713 Found 5 upcoming launches" },
+  { type: "agent", text: "Starlink Group 12-7 is next, T-14h from Vandenberg. Let me search for context..." },
   { type: "out", text: "" },
-  { type: "agent", text: "Done. Globe is rendering and streaming to YouTube." },
+  { type: "exec", text: `web_search "Starlink Group 12-7 launch Vandenberg site:reddit.com OR site:spacenews.com"` },
+  { type: "out", text: "\u2713 8 results" },
+  { type: "agent", text: "Found a SpaceNews article \u2014 this is the first v2 Mini batch with direct-to-cell capability. That's worth highlighting." },
+  { type: "cmd", text: `dazzle stage event emit launch-tracker '{"type":"launch","mission":"Starlink Group 12-7","vehicle":"Falcon 9","site":"Vandenberg SFB","t_minus":"14h 22m","status":"GO","payload":"23 Starlink v2 Mini \u2014 first direct-to-cell batch"}'` },
+  { type: "out", text: "\u2713 Event emitted \u2014 stream updated live" },
+  { type: "out", text: "" },
+  { type: "agent", text: "Checking if weather could be an issue at Vandenberg today..." },
+  { type: "exec", text: `web_search "Vandenberg SFB launch weather forecast today"` },
+  { type: "out", text: "\u2713 5 results" },
+  { type: "agent", text: "45th Weather Squadron gives 90% GO. Marine layer clears by T-2h. Updating..." },
+  { type: "cmd", text: `dazzle stage event emit launch-tracker '{"type":"update","mission":"Starlink Group 12-7","weather":"90% GO \u2014 marine layer clears by T-2h","note":"Drone ship JRTI positioned 640km downrange"}'` },
+  { type: "out", text: "\u2713 Event emitted" },
+  { type: "out", text: "" },
+  { type: "agent", text: "Also spotted Crew-12 ISS mission in 3 days. Searching for crew details..." },
+  { type: "exec", text: `web_search "NASA Crew-12 ISS mission crew manifest 2026"` },
+  { type: "out", text: "\u2713 6 results" },
+  { type: "agent", text: "NASA.gov confirms 4-person crew. Epps will break the record for longest ISS stay. Adding to stream..." },
+  { type: "cmd", text: `dazzle stage event emit launch-tracker '{"type":"launch","mission":"Crew-12","vehicle":"Falcon 9","site":"Kennedy Space Center","t_minus":"3d 6h","status":"GO","crew":["Petty","Epps","Dyson","Dominick"],"note":"Epps sets new ISS duration record"}'` },
+  { type: "out", text: "\u2713 Event emitted" },
+  { type: "out", text: "" },
+  { type: "agent", text: "Loop 1 done. Sleeping 10 minutes before next check..." },
+  { type: "exec", text: "sleep 600" },
+  { type: "out", text: "" },
+  { type: "agent", text: "\u23f0 Loop 2 \u2014 waking up. Searching for any new developments..." },
+  { type: "exec", text: `web_search "Starlink launch today site:twitter.com OR site:x.com"` },
+  { type: "out", text: "\u2713 12 results" },
+  { type: "agent", text: "Elon just posted static fire video. T-minus now 4h. Pushing update..." },
+  { type: "cmd", text: `dazzle stage event emit launch-tracker '{"type":"update","mission":"Starlink Group 12-7","t_minus":"4h 02m","note":"Static fire complete \u2014 propellant loading at T-45m"}'` },
+  { type: "out", text: "\u2713 Event emitted \u2014 stream updated live" },
+  { type: "out", text: "" },
+  { type: "agent", text: "Loop 2 done. Sleeping 10 minutes..." },
 ];
 
-const AGENTS_GLOBE = `import * as THREE from 'three'
+const AGENTS_APP = `import { useState, useEffect, useRef } from 'react'
+import { useDazzleEvents } from './hooks'
 
-const scene = new THREE.Scene()
-const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 100)
-camera.position.z = 2.8
-const renderer = new THREE.WebGLRenderer({ antialias: true })
-renderer.setSize(innerWidth, innerHeight)
-renderer.setClearColor(0x020208)
-document.body.appendChild(renderer.domElement)
-
-const earthGeo = new THREE.SphereGeometry(1, 64, 64)
-const earthMat = new THREE.ShaderMaterial({
-  vertexShader: \`
-    varying vec3 vNormal;
-    void main() {
-      vNormal = normalize(normalMatrix * normal);
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    }\`,
-  fragmentShader: \`
-    varying vec3 vNormal;
-    void main() {
-      float rim = 1.0 - max(0.0, dot(vNormal, vec3(0, 0, 1)));
-      vec3 col = vec3(0.02, 0.04, 0.08) + vec3(0.1, 0.4, 0.8) * pow(rim, 3.0);
-      gl_FragColor = vec4(col, 1.0);
-    }\`,
-})
-const earth = new THREE.Mesh(earthGeo, earthMat)
-scene.add(earth)
-
-// Atmosphere rim
-const atmosMat = new THREE.ShaderMaterial({
-  vertexShader: \`
-    varying vec3 vNormal;
-    void main() {
-      vNormal = normalize(normalMatrix * normal);
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    }\`,
-  fragmentShader: \`
-    varying vec3 vNormal;
-    void main() {
-      float i = pow(0.65 - dot(vNormal, vec3(0,0,1)), 2.0);
-      gl_FragColor = vec4(0.3, 0.6, 1.0, i * 0.4);
-    }\`,
-  transparent: true, side: THREE.BackSide,
-})
-scene.add(new THREE.Mesh(new THREE.SphereGeometry(1.04, 64, 64), atmosMat))
-
-function latLonToVec3(lat: number, lon: number, r = 1): THREE.Vector3 {
-  const phi = (90 - lat) * Math.PI / 180
-  const theta = (lon + 180) * Math.PI / 180
-  return new THREE.Vector3(
-    -r * Math.sin(phi) * Math.cos(theta),
-     r * Math.cos(phi),
-     r * Math.sin(phi) * Math.sin(theta),
-  )
+interface Launch {
+  mission: string; vehicle: string; site: string
+  t_minus: string; status: string
+  weather?: string; payload?: string; crew?: string[]
 }
 
-function addFlightArc(from: [number, number], to: [number, number]) {
-  const start = latLonToVec3(...from)
-  const end = latLonToVec3(...to)
-  const mid = start.clone().add(end).multiplyScalar(0.5).normalize()
-  mid.multiplyScalar(1 + start.distanceTo(end) * 0.3)
+// Fragment shader — animated nebula background
+const FRAG = \`
+  precision mediump float;
+  uniform float u_time;
+  uniform vec2 u_resolution;
 
-  const curve = new THREE.QuadraticBezierCurve3(start, mid, end)
-  const mat = new THREE.MeshBasicMaterial({
-    color: new THREE.Color().setHSL(0.55 + Math.random() * 0.15, 0.8, 0.6),
-    transparent: true, opacity: 0.6,
-  })
-  earth.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 44, 0.004, 4), mat))
-}
-
-async function fetchFlights() {
-  const { states } = await fetch(
-    'https://opensky-network.org/api/states/all'
-  ).then(r => r.json())
-
-  const flights = states
-    .filter((s: any) => s[5] != null && s[6] != null)
-    .sort(() => Math.random() - 0.5)
-    .slice(0, 80)
-
-  for (const f of flights) {
-    const [lat, lon, hdg] = [f[6], f[5], f[10] || 0]
-    const oLat = lat - Math.cos(hdg * Math.PI / 180) * 4
-    const oLon = lon - Math.sin(hdg * Math.PI / 180) * 4
-    addFlightArc([oLat, oLon], [lat, lon])
+  float noise(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
   }
-}
-fetchFlights()
-setInterval(fetchFlights, 300_000)
+  float fbm(vec2 p) {
+    float v = 0.0, a = 0.5;
+    for (int i = 0; i < 5; i++) {
+      v += a * noise(p);
+      p = p * 2.0 + vec2(1.7, 9.2);
+      a *= 0.5;
+    }
+    return v;
+  }
+  void main() {
+    vec2 uv = gl_FragCoord.xy / u_resolution;
+    float t = u_time * 0.15;
+    float n = fbm(uv * 3.0 + t);
+    vec3 col = mix(
+      vec3(0.02, 0.03, 0.08),
+      vec3(0.1, 0.2, 0.5),
+      n * 0.6
+    );
+    gl_FragColor = vec4(col, 1.0);
+  }
+\`
 
-function animate() {
-  earth.rotation.y += 0.001
-  renderer.render(scene, camera)
-  requestAnimationFrame(animate)
+function ShaderBg() {
+  const canvas = useRef<HTMLCanvasElement>(null)
+  useEffect(() => {
+    const gl = canvas.current!.getContext('webgl')!
+    // ... compile FRAG, render loop with u_time
+  }, [])
+  return <canvas ref={canvas} className="absolute inset-0" />
 }
-animate()`;
 
-const AGENTS_INDEX = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <style>
-    * { margin: 0 }
-    body { overflow: hidden; background: #020208 }
-    canvas { display: block; width: 100vw; height: 100vh }
-  </style>
-</head>
-<body>
-  <canvas></canvas>
-  <script type="module" src="globe.ts"></script>
-</body>
-</html>`;
+export default function App() {
+  const [launches, setLaunches] = useState<Launch[]>([])
+
+  // Listen for agent events pushed via:
+  //   dazzle stage event emit <stage> '{...}'
+  useDazzleEvents((data) => {
+    if (data.type === 'launch')
+      setLaunches(prev => [...prev, data])
+    if (data.type === 'update')
+      setLaunches(prev => prev.map(l =>
+        l.mission === data.mission ? { ...l, ...data } : l
+      ))
+  })
+
+  return (
+    <div className="relative h-screen bg-[#0a0a0f]">
+      <ShaderBg />
+      <div className="relative z-10 p-8 space-y-4">
+        <h1 className="text-xs tracking-widest text-zinc-500">
+          UPCOMING LAUNCHES
+        </h1>
+        {launches.map(l => (
+          <LaunchCard key={l.mission} launch={l} />
+        ))}
+      </div>
+    </div>
+  )
+}`;
+
+const AGENTS_SHADER = `// hooks.ts — Dazzle event bridge
+import { useEffect, useCallback } from 'react'
+
+type EventHandler = (data: any) => void
+
+export function useDazzleEvents(handler: EventHandler) {
+  const cb = useCallback(handler, [])
+
+  useEffect(() => {
+    const listener = (e: Event) => {
+      cb((e as CustomEvent).detail)
+    }
+    window.addEventListener('dazzle:event', listener)
+    return () => window.removeEventListener('dazzle:event', listener)
+  }, [cb])
+}`;
 
 const AGENTS_PREVIEW = `<!DOCTYPE html><html><head><meta charset="utf-8">
-<style>*{margin:0}body{overflow:hidden;background:#020208}canvas{display:block;width:100vw;height:100vh}
-.hud{position:absolute;top:8px;left:8px;font-family:'SF Mono',monospace}
-.hud .ct{color:#60a5fa;font-size:11px;font-weight:700}
-.hud .lb{color:rgba(255,255,255,0.3);font-size:5px;text-transform:uppercase;letter-spacing:0.12em}
+<style>*{margin:0;box-sizing:border-box}
+body{overflow:hidden;height:100vh;background:#0a0a0f}
+canvas{position:absolute;top:0;left:0;width:100%;height:100%}
+.overlay{position:relative;z-index:1;padding:10px;font-family:'SF Mono',Menlo,monospace}
+h1{font-size:5px;color:rgba(161,161,170,0.8);font-weight:400;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px}
+.launch{border-left:1px solid rgba(34,197,94,0.2);padding:4px 6px;margin-bottom:6px;opacity:0;animation:slideIn 0.4s ease forwards;
+background:rgba(10,10,15,0.5);backdrop-filter:blur(4px);border-radius:0 3px 3px 0}
+.launch.featured{border-left-color:#22c55e}
+.status-row{display:flex;justify-content:space-between;align-items:center}
+.status{font-size:4px;font-weight:700;letter-spacing:0.1em}
+.GO{color:#22c55e}
+.t-minus{color:#60a5fa;font-size:4px}
+h2{font-size:6px;color:#fff;margin:1px 0;font-weight:600}
+.meta{font-size:4px;color:#71717a}
+.detail,.note{font-size:3.5px;color:#71717a;margin-top:1px}
+.crew{font-size:3.5px;color:#a78bfa;margin-top:1px}
+@keyframes slideIn{from{opacity:0;transform:translateX(-4px)}to{opacity:1;transform:translateX(0)}}
 </style></head><body>
-<canvas></canvas>
-<div class="hud"><div class="lb">Live Aircraft</div><div class="ct">4,218</div></div>
+<canvas id="bg"></canvas>
+<div class="overlay">
+<h1>Upcoming Launches</h1>
+<div id="launches"></div>
+</div>
 <script>
-var c=document.querySelector('canvas'),x=c.getContext('2d');
-c.width=c.clientWidth*2;c.height=c.clientHeight*2;x.scale(2,2);
-var W=c.clientWidth,H=c.clientHeight,cx=W/2,cy=H/2,R=Math.min(W,H)*0.34;
-var rot=0;
-// Stars
-var stars=[];for(var i=0;i<120;i++)stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.2+0.2,a:Math.random()*0.6+0.2,flicker:Math.random()*Math.PI*2});
-// Routes
-var routes=[];
-var ap=[[40.6,-73.8],[51.5,-0.5],[37.6,-122.4],[35.7,139.8],[25.3,55.4],[-33.9,151.2],[49.0,2.5],[1.4,104.0],[30.1,-97.7],[47.6,-122.3],[55.4,-3.4],[22.3,113.9],[19.1,72.9],[-23.4,-46.5],[33.9,-118.4],[48.1,11.8],[41.8,-87.6],[13.7,100.5],[52.6,13.4],[43.7,-79.6]];
-for(var i=0;i<55;i++){var a=ap[Math.floor(Math.random()*ap.length)],b=ap[Math.floor(Math.random()*ap.length)];
-if(a===b)continue;
-routes.push({from:a,to:b,progress:Math.random(),hue:190+Math.random()*50,speed:0.0008+Math.random()*0.002});}
-function ll2xyz(lat,lon,r){
-var phi=(90-lat)*Math.PI/180,theta=(lon+180+rot)*Math.PI/180;
-var sx=-r*Math.sin(phi)*Math.cos(theta),sy=r*Math.cos(phi),sz=r*Math.sin(phi)*Math.sin(theta);
-return{x:cx+sx,y:cy-sy,z:sz};}
-function drawStars(t){
-for(var i=0;i<stars.length;i++){var s=stars[i];
-var flick=0.5+0.5*Math.sin(t*0.002+s.flicker);
-var d=Math.sqrt((s.x-cx)*(s.x-cx)+(s.y-cy)*(s.y-cy));
-if(d<R*1.15)continue;
-x.beginPath();x.arc(s.x,s.y,s.r,0,Math.PI*2);
-x.fillStyle='rgba(180,200,255,'+s.a*flick+')';x.fill();}}
-function drawGlobe(){
-// Outer glow - layered for softness
-var g1=x.createRadialGradient(cx,cy,R*0.85,cx,cy,R*1.5);
-g1.addColorStop(0,'rgba(40,100,220,0.06)');g1.addColorStop(0.4,'rgba(30,80,200,0.03)');g1.addColorStop(1,'transparent');
-x.fillStyle=g1;x.beginPath();x.arc(cx,cy,R*1.5,0,Math.PI*2);x.fill();
-// Inner glow ring
-var g2=x.createRadialGradient(cx,cy,R*0.95,cx,cy,R*1.08);
-g2.addColorStop(0,'rgba(60,140,255,0.0)');g2.addColorStop(0.5,'rgba(60,140,255,0.12)');g2.addColorStop(1,'rgba(60,140,255,0.0)');
-x.fillStyle=g2;x.beginPath();x.arc(cx,cy,R*1.08,0,Math.PI*2);x.fill();
-// Globe body
-var gg=x.createRadialGradient(cx-R*0.25,cy-R*0.25,0,cx,cy,R);
-gg.addColorStop(0,'#0c1428');gg.addColorStop(0.7,'#060c1a');gg.addColorStop(0.92,'#0a1a3a');gg.addColorStop(1,'#1e4a8a');
-x.fillStyle=gg;x.beginPath();x.arc(cx,cy,R,0,Math.PI*2);x.fill();
-// Grid latitude
-x.strokeStyle='rgba(80,150,255,0.06)';x.lineWidth=0.4;
-for(var lat=-60;lat<=60;lat+=30){x.beginPath();
-for(var lon=0;lon<=360;lon+=2){var p=ll2xyz(lat,lon,R);
-if(p.z<0)continue;if(lon===0||p.z<5)x.moveTo(p.x,p.y);else x.lineTo(p.x,p.y);}x.stroke();}
-// Grid longitude
-for(var lon=0;lon<360;lon+=30){x.beginPath();
-for(var lat=-90;lat<=90;lat+=2){var p=ll2xyz(lat,lon,R);
-if(p.z<0)continue;if(lat===-90||p.z<5)x.moveTo(p.x,p.y);else x.lineTo(p.x,p.y);}x.stroke();}}
-function drawArc(route){
-var steps=36,pts=[],f=route.from,t=route.to;
-for(var i=0;i<=steps;i++){var frac=i/steps;
-var lat=f[0]+(t[0]-f[0])*frac,lon=f[1]+(t[1]-f[1])*frac;
-var alt=R+Math.sin(frac*Math.PI)*R*0.18;
-pts.push(ll2xyz(lat,lon,alt));}
-// Gradient arc - brighter near the plane
-var pi=Math.floor(route.progress*steps);
-for(var i=1;i<pts.length;i++){
-var p=pts[i],pp=pts[i-1];
-if(p.z<-R*0.05||pp.z<-R*0.05)continue;
-var dist=Math.abs(i-pi);var nearPlane=Math.max(0.15,1-dist/steps*1.5);
-x.beginPath();x.moveTo(pp.x,pp.y);x.lineTo(p.x,p.y);
-x.strokeStyle='hsla('+route.hue+',80%,65%,'+(0.6*nearPlane)+')';
-x.lineWidth=nearPlane>0.5?1.2:0.7;x.stroke();}
-// Plane dot
-if(pi<pts.length&&pi>=0){var pd=pts[pi];
-if(pd.z>-R*0.05){
-// Outer glow
-var pg=x.createRadialGradient(pd.x,pd.y,0,pd.x,pd.y,8);
-pg.addColorStop(0,'hsla('+route.hue+',90%,75%,0.4)');pg.addColorStop(1,'hsla('+route.hue+',90%,75%,0)');
-x.fillStyle=pg;x.beginPath();x.arc(pd.x,pd.y,8,0,Math.PI*2);x.fill();
-// Core
-x.beginPath();x.arc(pd.x,pd.y,2.2,0,Math.PI*2);
-x.fillStyle='hsla('+route.hue+',90%,85%,1)';x.fill();
-// Bright center
-x.beginPath();x.arc(pd.x,pd.y,1,0,Math.PI*2);
-x.fillStyle='#fff';x.fill();}}}
+// Animated nebula shader background
+var c=document.getElementById('bg'),gl=c.getContext('webgl');
+if(gl){
+c.width=c.clientWidth*2;c.height=c.clientHeight*2;
+var vs='attribute vec2 p;void main(){gl_Position=vec4(p,0,1);}';
+var fs='precision mediump float;uniform float t;uniform vec2 r;'+
+'float n(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5);}'+
+'float f(vec2 p){float v=0.,a=.5;for(int i=0;i<5;i++){v+=a*n(p);p=p*2.+vec2(1.7,9.2);a*=.5;}return v;}'+
+'void main(){vec2 u=gl_FragCoord.xy/r;float m=f(u*3.+t*.15);'+
+'vec3 c=mix(vec3(.02,.03,.08),vec3(.1,.2,.5),m*.6);gl_FragColor=vec4(c,1.);}';
+function sh(type,src){var s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);return s;}
+var pg=gl.createProgram();gl.attachShader(pg,sh(gl.VERTEX_SHADER,vs));gl.attachShader(pg,sh(gl.FRAGMENT_SHADER,fs));
+gl.linkProgram(pg);gl.useProgram(pg);
+var b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);
+gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+var pl=gl.getAttribLocation(pg,'p');gl.enableVertexAttribArray(pl);gl.vertexAttribPointer(pl,2,gl.FLOAT,false,0,0);
+var tl=gl.getUniformLocation(pg,'t'),rl=gl.getUniformLocation(pg,'r');
+gl.uniform2f(rl,c.width,c.height);
 var t0=0;
-function draw(){t0++;
-x.fillStyle='#020208';x.fillRect(0,0,W,H);
-drawStars(t0);
-drawGlobe();
-for(var i=0;i<routes.length;i++){
-routes[i].progress=(routes[i].progress+routes[i].speed)%1;
-drawArc(routes[i]);}
-rot+=0.12;
-requestAnimationFrame(draw);}
-draw();
+(function draw(){t0+=0.016;gl.uniform1f(tl,t0);gl.viewport(0,0,c.width,c.height);
+gl.drawArrays(gl.TRIANGLE_STRIP,0,4);requestAnimationFrame(draw);})();
+}
+// Launch cards
+var launches=[
+{mission:'Starlink Group 12-7',vehicle:'Falcon 9',site:'Vandenberg SFB',t_minus:'14h 22m',status:'GO',weather:'Clear, 12km vis',payload:'23 Starlink v2 Mini sats',note:'Drone ship 650km downrange'},
+{mission:'Crew-12',vehicle:'Falcon 9',site:'Kennedy Space Center',t_minus:'3d 6h',status:'GO',crew:['Petty','Epps','Dyson','Dominick']}
+];
+var el=document.getElementById('launches');
+var shown=0;
+function render(){
+el.innerHTML='';
+for(var i=0;i<shown;i++){var l=launches[i];
+var d=document.createElement('div');d.className='launch'+(i===0?' featured':'');
+d.style.animationDelay=i*0.15+'s';
+var h='<div class="status-row"><span class="status '+l.status+'">'+l.status+'</span><span class="t-minus">T-'+l.t_minus+'</span></div>';
+h+='<h2>'+l.mission+'</h2>';
+h+='<div class="meta">'+l.vehicle+' \\u00b7 '+l.site+'</div>';
+if(l.payload)h+='<div class="detail">'+l.payload+'</div>';
+if(l.weather)h+='<div class="detail">'+l.weather+'</div>';
+if(l.crew)h+='<div class="crew">'+l.crew.join(' \\u00b7 ')+'</div>';
+if(l.note)h+='<div class="note">'+l.note+'</div>';
+d.innerHTML=h;el.appendChild(d);}}
+function next(){if(shown<launches.length){shown++;render();setTimeout(next,2000);}
+else{setTimeout(function(){shown=0;render();setTimeout(next,1500);},4000);}}
+setTimeout(next,800);
 <\/script></body></html>`;
 
 // ─── Creative Coder ──────────────────────────────────────────────────────────
@@ -1144,11 +1133,11 @@ export const PERSONAS: Record<string, PersonaConfig> = {
     stepCreateDesc: "Your agent gets its own browser in the cloud \u2014 with full graphics, audio, and a 30 FPS stream.",
     terminalLines: AGENTS_TERMINAL,
     codeFiles: [
-      { name: "globe.ts", code: AGENTS_GLOBE, language: "typescript" },
-      { name: "index.html", code: AGENTS_INDEX, language: "xml" },
+      { name: "App.tsx", code: AGENTS_APP, language: "typescript" },
+      { name: "hooks.ts", code: AGENTS_SHADER, language: "typescript" },
     ],
     previewHtml: AGENTS_PREVIEW,
-    demoTitleBar: "flight-globe \u2014 dazzle.fm",
+    demoTitleBar: "launch-tracker \u2014 dazzle.fm",
     statusBarLanguage: "TypeScript",
     frameworksLabel: "Works with any agent. If it can write code and run a shell, it can go live.",
     frameworks: ["Claude Code", "OpenAI Agents SDK", "CrewAI", "LangGraph", "AutoGen", "OpenClaw"],
