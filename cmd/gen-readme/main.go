@@ -207,7 +207,10 @@ func main() {
 type serverJSON struct {
 	Schema      string           `json:"$schema"`
 	Name        string           `json:"name"`
+	Title       string           `json:"title"`
 	Description string           `json:"description"`
+	WebsiteURL  string           `json:"websiteUrl"`
+	Icons       []serverIcon     `json:"icons"`
 	Version     string           `json:"version"`
 	Repository  serverRepo       `json:"repository"`
 	Packages    []serverPackage  `json:"packages"`
@@ -215,31 +218,81 @@ type serverJSON struct {
 	Resources   []mcpResource    `json:"resources"`
 }
 
+type serverIcon struct {
+	Src      string `json:"src"`
+	MIMEType string `json:"mimeType"`
+}
+
 type serverRepo struct {
 	URL    string `json:"url"`
 	Source string `json:"source"`
 }
 
+type serverTransport struct {
+	Type string `json:"type"`
+}
+
+type serverArgument struct {
+	Type        string `json:"type"`
+	Value       string `json:"value,omitempty"`
+	Description string `json:"description,omitempty"`
+}
+
+type serverEnvVar struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	IsRequired  bool   `json:"isRequired"`
+	IsSecret    bool   `json:"isSecret,omitempty"`
+}
+
 type serverPackage struct {
-	RegistryName string `json:"registry_name"`
-	Name         string `json:"name"`
-	Version      string `json:"version"`
+	RegistryType         string           `json:"registryType"`
+	Identifier           string           `json:"identifier"`
+	Version              string           `json:"version"`
+	RuntimeHint          string           `json:"runtimeHint"`
+	Transport            serverTransport  `json:"transport"`
+	PackageArguments     []serverArgument `json:"packageArguments"`
+	EnvironmentVariables []serverEnvVar   `json:"environmentVariables"`
 }
 
 func generateServerJSON(outFile string, d data) {
 	s := serverJSON{
-		Schema:      "https://registry.modelcontextprotocol.io/schemas/server.json",
+		Schema:      "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
 		Name:        "io.github.dazzle-labs/dazzle",
-		Description: "Cloud stages for AI agents and live streaming. Create, manage, and sync content to browser-based streaming environments.",
-		Version:     d.Version,
+		Title:       "Dazzle",
+		Description: "Cloud stages for AI agents and live streaming. Create, manage, and broadcast content.",
+		WebsiteURL:  "https://dazzle.fm",
+		Icons: []serverIcon{{
+			Src:      "https://raw.githubusercontent.com/dazzle-labs/cli/main/logo.png",
+			MIMEType: "image/png",
+		}},
+		Version: d.Version,
 		Repository: serverRepo{
 			URL:    "https://github.com/dazzle-labs/cli",
-			Source: "https://github.com/dazzle-labs/cli/tree/main/cmd/dazzle",
+			Source: "github",
 		},
 		Packages: []serverPackage{{
-			RegistryName: "github-releases",
-			Name:         "dazzle-labs/cli",
-			Version:      "v" + d.Version,
+			RegistryType: "npm",
+			Identifier:   "@dazzle-labs/cli",
+			Version:      d.Version,
+			RuntimeHint:  "npx",
+			Transport:    serverTransport{Type: "stdio"},
+			PackageArguments: []serverArgument{{
+				Type:        "positional",
+				Value:       "mcp",
+				Description: "Start the MCP server",
+			}},
+			EnvironmentVariables: []serverEnvVar{
+				{
+					Name:        "DAZZLE_STAGE",
+					Description: "Pin to a specific stage name or ID. If omitted, auto-selects when you have one stage.",
+				},
+				{
+					Name:        "DAZZLE_API_KEY",
+					Description: "API key for headless/CI use. Alternative to interactive login.",
+					IsSecret:    true,
+				},
+			},
 		}},
 		Tools:     d.Tools,
 		Resources: d.Resources,

@@ -1,0 +1,30 @@
+{
+  "name": "@dazzle-labs/cli",
+  "version": "0.0.0",
+  "description": "Dazzle CLI — cloud stages for AI agents and live streaming",
+  "mcpName": "io.github.dazzle-labs/dazzle",
+  "bin": {
+    "dazzle": "bin/run.js"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dazzle-labs/cli"
+  },
+  "homepage": "https://dazzle.fm",
+  "keywords": [
+    "dazzle",
+    "mcp",
+    "streaming",
+    "ai-agents",
+    "cli"
+  ],
+  "optionalDependencies": {
+    "@dazzle-labs/cli-darwin-arm64": "0.0.0",
+    "@dazzle-labs/cli-darwin-x64": "0.0.0",
+    "@dazzle-labs/cli-linux-x64": "0.0.0",
+    "@dazzle-labs/cli-linux-arm64": "0.0.0",
+    "@dazzle-labs/cli-win32-x64": "0.0.0",
+    "@dazzle-labs/cli-win32-arm64": "0.0.0"
+  }
+}

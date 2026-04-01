@@ -51,3 +51,26 @@ jobs:
             echo "Generated files are stale. Run 'make readme' and commit the result."
             exit 1
           fi
+      - name: Validate server.json against MCP registry schema
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          SCHEMA_URL=$(node -e "console.log(require('./server.json')['\$schema'])")
+          curl -sf "$SCHEMA_URL" -o /tmp/schema.json
+          cd /tmp && npm init -y --silent && npm install ajv ajv-formats --silent
+          node -e "
+            const Ajv = require('ajv');
+            const addFormats = require('ajv-formats');
+            const schema = require('/tmp/schema.json');
+            const data = require('$GITHUB_WORKSPACE/server.json');
+            const ajv = new Ajv({ allErrors: true, strict: false });
+            addFormats(ajv);
+            const valid = ajv.validate(schema, data);
+            if (!valid) {
+              console.error('server.json schema validation failed:');
+              for (const e of ajv.errors) console.error('  ' + (e.instancePath || '/') + ': ' + e.message);
+              process.exit(1);
+            }
+            console.log('server.json validates against ' + schema['\$id']);
+          "
