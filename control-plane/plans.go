@@ -27,12 +27,12 @@ var Plans = map[string]PlanConfig{
 	PlanFree: {
 		MaxStages:       10,
 		MaxActiveStages: 1,
-		MaxExternalDest: 0,
+		MaxExternalDest: 1,
 		CanPrivate:      false,
 	},
 	PlanStarter: {
 		MaxStages:       100,
-		MaxActiveStages: 1,
+		MaxActiveStages: 3,
 		MaxExternalDest: 1,
 		CanPrivate:      false,
 	},

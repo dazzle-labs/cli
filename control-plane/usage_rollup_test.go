@@ -103,8 +103,8 @@ func TestPlanGrantTemplates(t *testing.T) {
 	}
 
 	free := PlanGrants[PlanFree]
-	if free.CPUBudgetMinutes != 600 {
-		t.Errorf("Free CPU budget = %d, want 600 (10 hrs)", free.CPUBudgetMinutes)
+	if free.CPUBudgetMinutes != 1440 {
+		t.Errorf("Free CPU budget = %d, want 1440 (24 hrs)", free.CPUBudgetMinutes)
 	}
 	if free.CPUOverageRatePerHr != 0 {
 		t.Errorf("Free should have no CPU overage rate")

@@ -251,8 +251,8 @@ type PlanGrantTemplate struct {
 
 var PlanGrants = map[string]PlanGrantTemplate{
 	PlanFree: {
-		// Free: 10 CPU hrs = 600 min monthly budget, no metered grants
-		CPUBudgetMinutes: 600,
+		// Free: 24 CPU hrs = 1440 min monthly budget, no metered grants
+		CPUBudgetMinutes: 1440,
 	},
 	PlanStarter: {
 		CPUBudgetMinutes:    45000, // 750 hrs

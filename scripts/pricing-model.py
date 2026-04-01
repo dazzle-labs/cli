@@ -50,7 +50,7 @@ STARTER_PRICE = 19.99
 PRO_PRICE = 79.99
 
 # CPU hours included
-FREE_CPU_HRS = 10
+FREE_CPU_HRS = 24
 STARTER_CPU_HRS = 750
 PRO_CPU_HRS = 1500
 
@@ -67,11 +67,11 @@ GPU_TRIAL_HRS = 2
 
 # Stage limits
 FREE_STAGE_LIMIT = 1
-STARTER_STAGE_LIMIT = 1
+STARTER_STAGE_LIMIT = 3
 PRO_STAGE_LIMIT = "Unlimited"
 
 # Destinations
-FREE_DESTINATIONS = "Dazzle only"
+FREE_DESTINATIONS = "Dazzle + 1 external"
 STARTER_DESTINATIONS = "Dazzle + 1 external"
 PRO_DESTINATIONS = "Dazzle + 5 external"
 
@@ -662,7 +662,7 @@ def compute():
     overage_cost = starter_cpu_cost * 2
     w(margin_row(f"2nd stage overage ({HOURS_PER_MONTH} hrs × {d(STARTER_CPU_OVERAGE)})", overage_rev, overage_cost))
     w()
-    w(f"The last row is hypothetical — Starter is capped at {STARTER_STAGE_LIMIT} stage, so a 2nd stage requires upgrading to Pro. If a user somehow ran overage (e.g. the stage ran past their {STARTER_CPU_HRS}-hr budget), they'd pay {d(STARTER_CPU_OVERAGE)}/hr.")
+    w(f"The last row is hypothetical — Starter is capped at {STARTER_STAGE_LIMIT} active stages, so a 4th stage requires upgrading to Pro. If a user somehow ran overage (e.g. the stage ran past their {STARTER_CPU_HRS}-hr budget), they'd pay {d(STARTER_CPU_OVERAGE)}/hr.")
     w()
 
     # Pro scenarios
@@ -725,7 +725,7 @@ def compute():
     w(f"- **Plan mix**: {pct(PLAN_MIX_STARTER * 100)} Starter / {pct(PLAN_MIX_PRO * 100)} Pro. Free users = {FREE_TO_PAID_RATIO}× paid users.")
     w(f"- **MRR** = `(n_starter × {d(starter_typical_total)}) + (n_pro × {d(pro_typical_total)})`, using typical total/user from the Pricing Tiers table.")
     w(f"- **Infra cost** = fixed ({d(fixed_total)}) + extra CPU nodes beyond the 2 already in fixed costs (`ceil(total_stages / {CPU_STAGES_PER_NODE}) − 2` × {d(CPU_NODE_COST_MO)}) + GPU hours (`n × adoption × avg_hrs × {d(gpu_cost_blended)}/hr`).")
-    w(f"- **Total stages** = Starter users × 1 + Pro users × 2 + Pro overage ({pct(PRO_OVERAGE_RATE * 100)} × 1 extra) + Free users × ({FREE_CPU_HRS}/{HOURS_PER_MONTH}).")
+    w(f"- **Total stages** = Starter users × 2 + Pro users × 2 + Pro overage ({pct(PRO_OVERAGE_RATE * 100)} × 1 extra) + Free users × ({FREE_CPU_HRS}/{HOURS_PER_MONTH}).")
     w(f"- **Pre-tax margin** = `(MRR − infra cost) / MRR`.")
     w()
     w("| Paying users | Free | Starter | Pro | MRR | Infra cost | Pre-tax margin | ARR |")
@@ -744,7 +744,7 @@ def compute():
         # Infrastructure cost
         # CPU: each paid user uses ~1 stage on avg, free users use partial
         # Simplify: count always-on stages
-        total_stages = n_starter * 1 + n_pro * 2 + n_free * (FREE_CPU_HRS / HOURS_PER_MONTH)
+        total_stages = n_starter * 2 + n_pro * 2 + n_free * (FREE_CPU_HRS / HOURS_PER_MONTH)
         # Add Pro overage stages
         total_stages += n_pro * PRO_OVERAGE_RATE
         cpu_nodes_needed = math.ceil(total_stages / CPU_STAGES_PER_NODE)
@@ -790,7 +790,7 @@ def compute():
         n_pro = n - n_starter
         n_free = round(n * FREE_TO_PAID_RATIO)
         mrr = n_starter * starter_typical_total + n_pro * pro_typical_total
-        total_stages = n_starter + n_pro * 2 + n_free * (FREE_CPU_HRS / HOURS_PER_MONTH) + n_pro * PRO_OVERAGE_RATE
+        total_stages = n_starter * 2 + n_pro * 2 + n_free * (FREE_CPU_HRS / HOURS_PER_MONTH) + n_pro * PRO_OVERAGE_RATE
         cpu_nodes = math.ceil(total_stages / CPU_STAGES_PER_NODE)
         extra_nodes = max(0, cpu_nodes - 2)
         gpu_hrs = n_starter * GPU_ADOPTION_RATE * STARTER_AVG_GPU_HRS + n_pro * GPU_ADOPTION_RATE * PRO_AVG_GPU_HRS
@@ -841,7 +841,7 @@ def compute():
         p_payg = PRO_OVERAGE_RATE * HOURS_PER_MONTH * PRO_CPU_OVERAGE + rate * PRO_AVG_GPU_HRS * PRO_GPU_RATE
         mrr = n_starter * (STARTER_PRICE + s_payg) + n_pro * (PRO_PRICE + p_payg)
 
-        total_stages = n_starter + n_pro * 2 + n_free * (FREE_CPU_HRS / HOURS_PER_MONTH) + n_pro * PRO_OVERAGE_RATE
+        total_stages = n_starter * 2 + n_pro * 2 + n_free * (FREE_CPU_HRS / HOURS_PER_MONTH) + n_pro * PRO_OVERAGE_RATE
         cpu_nodes = math.ceil(total_stages / CPU_STAGES_PER_NODE)
         extra_nodes = max(0, cpu_nodes - 2)
         gpu_hrs = n_starter * rate * STARTER_AVG_GPU_HRS + n_pro * rate * PRO_AVG_GPU_HRS
@@ -1354,7 +1354,7 @@ def compute():
     w(f"   - Free tier: enforce {FREE_CPU_HRS} CPU hrs/mo budget + one-time {GPU_TRIAL_HRS} GPU hr trial")
     w(f"   - Starter: {STARTER_STAGE_LIMIT} stage limit, {STARTER_CPU_HRS} CPU hrs/mo, {d(STARTER_CPU_OVERAGE)}/hr CPU overage, {d(STARTER_GPU_RATE)}/hr GPU")
     w(f"   - Pro: unlimited stages, {PRO_CPU_HRS} CPU hrs/mo, {d(PRO_CPU_OVERAGE)}/hr CPU overage, {d(PRO_GPU_RATE)}/hr GPU")
-    w(f"   - Destination limit per plan (free: 0 external, starter: 2, pro: 5)")
+    w(f"   - Destination limit per plan (free: 1 external, starter: 1, pro: 5)")
     w()
     w("4. **Stage Privacy** (~2-3 days)")
     w("   - New `visibility` column on stages: `public` or `private`")
