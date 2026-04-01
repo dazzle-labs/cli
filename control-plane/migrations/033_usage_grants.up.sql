@@ -11,3 +11,7 @@ CREATE TABLE IF NOT EXISTS usage_grants (
 );
 
 CREATE INDEX IF NOT EXISTS idx_usage_grants_user_resource ON usage_grants(user_id, resource);
+
+-- Prevent duplicate signup grants per user+resource.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_usage_grants_signup_unique
+  ON usage_grants(user_id, resource) WHERE reason = 'signup';

@@ -386,7 +386,10 @@ func (m *Manager) handleSubscriptionUpdated(event stripe.Event) error {
 	// downgrade queued, etc). We only change quotas when Stripe has actually
 	// transitioned the plan, not when a future change is pending.
 	if plan != "" {
-		currentPlan := dbGetUserPlan(m.db, userID)
+		var currentPlan string
+		if err := tx.QueryRow(`SELECT plan FROM users WHERE id = $1`, userID).Scan(&currentPlan); err != nil {
+			currentPlan = PlanFree
+		}
 		if plan != currentPlan {
 			cfg := getPlanConfig(plan)
 			if _, err := tx.Exec(`

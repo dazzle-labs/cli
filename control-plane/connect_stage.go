@@ -94,12 +94,6 @@ func (s *stageServer) CreateStage(ctx context.Context, req *connect.Request[apiv
 
 	// Enforce per-user total stage limit (created, regardless of state).
 	maxStages := cfg.MaxStages
-	if s.mgr.db != nil {
-		var userMax int
-		if err := s.mgr.db.QueryRow("SELECT max_stages FROM users WHERE id=$1", info.UserID).Scan(&userMax); err == nil && userMax > 0 {
-			maxStages = userMax
-		}
-	}
 	existing, err := dbListStages(s.mgr.db, info.UserID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to check stage limits"))
@@ -226,6 +220,11 @@ func (s *stageServer) GetStage(ctx context.Context, req *connect.Request[apiv1.G
 		return connect.NewResponse(&apiv1.GetStageResponse{
 			Stage: stageToProto(st, s.mgr.publicBaseURL, s.mgr.db),
 		}), nil
+	}
+
+	// Private stages are not visible to non-owners
+	if row.Visibility == VisibilityPrivate {
+		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("stage not found"))
 	}
 
 	// Everyone else gets public info
@@ -436,13 +435,6 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 
 	maxActiveCPU := cfg.MaxActiveStages
 	maxActiveGPU := 1
-	if s.mgr.db != nil {
-		var cpuLimit, gpuLimit int
-		if err := s.mgr.db.QueryRow("SELECT max_active_cpu_stages, max_active_gpu_stages FROM users WHERE id=$1", ownerID).Scan(&cpuLimit, &gpuLimit); err == nil {
-			maxActiveCPU = cpuLimit
-			maxActiveGPU = gpuLimit
-		}
-	}
 	allStages, listErr := dbListStages(s.mgr.db, ownerID)
 	if listErr != nil {
 		stageUnlock()

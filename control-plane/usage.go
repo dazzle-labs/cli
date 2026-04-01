@@ -279,34 +279,24 @@ func rollupUserUsage(db *sql.DB, userID string, fn reportFunc) error {
 	gpuMinutes := ceilToMinutes(unreportedGPUSec)
 
 	// Consume minutes from grants FIFO — free grants first, then metered.
-	// consumeMinutes returns the cost in cents for metered usage.
-	var cpuCostCents, gpuCostCents int
+	// consumeMinutes returns cost and metered minutes consumed.
+	var cpuResult, gpuResult consumeResult
 	if cpuMinutes > 0 {
-		cpuCostCents, err = consumeMinutes(db, userID, "cpu", cpuMinutes)
+		cpuResult, err = consumeMinutes(db, userID, "cpu", cpuMinutes)
 		if err != nil {
 			return err
 		}
 	}
 	if gpuMinutes > 0 {
-		gpuCostCents, err = consumeMinutes(db, userID, "gpu", gpuMinutes)
+		gpuResult, err = consumeMinutes(db, userID, "gpu", gpuMinutes)
 		if err != nil {
 			return err
 		}
 	}
 
-	// Convert metered cost to overage hours for Stripe reporting.
-	// Stripe meters expect hours, not minutes or cents.
-	// cpuCostCents = ceil(metered_min/60) * rate_per_hr, so overage_hrs = cpuCostCents / rate.
-	// But we don't know the rate here — instead report the cost directly.
-	// For now, report ceil(metered_minutes / 60) as overage hours per resource.
-	cpuOverageHrs := 0
-	gpuOverageHrs := 0
-	if cpuCostCents > 0 {
-		cpuOverageHrs = ceilToHours(cpuMinutes) // approximate — metered minutes only
-	}
-	if gpuCostCents > 0 {
-		gpuOverageHrs = ceilToHours(gpuMinutes)
-	}
+	// Report only metered minutes as overage hours to Stripe (not free-grant-covered minutes).
+	cpuOverageHrs := ceilToHours(cpuResult.MeteredMinutes)
+	gpuOverageHrs := ceilToHours(gpuResult.MeteredMinutes)
 
 	periodStart := currentPeriodStart(db, userID)
 	periodKey := fmt.Sprintf("%s:%s", userID, periodStart.Format(time.RFC3339))

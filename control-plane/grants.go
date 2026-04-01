@@ -101,14 +101,21 @@ func hasActiveGrant(db *sql.DB, userID, resource string) (bool, error) {
 	return exists, err
 }
 
+// consumeResult holds the result of consuming minutes from grants.
+type consumeResult struct {
+	CostCents      int // total cost for metered minutes
+	MeteredMinutes int // minutes consumed from metered (rate > 0) grants
+}
+
 // consumeMinutes debits minutes from grants in FIFO order (free first, then cheapest metered).
-// Returns the cost in cents for any metered minutes consumed.
-func consumeMinutes(db *sql.DB, userID, resource string, minutes int) (costCents int, err error) {
+// Returns the cost in cents and metered minutes consumed.
+func consumeMinutes(db *sql.DB, userID, resource string, minutes int) (consumeResult, error) {
 	grants, err := activeGrants(db, userID, resource)
 	if err != nil {
-		return 0, err
+		return consumeResult{}, err
 	}
 
+	var result consumeResult
 	remaining := minutes
 	for _, g := range grants {
 		if remaining <= 0 {
@@ -117,7 +124,7 @@ func consumeMinutes(db *sql.DB, userID, resource string, minutes int) (costCents
 
 		var debit int
 		if g.IsMetered() {
-			debit = remaining // unlimited grant absorbs all remaining
+			debit = remaining
 		} else {
 			debit = min(remaining, g.Remaining())
 		}
@@ -128,30 +135,30 @@ func consumeMinutes(db *sql.DB, userID, resource string, minutes int) (costCents
 
 		if _, err := db.Exec(`UPDATE usage_grants SET used_minutes = used_minutes + $1 WHERE id = $2`,
 			debit, g.ID); err != nil {
-			return costCents, err
+			return result, err
 		}
 
 		if g.RateCentsPerHr > 0 {
-			// Convert metered minutes to hourly billing: ceil(minutes/60) * rate
-			costCents += ceilToHours(debit) * g.RateCentsPerHr
+			result.CostCents += ceilToHours(debit) * g.RateCentsPerHr
+			result.MeteredMinutes += debit
 		}
 
 		remaining -= debit
 	}
 
-	return costCents, nil
+	return result, nil
 }
 
-// metered spend for a user+resource across active metered grants this period.
+// meteredSpendCents returns total metered spend for a user+resource this billing period.
+// Includes expired grants that were active during the period (i.e., expired after period start).
 func meteredSpendCents(db *sql.DB, userID, resource string, periodStart time.Time) (int, error) {
-	// Sum used_minutes on metered grants (rate > 0) created during or active in this period.
 	rows, err := db.Query(`
 		SELECT used_minutes, rate_cents_per_hr
 		FROM usage_grants
 		WHERE user_id = $1 AND resource = $2
 		  AND rate_cents_per_hr > 0
-		  AND (minutes IS NULL OR used_minutes < minutes)
-		  AND (expires_at IS NULL OR expires_at > NOW())
+		  AND used_minutes > 0
+		  AND (expires_at IS NULL OR expires_at >= $3)
 		  AND created_at >= $3`,
 		userID, resource, periodStart)
 	if err != nil {
@@ -209,19 +216,17 @@ func issueGrantTx(tx *sql.Tx, userID, resource string, minutes *int, rateCentsPe
 }
 
 // issueSignupGrant creates the one-time GPU trial grant if the user doesn't already have one.
+// Uses ON CONFLICT with the unique partial index to prevent duplicates atomically.
 func issueSignupGrant(db *sql.DB, userID string) error {
-	var exists bool
-	if err := db.QueryRow(`
-		SELECT EXISTS(SELECT 1 FROM usage_grants WHERE user_id = $1 AND reason = 'signup' AND resource = 'gpu')`,
-		userID).Scan(&exists); err != nil {
-		return err
-	}
-	if exists {
-		return nil
-	}
+	id := uuid.Must(uuid.NewV7()).String()
 	minutes := 120 // 2 hours
 	expiresAt := time.Now().Add(365 * 24 * time.Hour)
-	return issueGrant(db, userID, "gpu", &minutes, 0, "signup", &expiresAt)
+	_, err := db.Exec(`
+		INSERT INTO usage_grants (id, user_id, resource, minutes, rate_cents_per_hr, reason, expires_at)
+		VALUES ($1, $2, 'gpu', $3, 0, 'signup', $4)
+		ON CONFLICT (user_id, resource) WHERE reason = 'signup' DO NOTHING`,
+		id, userID, minutes, expiresAt)
+	return err
 }
 
 // expireMeteredGrants expires all metered (unlimited) grants for a user.

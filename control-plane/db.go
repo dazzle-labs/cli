@@ -515,12 +515,25 @@ func dbGetStageByStreamKey(db *sql.DB, streamKey string) (*stageRow, error) {
 }
 
 func dbDeleteStage(db *sql.DB, id, userID string) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback()
+
 	// Clean up Dazzle stream_destinations before deleting the stage
 	// (stage_destinations rows are cleaned up by ON DELETE CASCADE,
 	// but the stream_destinations rows for Dazzle need explicit cleanup)
-	dbDeleteDazzleDestinationsForStage(db, id)
+	if _, err := tx.Exec(`
+		DELETE FROM stream_destinations WHERE id IN (
+			SELECT sd.destination_id FROM stage_destinations sd
+			JOIN stream_destinations d ON sd.destination_id = d.id
+			WHERE sd.stage_id = $1 AND d.platform = 'dazzle'
+		)`, id); err != nil {
+		return fmt.Errorf("cleanup dazzle destinations: %w", err)
+	}
 
-	res, err := db.Exec("DELETE FROM stages WHERE id=$1 AND user_id=$2", id, userID)
+	res, err := tx.Exec("DELETE FROM stages WHERE id=$1 AND user_id=$2", id, userID)
 	if err != nil {
 		return err
 	}
@@ -528,7 +541,7 @@ func dbDeleteStage(db *sql.DB, id, userID string) error {
 	if n == 0 {
 		return fmt.Errorf("stage not found")
 	}
-	return nil
+	return tx.Commit()
 }
 
 func dbUpdateStageStatus(db *sql.DB, id, status, podName, podIP string) error {
@@ -676,33 +689,30 @@ func dbSetStageDestinationEnabled(db *sql.DB, stageID, destinationID string, ena
 // and links it in stage_destinations. The destination is deleted when the stage is deleted
 // (via ON DELETE CASCADE on stage_destinations + explicit cleanup).
 func dbCreateDazzleDestinationForStage(db *sql.DB, stageID, userID string) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback()
+
 	destID := uuid.Must(uuid.NewV7()).String()
 	sdID := uuid.Must(uuid.NewV7()).String()
 
-	_, err := db.Exec(`
+	if _, err := tx.Exec(`
 		INSERT INTO stream_destinations (id, user_id, name, platform, platform_username, rtmp_url, stream_key, created_at, updated_at)
-		VALUES ($1, $2, 'Dazzle', 'dazzle', (SELECT slug FROM stages WHERE id = $3::uuid), '', '', NOW(), NOW())`, destID, userID, stageID)
-	if err != nil {
+		VALUES ($1, $2, 'Dazzle', 'dazzle', (SELECT slug FROM stages WHERE id = $3::uuid), '', '', NOW(), NOW())`, destID, userID, stageID); err != nil {
 		return err
 	}
 
-	_, err = db.Exec(`
+	if _, err := tx.Exec(`
 		INSERT INTO stage_destinations (id, stage_id, destination_id, enabled)
-		VALUES ($1, $2, $3, true)`, sdID, stageID, destID)
-	return err
+		VALUES ($1, $2, $3, true)`, sdID, stageID, destID); err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
-// dbDeleteDazzleDestinationsForStage removes the Dazzle stream_destinations rows
-// associated with a stage (the stage_destinations join rows are already cleaned
-// up by ON DELETE CASCADE when the stage is deleted).
-func dbDeleteDazzleDestinationsForStage(db *sql.DB, stageID string) {
-	db.Exec(`
-		DELETE FROM stream_destinations WHERE id IN (
-			SELECT sd.destination_id FROM stage_destinations sd
-			JOIN stream_destinations d ON sd.destination_id = d.id
-			WHERE sd.stage_id = $1 AND d.platform = 'dazzle'
-		)`, stageID)
-}
 
 // --- Encryption helpers ---
 

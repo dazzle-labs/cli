@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"connectrpc.com/connect"
@@ -92,7 +93,26 @@ type authenticator struct {
 }
 
 type inMemoryJWKStore struct {
+	mu  sync.RWMutex
 	jwk *clerk.JSONWebKey
+}
+
+func (s *inMemoryJWKStore) get() *clerk.JSONWebKey {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.jwk
+}
+
+func (s *inMemoryJWKStore) set(jwk *clerk.JSONWebKey) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.jwk = jwk
+}
+
+func (s *inMemoryJWKStore) clear() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.jwk = nil
 }
 
 func newAuthenticator(db *sql.DB, clerkSecretKey string) *authenticator {
@@ -168,7 +188,7 @@ func (a *authenticator) authenticate(ctx context.Context, token string) (*authIn
 
 func (a *authenticator) verifyClerkJWT(ctx context.Context, token string) (*authInfo, error) {
 	// Try cached JWK first
-	jwk := a.jwkStore.jwk
+	jwk := a.jwkStore.get()
 	if jwk == nil {
 		unsafeClaims, err := jwt.Decode(ctx, &jwt.DecodeParams{Token: token})
 		if err != nil {
@@ -181,7 +201,7 @@ func (a *authenticator) verifyClerkJWT(ctx context.Context, token string) (*auth
 		if err != nil {
 			return nil, err
 		}
-		a.jwkStore.jwk = jwk
+		a.jwkStore.set(jwk)
 	}
 
 	customClaimsFn := jwt.CustomClaimsConstructor(func(_ context.Context) any {
@@ -190,7 +210,7 @@ func (a *authenticator) verifyClerkJWT(ctx context.Context, token string) (*auth
 	claims, err := jwt.Verify(ctx, &jwt.VerifyParams{Token: token, JWK: jwk, CustomClaimsConstructor: customClaimsFn})
 	if err != nil {
 		// JWK might be rotated — clear cache and retry once
-		a.jwkStore.jwk = nil
+		a.jwkStore.clear()
 		unsafeClaims, decErr := jwt.Decode(ctx, &jwt.DecodeParams{Token: token})
 		if decErr != nil {
 			return nil, err
@@ -202,7 +222,7 @@ func (a *authenticator) verifyClerkJWT(ctx context.Context, token string) (*auth
 		if fetchErr != nil {
 			return nil, err
 		}
-		a.jwkStore.jwk = jwk
+		a.jwkStore.set(jwk)
 		claims, err = jwt.Verify(ctx, &jwt.VerifyParams{Token: token, JWK: jwk, CustomClaimsConstructor: customClaimsFn})
 		if err != nil {
 			log.Printf("JWT verify failed after retry: %v", err)

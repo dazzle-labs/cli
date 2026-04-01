@@ -157,8 +157,13 @@ spec:
                 secretKeyRef:
                   name: r2-credentials
                   key: bucket
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-credentials
+                  key: password
             - name: REDIS_URL
-              value: "redis://redis:6379/0"
+              value: "redis://default:$(REDIS_PASSWORD)@redis:6379/0"
             - name: DEFAULT_GPU_NODE_CLASS
               value: rtx4090
             # RunPod GPU provisioning (optional — GPU only active when RUNPOD_API_KEY is set)

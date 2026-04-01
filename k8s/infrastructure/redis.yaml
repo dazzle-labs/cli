@@ -31,6 +31,14 @@ spec:
             - 128mb
             - --maxmemory-policy
             - allkeys-lru
+            - --requirepass
+            - $(REDIS_PASSWORD)
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-credentials
+                  key: password
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true

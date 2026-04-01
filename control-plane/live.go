@@ -317,6 +317,25 @@ func (m *Manager) handleWatchThumbnail(w http.ResponseWriter, r *http.Request, s
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
+
+	// Private stages require authentication for thumbnails
+	if row.Visibility == VisibilityPrivate {
+		token := r.URL.Query().Get("token")
+		authHeader := r.Header.Get("Authorization")
+		authenticated := false
+		if token != "" && m.validatePreviewToken(token) == row.ID {
+			authenticated = true
+		} else if authHeader != "" {
+			if info, err := m.auth.authenticate(r.Context(), extractBearerToken(r)); err == nil && info != nil && info.UserID == row.UserID {
+				authenticated = true
+			}
+		}
+		if !authenticated {
+			http.Error(w, "not found", http.StatusNotFound)
+			return
+		}
+	}
+
 	stage, ok := m.getStage(row.ID)
 	if !ok || !stageIsReady(stage) {
 		http.Error(w, "not found", http.StatusNotFound)
