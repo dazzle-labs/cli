@@ -36,8 +36,9 @@ export function WatchPage() {
     }
     clearStaleTimer();
     if (hlsRef.current) {
-      hlsRef.current.destroy();
+      const h = hlsRef.current;
       hlsRef.current = null;
+      h.destroy();
     }
   }, [clearStaleTimer]);
 
