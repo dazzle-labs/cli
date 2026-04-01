@@ -25,6 +25,7 @@ const WatchPage = lazy(() => import("./pages/WatchPage.js").then(m => ({ default
 const CliAuth = lazy(() => import("./pages/CliAuth.js").then(m => ({ default: m.CliAuth })));
 const TermsOfService = lazy(() => import("./pages/TermsOfService.js").then(m => ({ default: m.TermsOfService })));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy.js").then(m => ({ default: m.PrivacyPolicy })));
+const Billing = lazy(() => import("./pages/Billing.js").then(m => ({ default: m.Billing })));
 
 function AuthSetup() {
   const { getToken } = useAuth();
@@ -125,6 +126,7 @@ function AuthenticatedApp() {
                 <Route path="/stage/:stageId" element={<StageDetail />} />
                 <Route path="/destinations" element={<StreamConfig />} />
                 <Route path="/api-keys" element={<ApiKeys />} />
+                <Route path="/billing" element={<Billing />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Layout>

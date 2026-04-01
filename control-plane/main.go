@@ -25,6 +25,10 @@ import (
 	"github.com/clerk/clerk-sdk-go/v2"
 	expirable "github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
+	"github.com/stripe/stripe-go/v82"
+
+	"github.com/browser-streamer/control-plane/internal/redisclient"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -45,13 +49,14 @@ var gitCommit = "main"
 
 // Ensure compile-time interface satisfaction.
 var (
-	_ apiv1connect.StageServiceHandler           = (*stageServer)(nil)
-	_ apiv1internalconnect.ApiKeyServiceHandler   = (*apiKeyServer)(nil)
-	_ apiv1connect.RtmpDestinationServiceHandler  = (*rtmpDestinationServer)(nil)
-	_ apiv1connect.UserServiceHandler             = (*userServer)(nil)
-	_ apiv1connect.RuntimeServiceHandler          = (*runtimeServer)(nil)
-	_ apiv1internalconnect.FeaturedServiceHandler    = (*featuredServer)(nil)
+	_ apiv1connect.StageServiceHandler              = (*stageServer)(nil)
+	_ apiv1internalconnect.ApiKeyServiceHandler     = (*apiKeyServer)(nil)
+	_ apiv1connect.RtmpDestinationServiceHandler    = (*rtmpDestinationServer)(nil)
+	_ apiv1connect.UserServiceHandler               = (*userServer)(nil)
+	_ apiv1connect.RuntimeServiceHandler            = (*runtimeServer)(nil)
+	_ apiv1internalconnect.FeaturedServiceHandler   = (*featuredServer)(nil)
 	_ apiv1internalconnect.ModerationServiceHandler = (*moderationServer)(nil)
+	_ apiv1internalconnect.BillingServiceHandler    = (*billingServer)(nil)
 )
 
 type StageStatus string
@@ -77,6 +82,8 @@ type Stage struct {
 	SidecarURL    string      `json:"sidecarUrl,omitempty"`    // fully-qualified sidecar base URL (GPU stages)
 	Capabilities  []string    `json:"capabilities,omitempty"`  // e.g., ["gpu"]
 	Slug          string      `json:"slug,omitempty"`          // short ID for public watch URLs
+	Visibility    string      `json:"visibility,omitempty"`    // "public" or "private"
+	Resolution    string      `json:"resolution,omitempty"`    // "720p" or "1080p"
 }
 
 type Manager struct {
@@ -87,6 +94,7 @@ type Manager struct {
 	slugCache         *expirable.LRU[string, string] // slug -> stageID
 	activateMu    sync.Map // per-stage activation locks (stageID -> *sync.Mutex)
 	activateCancel sync.Map // per-stage cancel funcs (stageID -> context.CancelFunc)
+	userBudgetMu  sync.Map // per-user budget locks (userID -> *sync.Mutex) — serializes usage checks across stages
 	clientset     *kubernetes.Clientset
 	namespace     string
 	streamerImage string
@@ -110,6 +118,13 @@ type Manager struct {
 	gpuStageController *controller.GPUStageController
 	runpodClient       *runpod.Client
 	agentHTTPClient    *http.Client // mTLS client for all sidecar/agent RPC
+
+	// Redis for shared state (nil = in-memory fallback)
+	rdb       *redis.Client
+	replicaID string // unique per pod, used as distributed lock holder
+
+	// Stripe billing
+	stripeConfig stripeConfig
 
 	// HTML template for index.html with OG meta tag injection
 	indexTmpl        *template.Template
@@ -138,6 +153,113 @@ func (m *Manager) validatePreviewToken(token string) string {
 // invalidatePreviewToken removes a token from the cache (e.g. on regeneration).
 func (m *Manager) invalidatePreviewToken(token string) {
 	m.previewTokenCache.Remove(token)
+}
+
+// lockStage acquires a per-stage lock (Redis distributed or in-memory fallback).
+// Returns an unlock function. The caller must call unlock exactly once.
+func (m *Manager) lockStage(ctx context.Context, id string) (unlock func(), err error) {
+	if m.rdb != nil {
+		key := "lock:stage:" + id
+		ok, err := redisclient.Lock(ctx, m.rdb, key, m.replicaID, 5*time.Minute)
+		if err != nil {
+			return nil, fmt.Errorf("redis stage lock: %w", err)
+		}
+		if !ok {
+			// Spin-wait with backoff — another replica holds the lock
+			ticker := time.NewTicker(200 * time.Millisecond)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					return nil, ctx.Err()
+				case <-ticker.C:
+					ok, err = redisclient.Lock(ctx, m.rdb, key, m.replicaID, 5*time.Minute)
+					if err != nil {
+						return nil, fmt.Errorf("redis stage lock: %w", err)
+					}
+					if ok {
+						return func() {
+							unlockCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+							defer cancel()
+							redisclient.Unlock(unlockCtx, m.rdb, key, m.replicaID)
+						}, nil
+					}
+				}
+			}
+		}
+		return func() {
+			unlockCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+			redisclient.Unlock(unlockCtx, m.rdb, key, m.replicaID)
+		}, nil
+	}
+	// In-memory fallback
+	val, _ := m.activateMu.LoadOrStore(id, &sync.Mutex{})
+	mu := val.(*sync.Mutex)
+	mu.Lock()
+	return mu.Unlock, nil
+}
+
+// lockBudget acquires a per-user budget lock (Redis distributed or in-memory fallback).
+func (m *Manager) lockBudget(ctx context.Context, userID string) (unlock func(), err error) {
+	if m.rdb != nil {
+		key := "lock:budget:" + userID
+		ok, err := redisclient.Lock(ctx, m.rdb, key, m.replicaID, 30*time.Second)
+		if err != nil {
+			return nil, fmt.Errorf("redis budget lock: %w", err)
+		}
+		if !ok {
+			ticker := time.NewTicker(100 * time.Millisecond)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					return nil, ctx.Err()
+				case <-ticker.C:
+					ok, err = redisclient.Lock(ctx, m.rdb, key, m.replicaID, 30*time.Second)
+					if err != nil {
+						return nil, fmt.Errorf("redis budget lock: %w", err)
+					}
+					if ok {
+						return func() {
+							unlockCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+							defer cancel()
+							redisclient.Unlock(unlockCtx, m.rdb, key, m.replicaID)
+						}, nil
+					}
+				}
+			}
+		}
+		return func() {
+			unlockCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+			redisclient.Unlock(unlockCtx, m.rdb, key, m.replicaID)
+		}, nil
+	}
+	val, _ := m.userBudgetMu.LoadOrStore(userID, &sync.Mutex{})
+	mu := val.(*sync.Mutex)
+	mu.Lock()
+	return mu.Unlock, nil
+}
+
+// setCancelFlag sets a Redis flag to signal cross-replica activation cancellation.
+func (m *Manager) setCancelFlag(id string) {
+	if m.rdb != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		m.rdb.Set(ctx, "cancel:stage:"+id, "1", 60*time.Second)
+	}
+}
+
+// checkCancelFlag checks if a cross-replica cancellation has been requested.
+func (m *Manager) checkCancelFlag(id string) bool {
+	if m.rdb == nil {
+		return false
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	val, err := m.rdb.Get(ctx, "cancel:stage:"+id).Result()
+	return err == nil && val == "1"
 }
 
 func envOrDefault(key, def string) string {
@@ -261,8 +383,40 @@ func NewManager() (*Manager, error) {
 		m.imagePullSecrets = []corev1.LocalObjectReference{{Name: secret}}
 	}
 
-	m.cliSessions = newCliSessionManager()
-	m.cliSessionRL = newRateLimiter()
+	// Stripe billing (optional — graceful degradation if not set)
+	if stripeKey := os.Getenv("STRIPE_SECRET_KEY"); stripeKey != "" {
+		stripe.Key = stripeKey
+		m.stripeConfig = stripeConfig{
+			SecretKey:              stripeKey,
+			WebhookSecret:          os.Getenv("STRIPE_WEBHOOK_SECRET"),
+			PriceStarter:           os.Getenv("STRIPE_PRICE_STARTER"),
+			PricePro:               os.Getenv("STRIPE_PRICE_PRO"),
+			PriceCPUOverageStarter: os.Getenv("STRIPE_PRICE_CPU_OVERAGE_STARTER"),
+			PriceCPUOveragePro:     os.Getenv("STRIPE_PRICE_CPU_OVERAGE_PRO"),
+			PriceGPUOverageStarter: os.Getenv("STRIPE_PRICE_GPU_OVERAGE_STARTER"),
+			PriceGPUOveragePro:     os.Getenv("STRIPE_PRICE_GPU_OVERAGE_PRO"),
+			MeterEventCPU:          os.Getenv("STRIPE_METER_EVENT_CPU"),
+			MeterEventGPU:          os.Getenv("STRIPE_METER_EVENT_GPU"),
+		}
+		log.Printf("Stripe billing enabled")
+	}
+
+	// Redis for shared state (optional — graceful fallback to in-memory)
+	if redisURL := os.Getenv("REDIS_URL"); redisURL != "" {
+		rdb, err := redisclient.New(redisURL)
+		if err != nil {
+			log.Printf("WARN: Redis unavailable: %v (falling back to in-memory)", err)
+		} else {
+			m.rdb = rdb
+			log.Printf("Redis connected (%s)", redisURL)
+		}
+	}
+
+	hostname, _ := os.Hostname()
+	m.replicaID = hostname
+
+	m.cliSessions = newCliSessionManager(m.rdb)
+	m.cliSessionRL = newRateLimiter(m.rdb)
 	m.oauth = newOAuthHandler(m)
 	if platforms := m.oauth.availablePlatforms(); len(platforms) > 0 {
 		log.Printf("OAuth configured for: %v", platforms)
@@ -280,6 +434,15 @@ func NewManager() (*Manager, error) {
 	if err := m.recoverStages(); err != nil {
 		log.Printf("WARN: stage recovery: %v", err)
 	}
+
+	// Reconcile orphaned usage events (stages that died without deactivation)
+	m.mu.RLock()
+	runningIDs := make(map[string]bool, len(m.stages))
+	for id := range m.stages {
+		runningIDs[id] = true
+	}
+	m.mu.RUnlock()
+	reconcileUsageEvents(m.db, runningIDs)
 
 	return m, nil
 }
@@ -403,26 +566,26 @@ func (m *Manager) recoverStages() error {
 	return nil
 }
 
-func (m *Manager) createStage(requestedID, userID string, capabilities []string) (*Stage, error) {
+func (m *Manager) createStage(requestedID, userID string, capabilities []string, resolution string) (*Stage, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	// Per-user active CPU stage limit (only counts running/starting, not inactive)
-	maxActiveCPU := m.maxStages
+	// Per-user active stage limit (CPU + GPU combined)
+	maxActive := m.maxStages
 	if m.db != nil {
 		var limit int
 		if err := m.db.QueryRow("SELECT max_active_cpu_stages FROM users WHERE id=$1", userID).Scan(&limit); err == nil {
-			maxActiveCPU = limit
+			maxActive = limit
 		}
 	}
-	cpuCount := 0
+	activeCount := 0
 	for _, s := range m.stages {
-		if s.OwnerUserID == userID && s.Provider != "gpu" {
-			cpuCount++
+		if s.OwnerUserID == userID {
+			activeCount++
 		}
 	}
-	if cpuCount >= maxActiveCPU {
-		return nil, fmt.Errorf("max active CPU stages (%d) reached", maxActiveCPU)
+	if activeCount >= maxActive {
+		return nil, fmt.Errorf("max active stages (%d) reached", maxActive)
 	}
 
 	id := requestedID
@@ -516,7 +679,7 @@ func (m *Manager) createStage(requestedID, userID string, capabilities []string)
 		initEnv = append(initEnv, corev1.EnvVar{Name: "RENDERER", Value: "native"})
 	}
 
-	streamerEnv := streamerEnvVars(id, userID)
+	streamerEnv := streamerEnvVars(id, userID, resolution)
 
 	// Native renderer mode: streamer and sidecar communicate via CDP FIFOs
 	// instead of Chrome's WebSocket on port 9222. Add a shared volume for
@@ -589,7 +752,7 @@ func (m *Manager) createStage(requestedID, userID string, capabilities []string)
 				{
 					Name:         "streamer",
 					Image:        m.streamerImage,
-					Env:          streamerEnv,
+					Env:          streamerEnvVars(id, userID, resolution),
 					VolumeMounts: streamerVolMounts,
 					SecurityContext: &corev1.SecurityContext{
 						AllowPrivilegeEscalation: boolPtr(false),
@@ -703,13 +866,24 @@ func boolPtr(b bool) *bool {
 // prefix stripped) so the streamer image can be tuned without rebuilding.
 // Key vars: CHROME_FLAGS (full Chrome arg string), SCREEN_WIDTH, SCREEN_HEIGHT,
 // DISABLE_WEBGL.
-func streamerEnvVars(stageID, userID string) []corev1.EnvVar {
+//
+// Resolution-related keys (SCREEN_WIDTH, SCREEN_HEIGHT, BITRATE) are always set
+// by the per-stage resolution and are excluded from STREAMER_* passthrough to
+// prevent duplicate entries in the pod spec.
+var resolutionEnvKeys = map[string]bool{
+	"SCREEN_WIDTH":  true,
+	"SCREEN_HEIGHT": true,
+	"BITRATE":       true,
+}
+
+func streamerEnvVars(stageID, userID, resolution string) []corev1.EnvVar {
 	vars := []corev1.EnvVar{
 		{Name: "STAGE_ID", Value: stageID},
 		{Name: "USER_ID", Value: userID},
 		{Name: "LOCAL_HTTP_PORT", Value: "8081"},
 	}
-	// Pass through all STREAMER_* env vars with prefix stripped
+	// Pass through all STREAMER_* env vars with prefix stripped,
+	// except resolution-controlled keys which are set below.
 	for _, env := range os.Environ() {
 		if !strings.HasPrefix(env, "STREAMER_") {
 			continue
@@ -719,8 +893,18 @@ func streamerEnvVars(stageID, userID string) []corev1.EnvVar {
 			continue
 		}
 		name := strings.TrimPrefix(parts[0], "STREAMER_")
+		if resolutionEnvKeys[name] {
+			continue
+		}
 		vars = append(vars, corev1.EnvVar{Name: name, Value: parts[1]})
 	}
+
+	// All stages run at 720p for now — 1080p support will come later
+	vars = append(vars,
+		corev1.EnvVar{Name: "SCREEN_WIDTH", Value: "1280"},
+		corev1.EnvVar{Name: "SCREEN_HEIGHT", Value: "720"},
+	)
+
 	return vars
 }
 
@@ -798,13 +982,11 @@ func mtlsEnvVars() []corev1.EnvVar {
 
 // deleteStage removes the pod (if active) and the DB record.
 func (m *Manager) deleteStage(id string) error {
-	val, _ := m.activateMu.LoadOrStore(id, &sync.Mutex{})
-	mu := val.(*sync.Mutex)
-	mu.Lock()
-	defer func() {
-		mu.Unlock()
-		m.activateMu.Delete(id)
-	}()
+	unlock, err := m.lockStage(context.Background(), id)
+	if err != nil {
+		return fmt.Errorf("acquire stage lock: %w", err)
+	}
+	defer unlock()
 
 	m.mu.Lock()
 	stage, ok := m.stages[id]
@@ -853,10 +1035,12 @@ func (m *Manager) deactivateStage(id string) error {
 	if cancelVal, ok := m.activateCancel.Load(id); ok {
 		cancelVal.(context.CancelFunc)()
 	}
-	val, _ := m.activateMu.LoadOrStore(id, &sync.Mutex{})
-	mu := val.(*sync.Mutex)
-	mu.Lock()
-	defer mu.Unlock()
+	m.setCancelFlag(id)
+	unlock, err := m.lockStage(context.Background(), id)
+	if err != nil {
+		return fmt.Errorf("acquire stage lock: %w", err)
+	}
+	defer unlock()
 	return m.doDeactivateStage(id)
 }
 
@@ -897,6 +1081,10 @@ func (m *Manager) doDeactivateStage(id string) error {
 	m.mu.Unlock()
 
 	if m.db != nil {
+		// Record usage event end
+		if recErr := recordStageDeactivation(m.db, id); recErr != nil {
+			log.Printf("WARN: record stage deactivation for %s: %v", id, recErr)
+		}
 		dbUpdateStageStatus(m.db, id, "inactive", "", "")
 	}
 	log.Printf("Deactivated stage %s", id)
@@ -920,20 +1108,26 @@ func (m *Manager) activateStageAsync(stageID, userID string, isGPU bool, capabil
 	if err != nil {
 		log.Printf("ERROR: async activation failed for stage %s: %v", stageID, err)
 		if isGPU {
+			// GPU path doesn't auto-cleanup in activateGPUStage — deactivate explicitly.
+			// deactivateStage calls doDeactivateStage which closes the usage event.
 			m.deactivateStage(stageID)
 		}
-		// K8s path already calls doDeactivateStage on failure inside activateStage
+		// K8s (non-GPU) path already calls doDeactivateStage on failure inside
+		// activateStage, which closes the usage event via recordStageDeactivation.
+		return
 	}
+	// Usage event was already recorded optimistically in ActivateStage handler
 }
 
 // activateStage creates a pod for an existing inactive stage record.
 // On failure (timeout, pod crash, etc.), it cleans up and resets the stage to inactive.
 func (m *Manager) activateStage(ctx context.Context, id, userID string, capabilities []string) (*Stage, error) {
 	// Per-stage lock prevents concurrent activations from racing
-	val, _ := m.activateMu.LoadOrStore(id, &sync.Mutex{})
-	mu := val.(*sync.Mutex)
-	mu.Lock()
-	defer mu.Unlock()
+	unlock, err := m.lockStage(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("acquire stage lock: %w", err)
+	}
+	defer unlock()
 
 	// Check if already active (under lock, so no race)
 	if stage, ok := m.getStage(id); ok {
@@ -950,7 +1144,12 @@ func (m *Manager) activateStage(ctx context.Context, id, userID string, capabili
 		}
 	}
 
-	stage, err := m.createStage(id, userID, capabilities)
+	// Look up stage resolution from DB for pod creation
+	stageResolution := Resolution720p
+	if row, dbErr := dbGetStage(m.db, id); dbErr == nil && row != nil {
+		stageResolution = row.Resolution
+	}
+	stage, err := m.createStage(id, userID, capabilities, stageResolution)
 	if err != nil {
 		return nil, err
 	}
@@ -1015,6 +1214,56 @@ func (m *Manager) refreshPodStatuses() {
 		podMap[pods.Items[i].Name] = &pods.Items[i]
 	}
 
+	// Discover active stages from DB that this replica doesn't know about yet
+	// (e.g. activated by another replica). Add them to the local map so we can
+	// track their pod status.
+	if m.db != nil {
+		rows, err := m.db.Query(`SELECT id, name, user_id, preview_token, provider, capabilities, slug, visibility, resolution FROM stages WHERE status IN ('running', 'starting')`)
+		if err == nil {
+			defer rows.Close()
+			m.mu.RLock()
+			known := make(map[string]bool, len(m.stages))
+			for id := range m.stages {
+				known[id] = true
+			}
+			m.mu.RUnlock()
+
+			for rows.Next() {
+				var id, name, userID, token, provider, capsStr, slug, vis, res string
+				if rows.Scan(&id, &name, &userID, &token, &provider, &capsStr, &slug, &vis, &res) != nil {
+					continue
+				}
+				if known[id] {
+					continue
+				}
+				// Look for a matching pod
+				podName := "stage-" + id
+				pod, hasPod := podMap[podName]
+				s := &Stage{
+					ID:           id,
+					Name:         name,
+					PodName:      podName,
+					Status:       StatusStarting,
+					OwnerUserID:  userID,
+					PreviewToken: token,
+					Provider:     provider,
+					Slug:         slug,
+					Visibility:   vis,
+					Resolution:   res,
+				}
+				if capsStr != "" {
+					s.Capabilities = strings.Split(capsStr, ",")
+				}
+				if hasPod {
+					s.PodIP = pod.Status.PodIP
+				}
+				m.mu.Lock()
+				m.stages[id] = s
+				m.mu.Unlock()
+			}
+		}
+	}
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -1043,11 +1292,11 @@ func (m *Manager) refreshPodStatuses() {
 
 // createStageRecord creates a stage DB record (status=inactive) without provisioning a pod.
 // Also creates and links a Dazzle destination for the stage (auto-streaming to Dazzle ingest).
-func (m *Manager) createStageRecord(userID, name string, capabilities []string) (*Stage, error) {
+func (m *Manager) createStageRecord(userID, name string, capabilities []string, visibility, resolution string) (*Stage, error) {
 	if m.db == nil {
 		return nil, fmt.Errorf("database not available")
 	}
-	id, token, err := dbCreateStage(m.db, userID, name, capabilities)
+	id, token, err := dbCreateStage(m.db, userID, name, capabilities, visibility, resolution)
 	if err != nil {
 		return nil, err
 	}
@@ -1064,6 +1313,8 @@ func (m *Manager) createStageRecord(userID, name string, capabilities []string) 
 		OwnerUserID:  userID,
 		PreviewToken: token,
 		Capabilities: capabilities,
+		Visibility:   visibility,
+		Resolution:   resolution,
 		CreatedAt:    time.Now(),
 	}, nil
 }
@@ -1071,10 +1322,11 @@ func (m *Manager) createStageRecord(userID, name string, capabilities []string) 
 // activateGPUStage creates a GPUStage CR and waits for the controller to assign it to a node.
 func (m *Manager) activateGPUStage(ctx context.Context, id, userID string) (*Stage, error) {
 	// Per-stage lock prevents concurrent activations from racing
-	val, _ := m.activateMu.LoadOrStore(id, &sync.Mutex{})
-	mu := val.(*sync.Mutex)
-	mu.Lock()
-	defer mu.Unlock()
+	unlock, err := m.lockStage(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("acquire stage lock: %w", err)
+	}
+	defer unlock()
 
 	// Check if already active (under lock, so no race)
 	if stage, ok := m.getStage(id); ok {
@@ -1097,24 +1349,24 @@ func (m *Manager) activateGPUStage(ctx context.Context, id, userID string) (*Sta
 		return nil, fmt.Errorf("GPU provisioning not configured")
 	}
 
-	// Per-user active GPU stage limit (only counts running/starting, not inactive)
-	maxActiveGPU := 1
+	// Per-user active stage limit (CPU + GPU combined)
+	maxActive := 1
 	if m.db != nil {
 		var limit int
-		if err := m.db.QueryRow("SELECT max_active_gpu_stages FROM users WHERE id=$1", userID).Scan(&limit); err == nil {
-			maxActiveGPU = limit
+		if err := m.db.QueryRow("SELECT max_active_cpu_stages FROM users WHERE id=$1", userID).Scan(&limit); err == nil {
+			maxActive = limit
 		}
 	}
 	m.mu.RLock()
-	gpuCount := 0
+	activeCount := 0
 	for _, s := range m.stages {
-		if s.OwnerUserID == userID && s.Provider == "gpu" {
-			gpuCount++
+		if s.OwnerUserID == userID {
+			activeCount++
 		}
 	}
 	m.mu.RUnlock()
-	if gpuCount >= maxActiveGPU {
-		return nil, fmt.Errorf("max active GPU stages (%d) reached", maxActiveGPU)
+	if activeCount >= maxActive {
+		return nil, fmt.Errorf("max active stages (%d) reached", maxActive)
 	}
 
 	// Set in-memory stage to starting so GetStage reflects status immediately
@@ -1145,7 +1397,7 @@ func (m *Manager) activateGPUStage(ctx context.Context, id, userID string) (*Sta
 	}
 
 	gpuStageGVR := controller.GPUStageGVR()
-	_, err := m.dynamicClient.Resource(gpuStageGVR).Namespace(m.namespace).Create(ctx, cr, metav1.CreateOptions{})
+	_, err = m.dynamicClient.Resource(gpuStageGVR).Namespace(m.namespace).Create(ctx, cr, metav1.CreateOptions{})
 	if err != nil && !strings.Contains(err.Error(), "already exists") {
 		return nil, fmt.Errorf("create GPUStage CR: %w", err)
 	}
@@ -1323,6 +1575,10 @@ func (m *Manager) waitForStage(ctx context.Context, id string) (*Stage, error) {
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
 	for {
+		// Check cross-replica cancellation flag (e.g. deactivation from another replica)
+		if m.checkCancelFlag(id) {
+			return nil, fmt.Errorf("stage %s activation cancelled", id)
+		}
 		m.refreshPodStatuses()
 		stage, ok := m.getStage(id)
 		if !ok {
@@ -1506,6 +1762,13 @@ func main() {
 	)
 	mux.Handle(moderationPath, cors(moderationHandler))
 
+	// BillingService — Clerk JWT only
+	billingPath, billingHandler := apiv1internalconnect.NewBillingServiceHandler(
+		&billingServer{mgr: mgr},
+		connect.WithInterceptors(authInterceptor, clerkOnly),
+	)
+	mux.Handle(billingPath, cors(billingHandler))
+
 	// RtmpDestinationService — Clerk JWT or API key
 	streamPath, streamHandler := apiv1connect.NewRtmpDestinationServiceHandler(
 		&rtmpDestinationServer{mgr: mgr},
@@ -1545,6 +1808,9 @@ func main() {
 			next(w, r)
 		}
 	}
+	// Stripe webhook — validated by signature, no auth interceptor
+	mux.HandleFunc("POST /webhooks/stripe", mgr.handleStripeWebhook)
+
 	mux.HandleFunc("POST /auth/cli/session", cliSessionCORS(mgr.handleCreateCliSession))
 	mux.HandleFunc("GET /auth/cli/session/{id}/poll", cliSessionCORS(mgr.handlePollCliSession))
 	mux.HandleFunc("POST /auth/cli/session/{id}/confirm", cliSessionCORS(mgr.handleConfirmCliSession))
@@ -1668,6 +1934,9 @@ func main() {
 	if mgr.gpuStageController != nil {
 		go mgr.gpuStageController.Run(ctx)
 	}
+
+	// Usage metering rollup job
+	go runUsageRollupJob(ctx, mgr.db, mgr.reportStripeUsage)
 
 	// GC + status refresh loop
 	go func() {

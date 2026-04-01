@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package dazzle.internal.v1;
+
+option go_package = "github.com/browser-streamer/control-plane/internal/gen/api/v1;apiv1internal";
+
+service BillingService {
+  rpc CreateCheckoutSession(CreateCheckoutSessionRequest) returns (CreateCheckoutSessionResponse);
+  rpc CreatePortalSession(CreatePortalSessionRequest) returns (CreatePortalSessionResponse);
+  rpc GetUsage(GetUsageRequest) returns (GetUsageResponse);
+  rpc UpdateOverageSettings(UpdateOverageSettingsRequest) returns (UpdateOverageSettingsResponse);
+}
+
+message CreateCheckoutSessionRequest {
+  string plan = 1; // "starter" or "pro"
+}
+
+message CreateCheckoutSessionResponse {
+  string checkout_url = 1;
+}
+
+message CreatePortalSessionRequest {}
+
+message CreatePortalSessionResponse {
+  string portal_url = 1;
+}
+
+message GetUsageRequest {}
+
+message GetUsageResponse {
+  string plan = 1;
+  int32 cpu_hours_used = 2;
+  int32 gpu_hours_used = 3;
+  int32 cpu_hours_included = 4;
+  int32 gpu_hours_included = 5;
+  string current_period_start = 6;
+  string current_period_end = 7;
+  bool overage_enabled = 8;
+  int32 overage_limit_cents = 9;  // 0 = no cap
+  int32 overage_spent_cents = 10; // current period spend
+}
+
+message UpdateOverageSettingsRequest {
+  bool overage_enabled = 1;
+  int32 overage_limit_cents = 2; // 0 = no cap
+}
+
+message UpdateOverageSettingsResponse {
+  bool overage_enabled = 1;
+  int32 overage_limit_cents = 2;
+}

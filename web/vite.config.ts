@@ -66,9 +66,13 @@ export default defineConfig({
     proxy: {
       "/dazzle.v1": "http://localhost:38080",
       "/dazzle.internal.v1": "http://localhost:38080",
+      "/cdp": "http://localhost:38080",
+      "/session": "http://localhost:38080",
       "/health": "http://localhost:38080",
       "/oauth": "http://localhost:38080",
       "/auth/cli/session": "http://localhost:38080",
+      "/stage": "http://localhost:38080",
+      "/webhooks": "http://localhost:38080",
       "^/watch/.+\\.(m3u8|ts|png)$": "http://localhost:38080",
     },
   },

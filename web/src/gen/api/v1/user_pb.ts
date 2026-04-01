@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file api/v1/user.proto.
  */
 export const file_api_v1_user: GenFile = /*@__PURE__*/
-  fileDesc("ChFhcGkvdjEvdXNlci5wcm90bxIJZGF6emxlLnYxIhMKEUdldFByb2ZpbGVSZXF1ZXN0Im4KEkdldFByb2ZpbGVSZXNwb25zZRIPCgd1c2VyX2lkGAEgASgJEg0KBWVtYWlsGAIgASgJEgwKBG5hbWUYAyABKAkSEwoLc3RhZ2VfY291bnQYBCABKAUSFQoNYXBpX2tleV9jb3VudBgFIAEoBTJYCgtVc2VyU2VydmljZRJJCgpHZXRQcm9maWxlEhwuZGF6emxlLnYxLkdldFByb2ZpbGVSZXF1ZXN0Gh0uZGF6emxlLnYxLkdldFByb2ZpbGVSZXNwb25zZUItWitnaXRodWIuY29tL2RhenpsZS1sYWJzL2NsaS9nZW4vYXBpL3YxO2FwaXYxYgZwcm90bzM");
+  fileDesc("ChFhcGkvdjEvdXNlci5wcm90bxIJZGF6emxlLnYxIhMKEUdldFByb2ZpbGVSZXF1ZXN0IssBChJHZXRQcm9maWxlUmVzcG9uc2USDwoHdXNlcl9pZBgBIAEoCRINCgVlbWFpbBgCIAEoCRIMCgRuYW1lGAMgASgJEhMKC3N0YWdlX2NvdW50GAQgASgFEhUKDWFwaV9rZXlfY291bnQYBSABKAUSDAoEcGxhbhgGIAEoCRIlCgZsaW1pdHMYByABKAsyFS5kYXp6bGUudjEuUGxhbkxpbWl0cxImCgV1c2FnZRgIIAEoCzIXLmRhenpsZS52MS5Vc2FnZVN1bW1hcnki7wEKClBsYW5MaW1pdHMSEgoKbWF4X3N0YWdlcxgBIAEoBRIdChVtYXhfYWN0aXZlX2NwdV9zdGFnZXMYAiABKAUSHQoVbWF4X2FjdGl2ZV9ncHVfc3RhZ2VzGAMgASgFEiEKGW1heF9leHRlcm5hbF9kZXN0aW5hdGlvbnMYBCABKAUSGgoSaW5jbHVkZWRfY3B1X2hvdXJzGAUgASgFEhoKEmluY2x1ZGVkX2dwdV9ob3VycxgGIAEoBRIVCg1jYW5fdXNlXzEwODBwGAggASgIEhcKD2Nhbl91c2VfcHJpdmF0ZRgJIAEoCEoECAcQCCJ2CgxVc2FnZVN1bW1hcnkSFgoOY3B1X2hvdXJzX3VzZWQYASABKAUSFgoOZ3B1X2hvdXJzX3VzZWQYAiABKAUSGgoSY3B1X2hvdXJzX2luY2x1ZGVkGAMgASgFEhoKEmdwdV9ob3Vyc19pbmNsdWRlZBgEIAEoBTJYCgtVc2VyU2VydmljZRJJCgpHZXRQcm9maWxlEhwuZGF6emxlLnYxLkdldFByb2ZpbGVSZXF1ZXN0Gh0uZGF6emxlLnYxLkdldFByb2ZpbGVSZXNwb25zZUItWitnaXRodWIuY29tL2RhenpsZS1sYWJzL2NsaS9nZW4vYXBpL3YxO2FwaXYxYgZwcm90bzM");
 
 /**
  * @generated from message dazzle.v1.GetProfileRequest
@@ -53,6 +53,23 @@ export type GetProfileResponse = Message<"dazzle.v1.GetProfileResponse"> & {
    * @generated from field: int32 api_key_count = 5;
    */
   apiKeyCount: number;
+
+  /**
+   * "free", "starter", "pro"
+   *
+   * @generated from field: string plan = 6;
+   */
+  plan: string;
+
+  /**
+   * @generated from field: dazzle.v1.PlanLimits limits = 7;
+   */
+  limits?: PlanLimits;
+
+  /**
+   * @generated from field: dazzle.v1.UsageSummary usage = 8;
+   */
+  usage?: UsageSummary;
 };
 
 /**
@@ -61,6 +78,94 @@ export type GetProfileResponse = Message<"dazzle.v1.GetProfileResponse"> & {
  */
 export const GetProfileResponseSchema: GenMessage<GetProfileResponse> = /*@__PURE__*/
   messageDesc(file_api_v1_user, 1);
+
+/**
+ * @generated from message dazzle.v1.PlanLimits
+ */
+export type PlanLimits = Message<"dazzle.v1.PlanLimits"> & {
+  /**
+   * @generated from field: int32 max_stages = 1;
+   */
+  maxStages: number;
+
+  /**
+   * @generated from field: int32 max_active_cpu_stages = 2;
+   */
+  maxActiveCpuStages: number;
+
+  /**
+   * @generated from field: int32 max_active_gpu_stages = 3;
+   */
+  maxActiveGpuStages: number;
+
+  /**
+   * @generated from field: int32 max_external_destinations = 4;
+   */
+  maxExternalDestinations: number;
+
+  /**
+   * @generated from field: int32 included_cpu_hours = 5;
+   */
+  includedCpuHours: number;
+
+  /**
+   * @generated from field: int32 included_gpu_hours = 6;
+   */
+  includedGpuHours: number;
+
+  /**
+   * @generated from field: bool can_use_1080p = 8;
+   */
+  canUse1080p: boolean;
+
+  /**
+   * @generated from field: bool can_use_private = 9;
+   */
+  canUsePrivate: boolean;
+};
+
+/**
+ * Describes the message dazzle.v1.PlanLimits.
+ * Use `create(PlanLimitsSchema)` to create a new message.
+ */
+export const PlanLimitsSchema: GenMessage<PlanLimits> = /*@__PURE__*/
+  messageDesc(file_api_v1_user, 2);
+
+/**
+ * @generated from message dazzle.v1.UsageSummary
+ */
+export type UsageSummary = Message<"dazzle.v1.UsageSummary"> & {
+  /**
+   * this billing period
+   *
+   * @generated from field: int32 cpu_hours_used = 1;
+   */
+  cpuHoursUsed: number;
+
+  /**
+   * this billing period
+   *
+   * @generated from field: int32 gpu_hours_used = 2;
+   */
+  gpuHoursUsed: number;
+
+  /**
+   * @generated from field: int32 cpu_hours_included = 3;
+   */
+  cpuHoursIncluded: number;
+
+  /**
+   * @generated from field: int32 gpu_hours_included = 4;
+   */
+  gpuHoursIncluded: number;
+};
+
+/**
+ * Describes the message dazzle.v1.UsageSummary.
+ * Use `create(UsageSummarySchema)` to create a new message.
+ */
+export const UsageSummarySchema: GenMessage<UsageSummary> = /*@__PURE__*/
+  messageDesc(file_api_v1_user, 3);
 
 /**
  * @generated from service dazzle.v1.UserService

@@ -21,6 +21,7 @@ func dbListLiveStages(db *sql.DB) ([]stageRow, error) {
 		SELECT `+stageColumns+`
 		FROM stages s
 		WHERE s.status = 'running'
+		AND s.visibility = 'public'
 		AND EXISTS (
 			SELECT 1 FROM rtmp_sessions rs
 			WHERE rs.stage_id = s.id AND rs.ended_at IS NULL
@@ -254,6 +255,26 @@ func (m *Manager) handleWatchHLS(w http.ResponseWriter, r *http.Request, slug, f
 	if err != nil || row == nil {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
+	}
+
+	// Private stages require authentication
+	if row.Visibility == VisibilityPrivate {
+		// Check for preview token or bearer token
+		token := r.URL.Query().Get("token")
+		authHeader := r.Header.Get("Authorization")
+		authenticated := false
+		if token != "" && m.validatePreviewToken(token) == row.ID {
+			authenticated = true
+		} else if authHeader != "" {
+			// Allow if valid Clerk JWT matches stage owner
+			if info, err := m.auth.authenticate(r.Context(), authHeader); err == nil && info.UserID == row.UserID {
+				authenticated = true
+			}
+		}
+		if !authenticated {
+			http.Error(w, "private stage requires authentication", http.StatusForbidden)
+			return
+		}
 	}
 
 	stage, ok := m.getStage(row.ID)

@@ -17,6 +17,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/redis/go-redis/v9"
 )
 
 // oauthPlatformConfig holds per-platform OAuth settings.
@@ -38,17 +40,21 @@ type oauthState struct {
 	CreatedAt    time.Time
 }
 
+const redisOAuthPrefix = "oauth:state:"
+
 // oauthHandler manages OAuth flows for all platforms.
 type oauthHandler struct {
-	mgr       *Manager
-	configs   map[string]*oauthPlatformConfig
-	states    sync.Map // state string -> *oauthState
+	mgr          *Manager
+	rdb          *redis.Client
+	configs      map[string]*oauthPlatformConfig
+	states       sync.Map // state string -> *oauthState (in-memory fallback)
 	redirectBase string
 }
 
 func newOAuthHandler(mgr *Manager) *oauthHandler {
 	h := &oauthHandler{
 		mgr:          mgr,
+		rdb:          mgr.rdb,
 		configs:      make(map[string]*oauthPlatformConfig),
 		redirectBase: os.Getenv("OAUTH_REDIRECT_BASE_URL"),
 	}
@@ -97,18 +103,20 @@ func newOAuthHandler(mgr *Manager) *oauthHandler {
 		}
 	}
 
-	// Clean expired states every minute
-	go func() {
-		for {
-			time.Sleep(time.Minute)
-			h.states.Range(func(key, value any) bool {
-				if s, ok := value.(*oauthState); ok && time.Since(s.CreatedAt) > 10*time.Minute {
-					h.states.Delete(key)
-				}
-				return true
-			})
-		}
-	}()
+	// In-memory cleanup only needed when Redis is not available.
+	if h.rdb == nil {
+		go func() {
+			for {
+				time.Sleep(time.Minute)
+				h.states.Range(func(key, value any) bool {
+					if s, ok := value.(*oauthState); ok && time.Since(s.CreatedAt) > 10*time.Minute {
+						h.states.Delete(key)
+					}
+					return true
+				})
+			}
+		}()
+	}
 
 	return h
 }
@@ -119,6 +127,70 @@ func (h *oauthHandler) availablePlatforms() []string {
 		platforms = append(platforms, p)
 	}
 	return platforms
+}
+
+// oauthStateRedis is the JSON form stored in Redis.
+type oauthStateRedis struct {
+	UserID       string `json:"user_id"`
+	CodeVerifier string `json:"code_verifier"`
+	Onboarding   bool   `json:"onboarding"`
+	CliSessionID string `json:"cli_session_id,omitempty"`
+	CreatedAt    int64  `json:"created_at"`
+}
+
+func (h *oauthHandler) storeState(state string, s *oauthState) {
+	if h.rdb != nil {
+		data, _ := json.Marshal(&oauthStateRedis{
+			UserID:       s.UserID,
+			CodeVerifier: s.CodeVerifier,
+			Onboarding:   s.Onboarding,
+			CliSessionID: s.CliSessionID,
+			CreatedAt:    s.CreatedAt.UnixMilli(),
+		})
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		h.rdb.Set(ctx, redisOAuthPrefix+state, data, 10*time.Minute)
+		return
+	}
+	h.states.Store(state, s)
+}
+
+var redisLoadAndDeleteOAuth = redis.NewScript(`
+local v = redis.call("GET", KEYS[1])
+if not v then return nil end
+redis.call("DEL", KEYS[1])
+return v
+`)
+
+func (h *oauthHandler) loadAndDeleteState(state string) (*oauthState, bool) {
+	if h.rdb != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		raw, err := redisLoadAndDeleteOAuth.Run(ctx, h.rdb, []string{redisOAuthPrefix + state}).Result()
+		if err != nil {
+			return nil, false
+		}
+		result, ok := raw.(string)
+		if !ok {
+			return nil, false
+		}
+		var r oauthStateRedis
+		if json.Unmarshal([]byte(result), &r) != nil {
+			return nil, false
+		}
+		return &oauthState{
+			UserID:       r.UserID,
+			CodeVerifier: r.CodeVerifier,
+			Onboarding:   r.Onboarding,
+			CliSessionID: r.CliSessionID,
+			CreatedAt:    time.UnixMilli(r.CreatedAt),
+		}, true
+	}
+	v, ok := h.states.LoadAndDelete(state)
+	if !ok {
+		return nil, false
+	}
+	return v.(*oauthState), true
 }
 
 func (h *oauthHandler) handleCheck(w http.ResponseWriter, r *http.Request) {
@@ -184,7 +256,7 @@ func (h *oauthHandler) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 	}
 	state := hex.EncodeToString(stateBytes)
 
-	h.states.Store(state, &oauthState{
+	h.storeState(state, &oauthState{
 		UserID:       userID,
 		CodeVerifier: codeVerifier,
 		Onboarding:   onboarding,
@@ -240,12 +312,11 @@ func (h *oauthHandler) handleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate state
-	stateVal, ok := h.states.LoadAndDelete(state)
-	if !ok {
+	oauthSt, stateOk := h.loadAndDeleteState(state)
+	if !stateOk {
 		http.Redirect(w, r, "/destinations?error=invalid+state", http.StatusFound)
 		return
 	}
-	oauthSt := stateVal.(*oauthState)
 	if time.Since(oauthSt.CreatedAt) > 10*time.Minute {
 		http.Redirect(w, r, "/destinations?error=state+expired", http.StatusFound)
 		return

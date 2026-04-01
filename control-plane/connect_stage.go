@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"strings"
-	"sync"
 	"time"
 
 	"connectrpc.com/connect"
@@ -89,8 +88,12 @@ func (s *stageServer) CreateStage(ctx context.Context, req *connect.Request[apiv
 		return nil, err
 	}
 
+	// Look up plan and enforce limits
+	plan := dbGetUserPlan(s.mgr.db, info.UserID)
+	cfg := getPlanConfig(plan)
+
 	// Enforce per-user total stage limit (created, regardless of state).
-	maxStages := 10
+	maxStages := cfg.MaxStages
 	if s.mgr.db != nil {
 		var userMax int
 		if err := s.mgr.db.QueryRow("SELECT max_stages FROM users WHERE id=$1", info.UserID).Scan(&userMax); err == nil && userMax > 0 {
@@ -105,7 +108,22 @@ func (s *stageServer) CreateStage(ctx context.Context, req *connect.Request[apiv
 		return nil, connect.NewError(connect.CodeResourceExhausted, fmt.Errorf("stage limit reached (max %d)", maxStages))
 	}
 
-	stage, err := s.mgr.createStageRecord(info.UserID, name, req.Msg.Capabilities)
+	// Validate visibility against plan
+	visibility := req.Msg.Visibility
+	if visibility == "" {
+		visibility = VisibilityPublic
+	}
+	if visibility == VisibilityPrivate && !cfg.CanPrivate {
+		return nil, connect.NewError(connect.CodePermissionDenied, fmt.Errorf("private stages require Pro plan"))
+	}
+	if visibility != VisibilityPublic && visibility != VisibilityPrivate {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("visibility must be 'public' or 'private'"))
+	}
+
+	// Resolution is hardcoded to 720p for now — 1080p support will come later
+	resolution := Resolution720p
+
+	stage, err := s.mgr.createStageRecord(info.UserID, name, req.Msg.Capabilities, visibility, resolution)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to create stage"))
 	}
@@ -251,6 +269,11 @@ func (s *stageServer) DeleteStage(ctx context.Context, req *connect.Request[apiv
 		waitForPodTermination(cleanupCtx, s.mgr.clientset, s.mgr.namespace, podName, 35*time.Second)
 	}
 
+	// Close any open usage events before deleting the stage record
+	if err := recordStageDeactivation(s.mgr.db, stageID); err != nil {
+		log.Printf("WARN: close usage event for deleted stage %s: %v", stageID, err)
+	}
+
 	// Best-effort R2 cleanup
 	if s.mgr.r2Client != nil {
 		prefix := "users/" + row.UserID + "/stages/" + stageID + "/"
@@ -282,7 +305,9 @@ func (s *stageServer) AttachStageDestination(ctx context.Context, req *connect.R
 		if dest == nil {
 			return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("destination not found"))
 		}
-		if _, err := dbAddStageDestination(s.mgr.db, stageID, req.Msg.DestinationId); err != nil {
+		plan := dbGetUserPlan(s.mgr.db, row.UserID)
+		maxDest := getPlanConfig(plan).MaxExternalDest
+		if _, err := dbAddStageDestination(s.mgr.db, stageID, req.Msg.DestinationId, maxDest); err != nil {
 			if errors.Is(err, errMaxDestinations) {
 				return nil, connect.NewError(connect.CodeResourceExhausted, err)
 			}
@@ -377,14 +402,15 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 	// Per-stage lock: prevents concurrent activate/deactivate from racing.
 	// Hold through the check + DB update + goroutine launch so two concurrent
 	// ActivateStage calls can't both pass the "already running" check.
-	val, _ := s.mgr.activateMu.LoadOrStore(stageID, &sync.Mutex{})
-	stageMu := val.(*sync.Mutex)
-	stageMu.Lock()
+	stageUnlock, lockErr := s.mgr.lockStage(ctx, stageID)
+	if lockErr != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("acquire stage lock: %w", lockErr))
+	}
 
 	// Already running or starting — return current state
 	if live, ok := s.mgr.getStage(stageID); ok {
 		if live.Status == StatusRunning || live.Status == StatusStarting {
-			stageMu.Unlock()
+			stageUnlock()
 			st := stageRowToStruct(row, s.mgr)
 			return connect.NewResponse(&apiv1.ActivateStageResponse{
 				Stage: stageToProto(st, s.mgr.publicBaseURL, s.mgr.db),
@@ -394,17 +420,22 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 
 	// Also check DB status — covers recovered GPU stages not yet in memory
 	if row.Status == "running" || row.Status == "starting" {
-		stageMu.Unlock()
+		stageUnlock()
 		st := stageRowToStruct(row, s.mgr)
 		return connect.NewResponse(&apiv1.ActivateStageResponse{
 			Stage: stageToProto(st, s.mgr.publicBaseURL, s.mgr.db),
 		}), nil
 	}
 
-	// Enforce per-user active stage limits from DB (fallback: 2 CPU, 1 GPU).
+	// Enforce per-user active stage limits from DB / plan config.
 	// Use the stage owner's limits, not the caller's (relevant for admin bypass).
+	info := mustAuth(ctx)
 	ownerID := row.UserID
-	maxActiveCPU, maxActiveGPU := 2, 1
+	plan := dbGetUserPlan(s.mgr.db, ownerID)
+	cfg := getPlanConfig(plan)
+
+	maxActiveCPU := cfg.MaxActiveStages
+	maxActiveGPU := 1
 	if s.mgr.db != nil {
 		var cpuLimit, gpuLimit int
 		if err := s.mgr.db.QueryRow("SELECT max_active_cpu_stages, max_active_gpu_stages FROM users WHERE id=$1", ownerID).Scan(&cpuLimit, &gpuLimit); err == nil {
@@ -414,7 +445,7 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 	}
 	allStages, listErr := dbListStages(s.mgr.db, ownerID)
 	if listErr != nil {
-		stageMu.Unlock()
+		stageUnlock()
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to check stage limits"))
 	}
 	activeCPU, activeGPU := 0, 0
@@ -428,22 +459,91 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 		}
 	}
 	if isGPU && activeGPU >= maxActiveGPU {
-		stageMu.Unlock()
+		stageUnlock()
 		return nil, connect.NewError(connect.CodeResourceExhausted, fmt.Errorf("active GPU stage limit reached (max %d)", maxActiveGPU))
 	}
 	if !isGPU && activeCPU >= maxActiveCPU {
-		stageMu.Unlock()
+		stageUnlock()
 		return nil, connect.NewError(connect.CodeResourceExhausted, fmt.Errorf("active CPU stage limit reached (max %d)", maxActiveCPU))
+	}
+
+	// Acquire per-user budget lock to serialize usage checks + recording across
+	// concurrent activations of different stages by the same user. This prevents
+	// two activations from both passing the spending cap before either records.
+	budgetUnlock, budgetErr := s.mgr.lockBudget(ctx, info.UserID)
+	if budgetErr != nil {
+		stageUnlock()
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("acquire budget lock: %w", budgetErr))
+	}
+
+	// Enforce usage grants — check if user has available minutes for this resource.
+	resource := "cpu"
+	if isGPU {
+		resource = "gpu"
+	}
+
+	freeMin, _ := remainingFreeMinutes(s.mgr.db, info.UserID, resource)
+	if freeMin <= 0 {
+		// No free minutes — check if they have a metered grant (PAYG)
+		hasMetered, _ := hasActiveGrant(s.mgr.db, info.UserID, resource)
+		if !hasMetered {
+			budgetUnlock()
+			stageUnlock()
+			return nil, connect.NewError(connect.CodeResourceExhausted,
+				fmt.Errorf("no available %s hours — upgrade your plan or add a payment method", resource))
+		}
+		if plan == PlanFree {
+			budgetUnlock()
+			stageUnlock()
+			return nil, connect.NewError(connect.CodeResourceExhausted,
+				fmt.Errorf("free tier %s hours exhausted — upgrade to continue", resource))
+		}
+		// Paid plan — check overage opt-in
+		overageEnabled, overageLimitCents := dbGetOverageSettings(s.mgr.db, info.UserID)
+		if !overageEnabled {
+			budgetUnlock()
+			stageUnlock()
+			return nil, connect.NewError(connect.CodeResourceExhausted,
+				fmt.Errorf("included hours exhausted — enable overage in billing settings to continue"))
+		}
+		// Check spending cap
+		if overageLimitCents != nil {
+			periodStart := currentPeriodStart(s.mgr.db, info.UserID)
+			cpuSpent, _ := meteredSpendCents(s.mgr.db, info.UserID, "cpu", periodStart)
+			gpuSpent, _ := meteredSpendCents(s.mgr.db, info.UserID, "gpu", periodStart)
+			totalSpentCents := cpuSpent + gpuSpent
+			if totalSpentCents >= *overageLimitCents {
+				budgetUnlock()
+				stageUnlock()
+				return nil, connect.NewError(connect.CodeResourceExhausted,
+					fmt.Errorf("overage spending cap reached ($%.2f / $%.2f)", float64(totalSpentCents)/100, float64(*overageLimitCents)/100))
+			}
+		}
 	}
 
 	// Set DB status to starting before spawning goroutine so GetStage reflects it immediately
 	dbUpdateStageStatus(s.mgr.db, stageID, "starting", "", "")
 
+	// Record usage event now (optimistically) so concurrent activation requests
+	// from the same user see this stage's hours in their budget check. If activation
+	// fails, activateStageAsync will close the usage event via recordStageDeactivation.
+	provider := "cpu"
+	if isGPU {
+		provider = "gpu"
+	}
+	if recErr := recordStageActivation(s.mgr.db, info.UserID, stageID, provider); recErr != nil {
+		log.Printf("WARN: early record stage activation for %s: %v", stageID, recErr)
+	}
+
+	// Release user budget lock — the usage event is recorded, so concurrent
+	// requests will now see this stage's hours in their budget check.
+	budgetUnlock()
+
 	// Activate asynchronously — return immediately with starting status.
 	// Unlock after goroutine starts; the inner activateStage/activateGPUStage
 	// re-acquires the per-stage lock for the actual provisioning.
 	go s.mgr.activateStageAsync(stageID, ownerID, isGPU, row.Capabilities)
-	stageMu.Unlock()
+	stageUnlock()
 
 	// Return stage in starting state
 	st := stageRowToStruct(row, s.mgr)
@@ -552,6 +652,8 @@ func stageRowToStruct(row *stageRow, mgr *Manager) *Stage {
 		SidecarURL:   row.SidecarURL.String,
 		Capabilities: row.Capabilities,
 		Slug:         row.Slug.String,
+		Visibility:   row.Visibility,
+		Resolution:   row.Resolution,
 	}
 	// Overlay live in-memory state (more up-to-date pod IP, current status)
 	if live, ok := mgr.getStage(row.ID); ok {
@@ -574,6 +676,8 @@ func stageToProto(s *Stage, publicBaseURL string, db *sql.DB) *apiv1.Stage {
 		OwnerUserId:   s.OwnerUserID,
 		Capabilities:  s.Capabilities,
 		Slug:          s.Slug,
+		Visibility:    s.Visibility,
+		Resolution:    s.Resolution,
 	}
 	// Watch URL (replaces the old StagePreview)
 	if publicBaseURL != "" && s.Slug != "" {

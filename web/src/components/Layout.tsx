@@ -7,7 +7,7 @@ function UserButton() {
 }
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Monitor, Plug, Key, Rocket, BookOpen } from "lucide-react";
+import { Monitor, Plug, Key, Rocket, BookOpen, CreditCard } from "lucide-react";
 import { useEffect, useState, useCallback, memo } from "react";
 import type { ReactNode } from "react";
 import { motion } from "motion/react";
@@ -33,6 +33,7 @@ const navItems = [
   { path: "/stages", label: "Stages", icon: Monitor },
   { path: "/destinations", label: "Destinations", icon: Plug },
   { path: "/api-keys", label: "API Keys", icon: Key },
+  { path: "/billing", label: "Billing", icon: CreditCard },
 ];
 
 

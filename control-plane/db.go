@@ -108,12 +108,12 @@ func dbUpsertUser(db *sql.DB, id, email, name string) error {
 	return err
 }
 
-func dbGetUserProfile(db *sql.DB, userID string) (email, name string, stageCount, apiKeyCount int, err error) {
+func dbGetUserProfile(db *sql.DB, userID string) (email, name, plan string, stageCount, apiKeyCount int, err error) {
 	err = db.QueryRow(`
-		SELECT u.email, u.name,
+		SELECT u.email, u.name, u.plan,
 			(SELECT COUNT(*) FROM stages WHERE user_id=$1 AND status != 'inactive'),
 			(SELECT COUNT(*) FROM api_keys WHERE user_id=$1)
-		FROM users u WHERE u.id=$1`, userID).Scan(&email, &name, &stageCount, &apiKeyCount)
+		FROM users u WHERE u.id=$1`, userID).Scan(&email, &name, &plan, &stageCount, &apiKeyCount)
 	return
 }
 
@@ -130,6 +130,45 @@ func dbIsUserBanned(db *sql.DB, userID string) (bool, error) {
 	}
 	return banned, err
 }
+
+func dbGetUserPlan(db *sql.DB, userID string) string {
+	var plan string
+	if err := db.QueryRow(`SELECT plan FROM users WHERE id = $1`, userID).Scan(&plan); err != nil {
+		return PlanFree
+	}
+	return plan
+}
+
+func dbGetUserEmail(db *sql.DB, userID string) string {
+	var email string
+	if err := db.QueryRow(`SELECT email FROM users WHERE id = $1`, userID).Scan(&email); err != nil {
+		return ""
+	}
+	return email
+}
+
+func dbGetOverageSettings(db *sql.DB, userID string) (enabled bool, limitCents *int) {
+	var lc sql.NullInt32
+	if err := db.QueryRow(`SELECT overage_enabled, overage_limit_cents FROM users WHERE id = $1`, userID).Scan(&enabled, &lc); err != nil {
+		return false, nil
+	}
+	if lc.Valid {
+		v := int(lc.Int32)
+		return enabled, &v
+	}
+	return enabled, nil
+}
+
+func dbUpdateOverageSettings(db *sql.DB, userID string, enabled bool, limitCents *int) error {
+	var lc sql.NullInt32
+	if limitCents != nil {
+		lc = sql.NullInt32{Int32: int32(*limitCents), Valid: true}
+	}
+	_, err := db.Exec(`UPDATE users SET overage_enabled = $2, overage_limit_cents = $3, updated_at = NOW() WHERE id = $1`,
+		userID, enabled, lc)
+	return err
+}
+
 
 // --- API key queries ---
 
@@ -380,10 +419,11 @@ type stageRow struct {
 	Slug            sql.NullString // Short slug for public watch URLs
 	StreamTitle        sql.NullString
 	StreamCategory     sql.NullString
-	Watermarked  bool
+	Visibility   string // "public" or "private"
+	Resolution   string // "720p" or "1080p"
 }
 
-const stageColumns = `id, user_id, name, status, pod_name, pod_ip, destination_id, preview_token, provider, runpod_pod_id, sidecar_url, gpu_node_name, capabilities, created_at, updated_at, stream_key, slug, stream_title, stream_category, watermarked`
+const stageColumns = `id, user_id, name, status, pod_name, pod_ip, destination_id, preview_token, provider, runpod_pod_id, sidecar_url, gpu_node_name, capabilities, created_at, updated_at, stream_key, slug, stream_title, stream_category, visibility, resolution`
 
 func scanStage(scanner interface{ Scan(...any) error }) (*stageRow, error) {
 	var s stageRow
@@ -391,14 +431,14 @@ func scanStage(scanner interface{ Scan(...any) error }) (*stageRow, error) {
 		&s.DestinationID, &s.PreviewToken, &s.Provider, &s.RunPodPodID,
 		&s.SidecarURL, &s.GPUNodeName, pq.Array(&s.Capabilities),
 		&s.CreatedAt, &s.UpdatedAt, &s.StreamKey, &s.Slug, &s.StreamTitle, &s.StreamCategory,
-		&s.Watermarked)
+		&s.Visibility, &s.Resolution)
 	if err != nil {
 		return nil, err
 	}
 	return &s, nil
 }
 
-func dbCreateStage(db *sql.DB, userID, name string, capabilities []string) (string, string, error) {
+func dbCreateStage(db *sql.DB, userID, name string, capabilities []string, visibility, resolution string) (string, string, error) {
 	stageID := uuid.Must(uuid.NewV7()).String()
 	token := "dpt_" + strings.ReplaceAll(uuid.Must(uuid.NewV7()).String(), "-", "")
 	streamKey := "dsk_" + strings.ReplaceAll(uuid.Must(uuid.NewV7()).String(), "-", "")
@@ -408,9 +448,9 @@ func dbCreateStage(db *sql.DB, userID, name string, capabilities []string) (stri
 		capabilities = []string{}
 	}
 	err := db.QueryRow(`
-		INSERT INTO stages (id, user_id, name, status, preview_token, stream_key, slug, capabilities)
-		VALUES ($1, $2, $3, 'inactive', $4, $5, $6, $7)
-		RETURNING id`, stageID, userID, name, token, streamKey, slug, pq.Array(capabilities)).Scan(&stageID)
+		INSERT INTO stages (id, user_id, name, status, preview_token, stream_key, slug, capabilities, visibility, resolution)
+		VALUES ($1, $2, $3, 'inactive', $4, $5, $6, $7, $8, $9)
+		RETURNING id`, stageID, userID, name, token, streamKey, slug, pq.Array(capabilities), visibility, resolution).Scan(&stageID)
 	return stageID, token, err
 }
 
@@ -598,11 +638,9 @@ func dbListStageDestinationsFilter(db *sql.DB, stageID string, excludeDazzle boo
 	return result, rows.Err()
 }
 
-const maxExternalDestinations = 3
+var errMaxDestinations = fmt.Errorf("maximum external destinations reached")
 
-var errMaxDestinations = fmt.Errorf("stage has reached the maximum of %d external destinations", maxExternalDestinations)
-
-func dbAddStageDestination(db *sql.DB, stageID, destinationID string) (string, error) {
+func dbAddStageDestination(db *sql.DB, stageID, destinationID string, maxExternalDest int) (string, error) {
 	var externalCount int
 	if err := db.QueryRow(`
 		SELECT COUNT(*) FROM stage_destinations sd
@@ -610,8 +648,8 @@ func dbAddStageDestination(db *sql.DB, stageID, destinationID string) (string, e
 		WHERE sd.stage_id = $1 AND d.platform != 'dazzle'`, stageID).Scan(&externalCount); err != nil {
 		return "", err
 	}
-	if externalCount >= maxExternalDestinations {
-		return "", errMaxDestinations
+	if externalCount >= maxExternalDest {
+		return "", fmt.Errorf("%w (max %d)", errMaxDestinations, maxExternalDest)
 	}
 	id := uuid.Must(uuid.NewV7()).String()
 	_, err := db.Exec(`

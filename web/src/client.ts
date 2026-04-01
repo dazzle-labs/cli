@@ -6,6 +6,7 @@ import { RtmpDestinationService } from "./gen/api/v1/stream_pb.js";
 import { UserService } from "./gen/api/v1/user_pb.js";
 import { FeaturedService } from "./gen/api/v1/featured_pb.js";
 import { ModerationService } from "./gen/api/v1/moderation_pb.js";
+import { BillingService } from "./gen/api/v1/billing_pb.js";
 
 let getToken: (() => Promise<string | null>) | null = null;
 
@@ -34,3 +35,4 @@ export const streamClient = createClient(RtmpDestinationService, transport);
 export const userClient = createClient(UserService, transport);
 export const featuredClient = createClient(FeaturedService, transport);
 export const moderationClient = createClient(ModerationService, transport);
+export const billingClient = createClient(BillingService, transport);

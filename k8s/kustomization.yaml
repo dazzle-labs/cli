@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - infrastructure/postgres.yaml
+  - infrastructure/redis.yaml
   - infrastructure/pdb.yaml
   - control-plane/rbac.yaml
   - control-plane/ci-rbac.yaml

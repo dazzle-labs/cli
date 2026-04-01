@@ -1,0 +1,3 @@
+ALTER TABLE stages
+  DROP COLUMN IF EXISTS visibility,
+  DROP COLUMN IF EXISTS resolution;

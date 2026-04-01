@@ -12,25 +12,47 @@ import (
 	"time"
 
 	"github.com/clerk/clerk-sdk-go/v2/user"
+	"github.com/redis/go-redis/v9"
 )
 
 // --- Rate limiter ---
 
 type rateLimiter struct {
+	rdb      *redis.Client
 	mu       sync.Mutex
 	counters map[string]*rateBucket
 }
 
 type rateBucket struct {
-	count     int
-	resetAt   time.Time
+	count   int
+	resetAt time.Time
 }
 
-func newRateLimiter() *rateLimiter {
-	return &rateLimiter{counters: make(map[string]*rateBucket)}
+func newRateLimiter(rdb *redis.Client) *rateLimiter {
+	return &rateLimiter{rdb: rdb, counters: make(map[string]*rateBucket)}
 }
+
+var redisRateLimit = redis.NewScript(`
+local current = redis.call("INCR", KEYS[1])
+if current == 1 then
+	redis.call("EXPIRE", KEYS[1], ARGV[1])
+end
+return current
+`)
 
 func (rl *rateLimiter) allow(ip string, limit int, window time.Duration) bool {
+	if rl.rdb != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		key := "ratelimit:" + ip
+		count, err := redisRateLimit.Run(ctx, rl.rdb, []string{key}, int(window.Seconds())).Int64()
+		if err != nil {
+			// Redis error — fall through to in-memory
+		} else {
+			return count <= int64(limit)
+		}
+	}
+
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 
@@ -287,7 +309,7 @@ func (mgr *Manager) handleConfirmCliSession(w http.ResponseWriter, r *http.Reque
 
 		// Resolve user email
 		email := ""
-		if dbEmail, _, _, _, dbErr := dbGetUserProfile(mgr.db, info.UserID); dbErr == nil && dbEmail != "" {
+		if dbEmail, _, _, _, _, dbErr := dbGetUserProfile(mgr.db, info.UserID); dbErr == nil && dbEmail != "" {
 			email = dbEmail
 		}
 		if email == "" {

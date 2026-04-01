@@ -171,6 +171,9 @@ jobs:
           cache: true
           cache-dependency-path: control-plane/go.sum
 
+      - name: Run control-plane tests
+        run: cd control-plane && go test ./...
+
       - name: Generate llms.txt
         run: make llms-txt
 

@@ -25,6 +25,7 @@ const (
 
 type authInfo struct {
 	UserID      string
+	Email       string
 	Method      authMethod
 	KeyID       string   // only set for API key auth
 	OrgID       string   // Clerk active organization ID
@@ -73,7 +74,13 @@ func requireDeveloper(ctx context.Context) (authInfo, error) {
 }
 
 // ensureUserFunc upserts a user row when Clerk auth succeeds.
-type ensureUserFunc func(userID string)
+type ensureUserFunc func(userID, email string)
+
+// clerkCustomClaims extracts email from the Clerk JWT.
+// Requires the Clerk JWT template to include {{user.primary_email_address}}.
+type clerkCustomClaims struct {
+	Email string `json:"email"`
+}
 
 // authenticator holds state for Clerk JWT and API key validation.
 type authenticator struct {
@@ -96,9 +103,25 @@ func newAuthenticator(db *sql.DB, clerkSecretKey string) *authenticator {
 		jwksClient:  jwks.NewClient(config),
 		jwkStore:    &inMemoryJWKStore{},
 		apiKeyCache: expirable.NewLRU[string, authInfo](1000, nil, 5*time.Minute),
-		ensureUser: func(userID string) {
-			if db != nil {
-				dbUpsertUser(db, userID, "", "")
+		ensureUser: func(userID, email string) {
+			if db == nil {
+				return
+			}
+			dbUpsertUser(db, userID, email, "")
+			// Issue one-time GPU signup trial (2 hrs) — idempotent.
+			if err := issueSignupGrant(db, userID); err != nil {
+				log.Printf("WARN: issue signup grant for %s: %v", userID, err)
+			}
+			// Auto-grant Pro to @dazzle.fm team members.
+			if strings.HasSuffix(email, "@dazzle.fm") {
+				current := dbGetUserPlan(db, userID)
+				if current != PlanPro {
+					if err := applyPlanLimits(db, userID, PlanPro); err != nil {
+						log.Printf("Failed to auto-grant Pro to %s (%s): %v", email, userID, err)
+					} else {
+						log.Printf("Auto-granted Pro plan to %s (%s)", email, userID)
+					}
+				}
 			}
 		},
 	}
@@ -138,7 +161,7 @@ func (a *authenticator) authenticate(ctx context.Context, token string) (*authIn
 	// Clerk JWT auth
 	info, err := a.verifyClerkJWT(ctx, token)
 	if err == nil && info != nil && a.ensureUser != nil {
-		a.ensureUser(info.UserID)
+		a.ensureUser(info.UserID, info.Email)
 	}
 	return info, err
 }
@@ -161,7 +184,10 @@ func (a *authenticator) verifyClerkJWT(ctx context.Context, token string) (*auth
 		a.jwkStore.jwk = jwk
 	}
 
-	claims, err := jwt.Verify(ctx, &jwt.VerifyParams{Token: token, JWK: jwk})
+	customClaimsFn := jwt.CustomClaimsConstructor(func(_ context.Context) any {
+		return &clerkCustomClaims{}
+	})
+	claims, err := jwt.Verify(ctx, &jwt.VerifyParams{Token: token, JWK: jwk, CustomClaimsConstructor: customClaimsFn})
 	if err != nil {
 		// JWK might be rotated — clear cache and retry once
 		a.jwkStore.jwk = nil
@@ -177,15 +203,20 @@ func (a *authenticator) verifyClerkJWT(ctx context.Context, token string) (*auth
 			return nil, err
 		}
 		a.jwkStore.jwk = jwk
-		claims, err = jwt.Verify(ctx, &jwt.VerifyParams{Token: token, JWK: jwk})
+		claims, err = jwt.Verify(ctx, &jwt.VerifyParams{Token: token, JWK: jwk, CustomClaimsConstructor: customClaimsFn})
 		if err != nil {
 			log.Printf("JWT verify failed after retry: %v", err)
 			return nil, err
 		}
 	}
 
+	var email string
+	if custom, ok := claims.Custom.(*clerkCustomClaims); ok {
+		email = custom.Email
+	}
 	return &authInfo{
 		UserID:      claims.Subject,
+		Email:       email,
 		Method:      authMethodClerk,
 		OrgID:       claims.ActiveOrganizationID,
 		Permissions: claims.ActiveOrganizationPermissions,

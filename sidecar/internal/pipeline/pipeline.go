@@ -335,25 +335,32 @@ func (p *Pipeline) buildArgs() []string {
 		"-progress", "pipe:1",
 	)
 
-	// Single encode, tee to all outputs
+	codecArgs := p.codecArgs(gop)
+	outArgs := []string{"-c:a", "aac", "-b:a", "128k", "-flags", "+global_header"}
+
+	allIdxs := make([]int, len(p.outputs))
+	for i := range p.outputs {
+		allIdxs[i] = i
+	}
+
 	args = append(args, "-map", "0:v", "-map", "1:a")
-	args = append(args, p.codecArgs(gop)...)
-	args = append(args, "-c:a", "aac", "-b:a", "128k", "-flags", "+global_header")
-	args = append(args, p.outputArgs()...)
+	args = append(args, codecArgs...)
+	args = append(args, outArgs...)
+	args = append(args, outputArgsForIdxs(allIdxs)...)
 
 	return args
 }
 
-// outputArgs returns ffmpeg output arguments for all configured outputs.
+// outputArgsForIdxs returns ffmpeg output arguments for a subset of output indices.
 // Single output uses -f flv directly; multiple outputs use the tee muxer
 // so the stream is encoded once and written to all destinations.
-func (p *Pipeline) outputArgs() []string {
-	if len(p.outputs) == 1 {
-		return []string{"-f", "flv", "$RTMP_URL_0"}
+func outputArgsForIdxs(idxs []int) []string {
+	if len(idxs) == 1 {
+		return []string{"-f", "flv", fmt.Sprintf("$RTMP_URL_%d", idxs[0])}
 	}
 	var teeOutputs []string
-	for i := range p.outputs {
-		teeOutputs = append(teeOutputs, fmt.Sprintf("[f=flv:onfail=ignore]$RTMP_URL_%d", i))
+	for _, idx := range idxs {
+		teeOutputs = append(teeOutputs, fmt.Sprintf("[f=flv:onfail=ignore]$RTMP_URL_%d", idx))
 	}
 	return []string{"-f", "tee", strings.Join(teeOutputs, "|")}
 }

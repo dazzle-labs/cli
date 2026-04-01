@@ -36,7 +36,7 @@ func (s *moderationServer) GetStageOwner(ctx context.Context, req *connect.Reque
 		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("stage not found"))
 	}
 
-	email, name, _, _, dbErr := dbGetUserProfile(s.mgr.db, row.UserID)
+	email, name, _, _, _, dbErr := dbGetUserProfile(s.mgr.db, row.UserID)
 	if dbErr != nil {
 		log.Printf("WARN: failed to look up user %s: %v", row.UserID, dbErr)
 	}
