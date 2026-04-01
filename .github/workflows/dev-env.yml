@@ -29,86 +29,97 @@ jobs:
       hostname: ${{ steps.decide.outputs.hostname }}
       short_sha: ${{ steps.decide.outputs.short_sha }}
     steps:
-      - name: Resolve PR and decide action
-        id: decide
+      # pull_request path — cleanup only
+      - name: Resolve from pull_request event
+        id: pr
+        if: github.event_name == 'pull_request'
+        run: |
+          PR=${{ github.event.pull_request.number }}
+          NS="dev-pr-${PR}"
+          echo "pr_number=${PR}" >> $GITHUB_OUTPUT
+          echo "namespace=${NS}" >> $GITHUB_OUTPUT
+          echo "hostname=pr-${PR}.dev.dazzle.fm" >> $GITHUB_OUTPUT
+          echo "short_sha=" >> $GITHUB_OUTPUT
+
+          ACTION="${{ github.event.action }}"
+          HAS_LABEL="${{ contains(github.event.pull_request.labels.*.name, 'deploy-dev') }}"
+
+          if [ "$ACTION" = "closed" ]; then
+            echo "deploy=false" >> $GITHUB_OUTPUT
+            echo "cleanup=true" >> $GITHUB_OUTPUT
+          elif [ "$ACTION" = "unlabeled" ] && [ "$HAS_LABEL" = "false" ]; then
+            echo "deploy=false" >> $GITHUB_OUTPUT
+            echo "cleanup=true" >> $GITHUB_OUTPUT
+          else
+            echo "deploy=false" >> $GITHUB_OUTPUT
+            echo "cleanup=false" >> $GITHUB_OUTPUT
+          fi
+
+      # workflow_run path — deploy after CI completes
+      - name: Resolve from workflow_run event
+        id: wr
+        if: github.event_name == 'workflow_run'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          EVENT="${{ github.event_name }}"
+          CONCLUSION="${{ github.event.workflow_run.conclusion }}"
+          BRANCH="${{ github.event.workflow_run.head_branch }}"
+          HEAD_SHA="${{ github.event.workflow_run.head_sha }}"
+          SHORT_SHA=$(echo "$HEAD_SHA" | cut -c1-7)
 
-          if [ "$EVENT" = "pull_request" ]; then
-            # pull_request event — only cleanup actions reach here
-            PR=${{ github.event.pull_request.number }}
-            ACTION="${{ github.event.action }}"
-            HAS_LABEL="${{ contains(github.event.pull_request.labels.*.name, 'deploy-dev') }}"
-
-            if [ "$ACTION" = "closed" ]; then
-              echo "deploy=false" >> $GITHUB_OUTPUT
-              echo "cleanup=true" >> $GITHUB_OUTPUT
-            elif [ "$ACTION" = "unlabeled" ] && [ "$HAS_LABEL" = "false" ]; then
-              echo "deploy=false" >> $GITHUB_OUTPUT
-              echo "cleanup=true" >> $GITHUB_OUTPUT
-            else
-              echo "deploy=false" >> $GITHUB_OUTPUT
-              echo "cleanup=false" >> $GITHUB_OUTPUT
-            fi
-
-            NS="dev-pr-${PR}"
-            echo "pr_number=${PR}" >> $GITHUB_OUTPUT
-            echo "namespace=${NS}" >> $GITHUB_OUTPUT
-            echo "hostname=pr-${PR}.dev.dazzle.fm" >> $GITHUB_OUTPUT
+          if [ "$CONCLUSION" != "success" ]; then
+            echo "CI concluded with: $CONCLUSION — skipping"
+            echo "deploy=false" >> $GITHUB_OUTPUT
+            echo "cleanup=false" >> $GITHUB_OUTPUT
+            echo "pr_number=" >> $GITHUB_OUTPUT
+            echo "namespace=" >> $GITHUB_OUTPUT
+            echo "hostname=" >> $GITHUB_OUTPUT
             echo "short_sha=" >> $GITHUB_OUTPUT
-
-          elif [ "$EVENT" = "workflow_run" ]; then
-            # CI just completed — check if it was for a deploy-dev PR
-            CONCLUSION="${{ github.event.workflow_run.conclusion }}"
-            if [ "$CONCLUSION" != "success" ]; then
-              echo "CI concluded with: $CONCLUSION — skipping deploy"
-              echo "deploy=false" >> $GITHUB_OUTPUT
-              echo "cleanup=false" >> $GITHUB_OUTPUT
-              echo "pr_number=" >> $GITHUB_OUTPUT
-              echo "namespace=" >> $GITHUB_OUTPUT
-              echo "hostname=" >> $GITHUB_OUTPUT
-              echo "short_sha=" >> $GITHUB_OUTPUT
-              exit 0
-            fi
-
-            # Get associated PR
-            BRANCH="${{ github.event.workflow_run.head_branch }}"
-            HEAD_SHA="${{ github.event.workflow_run.head_sha }}"
-            SHORT_SHA=$(echo "$HEAD_SHA" | cut -c1-7)
-
-            PR_JSON=$(gh api "repos/${{ github.repository }}/pulls?head=${{ github.repository_owner }}:${BRANCH}&state=open" \
-              --jq '.[0] | {number, labels: [.labels[].name]}' 2>/dev/null || echo "")
-
-            if [ -z "$PR_JSON" ] || [ "$PR_JSON" = "null" ]; then
-              echo "No open PR for branch $BRANCH — skipping"
-              echo "deploy=false" >> $GITHUB_OUTPUT
-              echo "cleanup=false" >> $GITHUB_OUTPUT
-              echo "pr_number=" >> $GITHUB_OUTPUT
-              echo "namespace=" >> $GITHUB_OUTPUT
-              echo "hostname=" >> $GITHUB_OUTPUT
-              echo "short_sha=" >> $GITHUB_OUTPUT
-              exit 0
-            fi
-
-            PR=$(echo "$PR_JSON" | jq -r '.number')
-            HAS_LABEL=$(echo "$PR_JSON" | jq -r '.labels | index("deploy-dev") != null')
-
-            if [ "$HAS_LABEL" = "true" ]; then
-              echo "deploy=true" >> $GITHUB_OUTPUT
-              echo "cleanup=false" >> $GITHUB_OUTPUT
-            else
-              echo "deploy=false" >> $GITHUB_OUTPUT
-              echo "cleanup=false" >> $GITHUB_OUTPUT
-            fi
-
-            NS="dev-pr-${PR}"
-            echo "pr_number=${PR}" >> $GITHUB_OUTPUT
-            echo "namespace=${NS}" >> $GITHUB_OUTPUT
-            echo "hostname=pr-${PR}.dev.dazzle.fm" >> $GITHUB_OUTPUT
-            echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+            exit 0
           fi
+
+          # Look up the PR for this branch
+          PR_JSON=$(gh api "repos/${{ github.repository }}/pulls?head=${{ github.repository_owner }}:${BRANCH}&state=open" \
+            --jq '.[0] | {number, labels: [.labels[].name]}' 2>/dev/null || echo "")
+
+          if [ -z "$PR_JSON" ] || [ "$PR_JSON" = "null" ]; then
+            echo "No open PR for branch $BRANCH — skipping"
+            echo "deploy=false" >> $GITHUB_OUTPUT
+            echo "cleanup=false" >> $GITHUB_OUTPUT
+            echo "pr_number=" >> $GITHUB_OUTPUT
+            echo "namespace=" >> $GITHUB_OUTPUT
+            echo "hostname=" >> $GITHUB_OUTPUT
+            echo "short_sha=" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          PR=$(echo "$PR_JSON" | jq -r '.number')
+          HAS_LABEL=$(echo "$PR_JSON" | jq -r '.labels | index("deploy-dev") != null')
+          NS="dev-pr-${PR}"
+
+          echo "pr_number=${PR}" >> $GITHUB_OUTPUT
+          echo "namespace=${NS}" >> $GITHUB_OUTPUT
+          echo "hostname=pr-${PR}.dev.dazzle.fm" >> $GITHUB_OUTPUT
+          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+
+          if [ "$HAS_LABEL" = "true" ]; then
+            echo "deploy=true" >> $GITHUB_OUTPUT
+            echo "cleanup=false" >> $GITHUB_OUTPUT
+          else
+            echo "deploy=false" >> $GITHUB_OUTPUT
+            echo "cleanup=false" >> $GITHUB_OUTPUT
+          fi
+
+      # Merge outputs from whichever step ran
+      - name: Set outputs
+        id: decide
+        run: |
+          echo "deploy=${{ steps.pr.outputs.deploy || steps.wr.outputs.deploy || 'false' }}" >> $GITHUB_OUTPUT
+          echo "cleanup=${{ steps.pr.outputs.cleanup || steps.wr.outputs.cleanup || 'false' }}" >> $GITHUB_OUTPUT
+          echo "pr_number=${{ steps.pr.outputs.pr_number || steps.wr.outputs.pr_number }}" >> $GITHUB_OUTPUT
+          echo "namespace=${{ steps.pr.outputs.namespace || steps.wr.outputs.namespace }}" >> $GITHUB_OUTPUT
+          echo "hostname=${{ steps.pr.outputs.hostname || steps.wr.outputs.hostname }}" >> $GITHUB_OUTPUT
+          echo "short_sha=${{ steps.pr.outputs.short_sha || steps.wr.outputs.short_sha }}" >> $GITHUB_OUTPUT
 
   # ── Deploy to dev cluster ──
   deploy:
