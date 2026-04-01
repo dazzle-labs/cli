@@ -22,6 +22,8 @@ export namespace PostHog {
           rageclick: true,
           session_recording: {
             maskAllInputs: true,
+            maskTextSelector: "*",
+            strictMinimumDuration: true,
           },
         }}
       >
