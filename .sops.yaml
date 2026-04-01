@@ -31,3 +31,28 @@ creation_rules:
       age1emw2e5x3d4cu0x4g0q4lrw8nj2fdv0qfzta6g62m5y24j02zu44sflkxln,
       age1x9049ry5hz876qratphuc9gdxzuv4nnd06076842zdukl4unvazszfnjf6,
       age1y5txpqz0vyyq03yyysmzuyvuyh8uzzpcw30cp5q3twxnwenfzpvs48ts0z
+  # Dev secrets use a separate Age key for blast radius isolation.
+  # The dev CI key (AGE_DEV_SECRET_KEY) cannot decrypt prod secrets, and vice versa.
+  # Team members' personal keys are included so humans can decrypt both.
+  - path_regex: k8s/secrets-dev/.*\.yaml$
+    encrypted_regex: "^(data|stringData)$"
+    age: >-
+      age1mulgnkldp0c6daway8auvrajfj7gmglr4tfhrnxjrhzg6pqump7qcamvts,
+      age18r3vk6aecpcd69ey7fhgjylg6z37ksfeff6c497mxgv4nwmnyupq4gsfua,
+      age1emw2e5x3d4cu0x4g0q4lrw8nj2fdv0qfzta6g62m5y24j02zu44sflkxln,
+      age1x9049ry5hz876qratphuc9gdxzuv4nnd06076842zdukl4unvazszfnjf6,
+      age1y5txpqz0vyyq03yyysmzuyvuyh8uzzpcw30cp5q3twxnwenfzpvs48ts0z
+  - path_regex: k8s/hetzner-dev/terraform\.tfstate(\.enc)?$
+    age: >-
+      age1mulgnkldp0c6daway8auvrajfj7gmglr4tfhrnxjrhzg6pqump7qcamvts,
+      age18r3vk6aecpcd69ey7fhgjylg6z37ksfeff6c497mxgv4nwmnyupq4gsfua,
+      age1emw2e5x3d4cu0x4g0q4lrw8nj2fdv0qfzta6g62m5y24j02zu44sflkxln,
+      age1x9049ry5hz876qratphuc9gdxzuv4nnd06076842zdukl4unvazszfnjf6,
+      age1y5txpqz0vyyq03yyysmzuyvuyh8uzzpcw30cp5q3twxnwenfzpvs48ts0z
+  - path_regex: k8s/hetzner-dev/ssh_key(\.enc)?$
+    age: >-
+      age1mulgnkldp0c6daway8auvrajfj7gmglr4tfhrnxjrhzg6pqump7qcamvts,
+      age18r3vk6aecpcd69ey7fhgjylg6z37ksfeff6c497mxgv4nwmnyupq4gsfua,
+      age1emw2e5x3d4cu0x4g0q4lrw8nj2fdv0qfzta6g62m5y24j02zu44sflkxln,
+      age1x9049ry5hz876qratphuc9gdxzuv4nnd06076842zdukl4unvazszfnjf6,
+      age1y5txpqz0vyyq03yyysmzuyvuyh8uzzpcw30cp5q3twxnwenfzpvs48ts0z

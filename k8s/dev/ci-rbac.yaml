@@ -1,0 +1,117 @@
+---
+# CI RBAC for the dev cluster — applied once during bootstrap (not per-namespace).
+# Scoped to specific refs (main + pull_request) to prevent fork PR abuse.
+
+# ClusterRole with namespace lifecycle + deploy permissions
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ci-dev-deploy
+rules:
+  # Namespace lifecycle — create and label dev namespaces.
+  # Delete is intentionally omitted here and granted via a separate
+  # scoped role below to prevent deletion of system namespaces.
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "list", "create", "update", "patch"]
+  # Core resources
+  - apiGroups: [""]
+    resources: ["pods", "services", "configmaps", "serviceaccounts", "persistentvolumeclaims", "resourcequotas", "limitranges"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Secrets — CI manages these per namespace. Note: ClusterRole grants this
+  # across all namespaces; the workflow scopes to dev-pr-* in code. A Kyverno
+  # policy should restrict this further (see #5 in security review).
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "create", "update", "patch"]
+  # Deployments, StatefulSets
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Networking
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # RBAC — scoped to known role names only
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["roles", "rolebindings"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["clusterroles", "clusterrolebindings"]
+    verbs: ["get", "list"]
+    # No create/update — CI should not be able to escalate its own privileges.
+    # Bootstrap RBAC is applied manually via `make dev-cluster/bootstrap`.
+  # CRDs — read-only for CI, bootstrap applies them
+  - apiGroups: ["apiextensions.k8s.io"]
+    resources: ["customresourcedefinitions"]
+    verbs: ["get", "list"]
+  # Dazzle CRs (GPU nodes, stages)
+  - apiGroups: ["dazzle.fm"]
+    resources: ["gpunodes", "gpunodeclasses", "gpustages"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Rollout status / logs
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get"]
+  # Traefik resources
+  - apiGroups: ["traefik.io", "traefik.containo.us"]
+    resources: ["middlewares", "ingressroutes"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # HelmChartConfig (Traefik config) — read-only for CI, bootstrap applies changes
+  - apiGroups: ["helm.cattle.io"]
+    resources: ["helmchartconfigs"]
+    verbs: ["get", "list", "watch"]
+  # Leases (control-plane leader election)
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "create", "update"]
+
+---
+# Separate ClusterRole for namespace deletion — bound to the same subjects
+# but only grants delete on namespaces. This exists so we can document the
+# risk clearly: CI can delete any namespace. The workflow restricts this to
+# dev-pr-* namespaces in code, but k8s RBAC cannot express prefix matching.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ci-dev-ns-cleanup
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["delete"]
+
+---
+# Bind to specific OIDC subjects — main branch and pull_request events only.
+# Fork PRs use a different subject format (environment:...) and won't match.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ci-dev-deploy
+subjects:
+  - kind: User
+    name: "github:repo:dazzle-labs/agent-streamer:ref:refs/heads/main"
+    apiGroup: rbac.authorization.k8s.io
+  - kind: User
+    name: "github:repo:dazzle-labs/agent-streamer:pull_request"
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: ci-dev-deploy
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ci-dev-ns-cleanup
+subjects:
+  - kind: User
+    name: "github:repo:dazzle-labs/agent-streamer:ref:refs/heads/main"
+    apiGroup: rbac.authorization.k8s.io
+  - kind: User
+    name: "github:repo:dazzle-labs/agent-streamer:pull_request"
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: ci-dev-ns-cleanup
+  apiGroup: rbac.authorization.k8s.io

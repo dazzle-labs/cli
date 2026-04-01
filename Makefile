@@ -34,7 +34,8 @@ OK       = @printf "$(_bold)$(_green)✓ %s$(_reset)\n"
 ifneq ($(wildcard $(HOME)/.age/key.txt),)
   export SOPS_AGE_KEY_FILE ?= $(HOME)/.age/key.txt
 endif
-INFRA_DIR := k8s/hetzner
+INFRA_DIR     := k8s/hetzner
+DEV_INFRA_DIR := k8s/hetzner-dev
 # Extract kubeconfig from encrypted tfstate without writing to disk
 define _prod_kc
 	tmpkc=$$(mktemp) && trap "rm -f $$tmpkc" EXIT && \
@@ -42,13 +43,24 @@ define _prod_kc
 		python3 -c "import sys,json; open('$$tmpkc','w').write(json.load(sys.stdin)['outputs']['kubeconfig']['value'])" && \
 	KUBECONFIG=$$tmpkc
 endef
-TFSTATE   := $(INFRA_DIR)/terraform.tfstate
-TFSTATE_ENC := $(INFRA_DIR)/terraform.tfstate.enc
+TFSTATE       := $(INFRA_DIR)/terraform.tfstate
+TFSTATE_ENC   := $(INFRA_DIR)/terraform.tfstate.enc
+# Dev cluster — extract kubeconfig the same way as prod
+define _dev_kc
+	tmpkc=$$(mktemp) && trap "rm -f $$tmpkc" EXIT && \
+	sops -d $(DEV_INFRA_DIR)/terraform.tfstate.enc | \
+		python3 -c "import sys,json; open('$$tmpkc','w').write(json.load(sys.stdin)['outputs']['kubeconfig']['value'])" && \
+	KUBECONFIG=$$tmpkc
+endef
+DEV_TFSTATE     := $(DEV_INFRA_DIR)/terraform.tfstate
+DEV_TFSTATE_ENC := $(DEV_INFRA_DIR)/terraform.tfstate.enc
 
 .PHONY: help check-deps check-hooks check-cli pull-cli proto up down build build-cp build-streamer build-ingest build-stage-runtime deploy dev llms-txt logs status \
         install-hooks \
         kubectx prod/helm prod/kubectl prod/status prod/nodes \
         prod/infra/init prod/infra/plan prod/infra/apply prod/infra/output \
+        dev-cluster/kubectl dev-cluster/status dev-cluster/k8s/% dev-cluster/bootstrap \
+        dev-cluster/infra/init dev-cluster/infra/plan dev-cluster/infra/apply dev-cluster/infra/output \
         gpu/rebuild gpu/deploy gpu/node-create gpu/node-delete gpu/node-recreate gpu/status gpu/logs gpu/port-forward \
         cli/stages cli/up cli/down cli/sync cli/screenshot cli/logs \
         k8s/% prod/k8s/% \
@@ -439,6 +451,89 @@ prod/infra/output: prod/infra/decrypt-state ## Show OpenTofu outputs
 		EXIT=$$?; \
 		cd ->/dev/null; \
 		$(MAKE) prod/infra/encrypt-state; \
+		exit $$EXIT
+
+# ══════════════════════════════════════════════════════
+# Dev cluster (Hetzner — isolated PR environments)
+# ══════════════════════════════════════════════════════
+
+dev-cluster/kubectl: ## Run kubectl against dev cluster (use ARGS="get pods -A")
+	@$(_dev_kc) kubectl $(ARGS)
+
+dev-cluster/status: ## Show dev cluster nodes and pods
+	@$(_dev_kc) bash -c '\
+		echo "── Nodes ──"; \
+		kubectl --kubeconfig $$KUBECONFIG get nodes -o wide; \
+		echo ""; \
+		echo "── Pods (all namespaces) ──"; \
+		kubectl --kubeconfig $$KUBECONFIG get pods -A'
+
+dev-cluster/k8s/%: ## Run k8s/ Makefile target against dev cluster
+	@$(_dev_kc) $(MAKE) -C k8s $*
+
+dev-cluster/bootstrap: ## Bootstrap dev cluster (CRDs, GPU classes, Traefik, CI RBAC, Tailscale router)
+	@$(_dev_kc) bash -c '\
+		echo "Applying CRDs..."; \
+		kubectl --kubeconfig $$KUBECONFIG apply -f k8s/crds/; \
+		echo "Applying GPU node classes..."; \
+		kubectl --kubeconfig $$KUBECONFIG apply -f k8s/gpu/; \
+		echo "Applying Traefik config..."; \
+		kubectl --kubeconfig $$KUBECONFIG apply -f k8s/networking/traefik-config.yaml; \
+		echo "Applying CI RBAC..."; \
+		kubectl --kubeconfig $$KUBECONFIG apply -f k8s/dev/ci-rbac.yaml; \
+		echo "Deploying Tailscale subnet router..."; \
+		kubectl --kubeconfig $$KUBECONFIG apply -f k8s/dev/tailscale-subnet-router.yaml; \
+		echo "Deploying split DNS..."; \
+		kubectl --kubeconfig $$KUBECONFIG apply -f k8s/dev/split-dns.yaml; \
+		echo "Done."'
+
+# Dev cluster infrastructure (OpenTofu)
+dev-cluster/infra/decrypt-state:
+	@if [ -f "$(DEV_TFSTATE_ENC)" ]; then \
+		sops -d $(DEV_TFSTATE_ENC) > $(DEV_TFSTATE); \
+		chmod 600 $(DEV_TFSTATE); \
+	fi
+
+dev-cluster/infra/encrypt-state:
+	@if [ -f "$(DEV_TFSTATE)" ]; then \
+		sops --encrypt $(DEV_TFSTATE) > $(DEV_TFSTATE_ENC); \
+		rm -f $(DEV_TFSTATE) $(DEV_TFSTATE).backup; \
+		printf "$(_bold)$(_green)✓ State encrypted to $(DEV_TFSTATE_ENC)$(_reset)\n"; \
+	fi
+
+dev-cluster/infra/init: ## Initialize OpenTofu providers for dev cluster
+	cd $(DEV_INFRA_DIR) && tofu init
+
+dev-cluster/infra/plan: dev-cluster/infra/decrypt-state ## Plan dev cluster infrastructure changes
+	@cd $(DEV_INFRA_DIR) && tofu plan; \
+		EXIT=$$?; \
+		cd ->/dev/null; \
+		$(MAKE) dev-cluster/infra/encrypt-state; \
+		exit $$EXIT
+
+dev-cluster/infra/apply: ## ⚠️  Apply dev cluster infrastructure changes (DESTRUCTIVE)
+	$(call _confirm,This will modify the dev cluster infrastructure.)
+	@$(MAKE) dev-cluster/infra/decrypt-state
+	@cd $(DEV_INFRA_DIR) && tofu apply; \
+		EXIT=$$?; \
+		cd ->/dev/null; \
+		$(MAKE) dev-cluster/infra/encrypt-state; \
+		exit $$EXIT
+
+dev-cluster/infra/destroy: ## ⚠️  Destroy dev cluster infrastructure (DESTRUCTIVE)
+	$(call _confirm,This will DESTROY the entire dev cluster.)
+	@$(MAKE) dev-cluster/infra/decrypt-state
+	@cd $(DEV_INFRA_DIR) && tofu destroy; \
+		EXIT=$$?; \
+		cd ->/dev/null; \
+		$(MAKE) dev-cluster/infra/encrypt-state; \
+		exit $$EXIT
+
+dev-cluster/infra/output: dev-cluster/infra/decrypt-state ## Show dev cluster OpenTofu outputs
+	@cd $(DEV_INFRA_DIR) && tofu output; \
+		EXIT=$$?; \
+		cd ->/dev/null; \
+		$(MAKE) dev-cluster/infra/encrypt-state; \
 		exit $$EXIT
 
 # ══════════════════════════════════════════════════════

@@ -1,0 +1,407 @@
+name: Dev Environment
+
+on:
+  pull_request:
+    types: [labeled, unlabeled, synchronize, closed]
+    branches: [main]
+
+concurrency:
+  group: dev-env-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  CP_REPO: dazzlefm/agent-streamer-control-plane
+  STREAMER_REPO: dazzlefm/agent-streamer-stage
+  SIDECAR_REPO: dazzlefm/agent-streamer-sidecar
+  GPU_NODE_REPO: dazzlefm/agent-streamer-gpu-node
+  INGEST_REPO: dazzlefm/agent-streamer-ingest
+
+jobs:
+  should-deploy:
+    runs-on: ubuntu-latest
+    outputs:
+      deploy: ${{ steps.check.outputs.deploy }}
+      cleanup: ${{ steps.check.outputs.cleanup }}
+      namespace: ${{ steps.check.outputs.namespace }}
+      hostname: ${{ steps.check.outputs.hostname }}
+      short_sha: ${{ steps.check.outputs.short_sha }}
+    steps:
+      - id: check
+        run: |
+          PR=${{ github.event.pull_request.number }}
+          NS="dev-pr-${PR}"
+          HOST="pr-${PR}.dev.dazzle.fm"
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+
+          echo "namespace=${NS}" >> $GITHUB_OUTPUT
+          echo "hostname=${HOST}" >> $GITHUB_OUTPUT
+          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+
+          HAS_LABEL="${{ contains(github.event.pull_request.labels.*.name, 'deploy-dev') }}"
+          ACTION="${{ github.event.action }}"
+
+          if [ "$ACTION" = "closed" ]; then
+            # PR closed/merged — always clean up
+            echo "deploy=false" >> $GITHUB_OUTPUT
+            echo "cleanup=true" >> $GITHUB_OUTPUT
+          elif [ "$ACTION" = "unlabeled" ] && [ "$HAS_LABEL" = "false" ]; then
+            # deploy-dev label was removed — tear down
+            echo "deploy=false" >> $GITHUB_OUTPUT
+            echo "cleanup=true" >> $GITHUB_OUTPUT
+          elif [ "$HAS_LABEL" = "true" ]; then
+            # Label present (labeled or synchronize) — deploy
+            echo "deploy=true" >> $GITHUB_OUTPUT
+            echo "cleanup=false" >> $GITHUB_OUTPUT
+          else
+            # No label, not closed — skip
+            echo "deploy=false" >> $GITHUB_OUTPUT
+            echo "cleanup=false" >> $GITHUB_OUTPUT
+          fi
+
+  build-and-deploy:
+    needs: [should-deploy]
+    if: needs.should-deploy.outputs.deploy == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set Up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Log In To Docker Hub
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Configure git auth
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "https://x-access-token:${GH_TOKEN}@github.com" > ~/.git-credentials
+          git config --global credential.helper store
+          git config --global url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "git@github.com:"
+
+      - name: Fetch CLI submodule
+        run: git submodule update --init cli
+
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: '1.25'
+          cache: true
+          cache-dependency-path: control-plane/go.sum
+
+      - name: Generate llms.txt
+        run: make llms-txt
+
+      - name: Get CLI submodule commit
+        id: cli
+        run: echo "commit=$(git ls-tree HEAD cli | awk '{print $3}')" >> $GITHUB_OUTPUT
+
+      # --- Build all images with PR tag ---
+
+      - name: Build control-plane
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
+        with:
+          context: .
+          file: control-plane/docker/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.CP_REPO }}:pr-${{ github.event.pull_request.number }}
+          build-args: |
+            VITE_CLERK_PUBLISHABLE_KEY=${{ secrets.VITE_DEV_CLERK_PUBLISHABLE_KEY }}
+            GIT_COMMIT=${{ steps.cli.outputs.commit }}
+          cache-from: |
+            type=registry,ref=${{ env.CP_REPO }}:buildcache-dev
+            type=registry,ref=${{ env.CP_REPO }}:buildcache-main
+          cache-to: type=registry,ref=${{ env.CP_REPO }}:buildcache-dev,mode=max
+
+      - name: Build stage-runtime
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
+        with:
+          context: stage-runtime/
+          file: stage-runtime/Dockerfile
+          target: builder
+          platforms: linux/amd64
+          push: true
+          tags: dazzlefm/stage-runtime-builder:pr-${{ github.event.pull_request.number }}
+          cache-from: |
+            type=registry,ref=dazzlefm/stage-runtime-builder:buildcache-dev
+            type=registry,ref=dazzlefm/stage-runtime-builder:buildcache-main
+          cache-to: type=registry,ref=dazzlefm/stage-runtime-builder:buildcache-dev,mode=max
+
+      - name: Build sidecar
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
+        with:
+          context: .
+          file: sidecar/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.SIDECAR_REPO }}:pr-${{ github.event.pull_request.number }}
+          cache-from: |
+            type=registry,ref=${{ env.SIDECAR_REPO }}:buildcache-dev
+            type=registry,ref=${{ env.SIDECAR_REPO }}:buildcache-main
+          cache-to: type=registry,ref=${{ env.SIDECAR_REPO }}:buildcache-dev,mode=max
+
+      - name: Build streamer
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
+        with:
+          context: streamer/
+          file: streamer/docker/Dockerfile
+          target: streamer
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.STREAMER_REPO }}:pr-${{ github.event.pull_request.number }}
+          build-args: |
+            STAGE_RUNTIME_IMAGE=dazzlefm/stage-runtime-builder:pr-${{ github.event.pull_request.number }}
+          cache-from: |
+            type=registry,ref=${{ env.STREAMER_REPO }}:buildcache-dev
+            type=registry,ref=${{ env.STREAMER_REPO }}:buildcache-main
+          cache-to: type=registry,ref=${{ env.STREAMER_REPO }}:buildcache-dev,mode=max
+
+      - name: Build GPU node
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
+        with:
+          context: streamer/
+          file: streamer/docker/Dockerfile
+          target: gpu-node
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.GPU_NODE_REPO }}:pr-${{ github.event.pull_request.number }}
+          build-args: |
+            VARIANT=gpu
+            SIDECAR_IMAGE=${{ env.SIDECAR_REPO }}:pr-${{ github.event.pull_request.number }}
+            STAGE_RUNTIME_IMAGE=dazzlefm/stage-runtime-builder:pr-${{ github.event.pull_request.number }}
+          cache-from: |
+            type=registry,ref=${{ env.GPU_NODE_REPO }}:buildcache-dev
+            type=registry,ref=${{ env.GPU_NODE_REPO }}:buildcache-main
+          cache-to: type=registry,ref=${{ env.GPU_NODE_REPO }}:buildcache-dev,mode=max
+
+      - name: Build ingest
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
+        with:
+          context: ingest/
+          file: ingest/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.INGEST_REPO }}:pr-${{ github.event.pull_request.number }}
+          cache-from: |
+            type=registry,ref=${{ env.INGEST_REPO }}:buildcache-dev
+            type=registry,ref=${{ env.INGEST_REPO }}:buildcache-main
+          cache-to: type=registry,ref=${{ env.INGEST_REPO }}:buildcache-dev,mode=max
+
+      # --- Deploy to dev cluster ---
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@776406bce94f63e41d621b960d78ee25c8b76ede # v4
+
+      - name: Install sops and kustomize
+        run: |
+          SOPS_VERSION="v3.11.0"
+          SOPS_SHA256="775f1384d55decfad228e7196a3f683791914f92a473f78fc47700531c29dfef"
+          curl -sLO "https://github.com/getsops/sops/releases/download/${SOPS_VERSION}/sops-${SOPS_VERSION}.linux.amd64"
+          echo "${SOPS_SHA256}  sops-${SOPS_VERSION}.linux.amd64" | sha256sum -c -
+          sudo mv "sops-${SOPS_VERSION}.linux.amd64" /usr/local/bin/sops
+          sudo chmod +x /usr/local/bin/sops
+
+          KUSTOMIZE_VERSION="v5.8.1"
+          KUSTOMIZE_SHA256="029a7f0f4e1932c52a0476cf02a0fd855c0bb85694b82c338fc648dcb53a819d"
+          curl -sLO "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz"
+          echo "${KUSTOMIZE_SHA256}  kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz" | sha256sum -c -
+          tar -xzf "kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz" kustomize
+          sudo mv kustomize /usr/local/bin/
+          rm -f checksums.txt "kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz"
+
+      - name: Setup age key
+        run: |
+          mkdir -p ~/.config/sops/age
+          echo "${{ secrets.AGE_DEV_SECRET_KEY }}" > ~/.config/sops/age/keys.txt
+          chmod 600 ~/.config/sops/age/keys.txt
+
+      - name: Authenticate to dev cluster via OIDC
+        env:
+          K8S_DEV_CA_CERT_B64: ${{ secrets.K8S_DEV_CA_CERT_B64 }}
+        run: |
+          TOKEN=$(curl -sH "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=kubernetes" | jq -r .value)
+          python3 -c "import base64,os; d=base64.b64decode(os.environ['K8S_DEV_CA_CERT_B64']); open('/tmp/k8s-ca.crt','wb').write(d); print(f'CA cert: {len(d)} bytes')"
+          kubectl config set-cluster dev \
+            --server=${{ vars.K8S_DEV_API_SERVER }} \
+            --certificate-authority=/tmp/k8s-ca.crt \
+            --embed-certs=true
+          kubectl config set-credentials ci --token="$TOKEN"
+          kubectl config set-context dev --cluster=dev --user=ci
+          kubectl config use-context dev
+          kubectl cluster-info 2>&1 || true
+
+      - name: Create namespace
+        env:
+          NS: ${{ needs.should-deploy.outputs.namespace }}
+        run: |
+          kubectl create namespace "$NS" \
+            --dry-run=client -o yaml | kubectl apply -f -
+          kubectl label namespace "$NS" \
+            pod-security.kubernetes.io/enforce=baseline \
+            pod-security.kubernetes.io/warn=restricted \
+            --overwrite
+
+      - name: Apply dev secrets
+        env:
+          NS: ${{ needs.should-deploy.outputs.namespace }}
+        run: |
+          for secret in k8s/secrets-dev/*.yaml; do
+            [ -f "$secret" ] || continue
+            echo "  Applying $secret"
+            sops --decrypt "$secret" | kubectl apply -n "$NS" -f -
+          done
+
+      - name: Deploy to dev environment
+        env:
+          NS: ${{ needs.should-deploy.outputs.namespace }}
+          HOST: ${{ needs.should-deploy.outputs.hostname }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          cd k8s/dev
+
+          # Set namespace and image tags
+          kustomize edit set namespace "$NS"
+          kustomize edit set image \
+            ${{ env.CP_REPO }}:pr-${PR} \
+            ${{ env.STREAMER_REPO }}:pr-${PR} \
+            ${{ env.SIDECAR_REPO }}:pr-${PR} \
+            ${{ env.INGEST_REPO }}:pr-${PR}
+
+          # Replace hostname placeholder in ingress and verify
+          sed -i "s/DEV_PR_HOST/${HOST}/g" ingress.yaml
+          if grep -q 'DEV_PR_HOST' ingress.yaml; then
+            echo "ERROR: Failed to replace DEV_PR_HOST placeholder in ingress.yaml"
+            cat ingress.yaml
+            exit 1
+          fi
+
+          # Patch control-plane env vars for this specific PR
+          cat > ci-env-patch.yaml <<PATCH
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: control-plane
+          spec:
+            template:
+              spec:
+                containers:
+                  - name: control-plane
+                    env:
+                      - name: STREAMER_IMAGE
+                        value: "${{ env.STREAMER_REPO }}:pr-${PR}"
+                      - name: SIDECAR_IMAGE
+                        value: "${{ env.SIDECAR_REPO }}:pr-${PR}"
+                      - name: GPU_NODE_IMAGE
+                        value: "${{ env.GPU_NODE_REPO }}:pr-${PR}"
+                      - name: OAUTH_REDIRECT_BASE_URL
+                        value: "https://${HOST}"
+                      - name: NAMESPACE
+                        value: "${NS}"
+          PATCH
+          kustomize edit add patch --path ci-env-patch.yaml
+
+          # Build and apply
+          kustomize build . | kubectl apply -f -
+
+      - name: Wait for rollout
+        env:
+          NS: ${{ needs.should-deploy.outputs.namespace }}
+        run: |
+          kubectl rollout status deployment/control-plane -n "$NS" --timeout=300s
+          echo ""
+          echo "=== Pods ==="
+          kubectl get pods -n "$NS"
+
+      - name: Cleanup credentials
+        if: always()
+        run: |
+          rm -f ~/.git-credentials ~/.config/sops/age/keys.txt ~/.kube/config /tmp/k8s-ca.crt
+
+      - name: Comment on PR
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const host = '${{ needs.should-deploy.outputs.hostname }}';
+            const ns = '${{ needs.should-deploy.outputs.namespace }}';
+            const sha = '${{ needs.should-deploy.outputs.short_sha }}';
+            const body = `### Dev Environment Deployed\n\n` +
+              `| | |\n|---|---|\n` +
+              `| **URL** | https://${host} |\n` +
+              `| **Namespace** | \`${ns}\` |\n` +
+              `| **Commit** | \`${sha}\` |\n\n` +
+              `_This environment will be torn down when the PR is closed._`;
+
+            // Find existing comment to update
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c =>
+              c.user.type === 'Bot' && c.body.includes('Dev Environment Deployed')
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+  cleanup:
+    needs: [should-deploy]
+    if: needs.should-deploy.outputs.cleanup == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@776406bce94f63e41d621b960d78ee25c8b76ede # v4
+
+      - name: Authenticate to dev cluster via OIDC
+        env:
+          K8S_DEV_CA_CERT_B64: ${{ secrets.K8S_DEV_CA_CERT_B64 }}
+        run: |
+          TOKEN=$(curl -sH "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=kubernetes" | jq -r .value)
+          python3 -c "import base64,os; d=base64.b64decode(os.environ['K8S_DEV_CA_CERT_B64']); open('/tmp/k8s-ca.crt','wb').write(d); print(f'CA cert: {len(d)} bytes')"
+          kubectl config set-cluster dev \
+            --server=${{ vars.K8S_DEV_API_SERVER }} \
+            --certificate-authority=/tmp/k8s-ca.crt \
+            --embed-certs=true
+          kubectl config set-credentials ci --token="$TOKEN"
+          kubectl config set-context dev --cluster=dev --user=ci
+          kubectl config use-context dev
+
+      - name: Delete dev environment
+        env:
+          NS: ${{ needs.should-deploy.outputs.namespace }}
+        run: |
+          echo "Deleting namespace ${NS}..."
+          kubectl delete namespace "$NS" --ignore-not-found --timeout=120s
+          echo "Cleanup complete."
+
+      - name: Cleanup credentials
+        if: always()
+        run: rm -f ~/.kube/config /tmp/k8s-ca.crt

@@ -1,0 +1,13 @@
+# Copy to terraform.tfvars and fill in your values
+hcloud_token = ""
+
+# SSH keys are managed via SOPS (ssh_key.enc + ssh_key.pub)
+# Generate a new keypair: ssh-keygen -t ed25519 -C "kube-hetzner-dev" -f ssh_key
+# Encrypt: sops --encrypt ssh_key > ssh_key.enc && rm ssh_key
+
+# Network region: "us-east" (default) or "eu-central"
+# network_region = "us-east"
+
+# Server types — see https://www.hetzner.com/cloud
+# control_plane_server_type = "cpx21"  # 3 vCPU / 4 GB
+# agent_server_type         = "cpx41"  # 8 vCPU / 16 GB

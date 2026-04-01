@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: control-plane
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - "DEV_PR_HOST"
+      secretName: dev-tls
+  rules:
+    - host: "DEV_PR_HOST"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: control-plane
+                port:
+                  number: 8080
