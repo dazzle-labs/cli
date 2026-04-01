@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Copy, Check, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { copyToClipboard } from "@/lib/clipboard";
 
 interface CopyAgentPromptButtonProps {
   variant?: "full" | "compact";
@@ -8,11 +9,20 @@ interface CopyAgentPromptButtonProps {
 
 export function CopyAgentPromptButton({ variant = "full" }: CopyAgentPromptButtonProps) {
   const [copied, setCopied] = useState(false);
+  const cachedText = useRef("");
+
+  useEffect(() => {
+    fetch("/llms.txt")
+      .then((r) => r.text())
+      .then((t) => { cachedText.current = t; })
+      .catch(() => {});
+  }, []);
 
   async function handleCopy() {
-    const resp = await fetch("/llms.txt");
-    const text = await resp.text();
-    await navigator.clipboard.writeText(text);
+    if (!cachedText.current) {
+      cachedText.current = await fetch("/llms.txt").then((r) => r.text());
+    }
+    await copyToClipboard(cachedText.current);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   }

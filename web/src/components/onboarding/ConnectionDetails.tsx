@@ -8,6 +8,7 @@ import { Copy, Check, PartyPopper, Plus, Loader2 } from "lucide-react";
 import { springs, scaleIn } from "@/lib/motion";
 import { cli } from "@/lib/cli-commands";
 import { CodeBlock } from "@/components/ui/code-block";
+import { copyToClipboard } from "@/lib/clipboard";
 
 interface ConnectionDetailsProps {
   framework: Framework;
@@ -66,14 +67,14 @@ export function ConnectionDetails({ framework, endpointId: _endpointId, stageNam
   const snippet = framework.getSnippet(stageName);
 
   async function handleCopySnippet() {
-    await navigator.clipboard.writeText(snippet);
+    await copyToClipboard(snippet);
     setCopiedSnippet(true);
     setTimeout(() => setCopiedSnippet(false), 2000);
   }
 
   async function handleCopyKey() {
     if (!activeKey) return;
-    await navigator.clipboard.writeText(activeKey);
+    await copyToClipboard(activeKey);
     setCopiedKey(true);
     setTimeout(() => setCopiedKey(false), 2000);
   }

@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { SignIn } from "@clerk/react";
 import { motion } from "motion/react";
 import { Check, Copy, Sparkles } from "lucide-react";
+import { copyToClipboard } from "@/lib/clipboard";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { CommandLine, TerminalBlock, CodeBlock } from "@/components/CommandLine";
@@ -39,11 +40,20 @@ function StepBadge({ n }: { n: number }) {
 
 function CopyPromptButton() {
   const [copied, setCopied] = useState(false);
+  const cachedText = useRef("");
+
+  useEffect(() => {
+    fetch("/llms.txt")
+      .then((r) => r.text())
+      .then((t) => { cachedText.current = t; })
+      .catch(() => {});
+  }, []);
 
   async function handleCopy() {
-    const resp = await fetch("/llms.txt");
-    const text = await resp.text();
-    await navigator.clipboard.writeText(text);
+    if (!cachedText.current) {
+      cachedText.current = await fetch("/llms.txt").then((r) => r.text());
+    }
+    await copyToClipboard(cachedText.current);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   }

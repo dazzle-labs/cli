@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { springs } from "@/lib/motion";
 import { cn } from "@/lib/utils";
+import { copyToClipboard } from "@/lib/clipboard";
 
 interface CopyButtonProps {
   text: string;
@@ -27,7 +28,7 @@ export function CopyButton({
   async function handleCopy() {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     try {
-      await navigator.clipboard.writeText(text);
+      await copyToClipboard(text);
       setCopied(true);
       timeoutRef.current = setTimeout(() => setCopied(false), 2000);
     } catch {
