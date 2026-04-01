@@ -78,7 +78,7 @@ On-demand cloud browser environments for AI-driven live streaming and automation
 | **cli** | `cli/` (git submodule) | Go 1.25 | Primary interface for developers and AI agents — stage lifecycle, directory sync, screenshots, streaming, MCP server |
 | **control-plane** | `control-plane/` | Go 1.25 | API server, K8s orchestration, auth, DB, sidecar proxy, serves web SPA |
 | **web** | `web/` | TypeScript / React 19 | Dashboard — stage monitoring, API keys, stream destinations, account settings |
-| **streamer** | `streamer/` | — | Per-stage infrastructure container: Xvfb, Chrome, PulseAudio. No application code. |
+| **stage-runtime** | `stage-runtime/` | — | Per-stage infrastructure container: Xvfb, Chrome, PulseAudio. No application code. |
 | **sidecar** | `sidecar/` | Go 1.25 | Per-stage application logic: content sync, CDP client, ffmpeg pipeline, R2 persistence, metrics, static content serving |
 | **k8s** | `k8s/` | YAML + HCL | Kubernetes manifests, Traefik ingress, TLS, SOPS secrets, cluster provisioning |
 

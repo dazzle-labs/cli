@@ -4,7 +4,7 @@ Manual validation steps for RunPod GPU stages. Gate Tasks 11–13 on these passi
 
 ## Prerequisites
 
-- GPU streamer image built and pushed: `docker build --build-arg VARIANT=gpu -t dazzlefm/agent-streamer-stage:<tag>-gpu streamer/docker/`
+- GPU streamer image built and pushed: `docker build --build-arg VARIANT=gpu -t dazzlefm/agent-streamer-stage:<tag>-gpu stage-runtime/docker/`
 - RunPod account with API key
 - NVIDIA L4 availability on Secure Cloud
 

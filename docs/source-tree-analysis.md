@@ -75,7 +75,7 @@ agent-streamer/                    # Monorepo root
 │       │       └── table.tsx
 │       └── lib/                     # Shared utilities
 │
-├── streamer/                        # [PART 3] Infrastructure container (Chrome, Xvfb, PulseAudio)
+├── stage-runtime/                   # [PART 3] Infrastructure container (Chrome, Xvfb, PulseAudio)
 │   ├── Makefile                     # build target
 │   └── docker/                      # Container image
 │       ├── Dockerfile               # Ubuntu + Chrome + Xvfb + ffmpeg + entrypoint

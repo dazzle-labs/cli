@@ -241,8 +241,8 @@ jobs:
       - name: Build stage-runtime builder
         uses: docker/build-push-action@v5
         with:
-          context: stage-runtime/
-          file: stage-runtime/Dockerfile
+          context: stage-runtime-rust/
+          file: stage-runtime-rust/Dockerfile
           target: builder
           platforms: linux/amd64
           push: true
@@ -274,9 +274,9 @@ jobs:
         id: changes
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- streamer/ | head -1)
+            CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- stage-runtime/ | head -1)
           else
-            CHANGED=$(git diff --name-only HEAD~1 -- streamer/ | head -1)
+            CHANGED=$(git diff --name-only HEAD~1 -- stage-runtime/ | head -1)
           fi
           echo "streamer_changed=$( [ -n "$CHANGED" ] && echo true || echo false )" >> $GITHUB_OUTPUT
 
@@ -303,8 +303,8 @@ jobs:
         id: build
         uses: docker/build-push-action@v5
         with:
-          context: streamer/
-          file: streamer/docker/Dockerfile
+          context: stage-runtime/
+          file: stage-runtime/docker/Dockerfile
           target: streamer
           platforms: linux/amd64
           push: ${{ github.ref == 'refs/heads/main' }}
@@ -381,8 +381,8 @@ jobs:
       - name: Build GPU Node Image
         uses: docker/build-push-action@v5
         with:
-          context: streamer/
-          file: streamer/docker/Dockerfile
+          context: stage-runtime/
+          file: stage-runtime/docker/Dockerfile
           target: gpu-node
           platforms: linux/amd64
           push: ${{ github.ref == 'refs/heads/main' }}

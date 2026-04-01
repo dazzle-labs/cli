@@ -126,8 +126,8 @@ jobs:
       - name: Build stage-runtime
         uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
         with:
-          context: stage-runtime/
-          file: stage-runtime/Dockerfile
+          context: stage-runtime-rust/
+          file: stage-runtime-rust/Dockerfile
           target: builder
           platforms: linux/amd64
           push: true
@@ -153,8 +153,8 @@ jobs:
       - name: Build streamer
         uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
         with:
-          context: streamer/
-          file: streamer/docker/Dockerfile
+          context: stage-runtime/
+          file: stage-runtime/docker/Dockerfile
           target: streamer
           platforms: linux/amd64
           push: true
@@ -169,8 +169,8 @@ jobs:
       - name: Build GPU node
         uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
         with:
-          context: streamer/
-          file: streamer/docker/Dockerfile
+          context: stage-runtime/
+          file: stage-runtime/docker/Dockerfile
           target: gpu-node
           platforms: linux/amd64
           push: true

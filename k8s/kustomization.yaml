@@ -19,11 +19,11 @@ resources:
   - ingest/network-policy.yaml
   - infrastructure/network-policy.yaml
   - networking/default-deny.yaml
-  - networking/streamer-network-policy.yaml
+  - networking/stage-runtime-network-policy.yaml
   - networking/ingress.yaml
   - networking/cloudflare-middleware.yaml
   - networking/traefik-config.yaml
-  - monitoring/streamer-podmonitor.yaml
+  - monitoring/stage-runtime-podmonitor.yaml
   - scheduling/priority-classes.yaml
   - scheduling/placeholder.yaml
   - scheduling/trimaran/metrics-rbac.yaml

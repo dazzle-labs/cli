@@ -12,7 +12,7 @@ SIDECAR_IMG := dazzlefm/agent-streamer-sidecar:$(LOCAL_TAG)
 INGEST_IMG  := dazzlefm/agent-streamer-ingest:$(LOCAL_TAG)
 CLI_COMMIT  := $(shell git -C cli rev-parse HEAD 2>/dev/null || echo main)
 CP_BUILD      := docker build -f control-plane/docker/Dockerfile --build-arg VITE_CLERK_PUBLISHABLE_KEY=$(CLERK_PK) --build-arg GIT_COMMIT=$(CLI_COMMIT) -t $(CP_IMG) .
-STR_BUILD     := docker build --platform linux/amd64 -f streamer/docker/Dockerfile --build-arg STAGE_RUNTIME_IMAGE=$(STAGE_RUNTIME_IMG) -t $(STR_IMG) streamer/
+STR_BUILD     := docker build --platform linux/amd64 -f stage-runtime/docker/Dockerfile --build-arg STAGE_RUNTIME_IMAGE=$(STAGE_RUNTIME_IMG) -t $(STR_IMG) stage-runtime/
 SIDECAR_BUILD := docker build -f sidecar/Dockerfile -t $(SIDECAR_IMG) sidecar/
 INGEST_BUILD  := docker build -t $(INGEST_IMG) ingest/
 
@@ -64,7 +64,7 @@ DEV_TFSTATE_ENC := $(DEV_INFRA_DIR)/terraform.tfstate.enc
         gpu/rebuild gpu/deploy gpu/node-create gpu/node-delete gpu/node-recreate gpu/status gpu/logs gpu/port-forward \
         cli/stages cli/up cli/down cli/sync cli/screenshot cli/logs \
         k8s/% prod/k8s/% \
-        control-plane/% streamer/% web/%
+        control-plane/% stage-runtime/% web/%
 
 help: ## Show this help
 	@echo ""
@@ -235,11 +235,11 @@ build-ingest: check-deps check-cluster ## Build ingest (nginx-rtmp) image and lo
 
 STAGE_RUNTIME_IMG := dazzlefm/stage-runtime-builder:main
 GPU_NODE_IMG := dazzlefm/agent-streamer-gpu-node:main
-GPU_NODE_BUILD := docker build --platform linux/amd64 -f streamer/docker/Dockerfile --build-arg VARIANT=gpu --build-arg SIDECAR_IMAGE=$(SIDECAR_IMG) --build-arg STAGE_RUNTIME_IMAGE=$(STAGE_RUNTIME_IMG) --target gpu-node -t $(GPU_NODE_IMG) streamer/
+GPU_NODE_BUILD := docker build --platform linux/amd64 -f stage-runtime/docker/Dockerfile --build-arg VARIANT=gpu --build-arg SIDECAR_IMAGE=$(SIDECAR_IMG) --build-arg STAGE_RUNTIME_IMAGE=$(STAGE_RUNTIME_IMG) --target gpu-node -t $(GPU_NODE_IMG) stage-runtime/
 
 build-stage-runtime: check-deps ## Build stage-runtime Rust binary (linux/amd64)
 	$(STEP) "Building stage-runtime"
-	docker build --platform linux/amd64 -f stage-runtime/Dockerfile --target builder -t $(STAGE_RUNTIME_IMG) stage-runtime/
+	docker build --platform linux/amd64 -f stage-runtime-rust/Dockerfile --target builder -t $(STAGE_RUNTIME_IMG) stage-runtime-rust/
 
 build-gpu-node: check-deps build-stage-runtime ## Build GPU node image (streamer + sidecar + stage-runtime)
 	$(STEP) "Building sidecar image (dependency)"
@@ -260,15 +260,15 @@ CLI := DAZZLE_API_URL=http://localhost:8080 go run ./cli/cmd/dazzle
 
 gpu/rebuild: check-deps ## Rebuild sidecar + stage-runtime + GPU node images for amd64 and push to Docker Hub
 	$(STEP) "Building stage-runtime (amd64)"
-	docker build --platform linux/amd64 -f stage-runtime/Dockerfile --target builder -t dazzlefm/stage-runtime-builder:$(GIT_SHA) stage-runtime/
+	docker build --platform linux/amd64 -f stage-runtime-rust/Dockerfile --target builder -t dazzlefm/stage-runtime-builder:$(GIT_SHA) stage-runtime-rust/
 	$(STEP) "Building sidecar (amd64)"
 	docker build --platform linux/amd64 -f sidecar/Dockerfile -t dazzlefm/agent-streamer-sidecar:$(GIT_SHA)-amd64 sidecar/
 	$(STEP) "Building GPU node (amd64)"
-	docker build --platform linux/amd64 -f streamer/docker/Dockerfile \
+	docker build --platform linux/amd64 -f stage-runtime/docker/Dockerfile \
 		--build-arg VARIANT=gpu \
 		--build-arg SIDECAR_IMAGE=dazzlefm/agent-streamer-sidecar:$(GIT_SHA)-amd64 \
 		--build-arg STAGE_RUNTIME_IMAGE=dazzlefm/stage-runtime-builder:$(GIT_SHA) \
-		--target gpu-node -t dazzlefm/agent-streamer-gpu-node:$(GIT_SHA) streamer/
+		--target gpu-node -t dazzlefm/agent-streamer-gpu-node:$(GIT_SHA) stage-runtime/
 	$(STEP) "Pushing sidecar"
 	docker push dazzlefm/agent-streamer-sidecar:$(GIT_SHA)-amd64
 	$(STEP) "Pushing GPU node"
@@ -546,8 +546,8 @@ k8s/%: check-cluster ## Run k8s/ Makefile target against local Kind (e.g. make k
 control-plane/%:
 	$(MAKE) -C control-plane $*
 
-streamer/%:
-	$(MAKE) -C streamer $*
+stage-runtime/%:
+	$(MAKE) -C stage-runtime $*
 
 web/%:
 	$(MAKE) -C web $*

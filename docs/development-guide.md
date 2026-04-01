@@ -26,7 +26,7 @@ agent-streamer/
 │   └── internal/gen/   # Generated Go code (commit this)
 ├── cli/                # Git submodule — public proto definitions + generated Go
 │   └── proto/api/v1/   # Public protobuf (Stage, Runtime, Stream, User)
-├── streamer/           # Infrastructure container (Chrome, Xvfb, PulseAudio)
+├── stage-runtime/      # Infrastructure container (Chrome, Xvfb, PulseAudio)
 ├── sidecar/            # Go sidecar binary (sync, CDP, ffmpeg, R2)
 ├── web/                # React/TypeScript SPA
 │   └── src/gen/api/v1/ # Generated TypeScript protobuf (commit this)
