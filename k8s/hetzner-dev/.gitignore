@@ -1,0 +1,15 @@
+terraform.tfvars
+*.tfstate
+*.tfstate.backup
+!terraform.tfstate.enc
+.terraform/
+# Commit the lockfile to pin provider/module versions
+# .terraform.lock.hcl
+kubeconfig.yaml
+k3s_kubeconfig.yaml
+k3s_kustomization_backup.yaml
+ssh_key
+!ssh_key.pub
+!ssh_key.enc
+!kubeconfig.yaml.enc
+*.lock.info

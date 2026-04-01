@@ -1,0 +1,315 @@
+name: Dev Environment
+
+on:
+  pull_request:
+    types: [labeled, unlabeled, synchronize, closed]
+    branches: [main]
+
+concurrency:
+  group: dev-env-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  CP_REPO: dazzlefm/agent-streamer-control-plane
+  STREAMER_REPO: dazzlefm/agent-streamer-stage
+  SIDECAR_REPO: dazzlefm/agent-streamer-sidecar
+  GPU_NODE_REPO: dazzlefm/agent-streamer-gpu-node
+  INGEST_REPO: dazzlefm/agent-streamer-ingest
+
+jobs:
+  should-deploy:
+    runs-on: ubuntu-latest
+    outputs:
+      deploy: ${{ steps.check.outputs.deploy }}
+      cleanup: ${{ steps.check.outputs.cleanup }}
+      namespace: ${{ steps.check.outputs.namespace }}
+      hostname: ${{ steps.check.outputs.hostname }}
+      short_sha: ${{ steps.check.outputs.short_sha }}
+    steps:
+      - id: check
+        run: |
+          PR=${{ github.event.pull_request.number }}
+          NS="dev-pr-${PR}"
+          HOST="pr-${PR}.dev.dazzle.fm"
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+
+          echo "namespace=${NS}" >> $GITHUB_OUTPUT
+          echo "hostname=${HOST}" >> $GITHUB_OUTPUT
+          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+
+          HAS_LABEL="${{ contains(github.event.pull_request.labels.*.name, 'deploy-dev') }}"
+          ACTION="${{ github.event.action }}"
+
+          if [ "$ACTION" = "closed" ]; then
+            echo "deploy=false" >> $GITHUB_OUTPUT
+            echo "cleanup=true" >> $GITHUB_OUTPUT
+          elif [ "$ACTION" = "unlabeled" ] && [ "$HAS_LABEL" = "false" ]; then
+            echo "deploy=false" >> $GITHUB_OUTPUT
+            echo "cleanup=true" >> $GITHUB_OUTPUT
+          elif [ "$HAS_LABEL" = "true" ]; then
+            echo "deploy=true" >> $GITHUB_OUTPUT
+            echo "cleanup=false" >> $GITHUB_OUTPUT
+          else
+            echo "deploy=false" >> $GITHUB_OUTPUT
+            echo "cleanup=false" >> $GITHUB_OUTPUT
+          fi
+
+  wait-for-ci:
+    needs: [should-deploy]
+    if: needs.should-deploy.outputs.deploy == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    steps:
+      - name: Wait for CI images to be pushed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          SHA=${{ github.event.pull_request.head.sha }}
+          echo "Waiting for CI workflow to complete for $SHA..."
+          # Poll for up to 15 minutes
+          for i in $(seq 1 90); do
+            RAW=$(gh run list \
+              --repo ${{ github.repository }} \
+              --commit "$SHA" \
+              --workflow CI \
+              --json status,conclusion 2>&1) || true
+
+            STATUS=$(echo "$RAW" | jq -r '.[0].status // empty' 2>/dev/null)
+            CONCLUSION=$(echo "$RAW" | jq -r '.[0].conclusion // empty' 2>/dev/null)
+
+            if [ -z "$STATUS" ]; then
+              echo "  CI run not found yet, waiting..."
+            elif [ "$STATUS" = "completed" ] && [ "$CONCLUSION" = "success" ]; then
+              echo "CI completed successfully."
+              exit 0
+            elif [ "$STATUS" = "completed" ]; then
+              echo "CI failed with conclusion: $CONCLUSION"
+              exit 1
+            else
+              echo "  CI status: $STATUS"
+            fi
+            sleep 10
+          done
+          echo "Timed out waiting for CI."
+          exit 1
+
+  deploy:
+    needs: [should-deploy, wait-for-ci]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@776406bce94f63e41d621b960d78ee25c8b76ede # v4
+
+      - name: Install sops and kustomize
+        run: |
+          SOPS_VERSION="v3.11.0"
+          SOPS_SHA256="775f1384d55decfad228e7196a3f683791914f92a473f78fc47700531c29dfef"
+          curl -sLO "https://github.com/getsops/sops/releases/download/${SOPS_VERSION}/sops-${SOPS_VERSION}.linux.amd64"
+          echo "${SOPS_SHA256}  sops-${SOPS_VERSION}.linux.amd64" | sha256sum -c -
+          sudo mv "sops-${SOPS_VERSION}.linux.amd64" /usr/local/bin/sops
+          sudo chmod +x /usr/local/bin/sops
+
+          KUSTOMIZE_VERSION="v5.8.1"
+          KUSTOMIZE_SHA256="029a7f0f4e1932c52a0476cf02a0fd855c0bb85694b82c338fc648dcb53a819d"
+          curl -sLO "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz"
+          echo "${KUSTOMIZE_SHA256}  kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz" | sha256sum -c -
+          tar -xzf "kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz" kustomize
+          sudo mv kustomize /usr/local/bin/
+          rm -f "kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz"
+
+      - name: Setup age key
+        run: |
+          mkdir -p ~/.config/sops/age
+          echo "${{ secrets.AGE_DEV_SECRET_KEY }}" > ~/.config/sops/age/keys.txt
+          chmod 600 ~/.config/sops/age/keys.txt
+
+      - name: Authenticate to dev cluster via OIDC
+        env:
+          K8S_DEV_CA_CERT_B64: ${{ secrets.K8S_DEV_CA_CERT_B64 }}
+        run: |
+          TOKEN=$(curl -sH "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=kubernetes" | jq -r .value)
+          python3 -c "import base64,os; d=base64.b64decode(os.environ['K8S_DEV_CA_CERT_B64']); open('/tmp/k8s-ca.crt','wb').write(d); print(f'CA cert: {len(d)} bytes')"
+          kubectl config set-cluster dev \
+            --server=${{ vars.K8S_DEV_API_SERVER }} \
+            --certificate-authority=/tmp/k8s-ca.crt \
+            --embed-certs=true
+          kubectl config set-credentials ci --token="$TOKEN"
+          kubectl config set-context dev --cluster=dev --user=ci
+          kubectl config use-context dev
+          kubectl cluster-info 2>&1 || true
+
+      - name: Create namespace
+        env:
+          NS: ${{ needs.should-deploy.outputs.namespace }}
+        run: |
+          kubectl create namespace "$NS" \
+            --dry-run=client -o yaml | kubectl apply -f -
+          kubectl label namespace "$NS" \
+            pod-security.kubernetes.io/enforce=baseline \
+            pod-security.kubernetes.io/warn=restricted \
+            --overwrite
+
+      - name: Apply dev secrets
+        env:
+          NS: ${{ needs.should-deploy.outputs.namespace }}
+        run: |
+          for secret in k8s/secrets-dev/*.yaml; do
+            [ -f "$secret" ] || continue
+            echo "  Applying $secret"
+            sops --decrypt "$secret" \
+              | sed '/^  *namespace:/d' \
+              | kubectl apply -n "$NS" -f -
+          done
+
+      - name: Deploy to dev environment
+        env:
+          NS: ${{ needs.should-deploy.outputs.namespace }}
+          HOST: ${{ needs.should-deploy.outputs.hostname }}
+          SHA: ${{ needs.should-deploy.outputs.short_sha }}
+        run: |
+          cd k8s/dev
+
+          # Set namespace and image tags (reuse SHA-tagged images from CI)
+          kustomize edit set namespace "$NS"
+          kustomize edit set image \
+            ${{ env.CP_REPO }}:${SHA} \
+            ${{ env.STREAMER_REPO }}:${SHA} \
+            ${{ env.SIDECAR_REPO }}:${SHA} \
+            ${{ env.INGEST_REPO }}:${SHA}
+
+          # Replace hostname placeholder in ingress
+          sed -i "s/DEV_PR_HOST/${HOST}/g" ingress.yaml
+          if grep -q 'DEV_PR_HOST' ingress.yaml; then
+            echo "ERROR: Failed to replace DEV_PR_HOST placeholder in ingress.yaml"
+            cat ingress.yaml
+            exit 1
+          fi
+
+          # Patch control-plane env vars for this PR environment
+          cat > ci-env-patch.yaml <<PATCH
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: control-plane
+          spec:
+            template:
+              spec:
+                containers:
+                  - name: control-plane
+                    env:
+                      - name: STREAMER_IMAGE
+                        value: "${{ env.STREAMER_REPO }}:${SHA}"
+                      - name: SIDECAR_IMAGE
+                        value: "${{ env.SIDECAR_REPO }}:${SHA}"
+                      - name: GPU_NODE_IMAGE
+                        value: "${{ env.GPU_NODE_REPO }}:${SHA}"
+                      - name: OAUTH_REDIRECT_BASE_URL
+                        value: "https://${HOST}"
+                      - name: NAMESPACE
+                        value: "${NS}"
+          PATCH
+          kustomize edit add patch --path ci-env-patch.yaml
+
+          # Build and apply
+          kustomize build . | kubectl apply -f -
+
+      - name: Wait for rollout
+        env:
+          NS: ${{ needs.should-deploy.outputs.namespace }}
+        run: |
+          kubectl rollout status deployment/control-plane -n "$NS" --timeout=300s
+          echo ""
+          echo "=== Pods ==="
+          kubectl get pods -n "$NS"
+
+      - name: Cleanup credentials
+        if: always()
+        run: |
+          rm -f ~/.config/sops/age/keys.txt ~/.kube/config /tmp/k8s-ca.crt
+
+      - name: Comment on PR
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const host = '${{ needs.should-deploy.outputs.hostname }}';
+            const ns = '${{ needs.should-deploy.outputs.namespace }}';
+            const sha = '${{ needs.should-deploy.outputs.short_sha }}';
+            const body = `### Dev Environment Deployed\n\n` +
+              `| | |\n|---|---|\n` +
+              `| **URL** | https://${host} |\n` +
+              `| **Namespace** | \`${ns}\` |\n` +
+              `| **Commit** | \`${sha}\` |\n\n` +
+              `_This environment will be torn down when the PR is closed._`;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c =>
+              c.user.type === 'Bot' && c.body.includes('Dev Environment Deployed')
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+  cleanup:
+    needs: [should-deploy]
+    if: needs.should-deploy.outputs.cleanup == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@776406bce94f63e41d621b960d78ee25c8b76ede # v4
+
+      - name: Authenticate to dev cluster via OIDC
+        env:
+          K8S_DEV_CA_CERT_B64: ${{ secrets.K8S_DEV_CA_CERT_B64 }}
+        run: |
+          TOKEN=$(curl -sH "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=kubernetes" | jq -r .value)
+          python3 -c "import base64,os; d=base64.b64decode(os.environ['K8S_DEV_CA_CERT_B64']); open('/tmp/k8s-ca.crt','wb').write(d); print(f'CA cert: {len(d)} bytes')"
+          kubectl config set-cluster dev \
+            --server=${{ vars.K8S_DEV_API_SERVER }} \
+            --certificate-authority=/tmp/k8s-ca.crt \
+            --embed-certs=true
+          kubectl config set-credentials ci --token="$TOKEN"
+          kubectl config set-context dev --cluster=dev --user=ci
+          kubectl config use-context dev
+
+      - name: Delete dev environment
+        env:
+          NS: ${{ needs.should-deploy.outputs.namespace }}
+        run: |
+          echo "Deleting namespace ${NS}..."
+          kubectl delete namespace "$NS" --ignore-not-found --timeout=120s
+          echo "Cleanup complete."
+
+      - name: Cleanup credentials
+        if: always()
+        run: rm -f ~/.kube/config /tmp/k8s-ca.crt

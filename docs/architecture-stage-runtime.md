@@ -1,6 +1,6 @@
 # Architecture: stage-runtime (Rust Stage Runtime)
 
-> **Location:** `stage-runtime/`
+> **Location:** `stage-runtime-rust/`
 
 The stage runtime is a pure-Rust GPU-accelerated stage renderer that replaces Chrome + Xvfb + x11grab + ffmpeg. It renders Canvas 2D, WebGL2, HTML/CSS, and Web Audio in-process, composites per frame, and encodes to H.264/AAC for RTMP output. At 720p it runs the full pipeline at **413 fps** (13.7x headroom over 30fps target) and is **4-7x faster than Chrome** at identical render + readback work.
 
@@ -140,7 +140,7 @@ CDP-over-FIFO interface — the control surface the sidecar uses to drive stage-
 - **Events:** `Runtime.consoleAPICalled`, `Target.attachedToTarget`
 - **Frame pacing:** FramePacer uses OS sleep for ~99.95% of interval, spin-wait for final 500µs
 
-See [cdp-extensions.md](../stage-runtime/docs/cdp-extensions.md) for the full CDP protocol reference.
+See [cdp-extensions.md](../stage-runtime-rust/docs/cdp-extensions.md) for the full CDP protocol reference.
 
 ### `content/` — Content Loading
 
@@ -339,7 +339,7 @@ The sidecar's `isRestorablePath()` checks `RENDERER` to decide which paths to sy
 
 ### Build
 
-The stage-runtime binary is built via `stage-runtime/Dockerfile` and copied into both CPU and GPU images via the `DAZZLE_RENDER_IMAGE` Docker build arg. When the arg is omitted, a glob trick (`dazzle-rende[r]`) makes the COPY a no-op — existing Chrome-only builds are unaffected.
+The stage-runtime binary is built via `stage-runtime-rust/Dockerfile` and copied into both CPU and GPU images via the `DAZZLE_RENDER_IMAGE` Docker build arg. When the arg is omitted, a glob trick (`dazzle-rende[r]`) makes the COPY a no-op — existing Chrome-only builds are unaffected.
 
 ```bash
 make build-stage-runtime    # Build Rust binary (linux/amd64)

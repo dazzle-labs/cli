@@ -5,6 +5,7 @@ on:
     branches:
       - main
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
     branches:
       - main
 
@@ -188,18 +189,18 @@ jobs:
           context: .
           file: control-plane/docker/Dockerfile
           platforms: linux/amd64
-          push: ${{ github.ref == 'refs/heads/main' }}
+          push: ${{ github.ref == 'refs/heads/main' || contains(github.event.pull_request.labels.*.name, 'deploy-dev') }}
           tags: |
             ${{ steps.tags.outputs.image_tag }}
             ${{ steps.tags.outputs.branch_tag }}
           build-args: |
-            VITE_CLERK_PUBLISHABLE_KEY=${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
+            VITE_CLERK_PUBLISHABLE_KEY=${{ github.ref == 'refs/heads/main' && secrets.VITE_CLERK_PUBLISHABLE_KEY || secrets.VITE_DEV_CLERK_PUBLISHABLE_KEY }}
             GIT_COMMIT=${{ steps.cli.outputs.commit }}
           cache-from: |
             type=registry,ref=${{ env.CP_REPO }}:buildcache-${{ steps.tags.outputs.branch }}
             type=registry,ref=${{ env.CP_REPO }}:buildcache-main
           cache-to: type=registry,ref=${{ env.CP_REPO }}:buildcache-${{ steps.tags.outputs.branch }},mode=max
-          load: ${{ github.event_name == 'pull_request' }}
+          load: ${{ github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'deploy-dev') }}
 
       - name: Docker Scout Scan
         if: github.event_name == 'pull_request'
@@ -244,8 +245,8 @@ jobs:
       - name: Build stage-runtime builder
         uses: docker/build-push-action@v5
         with:
-          context: stage-runtime/
-          file: stage-runtime/Dockerfile
+          context: stage-runtime-rust/
+          file: stage-runtime-rust/Dockerfile
           target: builder
           platforms: linux/amd64
           push: true
@@ -277,9 +278,9 @@ jobs:
         id: changes
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- streamer/ | head -1)
+            CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- stage-runtime/ | head -1)
           else
-            CHANGED=$(git diff --name-only HEAD~1 -- streamer/ | head -1)
+            CHANGED=$(git diff --name-only HEAD~1 -- stage-runtime/ | head -1)
           fi
           echo "streamer_changed=$( [ -n "$CHANGED" ] && echo true || echo false )" >> $GITHUB_OUTPUT
 
@@ -306,11 +307,11 @@ jobs:
         id: build
         uses: docker/build-push-action@v5
         with:
-          context: streamer/
-          file: streamer/docker/Dockerfile
+          context: stage-runtime/
+          file: stage-runtime/docker/Dockerfile
           target: streamer
           platforms: linux/amd64
-          push: ${{ github.ref == 'refs/heads/main' }}
+          push: ${{ github.ref == 'refs/heads/main' || contains(github.event.pull_request.labels.*.name, 'deploy-dev') }}
           tags: |
             ${{ steps.tags.outputs.image_tag }}
             ${{ steps.tags.outputs.branch_tag }}
@@ -320,7 +321,7 @@ jobs:
             type=registry,ref=${{ env.STREAMER_REPO }}:buildcache-${{ steps.tags.outputs.branch }}
             type=registry,ref=${{ env.STREAMER_REPO }}:buildcache-main
           cache-to: type=registry,ref=${{ env.STREAMER_REPO }}:buildcache-${{ steps.tags.outputs.branch }},mode=max
-          load: ${{ github.event_name == 'pull_request' }}
+          load: ${{ github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'deploy-dev') }}
 
       - name: Docker Scout Scan
         if: github.event_name == 'pull_request' && steps.changes.outputs.streamer_changed == 'true'
@@ -384,12 +385,12 @@ jobs:
       - name: Build GPU Node Image
         uses: docker/build-push-action@v5
         with:
-          context: streamer/
-          file: streamer/docker/Dockerfile
+          context: stage-runtime/
+          file: stage-runtime/docker/Dockerfile
           target: gpu-node
           platforms: linux/amd64
-          push: ${{ github.ref == 'refs/heads/main' }}
-          load: ${{ github.event_name == 'pull_request' }}
+          push: ${{ github.ref == 'refs/heads/main' || contains(github.event.pull_request.labels.*.name, 'deploy-dev') }}
+          load: ${{ github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'deploy-dev') }}
           tags: |
             ${{ env.GPU_NODE_REPO }}:${{ steps.tags.outputs.short_sha }}
             ${{ env.GPU_NODE_REPO }}:${{ steps.tags.outputs.branch }}
@@ -449,8 +450,8 @@ jobs:
           context: ingest/
           file: ingest/Dockerfile
           platforms: linux/amd64
-          push: ${{ github.ref == 'refs/heads/main' }}
-          load: ${{ github.event_name == 'pull_request' }}
+          push: ${{ github.ref == 'refs/heads/main' || contains(github.event.pull_request.labels.*.name, 'deploy-dev') }}
+          load: ${{ github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'deploy-dev') }}
           tags: |
             ${{ steps.tags.outputs.image_tag }}
             ${{ steps.tags.outputs.branch_tag }}

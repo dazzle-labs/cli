@@ -1,7 +1,7 @@
 # Architecture: Streamer (Stage Pod)
 
-**Part:** `streamer/` (infrastructure), `sidecar/` (application logic)
-**Language:** Bash (streamer), Go (sidecar)
+**Part:** `stage-runtime/` (infrastructure), `sidecar/` (application logic)
+**Language:** Bash (stage-runtime), Go (sidecar)
 **Last updated:** 2026-03-09
 
 ---

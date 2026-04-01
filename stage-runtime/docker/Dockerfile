@@ -138,7 +138,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # --- Optional: stage-runtime binary (Rust stage runtime) ---
 # When STAGE_RUNTIME_IMAGE is set, the binary is copied into both CPU and GPU images.
-# Build it separately: docker build -f stage-runtime/Dockerfile --target builder ...
+# Build it separately: docker build -f stage-runtime-rust/Dockerfile --target builder ...
 ARG STAGE_RUNTIME_IMAGE
 FROM ${STAGE_RUNTIME_IMAGE:-ubuntu:24.04} AS stage-runtime-src
 # Ensure the path exists so the glob COPY trick works even on the bare ubuntu fallback.

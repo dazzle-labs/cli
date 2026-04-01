@@ -48,10 +48,10 @@
 - **Entry:** `web/src/main.tsx`
 - **Dev:** `cd web && npm run dev`
 
-### streamer (Infrastructure container — per-pod)
-- **Path:** `streamer/`
+### stage-runtime (Infrastructure container — per-pod)
+- **Path:** `stage-runtime/`
 - **Role:** Pure infrastructure — Xvfb, Chrome, PulseAudio. No custom application code.
-- **Entry:** `streamer/docker/entrypoint.sh`
+- **Entry:** `stage-runtime/docker/entrypoint.sh`
 
 ### ingest (RTMP receiver)
 - **Path:** `ingest/`
@@ -59,7 +59,7 @@
 - **Port:** 1935 (RTMP), 8080 (HLS serving)
 
 ### stage-runtime (Rust stage runtime)
-- **Path:** `stage-runtime/`
+- **Path:** `stage-runtime-rust/`
 - **Role:** Pure-Rust drop-in replacement for Chrome + Xvfb + ffmpeg. V8 runtime with Canvas 2D (tiny-skia), WebGL2 (wgpu), HTML/CSS (html5ever + taffy), Web Audio (web-audio-api crate), and H.264 encoding (ffmpeg-next). Communicates with sidecar via CDP over named pipes. Wire-compatible with Chrome's CDP protocol.
 - **Enable:** Set `STREAMER_RENDERER=native` (CPU stages) or `RENDERER=native` (GPU stages). Chrome is the default.
 - **Docs:** [Architecture: stage-runtime](./architecture-stage-runtime.md)

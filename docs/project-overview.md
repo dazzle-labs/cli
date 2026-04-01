@@ -22,7 +22,7 @@ Primary use cases: AI agents that need a persistent browser (Claude Code, OpenAI
 | **cli** | `cli/` (git submodule → `dazzle-labs/cli`) | Go 1.25 | Primary interface for developers and AI agents — stage lifecycle, content sync, screenshots, streaming |
 | **control-plane** | `control-plane/` | Go 1.25 | Backend API, Kubernetes orchestration, auth, DB, sidecar proxy, serves web SPA |
 | **web** | `web/` | TypeScript / React 19 | Web dashboard SPA (stage monitoring, API keys, stream destinations, account settings) |
-| **streamer** | `streamer/` | — | Per-stage infrastructure container: Xvfb, Chrome, PulseAudio. No custom application code. |
+| **stage-runtime** | `stage-runtime/` | — | Per-stage infrastructure container: Xvfb, Chrome, PulseAudio. No custom application code. |
 | **sidecar** | `sidecar/` | Go 1.25 | Per-stage application logic: content sync API, CDP client (logs/events/screenshots), ffmpeg pipeline (HLS + RTMP), R2 persistence, Prometheus metrics, static content serving |
 | **k8s** | `k8s/` | YAML | Kubernetes manifests, Traefik ingress, TLS, SOPS-encrypted secrets |
 
