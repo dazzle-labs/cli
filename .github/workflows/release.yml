@@ -48,8 +48,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
 
       - name: Download release binaries and publish npm packages
         env:
@@ -110,9 +113,9 @@ jobs:
           for dir in npm/darwin-* npm/linux-* npm/win32-*; do
             [ -d "$dir" ] || continue
             echo "Publishing $(basename "$dir")..."
-            (cd "$dir" && npm publish --access public)
+            (cd "$dir" && pnpm publish --access public --no-git-checks)
           done
 
           # Publish main wrapper
           echo "Publishing @dazzle-labs/cli..."
-          (cd npm && npm publish --access public)
+          (cd npm && pnpm publish --access public --no-git-checks)

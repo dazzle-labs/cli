@@ -54,11 +54,14 @@ jobs:
       - name: Validate server.json against MCP registry schema
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
       - run: |
           SCHEMA_URL=$(node -e "console.log(require('./server.json')['\$schema'])")
           curl -sf "$SCHEMA_URL" -o /tmp/schema.json
-          cd /tmp && npm init -y --silent && npm install ajv ajv-formats --silent
+          cd /tmp && pnpm init && pnpm add ajv@8.18.0 ajv-formats@3.0.1 --ignore-workspace
           node -e "
             const Ajv = require('ajv');
             const addFormats = require('ajv-formats');
