@@ -1,12 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { SignIn } from "@clerk/react";
 import { motion } from "motion/react";
 import { Check, Copy, Sparkles } from "lucide-react";
 import { copyToClipboard } from "@/lib/clipboard";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { CommandLine, TerminalBlock, CodeBlock } from "@/components/CommandLine";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -19,7 +16,7 @@ import {
   EVENTS_CLI_SNIPPET,
 } from "./docs-content";
 import type { InstallTab } from "./docs-content";
-import { useLiveCount } from "@/hooks/use-live-count";
+import { PublicNav } from "@/components/PublicNav";
 import { useCliReference } from "@/hooks/use-cli-reference";
 
 const ease = [0.25, 0.1, 0.25, 1] as const;
@@ -84,10 +81,7 @@ function CopyPromptButton() {
 }
 
 export function PublicDocs() {
-  const [signInOpen, setSignInOpen] = useState(false);
   const [installTab, setInstallTab] = useState<InstallTab>(detectDefaultTab);
-  const openSignIn = () => setSignInOpen(true);
-  const liveCount = useLiveCount();
   const cliRef = useCliReference();
   const activeInstall = INSTALL_TABS.find((t) => t.id === installTab)!;
 
@@ -101,61 +95,7 @@ export function PublicDocs() {
         </div>
 
         {/* ── Nav ── */}
-        <nav className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 md:px-10 backdrop-blur-xl bg-zinc-950/60 border-b border-white/[0.04]">
-          <Link
-            to="/"
-            className="text-base font-semibold tracking-tight text-white hover:text-white font-display"
-          >
-            Dazzle
-          </Link>
-          <div className="flex items-center gap-5">
-            <Link
-              to="/live"
-              className="text-zinc-400 hover:text-white text-sm transition-colors inline-flex items-center gap-1.5"
-            >
-              Live
-              {liveCount > 0 && (
-                <span className="inline-flex items-center gap-1">
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-full w-full bg-emerald-400" />
-                  </span>
-                  <span className="text-emerald-400 text-xs">{liveCount}</span>
-                </span>
-              )}
-            </Link>
-            <Link
-              to="/docs"
-              className="text-zinc-400 hover:text-white text-sm transition-colors"
-            >
-              Docs
-            </Link>
-            <a
-              href="https://discord.gg/pHpAaSqtWK"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-zinc-400 hover:text-white text-sm transition-colors"
-            >
-              Discord
-            </a>
-            <a
-              href="/llms.txt"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-zinc-500 hover:text-zinc-300 text-sm font-mono transition-colors"
-            >
-              llms.txt
-            </a>
-            <Button
-              size="sm"
-              variant="outline"
-              className="border-white/10 text-zinc-300 hover:text-white hover:bg-white/5"
-              onClick={openSignIn}
-            >
-              Sign In
-            </Button>
-          </div>
-        </nav>
+        <PublicNav />
 
         {/* ── Content ── */}
         <TooltipProvider>
@@ -327,16 +267,6 @@ export function PublicDocs() {
           </div>
         </footer>
 
-        {/* ── Sign In Dialog ── */}
-        <Dialog open={signInOpen} onOpenChange={setSignInOpen}>
-          <DialogContent
-            className="bg-transparent ring-0 shadow-none p-0 gap-0 sm:max-w-fit max-w-fit"
-            showCloseButton={false}
-          >
-            <DialogTitle className="sr-only">Sign in to Dazzle</DialogTitle>
-            <SignIn />
-          </DialogContent>
-        </Dialog>
       </div>
     </div>
   );

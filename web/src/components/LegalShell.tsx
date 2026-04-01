@@ -1,15 +1,11 @@
-import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { SignIn } from "@clerk/react";
 import { motion } from "motion/react";
 import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { PublicNav } from "@/components/PublicNav";
 
 const ease = [0.25, 0.1, 0.25, 1] as const;
 
 export function LegalShell({ children }: { children: React.ReactNode }) {
-  const [signInOpen, setSignInOpen] = useState(false);
   const navigate = useNavigate();
 
   return (
@@ -22,36 +18,7 @@ export function LegalShell({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Nav */}
-        <nav className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 md:px-10 backdrop-blur-xl bg-zinc-950/60 border-b border-white/[0.04]">
-          <Link
-            to="/"
-            className="text-base font-semibold tracking-tight text-white hover:text-white font-display"
-          >
-            Dazzle
-          </Link>
-          <div className="flex items-center gap-5">
-            <Link
-              to="/live"
-              className="text-zinc-400 hover:text-white text-sm transition-colors"
-            >
-              Live
-            </Link>
-            <Link
-              to="/docs"
-              className="text-zinc-400 hover:text-white text-sm transition-colors"
-            >
-              Docs
-            </Link>
-            <Button
-              size="sm"
-              variant="outline"
-              className="border-white/10 text-zinc-300 hover:text-white hover:bg-white/5"
-              onClick={() => setSignInOpen(true)}
-            >
-              Sign In
-            </Button>
-          </div>
-        </nav>
+        <PublicNav />
 
         {/* Content */}
         <motion.div
@@ -91,16 +58,6 @@ export function LegalShell({ children }: { children: React.ReactNode }) {
           </div>
         </footer>
 
-        {/* Sign In Dialog */}
-        <Dialog open={signInOpen} onOpenChange={setSignInOpen}>
-          <DialogContent
-            className="bg-transparent ring-0 shadow-none p-0 gap-0 sm:max-w-fit max-w-fit"
-            showCloseButton={false}
-          >
-            <DialogTitle className="sr-only">Sign in to Dazzle</DialogTitle>
-            <SignIn />
-          </DialogContent>
-        </Dialog>
       </div>
     </div>
   );
