@@ -189,55 +189,68 @@ export function useDazzleEvents(handler: EventHandler) {
 
 const AGENTS_PREVIEW = `<!DOCTYPE html><html><head><meta charset="utf-8">
 <style>*{margin:0;box-sizing:border-box}
-body{overflow:hidden;height:100vh;background:#0a0a0f}
-canvas{position:absolute;top:0;left:0;width:100%;height:100%}
+body{overflow:hidden;height:100vh;background:#050510}
+canvas#stars{position:absolute;top:0;left:0;width:100%;height:100%}
 .overlay{position:relative;z-index:1;padding:10px;font-family:'SF Mono',Menlo,monospace}
-h1{font-size:5px;color:rgba(161,161,170,0.8);font-weight:400;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px}
-.launch{border-left:1px solid rgba(34,197,94,0.2);padding:4px 6px;margin-bottom:6px;opacity:0;animation:slideIn 0.4s ease forwards;
-background:rgba(10,10,15,0.5);backdrop-filter:blur(4px);border-radius:0 3px 3px 0}
-.launch.featured{border-left-color:#22c55e}
+h1{font-size:5px;color:rgba(161,161,170,0.7);font-weight:400;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px}
+.launch{border-left:1px solid rgba(34,197,94,0.25);padding:4px 6px;margin-bottom:5px;opacity:0;animation:slideIn 0.5s ease forwards;
+background:rgba(10,10,20,0.55);backdrop-filter:blur(6px);border-radius:0 3px 3px 0}
+.launch.featured{border-left-color:#34d399;box-shadow:0 0 12px rgba(52,211,153,0.06)}
 .status-row{display:flex;justify-content:space-between;align-items:center}
-.status{font-size:4px;font-weight:700;letter-spacing:0.1em}
-.GO{color:#22c55e}
-.t-minus{color:#60a5fa;font-size:4px}
-h2{font-size:6px;color:#fff;margin:1px 0;font-weight:600}
-.meta{font-size:4px;color:#71717a}
-.detail,.note{font-size:3.5px;color:#71717a;margin-top:1px}
-.crew{font-size:3.5px;color:#a78bfa;margin-top:1px}
-@keyframes slideIn{from{opacity:0;transform:translateX(-4px)}to{opacity:1;transform:translateX(0)}}
+.status{font-size:3.5px;font-weight:700;letter-spacing:0.12em;padding:0.5px 2px;border-radius:1px}
+.GO{color:#34d399;background:rgba(52,211,153,0.1)}
+.t-minus{color:#93c5fd;font-size:3.5px;font-weight:500}
+h2{font-size:5.5px;color:#f4f4f5;margin:1.5px 0 1px;font-weight:600;letter-spacing:-0.01em}
+.meta{font-size:3.5px;color:#71717a}
+.detail,.note{font-size:3px;color:#52525b;margin-top:0.8px}
+.crew{font-size:3px;color:#c4b5fd;margin-top:0.8px}
+@keyframes slideIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
 </style></head><body>
-<canvas id="bg"></canvas>
+<canvas id="stars"></canvas>
 <div class="overlay">
 <h1>Upcoming Launches</h1>
 <div id="launches"></div>
 </div>
 <script>
-// Animated nebula shader background
-var c=document.getElementById('bg'),gl=c.getContext('webgl');
-if(gl){
-c.width=c.clientWidth*2;c.height=c.clientHeight*2;
-var vs='attribute vec2 p;void main(){gl_Position=vec4(p,0,1);}';
-var fs='precision mediump float;uniform float t;uniform vec2 r;'+
-'float n(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5);}'+
-'float f(vec2 p){float v=0.,a=.5;for(int i=0;i<5;i++){v+=a*n(p);p=p*2.+vec2(1.7,9.2);a*=.5;}return v;}'+
-'void main(){vec2 u=gl_FragCoord.xy/r;float m=f(u*3.+t*.15);'+
-'vec3 c=mix(vec3(.02,.03,.08),vec3(.1,.2,.5),m*.6);gl_FragColor=vec4(c,1.);}';
-function sh(type,src){var s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);return s;}
-var pg=gl.createProgram();gl.attachShader(pg,sh(gl.VERTEX_SHADER,vs));gl.attachShader(pg,sh(gl.FRAGMENT_SHADER,fs));
-gl.linkProgram(pg);gl.useProgram(pg);
-var b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);
-gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
-var pl=gl.getAttribLocation(pg,'p');gl.enableVertexAttribArray(pl);gl.vertexAttribPointer(pl,2,gl.FLOAT,false,0,0);
-var tl=gl.getUniformLocation(pg,'t'),rl=gl.getUniformLocation(pg,'r');
-gl.uniform2f(rl,c.width,c.height);
-var t0=0;
-(function draw(){t0+=0.016;gl.uniform1f(tl,t0);gl.viewport(0,0,c.width,c.height);
-gl.drawArrays(gl.TRIANGLE_STRIP,0,4);requestAnimationFrame(draw);})();
-}
+// Canvas starfield + slow-drifting nebula glow (no WebGL — works everywhere)
+var c=document.getElementById('stars'),x=c.getContext('2d');
+var dpr=Math.min(devicePixelRatio||1,2);
+c.width=c.clientWidth*dpr;c.height=c.clientHeight*dpr;x.scale(dpr,dpr);
+var W=c.clientWidth,H=c.clientHeight;
+// Stars
+var stars=[];for(var i=0;i<80;i++)stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*0.8+0.2,a:Math.random()*0.7+0.3,s:Math.random()*3+1});
+// Nebula blobs
+var blobs=[
+{x:W*0.2,y:H*0.3,r:W*0.5,h:220,s:0.7,a:0.08,dx:0.08,dy:0.05},
+{x:W*0.7,y:H*0.6,r:W*0.4,h:270,s:0.6,a:0.06,dx:-0.06,dy:0.07},
+{x:W*0.5,y:H*0.8,r:W*0.35,h:180,s:0.5,a:0.05,dx:0.04,dy:-0.03}
+];
+var t=0;
+function draw(){t++;
+x.fillStyle='#050510';x.fillRect(0,0,W,H);
+// Nebula
+for(var i=0;i<blobs.length;i++){var b=blobs[i];
+b.x+=b.dx;b.y+=b.dy;
+if(b.x<-W*0.3||b.x>W*1.3)b.dx*=-1;
+if(b.y<-H*0.3||b.y>H*1.3)b.dy*=-1;
+var g=x.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
+g.addColorStop(0,'hsla('+b.h+','+b.s*100+'%,45%,'+b.a+')');
+g.addColorStop(0.5,'hsla('+b.h+','+b.s*100+'%,30%,'+(b.a*0.4)+')');
+g.addColorStop(1,'transparent');
+x.fillStyle=g;x.fillRect(0,0,W,H);}
+// Stars with twinkle
+for(var i=0;i<stars.length;i++){var s=stars[i];
+var tw=0.5+0.5*Math.sin(t*0.03*s.s+i);
+x.globalAlpha=s.a*tw;
+x.fillStyle='#e0e8ff';
+x.beginPath();x.arc(s.x,s.y,s.r,0,6.28);x.fill();}
+x.globalAlpha=1;
+requestAnimationFrame(draw);}
+draw();
 // Launch cards
 var launches=[
-{mission:'Starlink Group 12-7',vehicle:'Falcon 9',site:'Vandenberg SFB',t_minus:'14h 22m',status:'GO',weather:'Clear, 12km vis',payload:'23 Starlink v2 Mini sats',note:'Drone ship 650km downrange'},
-{mission:'Crew-12',vehicle:'Falcon 9',site:'Kennedy Space Center',t_minus:'3d 6h',status:'GO',crew:['Petty','Epps','Dyson','Dominick']}
+{mission:'Starlink Group 12-7',vehicle:'Falcon 9',site:'Vandenberg SFB',t_minus:'14h 22m',status:'GO',payload:'23 v2 Mini \u2014 first direct-to-cell',note:'Drone ship JRTI 640km downrange'},
+{mission:'Crew-12',vehicle:'Falcon 9',site:'Kennedy Space Center',t_minus:'3d 6h',status:'GO',crew:['Petty','Epps','Dyson','Dominick'],note:'Epps sets ISS duration record'}
 ];
 var el=document.getElementById('launches');
 var shown=0;
@@ -245,18 +258,17 @@ function render(){
 el.innerHTML='';
 for(var i=0;i<shown;i++){var l=launches[i];
 var d=document.createElement('div');d.className='launch'+(i===0?' featured':'');
-d.style.animationDelay=i*0.15+'s';
-var h='<div class="status-row"><span class="status '+l.status+'">'+l.status+'</span><span class="t-minus">T-'+l.t_minus+'</span></div>';
+d.style.animationDelay=i*0.12+'s';
+var h='<div class="status-row"><span class="status '+l.status+'">'+l.status+'</span><span class="t-minus">T\\u2212'+l.t_minus+'</span></div>';
 h+='<h2>'+l.mission+'</h2>';
 h+='<div class="meta">'+l.vehicle+' \\u00b7 '+l.site+'</div>';
 if(l.payload)h+='<div class="detail">'+l.payload+'</div>';
-if(l.weather)h+='<div class="detail">'+l.weather+'</div>';
 if(l.crew)h+='<div class="crew">'+l.crew.join(' \\u00b7 ')+'</div>';
 if(l.note)h+='<div class="note">'+l.note+'</div>';
 d.innerHTML=h;el.appendChild(d);}}
-function next(){if(shown<launches.length){shown++;render();setTimeout(next,2000);}
-else{setTimeout(function(){shown=0;render();setTimeout(next,1500);},4000);}}
-setTimeout(next,800);
+function next(){if(shown<launches.length){shown++;render();setTimeout(next,2200);}
+else{setTimeout(function(){shown=0;render();setTimeout(next,1800);},5000);}}
+setTimeout(next,600);
 <\/script></body></html>`;
 
 // ─── Creative Coder ──────────────────────────────────────────────────────────
