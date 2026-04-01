@@ -74,12 +74,12 @@ spec:
               memory: 192Mi
           readinessProbe:
             exec:
-              command: ["sh", "-c", "redis-cli -a \"$REDIS_PASSWORD\" ping"]
+              command: ["sh", "-c", "REDISCLI_AUTH=\"$REDIS_PASSWORD\" redis-cli ping"]
             initialDelaySeconds: 2
             periodSeconds: 5
           livenessProbe:
             exec:
-              command: ["sh", "-c", "redis-cli -a \"$REDIS_PASSWORD\" ping"]
+              command: ["sh", "-c", "REDISCLI_AUTH=\"$REDIS_PASSWORD\" redis-cli ping"]
             initialDelaySeconds: 5
             periodSeconds: 15
           env:

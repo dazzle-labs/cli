@@ -16,6 +16,7 @@ import (
 )
 
 // recordStageActivation inserts a usage_events row when a stage starts running.
+// Uses ON CONFLICT to prevent duplicate open events for the same stage (race protection).
 func recordStageActivation(db *sql.DB, userID, stageID, provider string) error {
 	if db == nil {
 		return nil
@@ -23,23 +24,31 @@ func recordStageActivation(db *sql.DB, userID, stageID, provider string) error {
 	id := uuid.Must(uuid.NewV7()).String()
 	_, err := db.Exec(`
 		INSERT INTO usage_events (id, user_id, stage_id, provider, started_at)
-		VALUES ($1, $2, $3, $4, NOW())`,
+		VALUES ($1, $2, $3, $4, NOW())
+		ON CONFLICT (stage_id) WHERE ended_at IS NULL DO NOTHING`,
 		id, userID, stageID, provider)
 	return err
 }
 
 // recordStageDeactivation closes the open usage event for a stage.
+// Returns the number of rows affected so callers can detect no-ops from concurrent deactivation.
 func recordStageDeactivation(db *sql.DB, stageID string) error {
 	if db == nil {
 		return nil
 	}
-	_, err := db.Exec(`
+	res, err := db.Exec(`
 		UPDATE usage_events
 		SET ended_at = NOW(),
 		    duration_seconds = EXTRACT(EPOCH FROM (NOW() - started_at))::INTEGER
 		WHERE stage_id = $1 AND ended_at IS NULL`,
 		stageID)
-	return err
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		log.Printf("WARN: recordStageDeactivation: no open usage event for stage %s (already closed or concurrent deactivation)", stageID)
+	}
+	return nil
 }
 
 // ceilHours converts seconds to hours, rounding up (any partial hour = 1 hour).
@@ -179,21 +188,32 @@ func unreportedUsageForPeriod(db *sql.DB, userID string, periodStart time.Time) 
 
 // currentPeriodStart returns the billing period start for a user.
 // For paid users it uses the subscription period; for free users it's the 1st of the current month.
+// Returns an error on DB failures (other than no rows) so callers can decide whether to proceed.
 func currentPeriodStart(db *sql.DB, userID string) time.Time {
+	start, err := currentPeriodStartErr(db, userID)
+	if err != nil {
+		log.Printf("WARN: currentPeriodStart for user %s: %v — falling back to month start", userID, err)
+		now := time.Now().UTC()
+		return time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+	}
+	return start
+}
+
+func currentPeriodStartErr(db *sql.DB, userID string) (time.Time, error) {
 	var start time.Time
 	err := db.QueryRow(`
 		SELECT current_period_start FROM subscriptions
 		WHERE user_id = $1 AND status = 'active'
 		ORDER BY created_at DESC LIMIT 1`, userID).Scan(&start)
-	if err != nil {
-		if err != sql.ErrNoRows {
-			log.Printf("WARN: currentPeriodStart query failed for user %s (falling back to month start): %v", userID, err)
-		}
-		// Free users or query error: beginning of current month
+	if err == sql.ErrNoRows {
+		// Free users: beginning of current month
 		now := time.Now().UTC()
-		return time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+		return time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC), nil
 	}
-	return start
+	if err != nil {
+		return time.Time{}, fmt.Errorf("query subscription period: %w", err)
+	}
+	return start, nil
 }
 
 // reconcileUsageEvents closes any orphaned usage events (ended_at IS NULL)

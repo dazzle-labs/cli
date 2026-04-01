@@ -266,8 +266,8 @@ func (m *Manager) handleWatchHLS(w http.ResponseWriter, r *http.Request, slug, f
 		if token != "" && m.validatePreviewToken(token) == row.ID {
 			authenticated = true
 		} else if authHeader != "" {
-			// Allow if valid Clerk JWT matches stage owner
-			if info, err := m.auth.authenticate(r.Context(), authHeader); err == nil && info.UserID == row.UserID {
+			// Allow if valid Clerk JWT or API key matches stage owner
+			if info, err := m.auth.authenticate(r.Context(), extractBearerToken(r)); err == nil && info.UserID == row.UserID {
 				authenticated = true
 			}
 		}

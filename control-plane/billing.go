@@ -98,16 +98,21 @@ func (sc *stripeConfig) planFromSubscriptionItems(sub *stripe.Subscription) stri
 }
 
 // verifyStripeCustomer checks that a Stripe customer ID matches the one stored for
-// the given user. Returns an error (logged, not retryable) if there's a mismatch.
+// the given user. Returns an error if there's a mismatch or a DB query failure.
 func (m *Manager) verifyStripeCustomer(userID, stripeCustomerID string) error {
 	if stripeCustomerID == "" {
 		return nil // can't verify without a customer ID
 	}
 	var stored sql.NullString
 	if err := m.db.QueryRow(`SELECT stripe_customer_id FROM users WHERE id = $1`, userID).Scan(&stored); err != nil {
-		return nil // query error — don't block webhook processing
+		log.Printf("ERROR: verifyStripeCustomer query failed for user %s: %v — rejecting event for safety", userID, err)
+		return fmt.Errorf("customer verification query failed: %w", err)
 	}
-	if stored.Valid && stored.String != "" && stored.String != stripeCustomerID {
+	if !stored.Valid || stored.String == "" {
+		log.Printf("WARN: verifyStripeCustomer: user %s has no stored customer ID, webhook customer=%s — rejecting until customer is stored", userID, stripeCustomerID)
+		return fmt.Errorf("user has no stored Stripe customer ID")
+	}
+	if stored.String != stripeCustomerID {
 		log.Printf("ERROR: Stripe customer mismatch for user %s: webhook=%s, stored=%s — rejecting event", userID, stripeCustomerID, stored.String)
 		return fmt.Errorf("customer mismatch")
 	}
@@ -264,7 +269,7 @@ func (m *Manager) handleStripeWebhook(w http.ResponseWriter, r *http.Request) {
 	case "customer.subscription.deleted":
 		handleErr = m.handleSubscriptionDeleted(event)
 	case "invoice.payment_failed":
-		m.handlePaymentFailed(event)
+		handleErr = m.handlePaymentFailed(event)
 	}
 
 	if handleErr != nil {
@@ -382,7 +387,12 @@ func (m *Manager) handleSubscriptionUpdated(event stripe.Event) error {
 		return fmt.Errorf("unmarshal subscription: %w", err)
 	}
 
-	userID := sub.Metadata["user_id"]
+	// Cross-reference: look up user by subscription ID in DB first, then fall back to metadata.
+	// This prevents metadata tampering from applying changes to the wrong user.
+	userID := dbUserIDBySubscription(m.db, sub.ID)
+	if userID == "" {
+		userID = sub.Metadata["user_id"]
+	}
 	if userID == "" {
 		log.Printf("WARN: subscription updated missing user_id metadata: %s", sub.ID)
 		return nil
@@ -471,10 +481,11 @@ func (m *Manager) handleSubscriptionUpdated(event stripe.Event) error {
 		return fmt.Errorf("commit subscription update tx for user %s: %w", userID, err)
 	}
 
-	// Deactivate excess stages outside the transaction — side effect that can
-	// be retried independently if it fails.
+	// Deactivate excess stages after successful commit — side effect logged on failure.
 	if isDowngrade && plan != "" {
-		m.deactivateExcessStages(userID, plan)
+		if err := m.deactivateExcessStagesErr(userID, plan); err != nil {
+			log.Printf("ERROR: deactivateExcessStages after downgrade for user %s to %s: %v — stages may exceed plan limits until next reconciliation", userID, plan, err)
+		}
 	}
 	return nil
 }
@@ -575,9 +586,10 @@ func (m *Manager) handleSubscriptionDeleted(event stripe.Event) error {
 		return fmt.Errorf("commit subscription delete tx for user %s: %w", userID, err)
 	}
 
-	// Deactivate excess stages outside the transaction — these are side effects
-	// that can be retried independently if they fail.
-	m.deactivateExcessStages(userID, PlanFree)
+	// Deactivate excess stages after successful commit — logged on failure.
+	if err := m.deactivateExcessStagesErr(userID, PlanFree); err != nil {
+		log.Printf("ERROR: deactivateExcessStages after cancellation for user %s: %v — stages may exceed plan limits until next reconciliation", userID, err)
+	}
 
 	log.Printf("User %s reverted to free plan (subscription %s canceled)", userID, sub.ID)
 	return nil
@@ -607,20 +619,30 @@ func selectStagesToDeactivate(stages []stageRow, cfg PlanConfig) []string {
 }
 
 func (m *Manager) deactivateExcessStages(userID, plan string) {
+	if err := m.deactivateExcessStagesErr(userID, plan); err != nil {
+		log.Printf("ERROR: deactivateExcessStages for user %s: %v", userID, err)
+	}
+}
+
+func (m *Manager) deactivateExcessStagesErr(userID, plan string) error {
 	cfg := getPlanConfig(plan)
 
 	stages, err := dbListStages(m.db, userID)
 	if err != nil {
-		log.Printf("ERROR: deactivateExcessStages list for user %s: %v", userID, err)
-		return
+		return fmt.Errorf("list stages: %w", err)
 	}
 
+	var errs []error
 	for _, id := range selectStagesToDeactivate(stages, cfg) {
 		log.Printf("Deactivating excess stage %s for user %s (downgrade to %s)", id, userID, plan)
 		if err := m.deactivateStage(id); err != nil {
-			log.Printf("ERROR: deactivate excess stage %s: %v", id, err)
+			errs = append(errs, fmt.Errorf("stage %s: %w", id, err))
 		}
 	}
+	if len(errs) > 0 {
+		return fmt.Errorf("deactivate errors: %v", errs)
+	}
+	return nil
 }
 
 // enforceSpendingCap checks if a user's metered spend exceeds their overage cap.
@@ -668,11 +690,10 @@ func (m *Manager) enforceSpendingCap(userID string) {
 	}
 }
 
-func (m *Manager) handlePaymentFailed(event stripe.Event) {
+func (m *Manager) handlePaymentFailed(event stripe.Event) error {
 	var invoice stripe.Invoice
 	if err := json.Unmarshal(event.Data.Raw, &invoice); err != nil {
-		log.Printf("ERROR: unmarshal invoice: %v", err)
-		return
+		return fmt.Errorf("unmarshal invoice: %w", err)
 	}
 
 	// Extract subscription from invoice parent details (Stripe v82+ API)
@@ -684,10 +705,11 @@ func (m *Manager) handlePaymentFailed(event stripe.Event) {
 		if _, err := m.db.Exec(`
 			UPDATE subscriptions SET status = 'past_due', updated_at = NOW()
 			WHERE stripe_subscription_id = $1`, subID); err != nil {
-			log.Printf("ERROR: mark subscription past_due %s: %v", subID, err)
+			return fmt.Errorf("mark subscription past_due %s: %w", subID, err)
 		}
 		log.Printf("Payment failed for subscription %s", subID)
 	}
+	return nil
 }
 
 // reportStripeUsage reports overage hours to Stripe via Billing Meter Events.

@@ -274,7 +274,7 @@ func issueGrantTx(tx *sql.Tx, userID, resource string, minutes *int, rateCentsPe
 func issueSignupGrant(db *sql.DB, userID string) error {
 	id := uuid.Must(uuid.NewV7()).String()
 	minutes := 120 // 2 hours
-	expiresAt := time.Now().Add(365 * 24 * time.Hour)
+	expiresAt := time.Now().UTC().Add(365 * 24 * time.Hour)
 	_, err := db.Exec(`
 		INSERT INTO usage_grants (id, user_id, resource, minutes, rate_cents_per_hr, reason, expires_at)
 		VALUES ($1, $2, 'gpu', $3, 0, 'signup', $4)

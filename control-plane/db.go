@@ -158,6 +158,16 @@ func dbGetUserEmail(db *sql.DB, userID string) string {
 	return email
 }
 
+// dbUserIDBySubscription looks up the user_id that owns a Stripe subscription.
+// Returns empty string if not found.
+func dbUserIDBySubscription(db *sql.DB, stripeSubID string) string {
+	var userID string
+	if err := db.QueryRow(`SELECT user_id FROM subscriptions WHERE stripe_subscription_id = $1`, stripeSubID).Scan(&userID); err != nil {
+		return ""
+	}
+	return userID
+}
+
 func dbGetOverageSettings(db *sql.DB, userID string) (enabled bool, limitCents *int) {
 	var lc sql.NullInt32
 	if err := db.QueryRow(`SELECT overage_enabled, overage_limit_cents FROM users WHERE id = $1`, userID).Scan(&enabled, &lc); err != nil {

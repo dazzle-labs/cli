@@ -405,6 +405,8 @@ func (p *Pipeline) parseProgress(scanner *bufio.Scanner) {
 		key, val := parts[0], parts[1]
 
 		p.mu.Lock()
+		var cb func(Stats)
+		var cbStats Stats
 		switch key {
 		case "fps":
 			p.stats.FPS, _ = strconv.ParseFloat(val, 64)
@@ -422,16 +424,17 @@ func (p *Pipeline) parseProgress(scanner *bufio.Scanner) {
 			if p.dropCount < 60 {
 				p.dropCount++
 			}
-			// End of a stats block — fire callback
+			// End of a stats block — fire callback outside the lock
 			if p.statsCallback != nil {
-				s := p.stats
-				s.ActiveOutputs = len(p.outputs)
-				p.mu.Unlock()
-				p.statsCallback(s)
-				continue
+				cbStats = p.stats
+				cbStats.ActiveOutputs = len(p.outputs)
+				cb = p.statsCallback
 			}
 		}
 		p.mu.Unlock()
+		if cb != nil {
+			cb(cbStats)
+		}
 	}
 }
 

@@ -49,6 +49,8 @@ patches:
                     value: ""
                   - name: ENVIRONMENT
                     value: "local"
+                  - name: DB_SSLMODE
+                    value: "disable"
   - target:
       kind: Service
       name: control-plane

@@ -61,7 +61,7 @@ spec:
                   name: encryption-key
                   key: key
             - name: DB_SSLMODE
-              value: disable  # Kind-local Postgres has no TLS; production overrides to 'require'
+              value: require  # Safe default; Kind overlay patches to 'disable' for local dev
             - name: DB_HOST
               value: postgres
             - name: DB_PORT
