@@ -20,6 +20,10 @@ export namespace PostHog {
           ui_host: "https://us.posthog.com",
           person_profiles: "identified_only",
           rageclick: true,
+          session_recording: {
+            maskAllInputs: true,
+            minimum_duration: 3000,
+          },
         }}
       >
         {children}
