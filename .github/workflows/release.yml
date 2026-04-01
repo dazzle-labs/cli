@@ -34,3 +34,88 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # TODO: After the first release, configure OIDC trusted publishing for all 7
+  # @dazzle-labs/* packages on npmjs.com, then replace NPM_TOKEN with:
+  #   permissions:
+  #     id-token: write
+  # and remove the NODE_AUTH_TOKEN env var. Requires Node ≥22.14.0.
+  # See: https://docs.npmjs.com/trusted-publishers/
+  npm-publish:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Download release binaries and publish npm packages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          TAG="${GITHUB_REF_NAME}"
+
+          # Map: npm-package-suffix → goreleaser-artifact-name
+          declare -A BINARIES=(
+            ["darwin-arm64"]="dazzle_Darwin_arm64"
+            ["darwin-x64"]="dazzle_Darwin_x86_64"
+            ["linux-x64"]="dazzle_Linux_x86_64"
+            ["linux-arm64"]="dazzle_Linux_arm64"
+            ["win32-x64"]="dazzle_Windows_x86_64.exe"
+            ["win32-arm64"]="dazzle_Windows_arm64.exe"
+          )
+
+          # Download binaries into platform packages and patch versions
+          for suffix in "${!BINARIES[@]}"; do
+            artifact="${BINARIES[$suffix]}"
+            pkg_dir="npm/${suffix}"
+
+            gh release download "$TAG" \
+              --pattern "$artifact" \
+              --dir "${pkg_dir}/bin/"
+
+            # Rename to consistent name
+            if [[ "$suffix" == win32-* ]]; then
+              mv "${pkg_dir}/bin/${artifact}" "${pkg_dir}/bin/dazzle.exe"
+            else
+              mv "${pkg_dir}/bin/${artifact}" "${pkg_dir}/bin/dazzle"
+              chmod +x "${pkg_dir}/bin/dazzle"
+            fi
+
+            # Patch version
+            node -e "
+              const fs = require('fs');
+              const p = JSON.parse(fs.readFileSync('${pkg_dir}/package.json', 'utf8'));
+              p.version = '${VERSION}';
+              fs.writeFileSync('${pkg_dir}/package.json', JSON.stringify(p, null, 2) + '\n');
+            "
+          done
+
+          # Patch main wrapper version + optionalDependencies versions
+          node -e "
+            const fs = require('fs');
+            const p = JSON.parse(fs.readFileSync('npm/package.json', 'utf8'));
+            p.version = '${VERSION}';
+            for (const dep of Object.keys(p.optionalDependencies)) {
+              p.optionalDependencies[dep] = '${VERSION}';
+            }
+            fs.writeFileSync('npm/package.json', JSON.stringify(p, null, 2) + '\n');
+          "
+
+          # Publish platform packages first (wrapper depends on them)
+          for dir in npm/darwin-* npm/linux-* npm/win32-*; do
+            [ -d "$dir" ] || continue
+            echo "Publishing $(basename "$dir")..."
+            (cd "$dir" && pnpm publish --access public --no-git-checks)
+          done
+
+          # Publish main wrapper
+          echo "Publishing @dazzle-labs/cli..."
+          (cd npm && pnpm publish --access public --no-git-checks)

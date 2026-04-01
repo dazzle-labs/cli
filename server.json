@@ -1,17 +1,49 @@
 {
-  "$schema": "https://registry.modelcontextprotocol.io/schemas/server.json",
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.dazzle-labs/dazzle",
-  "description": "Cloud stages for AI agents and live streaming. Create, manage, and sync content to browser-based streaming environments.",
+  "title": "Dazzle",
+  "description": "Cloud stages for AI agents and live streaming. Create, manage, and broadcast content.",
+  "websiteUrl": "https://dazzle.fm",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/dazzle-labs/cli/main/logo.png",
+      "mimeType": "image/png"
+    }
+  ],
   "version": "0.5.3",
   "repository": {
     "url": "https://github.com/dazzle-labs/cli",
-    "source": "https://github.com/dazzle-labs/cli/tree/main/cmd/dazzle"
+    "source": "github"
   },
   "packages": [
     {
-      "registry_name": "github-releases",
-      "name": "dazzle-labs/cli",
-      "version": "v0.5.3"
+      "registryType": "npm",
+      "identifier": "@dazzle-labs/cli",
+      "version": "0.5.3",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp",
+          "description": "Start the MCP server"
+        }
+      ],
+      "environmentVariables": [
+        {
+          "name": "DAZZLE_STAGE",
+          "description": "Pin to a specific stage name or ID. If omitted, auto-selects when you have one stage.",
+          "isRequired": false
+        },
+        {
+          "name": "DAZZLE_API_KEY",
+          "description": "API key for headless/CI use. Alternative to interactive login.",
+          "isRequired": false,
+          "isSecret": true
+        }
+      ]
     }
   ],
   "tools": [
