@@ -97,11 +97,6 @@ func (s *billingServer) GetUsage(ctx context.Context, req *connect.Request[apiv1
 func (s *billingServer) UpdateOverageSettings(ctx context.Context, req *connect.Request[apiv1internal.UpdateOverageSettingsRequest]) (*connect.Response[apiv1internal.UpdateOverageSettingsResponse], error) {
 	info := mustAuth(ctx)
 
-	plan := dbGetUserPlan(s.mgr.db, info.UserID)
-	if plan == PlanFree {
-		return nil, connect.NewError(connect.CodePermissionDenied, fmt.Errorf("overage is not available on the free plan"))
-	}
-
 	if req.Msg.OverageLimitCents < 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("overage_limit_cents must be >= 0"))
 	}
@@ -114,7 +109,12 @@ func (s *billingServer) UpdateOverageSettings(ctx context.Context, req *connect.
 		limitCents = &v
 	}
 
-	if err := dbUpdateOverageSettings(s.mgr.db, info.UserID, req.Msg.OverageEnabled, limitCents); err != nil {
+	// Atomically check plan and update settings in one query to prevent TOCTOU
+	// where a concurrent downgrade to free could leave overage enabled on a free plan.
+	if err := dbUpdateOverageSettingsIfPaid(s.mgr.db, info.UserID, req.Msg.OverageEnabled, limitCents); err != nil {
+		if err == errFreePlanOverage {
+			return nil, connect.NewError(connect.CodePermissionDenied, fmt.Errorf("overage is not available on the free plan"))
+		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 

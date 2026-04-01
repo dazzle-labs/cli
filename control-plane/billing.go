@@ -97,6 +97,23 @@ func (sc *stripeConfig) planFromSubscriptionItems(sub *stripe.Subscription) stri
 	return ""
 }
 
+// verifyStripeCustomer checks that a Stripe customer ID matches the one stored for
+// the given user. Returns an error (logged, not retryable) if there's a mismatch.
+func (m *Manager) verifyStripeCustomer(userID, stripeCustomerID string) error {
+	if stripeCustomerID == "" {
+		return nil // can't verify without a customer ID
+	}
+	var stored sql.NullString
+	if err := m.db.QueryRow(`SELECT stripe_customer_id FROM users WHERE id = $1`, userID).Scan(&stored); err != nil {
+		return nil // query error — don't block webhook processing
+	}
+	if stored.Valid && stored.String != "" && stored.String != stripeCustomerID {
+		log.Printf("ERROR: Stripe customer mismatch for user %s: webhook=%s, stored=%s — rejecting event", userID, stripeCustomerID, stored.String)
+		return fmt.Errorf("customer mismatch")
+	}
+	return nil
+}
+
 // ensureStripeCustomer returns the user's Stripe customer ID, creating one if needed.
 // Uses UPDATE ... WHERE stripe_customer_id IS NULL to avoid TOCTOU races where two
 // concurrent requests could both create a Stripe customer.
@@ -290,6 +307,14 @@ func (m *Manager) handleCheckoutCompleted(event stripe.Event) error {
 		return fmt.Errorf("fetch subscription %s: %w", sess.Subscription.ID, err)
 	}
 
+	// Verify the subscription's customer matches the stored stripe_customer_id for this user.
+	// Prevents metadata tampering from applying plan changes to the wrong account.
+	if fullSub.Customer != nil {
+		if err := m.verifyStripeCustomer(userID, fullSub.Customer.ID); err != nil {
+			return nil // not retryable
+		}
+	}
+
 	// Cross-reference plan metadata against the subscription's actual line items.
 	if derivedPlan := m.stripeConfig.planFromSubscriptionItems(fullSub); derivedPlan != "" {
 		if derivedPlan != plan {
@@ -361,6 +386,11 @@ func (m *Manager) handleSubscriptionUpdated(event stripe.Event) error {
 	if userID == "" {
 		log.Printf("WARN: subscription updated missing user_id metadata: %s", sub.ID)
 		return nil
+	}
+
+	// Verify subscription customer matches stored customer for this user
+	if err := m.verifyStripeCustomer(userID, sub.Customer.ID); err != nil {
+		return nil // not retryable
 	}
 
 	// Derive plan from subscription's actual line items — metadata is unreliable
@@ -507,6 +537,11 @@ func (m *Manager) handleSubscriptionDeleted(event stripe.Event) error {
 		return nil
 	}
 
+	// Verify subscription customer matches stored customer for this user
+	if err := m.verifyStripeCustomer(userID, sub.Customer.ID); err != nil {
+		return nil // not retryable
+	}
+
 	// Revert to free plan + mark subscription canceled atomically
 	tx, err := m.db.Begin()
 	if err != nil {
@@ -588,6 +623,51 @@ func (m *Manager) deactivateExcessStages(userID, plan string) {
 	}
 }
 
+// enforceSpendingCap checks if a user's metered spend exceeds their overage cap.
+// If exceeded, deactivates all running metered stages. Called after each rollup cycle.
+func (m *Manager) enforceSpendingCap(userID string) {
+	overageEnabled, overageLimitCents := dbGetOverageSettings(m.db, userID)
+	if !overageEnabled || overageLimitCents == nil {
+		return // no cap to enforce
+	}
+
+	periodStart := currentPeriodStart(m.db, userID)
+	cpuSpent, _ := meteredSpendCents(m.db, userID, "cpu", periodStart)
+	gpuSpent, _ := meteredSpendCents(m.db, userID, "gpu", periodStart)
+	totalSpent := cpuSpent + gpuSpent
+
+	if totalSpent < *overageLimitCents {
+		return
+	}
+
+	log.Printf("User %s spending cap exceeded ($%.2f / $%.2f) — deactivating metered stages",
+		userID, float64(totalSpent)/100, float64(*overageLimitCents)/100)
+
+	stages, err := dbListStages(m.db, userID)
+	if err != nil {
+		log.Printf("ERROR: enforceSpendingCap list stages for user %s: %v", userID, err)
+		return
+	}
+	for _, st := range stages {
+		if st.Status != "running" && st.Status != "starting" {
+			continue
+		}
+		// Only deactivate stages that consume metered resources
+		resource := "cpu"
+		if hasCapability(st.Capabilities, "gpu") {
+			resource = "gpu"
+		}
+		hasFree, _ := remainingFreeMinutes(m.db, userID, resource)
+		if hasFree > 0 {
+			continue // still covered by free grant
+		}
+		log.Printf("Deactivating stage %s for user %s (spending cap exceeded)", st.ID, userID)
+		if err := m.deactivateStage(st.ID); err != nil {
+			log.Printf("ERROR: deactivate stage %s on spending cap: %v", st.ID, err)
+		}
+	}
+}
+
 func (m *Manager) handlePaymentFailed(event stripe.Event) {
 	var invoice stripe.Invoice
 	if err := json.Unmarshal(event.Data.Raw, &invoice); err != nil {
@@ -642,7 +722,7 @@ func (m *Manager) reportStripeUsage(userID string, cpuOverageHrs, gpuOverageHrs 
 				"value":              strconv.Itoa(cpuOverageHrs),
 			},
 		}
-		params.IdempotencyKey = stripe.String(fmt.Sprintf("cpu:%s:%d", periodKey, cpuOverageHrs))
+		params.IdempotencyKey = stripe.String(fmt.Sprintf("cpu:%s", periodKey))
 		if _, err := meterevent.New(params); err != nil {
 			errs = append(errs, fmt.Sprintf("CPU: %v", err))
 		} else {
@@ -662,7 +742,7 @@ func (m *Manager) reportStripeUsage(userID string, cpuOverageHrs, gpuOverageHrs 
 				"value":              strconv.Itoa(gpuOverageHrs),
 			},
 		}
-		params.IdempotencyKey = stripe.String(fmt.Sprintf("gpu:%s:%d", periodKey, gpuOverageHrs))
+		params.IdempotencyKey = stripe.String(fmt.Sprintf("gpu:%s", periodKey))
 		if _, err := meterevent.New(params); err != nil {
 			errs = append(errs, fmt.Sprintf("GPU: %v", err))
 		} else {

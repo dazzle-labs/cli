@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -28,9 +29,19 @@ func openDB() (*sql.DB, error) {
 	user := envOrDefault("DB_USER", "browser_streamer")
 	pass := os.Getenv("DB_PASSWORD")
 	name := envOrDefault("DB_NAME", "browser_streamer")
+	sslmode := envOrDefault("DB_SSLMODE", "require")
 
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", host, port, user, pass, name)
-	db, err := sql.Open("postgres", dsn)
+	// Use URL format to prevent parameter injection via env vars with spaces.
+	// The space-delimited libpq format allows e.g. DB_HOST="evil sslmode=disable"
+	// to override sslmode. URL encoding escapes special characters safely.
+	u := &url.URL{
+		Scheme:   "postgres",
+		User:     url.UserPassword(user, pass),
+		Host:     host + ":" + port,
+		Path:     name,
+		RawQuery: "sslmode=" + url.QueryEscape(sslmode),
+	}
+	db, err := sql.Open("postgres", u.String())
 	if err != nil {
 		return nil, fmt.Errorf("open db: %w", err)
 	}
@@ -169,6 +180,28 @@ func dbUpdateOverageSettings(db *sql.DB, userID string, enabled bool, limitCents
 	return err
 }
 
+var errFreePlanOverage = fmt.Errorf("overage not available on free plan")
+
+// dbUpdateOverageSettingsIfPaid atomically checks that the user is on a paid plan
+// before updating overage settings. Prevents TOCTOU where a concurrent downgrade
+// could leave overage enabled on a free-tier user.
+func dbUpdateOverageSettingsIfPaid(db *sql.DB, userID string, enabled bool, limitCents *int) error {
+	var lc sql.NullInt32
+	if limitCents != nil {
+		lc = sql.NullInt32{Int32: int32(*limitCents), Valid: true}
+	}
+	res, err := db.Exec(`UPDATE users SET overage_enabled = $2, overage_limit_cents = $3, updated_at = NOW()
+		WHERE id = $1 AND plan != 'free'`,
+		userID, enabled, lc)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return errFreePlanOverage
+	}
+	return nil
+}
+
 
 // --- API key queries ---
 
@@ -177,18 +210,21 @@ func hashAPIKey(key string) string {
 	return hex.EncodeToString(h[:])
 }
 
-func generateAPIKey() (full string, prefix string) {
+func generateAPIKey() (full string, prefix string, err error) {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
-		panic(err)
+		return "", "", fmt.Errorf("generate API key: %w", err)
 	}
 	full = "dzl_" + hex.EncodeToString(b)
 	prefix = full[:7] + "..."
-	return
+	return full, prefix, nil
 }
 
 func dbCreateAPIKey(db *sql.DB, userID, name string) (id, secret, prefix string, err error) {
-	secret, prefix = generateAPIKey()
+	secret, prefix, err = generateAPIKey()
+	if err != nil {
+		return "", "", "", err
+	}
 	hash := hashAPIKey(secret)
 	err = db.QueryRow(`
 		INSERT INTO api_keys (user_id, name, prefix, key_hash)
@@ -210,7 +246,10 @@ func dbRotateAPIKey(db *sql.DB, userID, name string) (id, secret, prefix string,
 	}
 
 	// Create new key
-	secret, prefix = generateAPIKey()
+	secret, prefix, err = generateAPIKey()
+	if err != nil {
+		return "", "", "", err
+	}
 	hash := hashAPIKey(secret)
 	err = tx.QueryRow(`INSERT INTO api_keys (user_id, name, prefix, key_hash) VALUES ($1, $2, $3, $4) RETURNING id`,
 		userID, name, prefix, hash).Scan(&id)
@@ -438,7 +477,24 @@ func scanStage(scanner interface{ Scan(...any) error }) (*stageRow, error) {
 	return &s, nil
 }
 
-func dbCreateStage(db *sql.DB, userID, name string, capabilities []string, visibility, resolution string) (string, string, error) {
+var errStageLimitReached = fmt.Errorf("stage limit reached")
+
+func dbCreateStage(db *sql.DB, userID, name string, capabilities []string, visibility, resolution string, maxStages int) (string, string, error) {
+	tx, err := db.Begin()
+	if err != nil {
+		return "", "", err
+	}
+	defer tx.Rollback()
+
+	// Lock user's stages to prevent concurrent creates from both passing the count check.
+	var count int
+	if err := tx.QueryRow(`SELECT COUNT(*) FROM stages WHERE user_id = $1 FOR UPDATE`, userID).Scan(&count); err != nil {
+		return "", "", err
+	}
+	if count >= maxStages {
+		return "", "", fmt.Errorf("%w (max %d)", errStageLimitReached, maxStages)
+	}
+
 	stageID := uuid.Must(uuid.NewV7()).String()
 	token := "dpt_" + strings.ReplaceAll(uuid.Must(uuid.NewV7()).String(), "-", "")
 	streamKey := "dsk_" + strings.ReplaceAll(uuid.Must(uuid.NewV7()).String(), "-", "")
@@ -447,11 +503,13 @@ func dbCreateStage(db *sql.DB, userID, name string, capabilities []string, visib
 	if capabilities == nil {
 		capabilities = []string{}
 	}
-	err := db.QueryRow(`
+	if err := tx.QueryRow(`
 		INSERT INTO stages (id, user_id, name, status, preview_token, stream_key, slug, capabilities, visibility, resolution)
 		VALUES ($1, $2, $3, 'inactive', $4, $5, $6, $7, $8, $9)
-		RETURNING id`, stageID, userID, name, token, streamKey, slug, pq.Array(capabilities), visibility, resolution).Scan(&stageID)
-	return stageID, token, err
+		RETURNING id`, stageID, userID, name, token, streamKey, slug, pq.Array(capabilities), visibility, resolution).Scan(&stageID); err != nil {
+		return "", "", err
+	}
+	return stageID, token, tx.Commit()
 }
 
 func dbListStages(db *sql.DB, userID string) ([]stageRow, error) {
@@ -654,23 +712,34 @@ func dbListStageDestinationsFilter(db *sql.DB, stageID string, excludeDazzle boo
 var errMaxDestinations = fmt.Errorf("maximum external destinations reached")
 
 func dbAddStageDestination(db *sql.DB, stageID, destinationID string, maxExternalDest int) (string, error) {
+	tx, err := db.Begin()
+	if err != nil {
+		return "", err
+	}
+	defer tx.Rollback()
+
+	// Lock the stage's destinations with FOR UPDATE to prevent concurrent inserts
+	// from both passing the count check.
 	var externalCount int
-	if err := db.QueryRow(`
+	if err := tx.QueryRow(`
 		SELECT COUNT(*) FROM stage_destinations sd
 		JOIN stream_destinations d ON sd.destination_id = d.id
-		WHERE sd.stage_id = $1 AND d.platform != 'dazzle'`, stageID).Scan(&externalCount); err != nil {
+		WHERE sd.stage_id = $1 AND d.platform != 'dazzle'
+		FOR UPDATE OF sd`, stageID).Scan(&externalCount); err != nil {
 		return "", err
 	}
 	if externalCount >= maxExternalDest {
 		return "", fmt.Errorf("%w (max %d)", errMaxDestinations, maxExternalDest)
 	}
 	id := uuid.Must(uuid.NewV7()).String()
-	_, err := db.Exec(`
+	if _, err := tx.Exec(`
 		INSERT INTO stage_destinations (id, stage_id, destination_id, enabled)
 		VALUES ($1, $2, $3, true)
 		ON CONFLICT (stage_id, destination_id) DO UPDATE SET enabled = true`,
-		id, stageID, destinationID)
-	return id, err
+		id, stageID, destinationID); err != nil {
+		return "", err
+	}
+	return id, tx.Commit()
 }
 
 func dbRemoveStageDestination(db *sql.DB, stageID, destinationID string) error {

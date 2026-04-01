@@ -105,13 +105,57 @@ func hasActiveGrant(db *sql.DB, userID, resource string) (bool, error) {
 type consumeResult struct {
 	CostCents      int // total cost for metered minutes
 	MeteredMinutes int // minutes consumed from metered (rate > 0) grants
+	MeteredSeconds int // raw seconds that produced MeteredMinutes (for accurate hour rounding)
 }
 
 // consumeMinutes debits minutes from grants in FIFO order (free first, then cheapest metered).
 // Returns the cost in cents and metered minutes consumed.
-func consumeMinutes(db *sql.DB, userID, resource string, minutes int) (consumeResult, error) {
-	grants, err := activeGrants(db, userID, resource)
+// rawSeconds is the original seconds before ceiling to minutes — used to compute
+// MeteredSeconds for accurate hour rounding (avoids double-ceiling).
+// Wraps the operation in a transaction with SELECT FOR UPDATE to prevent concurrent double-debit.
+func consumeMinutes(db *sql.DB, userID, resource string, minutes, rawSeconds int) (consumeResult, error) {
+	tx, err := db.Begin()
 	if err != nil {
+		return consumeResult{}, err
+	}
+	defer tx.Rollback()
+
+	result, err := consumeMinutesTx(tx, userID, resource, minutes, rawSeconds)
+	if err != nil {
+		return consumeResult{}, err
+	}
+	return result, tx.Commit()
+}
+
+// consumeMinutesTx debits minutes from grants within an existing transaction.
+// Acquires FOR UPDATE locks on the grants to prevent concurrent double-debit.
+// rawSeconds is the original seconds before ceiling — used to compute MeteredSeconds.
+func consumeMinutesTx(tx *sql.Tx, userID, resource string, minutes, rawSeconds int) (consumeResult, error) {
+	// Lock grants with FOR UPDATE to serialize concurrent consumption
+	rows, err := tx.Query(`
+		SELECT id, user_id, resource, minutes, used_minutes, rate_cents_per_hr, reason, expires_at, created_at
+		FROM usage_grants
+		WHERE user_id = $1 AND resource = $2
+		  AND (minutes IS NULL OR used_minutes < minutes)
+		  AND (expires_at IS NULL OR expires_at > NOW())
+		ORDER BY rate_cents_per_hr ASC, created_at ASC
+		FOR UPDATE`,
+		userID, resource)
+	if err != nil {
+		return consumeResult{}, err
+	}
+	defer rows.Close()
+
+	var grants []Grant
+	for rows.Next() {
+		var g Grant
+		if err := rows.Scan(&g.ID, &g.UserID, &g.Resource, &g.Minutes, &g.UsedMinutes,
+			&g.RateCentsPerHr, &g.Reason, &g.ExpiresAt, &g.CreatedAt); err != nil {
+			return consumeResult{}, err
+		}
+		grants = append(grants, g)
+	}
+	if err := rows.Err(); err != nil {
 		return consumeResult{}, err
 	}
 
@@ -133,7 +177,7 @@ func consumeMinutes(db *sql.DB, userID, resource string, minutes int) (consumeRe
 			continue
 		}
 
-		if _, err := db.Exec(`UPDATE usage_grants SET used_minutes = used_minutes + $1 WHERE id = $2`,
+		if _, err := tx.Exec(`UPDATE usage_grants SET used_minutes = used_minutes + $1 WHERE id = $2`,
 			debit, g.ID); err != nil {
 			return result, err
 		}
@@ -146,20 +190,30 @@ func consumeMinutes(db *sql.DB, userID, resource string, minutes int) (consumeRe
 		remaining -= debit
 	}
 
+	// Compute raw metered seconds for accurate hour rounding.
+	// Free minutes are consumed first, so metered seconds = total seconds minus
+	// the seconds covered by free grants. Clamp to [0, rawSeconds].
+	freeMinutes := minutes - result.MeteredMinutes - remaining // minutes consumed from free grants
+	freeSeconds := freeMinutes * 60
+	result.MeteredSeconds = max(0, rawSeconds-freeSeconds)
+
 	return result, nil
 }
 
 // meteredSpendCents returns total metered spend for a user+resource this billing period.
 // Includes expired grants that were active during the period (i.e., expired after period start).
+// Groups by rate and sums minutes before ceiling to hours, so mid-period plan changes
+// don't inflate the total via per-grant rounding.
 func meteredSpendCents(db *sql.DB, userID, resource string, periodStart time.Time) (int, error) {
 	rows, err := db.Query(`
-		SELECT used_minutes, rate_cents_per_hr
+		SELECT rate_cents_per_hr, SUM(used_minutes) AS total_minutes
 		FROM usage_grants
 		WHERE user_id = $1 AND resource = $2
 		  AND rate_cents_per_hr > 0
 		  AND used_minutes > 0
 		  AND (expires_at IS NULL OR expires_at >= $3)
-		  AND created_at >= $3`,
+		  AND created_at >= $3
+		GROUP BY rate_cents_per_hr`,
 		userID, resource, periodStart)
 	if err != nil {
 		return 0, err
@@ -168,11 +222,11 @@ func meteredSpendCents(db *sql.DB, userID, resource string, periodStart time.Tim
 
 	var total int
 	for rows.Next() {
-		var usedMin, rate int
-		if err := rows.Scan(&usedMin, &rate); err != nil {
+		var rate, totalMin int
+		if err := rows.Scan(&rate, &totalMin); err != nil {
 			return 0, err
 		}
-		total += ceilToHours(usedMin) * rate
+		total += ceilToHours(totalMin) * rate
 	}
 	return total, rows.Err()
 }

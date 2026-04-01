@@ -92,16 +92,6 @@ func (s *stageServer) CreateStage(ctx context.Context, req *connect.Request[apiv
 	plan := dbGetUserPlan(s.mgr.db, info.UserID)
 	cfg := getPlanConfig(plan)
 
-	// Enforce per-user total stage limit (created, regardless of state).
-	maxStages := cfg.MaxStages
-	existing, err := dbListStages(s.mgr.db, info.UserID)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to check stage limits"))
-	}
-	if len(existing) >= maxStages {
-		return nil, connect.NewError(connect.CodeResourceExhausted, fmt.Errorf("stage limit reached (max %d)", maxStages))
-	}
-
 	// Validate visibility against plan
 	visibility := req.Msg.Visibility
 	if visibility == "" {
@@ -117,7 +107,10 @@ func (s *stageServer) CreateStage(ctx context.Context, req *connect.Request[apiv
 	// Resolution is hardcoded to 720p for now — 1080p support will come later
 	resolution := Resolution720p
 
-	stage, err := s.mgr.createStageRecord(info.UserID, name, req.Msg.Capabilities, visibility, resolution)
+	stage, err := s.mgr.createStageRecord(info.UserID, name, req.Msg.Capabilities, visibility, resolution, cfg.MaxStages)
+	if errors.Is(err, errStageLimitReached) {
+		return nil, connect.NewError(connect.CodeResourceExhausted, err)
+	}
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to create stage"))
 	}
@@ -428,7 +421,6 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 
 	// Enforce per-user active stage limits from DB / plan config.
 	// Use the stage owner's limits, not the caller's (relevant for admin bypass).
-	info := mustAuth(ctx)
 	ownerID := row.UserID
 	plan := dbGetUserPlan(s.mgr.db, ownerID)
 	cfg := getPlanConfig(plan)
@@ -459,25 +451,24 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 		return nil, connect.NewError(connect.CodeResourceExhausted, fmt.Errorf("active CPU stage limit reached (max %d)", maxActiveCPU))
 	}
 
-	// Acquire per-user budget lock to serialize usage checks + recording across
-	// concurrent activations of different stages by the same user. This prevents
-	// two activations from both passing the spending cap before either records.
-	budgetUnlock, budgetErr := s.mgr.lockBudget(ctx, info.UserID)
+	// Acquire per-user budget lock on the *stage owner* (not the caller, who may be an admin)
+	// to serialize usage checks + recording across concurrent activations.
+	budgetUnlock, budgetErr := s.mgr.lockBudget(ctx, ownerID)
 	if budgetErr != nil {
 		stageUnlock()
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("acquire budget lock: %w", budgetErr))
 	}
 
-	// Enforce usage grants — check if user has available minutes for this resource.
+	// Enforce usage grants — check if the stage owner has available minutes for this resource.
 	resource := "cpu"
 	if isGPU {
 		resource = "gpu"
 	}
 
-	freeMin, _ := remainingFreeMinutes(s.mgr.db, info.UserID, resource)
+	freeMin, _ := remainingFreeMinutes(s.mgr.db, ownerID, resource)
 	if freeMin <= 0 {
 		// No free minutes — check if they have a metered grant (PAYG)
-		hasMetered, _ := hasActiveGrant(s.mgr.db, info.UserID, resource)
+		hasMetered, _ := hasActiveGrant(s.mgr.db, ownerID, resource)
 		if !hasMetered {
 			budgetUnlock()
 			stageUnlock()
@@ -491,7 +482,7 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 				fmt.Errorf("free tier %s hours exhausted — upgrade to continue", resource))
 		}
 		// Paid plan — check overage opt-in
-		overageEnabled, overageLimitCents := dbGetOverageSettings(s.mgr.db, info.UserID)
+		overageEnabled, overageLimitCents := dbGetOverageSettings(s.mgr.db, ownerID)
 		if !overageEnabled {
 			budgetUnlock()
 			stageUnlock()
@@ -500,9 +491,9 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 		}
 		// Check spending cap
 		if overageLimitCents != nil {
-			periodStart := currentPeriodStart(s.mgr.db, info.UserID)
-			cpuSpent, _ := meteredSpendCents(s.mgr.db, info.UserID, "cpu", periodStart)
-			gpuSpent, _ := meteredSpendCents(s.mgr.db, info.UserID, "gpu", periodStart)
+			periodStart := currentPeriodStart(s.mgr.db, ownerID)
+			cpuSpent, _ := meteredSpendCents(s.mgr.db, ownerID, "cpu", periodStart)
+			gpuSpent, _ := meteredSpendCents(s.mgr.db, ownerID, "gpu", periodStart)
 			totalSpentCents := cpuSpent + gpuSpent
 			if totalSpentCents >= *overageLimitCents {
 				budgetUnlock()
@@ -523,7 +514,7 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 	if isGPU {
 		provider = "gpu"
 	}
-	if recErr := recordStageActivation(s.mgr.db, info.UserID, stageID, provider); recErr != nil {
+	if recErr := recordStageActivation(s.mgr.db, ownerID, stageID, provider); recErr != nil {
 		log.Printf("WARN: early record stage activation for %s: %v", stageID, recErr)
 	}
 
@@ -532,10 +523,13 @@ func (s *stageServer) ActivateStage(ctx context.Context, req *connect.Request[ap
 	budgetUnlock()
 
 	// Activate asynchronously — return immediately with starting status.
-	// Unlock after goroutine starts; the inner activateStage/activateGPUStage
-	// re-acquires the per-stage lock for the actual provisioning.
-	go s.mgr.activateStageAsync(stageID, ownerID, isGPU, row.Capabilities)
+	// Release the outer lock before spawning the goroutine. The race window is safe:
+	// DB status is already "starting" (line 508) and usage event recorded (line 517),
+	// so concurrent ActivateStage requests will see "starting" at line 414 and return
+	// early. The inner activateStage/activateGPUStage re-acquires the per-stage lock
+	// for provisioning.
 	stageUnlock()
+	go s.mgr.activateStageAsync(stageID, ownerID, isGPU, row.Capabilities)
 
 	// Return stage in starting state
 	st := stageRowToStruct(row, s.mgr)

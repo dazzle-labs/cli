@@ -20,25 +20,36 @@ spec:
         fsGroup: 999
         seccompProfile:
           type: RuntimeDefault
-      containers:
-        - name: redis
+      initContainers:
+        - name: init-config
           image: redis:7-alpine
-          command:
-            - redis-server
-            - --save
-            - ""
-            - --maxmemory
-            - 128mb
-            - --maxmemory-policy
-            - allkeys-lru
-            - --requirepass
-            - $(REDIS_PASSWORD)
+          command: ["sh", "-c"]
+          args:
+            - |
+              cp /etc/redis-base/redis.conf /etc/redis/redis.conf
+              echo "requirepass $REDIS_PASSWORD" >> /etc/redis/redis.conf
           env:
             - name: REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: redis-credentials
                   key: password
+          volumeMounts:
+            - name: redis-config-base
+              mountPath: /etc/redis-base
+              readOnly: true
+            - name: redis-config
+              mountPath: /etc/redis
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          command:
+            - redis-server
+            - /etc/redis/redis.conf
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -47,6 +58,9 @@ spec:
           ports:
             - containerPort: 6379
           volumeMounts:
+            - name: redis-config
+              mountPath: /etc/redis
+              readOnly: true
             - name: tmp
               mountPath: /tmp
             - name: data
@@ -59,20 +73,42 @@ spec:
               cpu: 200m
               memory: 192Mi
           readinessProbe:
-            tcpSocket:
-              port: 6379
+            exec:
+              command: ["sh", "-c", "redis-cli -a \"$REDIS_PASSWORD\" ping"]
             initialDelaySeconds: 2
             periodSeconds: 5
           livenessProbe:
-            tcpSocket:
-              port: 6379
+            exec:
+              command: ["sh", "-c", "redis-cli -a \"$REDIS_PASSWORD\" ping"]
             initialDelaySeconds: 5
             periodSeconds: 15
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-credentials
+                  key: password
       volumes:
+        - name: redis-config-base
+          configMap:
+            name: redis-config
+        - name: redis-config
+          emptyDir: {}
         - name: tmp
           emptyDir: {}
         - name: data
           emptyDir: {}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+  namespace: browser-streamer
+data:
+  redis.conf: |
+    save ""
+    maxmemory 128mb
+    maxmemory-policy allkeys-lru
 ---
 apiVersion: v1
 kind: Service

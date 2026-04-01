@@ -2,9 +2,13 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"log"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -89,6 +93,47 @@ func usageForPeriod(db *sql.DB, userID string, periodStart time.Time) (cpuHrs, g
 		return 0, 0, err
 	}
 	return ceilHours(cpuSec), ceilHours(gpuSec), nil
+}
+
+// unreportedEvents holds per-provider totals and the specific event IDs that were aggregated.
+type unreportedEvents struct {
+	CPUSec   int
+	GPUSec   int
+	EventIDs []string // specific IDs, for marking only these as reported
+}
+
+// collectUnreportedEvents returns unreported completed usage events for a user since periodStart,
+// locking them with FOR UPDATE within the given transaction to prevent concurrent rollups
+// from processing the same events.
+func collectUnreportedEvents(tx *sql.Tx, userID string, periodStart time.Time) (unreportedEvents, error) {
+	rows, err := tx.Query(`
+		SELECT id, provider, duration_seconds
+		FROM usage_events
+		WHERE user_id = $1 AND started_at >= $2
+		  AND reported_to_stripe = FALSE AND ended_at IS NOT NULL
+		FOR UPDATE`,
+		userID, periodStart)
+	if err != nil {
+		return unreportedEvents{}, err
+	}
+	defer rows.Close()
+
+	var result unreportedEvents
+	for rows.Next() {
+		var id, provider string
+		var durSec int
+		if err := rows.Scan(&id, &provider, &durSec); err != nil {
+			return unreportedEvents{}, err
+		}
+		result.EventIDs = append(result.EventIDs, id)
+		switch provider {
+		case "cpu":
+			result.CPUSec += durSec
+		case "gpu":
+			result.GPUSec += durSec
+		}
+	}
+	return result, rows.Err()
 }
 
 // unreportedUsageSecondsForPeriod returns raw CPU and GPU seconds from unreported completed events.
@@ -212,11 +257,16 @@ type usageReportResult struct {
 }
 
 // reportFunc signature for usage rollup — returns per-resource results.
-// periodKey is a deterministic key for idempotency (e.g. "user-123:2026-03-01T00:00:00Z").
-type reportFunc func(userID string, cpuOverageHrs, gpuOverageHrs int, periodKey string) usageReportResult
+// rollupKey is a deterministic key for idempotency derived from the specific event IDs being reported.
+type reportFunc func(userID string, cpuOverageHrs, gpuOverageHrs int, rollupKey string) usageReportResult
+
+// capCheckFunc is called after each user's rollup to enforce spending caps.
+// The implementation should check the user's current metered spend against their cap
+// and deactivate stages if the cap is exceeded.
+type capCheckFunc func(userID string)
 
 // runUsageRollupJob runs every hour and reports completed usage events to Stripe.
-func runUsageRollupJob(ctx context.Context, db *sql.DB, fn reportFunc) {
+func runUsageRollupJob(ctx context.Context, db *sql.DB, fn reportFunc, capFn capCheckFunc) {
 	ticker := time.NewTicker(1 * time.Hour)
 	defer ticker.Stop()
 
@@ -225,7 +275,7 @@ func runUsageRollupJob(ctx context.Context, db *sql.DB, fn reportFunc) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			if err := rollupUsage(db, fn); err != nil {
+			if err := rollupUsage(db, fn, capFn); err != nil {
 				log.Printf("ERROR: usage rollup: %v", err)
 			}
 		}
@@ -233,11 +283,13 @@ func runUsageRollupJob(ctx context.Context, db *sql.DB, fn reportFunc) {
 }
 
 // rollupUsage finds unreported completed usage events, computes overage, and reports to Stripe.
-func rollupUsage(db *sql.DB, fn reportFunc) error {
-	// Get distinct users with unreported events
+func rollupUsage(db *sql.DB, fn reportFunc, capFn capCheckFunc) error {
+	// Get distinct users with unreported events (batch to prevent memory pressure
+	// during extended Stripe outages).
 	rows, err := db.Query(`
 		SELECT DISTINCT user_id FROM usage_events
-		WHERE reported_to_stripe = FALSE AND ended_at IS NOT NULL`)
+		WHERE reported_to_stripe = FALSE AND ended_at IS NOT NULL
+		LIMIT 1000`)
 	if err != nil {
 		return err
 	}
@@ -259,77 +311,89 @@ func rollupUsage(db *sql.DB, fn reportFunc) error {
 		if err := rollupUserUsage(db, userID, fn); err != nil {
 			log.Printf("ERROR: rollup for user %s: %v", userID, err)
 		}
+		// Enforce spending cap after rollup — deactivate stages if cap exceeded.
+		if capFn != nil {
+			capFn(userID)
+		}
 	}
 	return nil
 }
 
 func rollupUserUsage(db *sql.DB, userID string, fn reportFunc) error {
-	// Get user's plan
-	var plan string
-	if err := db.QueryRow(`SELECT plan FROM users WHERE id = $1`, userID).Scan(&plan); err != nil {
-		return err
-	}
+	periodStart := currentPeriodStart(db, userID)
 
-	// Get unreported completed usage in minutes per provider
-	unreportedCPUSec, unreportedGPUSec, err := unreportedUsageSecondsForPeriod(db, userID, time.Time{}) // all time
+	// Within a transaction: lock unreported events, consume grants, report to Stripe,
+	// then mark as reported. All-or-nothing: if Stripe fails, the tx rolls back and
+	// events remain unreported for the next rollup cycle.
+	tx, err := db.Begin()
 	if err != nil {
 		return err
 	}
-	cpuMinutes := ceilToMinutes(unreportedCPUSec)
-	gpuMinutes := ceilToMinutes(unreportedGPUSec)
+	defer tx.Rollback()
+
+	events, err := collectUnreportedEvents(tx, userID, periodStart)
+	if err != nil {
+		return err
+	}
+	if len(events.EventIDs) == 0 {
+		return nil // nothing to process
+	}
+
+	// Grants track minutes, so ceil seconds → minutes for grant consumption.
+	cpuMinutes := ceilToMinutes(events.CPUSec)
+	gpuMinutes := ceilToMinutes(events.GPUSec)
 
 	// Consume minutes from grants FIFO — free grants first, then metered.
-	// consumeMinutes returns cost and metered minutes consumed.
+	// Pass raw seconds so consumeResult can track MeteredSeconds for accurate hour rounding.
 	var cpuResult, gpuResult consumeResult
 	if cpuMinutes > 0 {
-		cpuResult, err = consumeMinutes(db, userID, "cpu", cpuMinutes)
+		cpuResult, err = consumeMinutesTx(tx, userID, "cpu", cpuMinutes, events.CPUSec)
 		if err != nil {
 			return err
 		}
 	}
 	if gpuMinutes > 0 {
-		gpuResult, err = consumeMinutes(db, userID, "gpu", gpuMinutes)
+		gpuResult, err = consumeMinutesTx(tx, userID, "gpu", gpuMinutes, events.GPUSec)
 		if err != nil {
 			return err
 		}
 	}
 
-	// Report only metered minutes as overage hours to Stripe (not free-grant-covered minutes).
-	cpuOverageHrs := ceilToHours(cpuResult.MeteredMinutes)
-	gpuOverageHrs := ceilToHours(gpuResult.MeteredMinutes)
+	// Report metered overage to Stripe BEFORE marking events as reported.
+	// If Stripe fails, the transaction rolls back — events stay unreported
+	// and will be retried on the next rollup cycle. The idempotency key
+	// prevents double-billing if Stripe received but we didn't get the ACK.
+	//
+	// Use raw metered seconds → hours (single ceil) to avoid double-rounding.
+	// Grants consume in ceil'd minutes, but Stripe bills in ceil'd hours from
+	// the raw seconds to prevent compounding (e.g. 3601s = 2hrs, not 61min→2hrs).
+	cpuOverageHrs := ceilHours(cpuResult.MeteredSeconds)
+	gpuOverageHrs := ceilHours(gpuResult.MeteredSeconds)
 
-	periodStart := currentPeriodStart(db, userID)
-	periodKey := fmt.Sprintf("%s:%s", userID, periodStart.Format(time.RFC3339))
-	var result usageReportResult
 	if (cpuOverageHrs > 0 || gpuOverageHrs > 0) && fn != nil {
-		result = fn(userID, cpuOverageHrs, gpuOverageHrs, periodKey)
-	} else {
-		result = usageReportResult{CPUReported: true, GPUReported: true}
-	}
-
-	if result.Err != nil {
-		log.Printf("WARN: partial Stripe report for user %s (cpu=%v, gpu=%v): %v",
-			userID, result.CPUReported, result.GPUReported, result.Err)
-	}
-
-	// Mark events as reported per-provider
-	if result.CPUReported {
-		if _, err := db.Exec(`
-			UPDATE usage_events SET reported_to_stripe = TRUE
-			WHERE user_id = $1 AND provider = 'cpu' AND reported_to_stripe = FALSE AND ended_at IS NOT NULL`, userID); err != nil {
-			return err
-		}
-	}
-	if result.GPUReported {
-		if _, err := db.Exec(`
-			UPDATE usage_events SET reported_to_stripe = TRUE
-			WHERE user_id = $1 AND provider = 'gpu' AND reported_to_stripe = FALSE AND ended_at IS NOT NULL`, userID); err != nil {
-			return err
+		sort.Strings(events.EventIDs)
+		rollupKey := fmt.Sprintf("%s:%s", userID, hashEventIDs(events.EventIDs))
+		result := fn(userID, cpuOverageHrs, gpuOverageHrs, rollupKey)
+		if result.Err != nil {
+			// Stripe failed — roll back so events stay unreported for retry.
+			log.Printf("WARN: Stripe report for user %s (cpu=%v, gpu=%v): %v",
+				userID, result.CPUReported, result.GPUReported, result.Err)
+			return result.Err
 		}
 	}
 
-	if !result.CPUReported && !result.GPUReported && result.Err != nil {
-		return result.Err
+	// Mark events as reported only after Stripe succeeded.
+	if _, err := tx.Exec(`
+		UPDATE usage_events SET reported_to_stripe = TRUE
+		WHERE id = ANY($1)`, pq.Array(events.EventIDs)); err != nil {
+		return err
 	}
-	return nil
+
+	return tx.Commit()
+}
+
+// hashEventIDs produces a short deterministic hash of event IDs for use as an idempotency key suffix.
+func hashEventIDs(ids []string) string {
+	h := sha256.Sum256([]byte(strings.Join(ids, ",")))
+	return hex.EncodeToString(h[:8]) // 16-char hex = 64 bits, sufficient for idempotency
 }

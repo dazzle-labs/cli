@@ -157,10 +157,12 @@ func (m *Manager) invalidatePreviewToken(token string) {
 
 // lockStage acquires a per-stage lock (Redis distributed or in-memory fallback).
 // Returns an unlock function. The caller must call unlock exactly once.
+// Uses auto-renewal to prevent the lock from expiring while the holder is still working.
 func (m *Manager) lockStage(ctx context.Context, id string) (unlock func(), err error) {
 	if m.rdb != nil {
 		key := "lock:stage:" + id
-		ok, err := redisclient.Lock(ctx, m.rdb, key, m.replicaID, 5*time.Minute)
+		ttl := 5 * time.Minute
+		ok, cancel, err := redisclient.LockWithRenewal(ctx, m.rdb, key, m.replicaID, ttl)
 		if err != nil {
 			return nil, fmt.Errorf("redis stage lock: %w", err)
 		}
@@ -173,25 +175,17 @@ func (m *Manager) lockStage(ctx context.Context, id string) (unlock func(), err 
 				case <-ctx.Done():
 					return nil, ctx.Err()
 				case <-ticker.C:
-					ok, err = redisclient.Lock(ctx, m.rdb, key, m.replicaID, 5*time.Minute)
+					ok, cancel, err = redisclient.LockWithRenewal(ctx, m.rdb, key, m.replicaID, ttl)
 					if err != nil {
 						return nil, fmt.Errorf("redis stage lock: %w", err)
 					}
 					if ok {
-						return func() {
-							unlockCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-							defer cancel()
-							redisclient.Unlock(unlockCtx, m.rdb, key, m.replicaID)
-						}, nil
+						return cancel, nil
 					}
 				}
 			}
 		}
-		return func() {
-			unlockCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-			defer cancel()
-			redisclient.Unlock(unlockCtx, m.rdb, key, m.replicaID)
-		}, nil
+		return cancel, nil
 	}
 	// In-memory fallback
 	val, _ := m.activateMu.LoadOrStore(id, &sync.Mutex{})
@@ -201,10 +195,12 @@ func (m *Manager) lockStage(ctx context.Context, id string) (unlock func(), err 
 }
 
 // lockBudget acquires a per-user budget lock (Redis distributed or in-memory fallback).
+// Uses auto-renewal to prevent the lock from expiring during slow Stripe API calls.
 func (m *Manager) lockBudget(ctx context.Context, userID string) (unlock func(), err error) {
 	if m.rdb != nil {
 		key := "lock:budget:" + userID
-		ok, err := redisclient.Lock(ctx, m.rdb, key, m.replicaID, 30*time.Second)
+		ttl := 30 * time.Second
+		ok, cancel, err := redisclient.LockWithRenewal(ctx, m.rdb, key, m.replicaID, ttl)
 		if err != nil {
 			return nil, fmt.Errorf("redis budget lock: %w", err)
 		}
@@ -216,25 +212,17 @@ func (m *Manager) lockBudget(ctx context.Context, userID string) (unlock func(),
 				case <-ctx.Done():
 					return nil, ctx.Err()
 				case <-ticker.C:
-					ok, err = redisclient.Lock(ctx, m.rdb, key, m.replicaID, 30*time.Second)
+					ok, cancel, err = redisclient.LockWithRenewal(ctx, m.rdb, key, m.replicaID, ttl)
 					if err != nil {
 						return nil, fmt.Errorf("redis budget lock: %w", err)
 					}
 					if ok {
-						return func() {
-							unlockCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-							defer cancel()
-							redisclient.Unlock(unlockCtx, m.rdb, key, m.replicaID)
-						}, nil
+						return cancel, nil
 					}
 				}
 			}
 		}
-		return func() {
-			unlockCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-			defer cancel()
-			redisclient.Unlock(unlockCtx, m.rdb, key, m.replicaID)
-		}, nil
+		return cancel, nil
 	}
 	val, _ := m.userBudgetMu.LoadOrStore(userID, &sync.Mutex{})
 	mu := val.(*sync.Mutex)
@@ -260,6 +248,18 @@ func (m *Manager) checkCancelFlag(id string) bool {
 	defer cancel()
 	val, err := m.rdb.Get(ctx, "cancel:stage:"+id).Result()
 	return err == nil && val == "1"
+}
+
+// redactURL masks the password in a URL for safe logging.
+func redactURL(raw string) string {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return "<invalid-url>"
+	}
+	if _, hasPwd := u.User.Password(); hasPwd {
+		u.User = url.UserPassword(u.User.Username(), "***")
+	}
+	return u.Redacted()
 }
 
 func envOrDefault(key, def string) string {
@@ -408,7 +408,7 @@ func NewManager() (*Manager, error) {
 			log.Printf("WARN: Redis unavailable: %v (falling back to in-memory)", err)
 		} else {
 			m.rdb = rdb
-			log.Printf("Redis connected (%s)", redisURL)
+			log.Printf("Redis connected (%s)", redactURL(redisURL))
 		}
 	}
 
@@ -1292,11 +1292,11 @@ func (m *Manager) refreshPodStatuses() {
 
 // createStageRecord creates a stage DB record (status=inactive) without provisioning a pod.
 // Also creates and links a Dazzle destination for the stage (auto-streaming to Dazzle ingest).
-func (m *Manager) createStageRecord(userID, name string, capabilities []string, visibility, resolution string) (*Stage, error) {
+func (m *Manager) createStageRecord(userID, name string, capabilities []string, visibility, resolution string, maxStages int) (*Stage, error) {
 	if m.db == nil {
 		return nil, fmt.Errorf("database not available")
 	}
-	id, token, err := dbCreateStage(m.db, userID, name, capabilities, visibility, resolution)
+	id, token, err := dbCreateStage(m.db, userID, name, capabilities, visibility, resolution, maxStages)
 	if err != nil {
 		return nil, err
 	}
@@ -1910,8 +1910,11 @@ func main() {
 	internalPort := envOrDefault("INTERNAL_PORT", "9090")
 	go func() {
 		internalServer := &http.Server{
-			Addr:    ":" + internalPort,
-			Handler: internalMux,
+			Addr:         ":" + internalPort,
+			Handler:      internalMux,
+			ReadTimeout:  10 * time.Second,
+			WriteTimeout: 30 * time.Second,
+			IdleTimeout:  60 * time.Second,
 		}
 		log.Printf("Internal server listening on :%s", internalPort)
 		if err := internalServer.ListenAndServe(); err != http.ErrServerClosed {
@@ -1921,8 +1924,11 @@ func main() {
 
 	port := envOrDefault("PORT", "8080")
 	server := &http.Server{
-		Addr:    ":" + port,
-		Handler: telemetryMiddleware(securityHeaders(mux)),
+		Addr:         ":" + port,
+		Handler:      telemetryMiddleware(securityHeaders(mux)),
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 60 * time.Second,
+		IdleTimeout:  120 * time.Second,
 	}
 
 	// Start GPU controllers if configured
@@ -1936,7 +1942,7 @@ func main() {
 	}
 
 	// Usage metering rollup job
-	go runUsageRollupJob(ctx, mgr.db, mgr.reportStripeUsage)
+	go runUsageRollupJob(ctx, mgr.db, mgr.reportStripeUsage, mgr.enforceSpendingCap)
 
 	// GC + status refresh loop
 	go func() {
@@ -1960,8 +1966,15 @@ func main() {
 		<-sigCh
 		log.Println("Shutting down...")
 		cancel()
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer shutdownCancel()
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			log.Printf("WARN: server shutdown: %v", err)
+		}
 		mgr.db.Close()
-		server.Shutdown(context.Background())
+		if mgr.rdb != nil {
+			mgr.rdb.Close()
+		}
 	}()
 
 	log.Printf("Control plane listening on :%s (max=%d)",

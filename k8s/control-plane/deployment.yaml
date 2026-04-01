@@ -60,6 +60,8 @@ spec:
                 secretKeyRef:
                   name: encryption-key
                   key: key
+            - name: DB_SSLMODE
+              value: disable  # Kind-local Postgres has no TLS; production overrides to 'require'
             - name: DB_HOST
               value: postgres
             - name: DB_PORT
