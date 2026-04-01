@@ -297,3 +297,18 @@
   background: transparent;
 }
 
+/* Styled scrollbars for feature code blocks */
+.feature-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+.feature-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.feature-scroll::-webkit-scrollbar-thumb {
+  background: rgba(52, 211, 153, 0.2);
+  border-radius: 2px;
+}
+.feature-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(52, 211, 153, 0.35);
+}
+
