@@ -352,11 +352,11 @@ export function LandingPage() {
       {/* ── Sign Up Dialog (CTAs) ── */}
       <Dialog open={signUpOpen} onOpenChange={setSignUpOpen}>
         <DialogContent
-          className="bg-transparent ring-0 shadow-none p-0 gap-0 sm:max-w-fit max-w-fit"
+          className="bg-transparent ring-0 shadow-none p-0 gap-0 sm:max-w-fit max-w-fit max-h-[90vh] overflow-y-auto"
           showCloseButton={false}
         >
           <DialogTitle className="sr-only">Sign up for Dazzle</DialogTitle>
-          <SignUp />
+          <SignUp routing="hash" />
         </DialogContent>
       </Dialog>
 
