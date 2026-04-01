@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { SignIn } from "@clerk/react";
+import { SignIn, SignUp } from "@clerk/react";
 import { motion } from "motion/react";
 import {
   ArrowRight,
@@ -43,7 +43,9 @@ export function LandingPage() {
   const id = personaId || searchParams.get("for") || DEFAULT_PERSONA;
   const persona: PersonaConfig = PERSONAS[id] || PERSONAS[DEFAULT_PERSONA];
 
+  const [signUpOpen, setSignUpOpen] = useState(false);
   const [signInOpen, setSignInOpen] = useState(false);
+  const openSignUp = () => setSignUpOpen(true);
   const openSignIn = () => setSignInOpen(true);
   const featuredStreams = useFeaturedStreams();
   const liveCount = useLiveCount();
@@ -155,7 +157,7 @@ export function LandingPage() {
           <Button
             size="lg"
             className="bg-emerald-500 text-zinc-950 hover:bg-emerald-400 font-semibold text-base px-8 h-12"
-            onClick={openSignIn}
+            onClick={openSignUp}
           >
             {persona.ctaText}
             <ArrowRight className="ml-1.5 h-4 w-4" />
@@ -302,7 +304,7 @@ export function LandingPage() {
           <Button
             size="lg"
             className="mt-8 bg-emerald-500 text-zinc-950 hover:bg-emerald-400 font-semibold text-base px-8 h-12"
-            onClick={openSignIn}
+            onClick={openSignUp}
           >
             {persona.ctaFinalText}
             <ArrowRight className="ml-1.5 h-4 w-4" />
@@ -325,7 +327,18 @@ export function LandingPage() {
         </div>
       </footer>
 
-      {/* ── Sign In Dialog ── */}
+      {/* ── Sign Up Dialog (CTAs) ── */}
+      <Dialog open={signUpOpen} onOpenChange={setSignUpOpen}>
+        <DialogContent
+          className="bg-transparent ring-0 shadow-none p-0 gap-0 sm:max-w-fit max-w-fit"
+          showCloseButton={false}
+        >
+          <DialogTitle className="sr-only">Sign up for Dazzle</DialogTitle>
+          <SignUp />
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Sign In Dialog (nav) ── */}
       <Dialog open={signInOpen} onOpenChange={setSignInOpen}>
         <DialogContent
           className="bg-transparent ring-0 shadow-none p-0 gap-0 sm:max-w-fit max-w-fit"
