@@ -261,7 +261,7 @@ var PlanGrants = map[string]PlanGrantTemplate{
 	},
 	PlanPro: {
 		CPUBudgetMinutes:    90000, // 1500 hrs
-		CPUOverageRatePerHr: 4,     // $0.04/hr
+		CPUOverageRatePerHr: 8,     // $0.08/hr
 		GPUOverageRatePerHr: 70,    // $0.70/hr
 	},
 }

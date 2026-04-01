@@ -7,16 +7,16 @@
 | | Free | Starter ($19.99/mo) | Pro ($79.99/mo) |
 |---|---|---|---|
 | CPU hours included | 24 hrs/mo | 750 hrs/mo (~1 always-on stage) | 1500 hrs/mo (~2 always-on stages) |
-| CPU overage | — | $0.15/hr | $0.04/hr |
+| CPU overage | — | $0.15/hr | $0.08/hr |
 | GPU (2 hrs free trial) | then blocked | then $0.90/hr | then $0.70/hr |
 | Resolution | 720p | 720p | 720p |
 | Stage limit | 1 | 3 | Unlimited |
 | Destinations | Dazzle + 1 external | Dazzle + 1 external | Dazzle + 5 external |
 | Privacy | Public | Public | Private |
 | **Base margin** | cost center | 28% pre-tax ($5.61 on $19.99) | 64% pre-tax ($51.22 on $79.99) |
-| **Typical PAYG** | — | ~$13.50/mo (60% of users × avg 25 GPU hrs) | ~$21.36/mo (avg 30% overage stage + 30 GPU hrs) |
-| **Typical total/user** | -$0.51/mo | ~$33.49/mo ($19.99 base + $13.50 PAYG) | ~$101.35/mo ($79.99 base + $21.36 PAYG) |
-| **Typical blended margin** | — | ~44% (thin base + healthy PAYG) | ~62% (strong base + healthy PAYG) |
+| **Typical PAYG** | — | ~$13.50/mo (60% of users × avg 25 GPU hrs) | ~$30.12/mo (avg 30% overage stage + 30 GPU hrs) |
+| **Typical total/user** | -$0.51/mo | ~$33.49/mo ($19.99 base + $13.50 PAYG) | ~$110.11/mo ($79.99 base + $30.12 PAYG) |
+| **Typical blended margin** | — | ~44% (thin base + healthy PAYG) | ~65% (strong base + healthy PAYG) |
 
 Every user gets a **2-hour free GPU trial** (one-time, expires after 1 year). After the trial, free users are blocked; paid users pay per hour at their plan rate. Base subscription covers CPU; GPU is billed separately.
 
@@ -29,15 +29,15 @@ The "Typical PAYG", "Typical total", and "Blended margin" rows above are estimat
 - **Base margin** = `(plan price − CPU cost) / plan price`. CPU cost = `$112/mo node ÷ 8 stages × (included hrs ÷ 730 hrs/mo)`.[^1]
 - **Typical PAYG (Starter)** = `GPU adoption (60%) × avg GPU hrs (25) × Starter GPU rate ($0.90)` = $13.50/mo.[^2]
 - **Typical PAYG (Pro)** = CPU overage component + GPU component:
-  - CPU overage: `30% of Pro users run 1 extra always-on stage × 730 hrs × $0.04/hr` = $8.76/mo averaged across all Pro users.[^3]
+  - CPU overage: `30% of Pro users run 1 extra always-on stage × 730 hrs × $0.08/hr` = $17.52/mo averaged across all Pro users.[^3]
   - GPU: `60% adoption × 30 avg hrs × $0.70/hr` = $12.60/mo.
-  - Total Pro PAYG = $8.76 + $12.60 = $21.36/mo.
+  - Total Pro PAYG = $17.52 + $12.60 = $30.12/mo.
 - **Blended margin** = `(typical total − total cost) / typical total`, where total cost includes actual CPU hours used (not included budget) + GPU hours at blended node cost ($0.30/hr at 2/4 packing).[^4]
 - **Free tier cost** = `24 CPU hrs × $0.019/hr + one-time 2-hr GPU trial amortized over 12 months` = $0.51/mo.[^5]
 
 [^1]: Starter CPU cost: $112 ÷ 8 × (750 ÷ 730) = $14.38. Pro: $112 ÷ 8 × (1500 ÷ 730) = $28.77.
 [^2]: 0.6 × 25 × 0.9 = 13.50. This assumes 60% of Starter users use GPU at all, and those who do average 25 hrs/mo.
-[^3]: The 30% overage rate means ~1 in 3 Pro users runs a 3rd always-on stage. The overage cost ($29.20/mo) is averaged across all Pro users: 0.3 × $29.20 = $8.76/mo.
+[^3]: The 30% overage rate means ~1 in 3 Pro users runs a 3rd always-on stage. The overage cost ($58.40/mo) is averaged across all Pro users: 0.3 × $58.40 = $17.52/mo.
 [^4]: Blended margin uses *actual* infra cost, not the included budget. Starter blended cost = actual CPU ($14.38) + GPU (0.6 × 25 × $0.30) = $18.88. Margin = ($33.49 − $18.88) / $33.49 = 44%.
 [^5]: Free tier GPU amortization: $0.60 one-time ÷ 12 months = $0.050/mo. Total: $0.46 + $0.050 = $0.51/mo.
 
@@ -59,9 +59,9 @@ Starter is priced near break-even as an **acquisition funnel** — $19.99 is imp
 
 **Why this works:**
 - **$20 converts hobbyists to paying users.** At $29 they think about it. At $19.99 they just do it. More users in the funnel → more Pro conversions.
-- **Pro's $0.04/hr CPU overage makes scaling cheap.** 1500 included hours covers 2 always-on stages. A 3rd stage costs ~$29.20/mo in overage — still 52% margin at $0.019 cost. Users scale up without hitting walls.
+- **Pro's $0.08/hr CPU overage makes scaling cheap.** 1500 included hours covers 2 always-on stages. A 3rd stage costs ~$58.40/mo in overage — still 76% margin at $0.019 cost. Users scale up without hitting walls.
 - **Unlimited Pro stages creates open-ended expansion revenue.** No cap means power users grow into the product instead of outgrowing it.
-- **Starter's 1-stage limit drives upgrades.** A Starter user wanting a 2nd stage must upgrade to Pro — there's no overage path. Pro at $80 includes 2 always-on stages with cheap $0.04/hr overage for more.
+- **Starter's 1-stage limit drives upgrades.** A Starter user wanting a 2nd stage must upgrade to Pro — there's no overage path. Pro at $80 includes 2 always-on stages with cheap $0.08/hr overage for more.
 - **GPU revenue is independent of tier margins.** Every GPU hour is billed, so GPU packing density only affects GPU margin — it never erodes the base subscription.
 
 ### Why These Prices
@@ -91,10 +91,10 @@ Prices are derived from infrastructure costs. Starter targets near break-even (~
 
 **Pricing decisions:**
 - **$19.99 Starter** — covers 750 CPU hrs at $14.38 cost. 28% pre-tax / 21% after-tax — intentionally thin. Starter's job is acquisition, not profit. $19.99 is impulse-purchase for indie devs.
-- **$79.99 Pro** — covers 1500 CPU hrs at $28.77 cost. 64% pre-tax / 48% after-tax — this is where margin lives. Pro users who scale to 3+ stages pay $0.04/hr overage (still 52% margin), creating expansion revenue.
+- **$79.99 Pro** — covers 1500 CPU hrs at $28.77 cost. 64% pre-tax / 48% after-tax — this is where margin lives. Pro users who scale to 3+ stages pay $0.08/hr overage (still 76% margin), creating expansion revenue.
 - **$0.90/$0.70 GPU (Starter/Pro)** — at 50% GPU pack ($0.30 cost): 67%/57% margin. At solo node ($0.60 cost): 33%/14% margin. Solo-node is below target but every GPU hour is revenue-positive. Packing improves with user growth.
 - **$0.15 Starter CPU overage** — $0.019 cost = 87% margin. High rate intentional: it makes Pro upgrade math obvious.
-- **$0.04 Pro CPU overage** — $0.019 cost = 52% margin. Cheap enough that power users scale without friction, but still healthy margin.
+- **$0.08 Pro CPU overage** — $0.019 cost = 76% margin. Cheap enough that power users scale without friction, but still healthy margin.
 - **Private stages on Pro** gates a high-value capability (client data, pre-launch content)
 - **Unlimited Pro stages** — no artificial cap. Revenue scales with usage via overage.
 - **Free tier** is an acquisition funnel — one-time 2 GPU hrs creates the "holy crap" moment with urgency (doesn't renew monthly), 24 CPU hrs runs out mid-month and triggers upgrade
@@ -102,7 +102,7 @@ Prices are derived from infrastructure costs. Starter targets near break-even (~
 ### Upgrade Path
 
 - **Free → Starter ($19.99)**: Driven by hitting the 24-hr CPU cap and wanting external destinations (Twitch/YouTube). $19.99 is an impulse buy.
-- **Starter → Pro ($79.99)**: Driven by the 1-stage cap — any user wanting a 2nd stage must upgrade. Pro includes 2 always-on stages, private visibility, 5 destinations, cheaper GPU ($0.70 vs $0.90), and unlimited stages via $0.04/hr overage.
+- **Starter → Pro ($79.99)**: Driven by the 1-stage cap — any user wanting a 2nd stage must upgrade. Pro includes 2 always-on stages, private visibility, 5 destinations, cheaper GPU ($0.70 vs $0.90), and unlimited stages via $0.08/hr overage.
 - **Pro → Enterprise**: Future tier (post 3-month launch). Driven by SOC 2, team/org support, SLA, volume committed pricing.
 
 ## Infrastructure Cost Basis
@@ -189,11 +189,11 @@ The last row is hypothetical — Starter is capped at 3 active stages, so a 4th 
 | 2 CPU stages, no GPU | $79.99 | $28.77 | **64%** | **48%** |
 | 2 CPU + 30 GPU hrs (2/4 pack) | $100.99 | $37.77 | **63%** | **47%** |
 | 2 CPU + 30 GPU hrs (solo node) | $100.99 | $46.77 | **54%** | **40%** |
-| 3 CPU (1 overage @ $0.04 × 730 hrs) | $109.19 | $42 | **62%** | **46%** |
-| 5 CPU (3 overage) | $167.59 | $70 | **58%** | **44%** |
-| Heavy: 3 CPU + 100 GPU hrs (2/4 pack) | $179.19 | $72 | **60%** | **45%** |
+| 3 CPU (1 overage @ $0.08 × 730 hrs) | $138.39 | $42 | **70%** | **52%** |
+| 5 CPU (3 overage) | $255.19 | $70 | **73%** | **54%** |
+| Heavy: 3 CPU + 100 GPU hrs (2/4 pack) | $208.39 | $72 | **65%** | **49%** |
 
-Every Pro scenario exceeds 40% after-tax. The $0.04/hr overage creates smooth expansion revenue without hitting walls.
+Every Pro scenario exceeds 40% after-tax. The $0.08/hr overage creates smooth expansion revenue without hitting walls.
 
 ### Free Tier
 
@@ -215,32 +215,32 @@ Assumes 60% GPU adoption (avg 25 hrs Starter, 30 hrs Pro), 30% Pro CPU overage (
 
 **How each cell is computed:**
 - **Plan mix**: 55% Starter / 45% Pro. Free users = 0.5× paid users.
-- **MRR** = `(n_starter × $33.49) + (n_pro × $101.35)`, using typical total/user from the Pricing Tiers table.
+- **MRR** = `(n_starter × $33.49) + (n_pro × $110.11)`, using typical total/user from the Pricing Tiers table.
 - **Infra cost** = fixed ($413) + extra CPU nodes beyond the 2 already in fixed costs (`ceil(total_stages / 8) − 2` × $112) + GPU hours (`n × adoption × avg_hrs × $0.30/hr`).
 - **Total stages** = Starter users × 2 + Pro users × 2 + Pro overage (30% × 1 extra) + Free users × (24/730).
 - **Pre-tax margin** = `(MRR − infra cost) / MRR`.
 
 | Paying users | Free | Starter | Pro | MRR | Infra cost | Pre-tax margin | ARR |
 |---|---|---|---|---|---|---|---|
-| 5 | 2 | 3 | 2 | $303.17 | $437.30 | **-44%** | $4K |
-| 10 | 5 | 6 | 4 | $606.34 | $573.60 | **5%** | $7K |
-| 25 | 12 | 14 | 11 | $1,584 | $1,095 | **31%** | $19K |
-| 50 | 25 | 28 | 22 | $3,167 | $2,002 | **37%** | $38K |
-| 100 | 50 | 55 | 45 | $6,403 | $3,704 | **42%** | $77K |
-| 250 | 125 | 138 | 112 | $15,973 | $9,031 | **43%** | $192K |
-| 500 | 250 | 275 | 225 | $32,014 | $17,762 | **45%** | $384K |
+| 5 | 2 | 3 | 2 | $320.69 | $437.30 | **-36%** | $4K |
+| 10 | 5 | 6 | 4 | $641.38 | $573.60 | **11%** | $8K |
+| 25 | 12 | 14 | 11 | $1,680 | $1,095 | **35%** | $20K |
+| 50 | 25 | 28 | 22 | $3,360 | $2,002 | **40%** | $40K |
+| 100 | 50 | 55 | 45 | $6,797 | $3,704 | **46%** | $82K |
+| 250 | 125 | 138 | 112 | $16,954 | $9,031 | **47%** | $203K |
+| 500 | 250 | 275 | 225 | $33,984 | $17,762 | **48%** | $408K |
 
-Mix: 55% Starter / 45% Pro. Free: 0.5× paid users. ARPU: ~$64.03/mo blended (base + PAYG).
+Mix: 55% Starter / 45% Pro. Free: 0.5× paid users. ARPU: ~$67.97/mo blended (base + PAYG).
 
-**Break-even: ~9 paying users.** $100K ARR at ~131 users. $500K ARR at ~651.
+**Break-even: ~7 paying users.** $100K ARR at ~123 users. $500K ARR at ~613.
 
 ### GPU adoption sensitivity (at 50 paying users)
 
 | GPU adoption | MRR | Pre-tax margin |
 |---|---|---|
-| **30%** (conservative) | $2,840 | **34%** |
-| **45%** (moderate) | $3,004 | **35%** |
-| **60%** (baseline) | $3,167 | **37%** |
+| **30%** (conservative) | $3,033 | **38%** |
+| **45%** (moderate) | $3,196 | **39%** |
+| **60%** (baseline) | $3,360 | **40%** |
 
 Base subscriptions cover fixed costs on their own at ~20 paying users. GPU revenue is upside, not a dependency.
 
@@ -443,9 +443,9 @@ Quarter-by-quarter projection grounded in launch sequence (directories → commu
 
 **Year-end snapshots:** Year 1: 102-186 paying users. Year 2: 255-449 paying users.
 
-**ARR at year-end** (at $64.03/mo blended ARPU[^6]): Year 1: $78.37K-$142.91K. Year 2: $195.92K-$344.98K.
+**ARR at year-end** (at $67.97/mo blended ARPU[^6]): Year 1: $83.19K-$151.71K. Year 2: $207.99K-$366.22K.
 
-[^6]: Blended ARPU = `55% Starter × $33.49 + 45% Pro × $101.35` = $64.03/mo. This is the scale economics ARPU including typical PAYG (GPU + overage). Early quarters skew lower (more Free/Starter), later quarters skew higher (more Pro + partnerships).
+[^6]: Blended ARPU = `55% Starter × $33.49 + 45% Pro × $110.11` = $67.97/mo. This is the scale economics ARPU including typical PAYG (GPU + overage). Early quarters skew lower (more Free/Starter), later quarters skew higher (more Pro + partnerships).
 
 #### Platform context
 
@@ -516,15 +516,15 @@ Enterprise tier ($40/stage committed, $0.45/hr GPU) is the long-term margin engi
 
 | Scale | Paying Users | Revenue/mo | Infra Cost/mo | Net (after tax)/mo | Net Margin |
 |---|---|---|---|---|---|
-| 14 | 14 | $980.09 | $600.60 | $284.62 | 29% |
-| 50 | 50 | $3,469 | $1,689 | $1,335 | 38% |
-| 100 | 100 | $6,870 | $3,076 | $2,845 | 41% |
-| 500 | 500 | $34,352 | $14,514 | $14,878 | 43% |
-| 1000 | 1000 | $68,703 | $28,728 | $29,981 | 44% |
+| 14 | 14 | $1,024 | $600.60 | $317.47 | 31% |
+| 50 | 50 | $3,627 | $1,689 | $1,453 | 40% |
+| 100 | 100 | $7,177 | $3,076 | $3,075 | 43% |
+| 500 | 500 | $35,884 | $14,514 | $16,028 | 45% |
+| 1000 | 1000 | $71,769 | $28,728 | $32,281 | 45% |
 
 (Assumes 45% Starter / 35% Pro / 20% Enterprise mix at maturity, with GPU and overage usage scaling proportionally.)
 
-**Key milestones:** $100K ARR at ~121 users. $500K ARR at ~607 users. $1M ARR at ~1214 users.
+**Key milestones:** $100K ARR at ~116 users. $500K ARR at ~581 users. $1M ARR at ~1161 users.
 
 ## What Needs to Be Built
 
@@ -547,7 +547,7 @@ Enterprise tier ($40/stage committed, $0.45/hr GPU) is the long-term margin engi
    - New `plan` column on users table (free/starter/pro)
    - Free tier: enforce 24 CPU hrs/mo budget + one-time 2 GPU hr trial
    - Starter: 3 stage limit, 750 CPU hrs/mo, $0.15/hr CPU overage, $0.90/hr GPU
-   - Pro: unlimited stages, 1500 CPU hrs/mo, $0.04/hr CPU overage, $0.70/hr GPU
+   - Pro: unlimited stages, 1500 CPU hrs/mo, $0.08/hr CPU overage, $0.70/hr GPU
    - Destination limit per plan (free: 1 external, starter: 1, pro: 5)
 
 4. **Stage Privacy** (~2-3 days)

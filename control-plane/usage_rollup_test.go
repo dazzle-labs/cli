@@ -95,8 +95,8 @@ func TestPlanGrantTemplates(t *testing.T) {
 	if pro.CPUBudgetMinutes != 90000 {
 		t.Errorf("Pro CPU budget = %d, want 90000 (1500 hrs)", pro.CPUBudgetMinutes)
 	}
-	if pro.CPUOverageRatePerHr != 4 {
-		t.Errorf("Pro CPU overage = %d, want 4 ($0.04/hr)", pro.CPUOverageRatePerHr)
+	if pro.CPUOverageRatePerHr != 8 {
+		t.Errorf("Pro CPU overage = %d, want 8 ($0.08/hr)", pro.CPUOverageRatePerHr)
 	}
 	if pro.GPUOverageRatePerHr != 70 {
 		t.Errorf("Pro GPU overage = %d, want 70 ($0.70/hr)", pro.GPUOverageRatePerHr)
