@@ -356,23 +356,22 @@ func registerTools(s *mcp.Server, appCtx *Context) {
 
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "guide",
-		Description: "Get the Dazzle quick-start guide — platform overview, setup, CLI basics, and links to full docs. Read this first before creating or modifying stage content.",
+		Description: "Get the complete Dazzle reference — getting started, CLI commands, content capabilities, and streaming setup. Read this before creating or modifying stage content.",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, in emptyInput) (*mcp.CallToolResult, any, error) {
 		httpClient := &http.Client{Timeout: 10 * time.Second}
-		resp, err := httpClient.Get("https://dazzle.fm/llms.txt")
-		if err != nil {
-			return nil, nil, fmt.Errorf("fetch guide: %w", err)
+		resp, err := httpClient.Get(guideURL)
+		if err == nil && resp.StatusCode == http.StatusOK {
+			defer resp.Body.Close() //nolint:errcheck
+			body, readErr := io.ReadAll(resp.Body)
+			if readErr == nil && len(body) > 0 {
+				return &mcp.CallToolResult{
+					Content: []mcp.Content{&mcp.TextContent{Text: string(body)}},
+				}, nil, nil
+			}
 		}
-		defer resp.Body.Close() //nolint:errcheck
-		if resp.StatusCode != http.StatusOK {
-			return nil, nil, fmt.Errorf("fetch guide: HTTP %d", resp.StatusCode)
-		}
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return nil, nil, fmt.Errorf("read guide: %w", err)
-		}
+		// Fall back to embedded guide
 		return &mcp.CallToolResult{
-			Content: []mcp.Content{&mcp.TextContent{Text: string(body)}},
+			Content: []mcp.Content{&mcp.TextContent{Text: guideText}},
 		}, nil, nil
 	})
 }
