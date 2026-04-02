@@ -34,7 +34,7 @@ For headless/CI use, set `DAZZLE_API_KEY=dzl_your_key_here` instead.
 
 ## Configure MCP
 
-Add to your MCP client config:
+Add to your MCP client config. If you installed the CLI binary:
 
 ```json
 {
@@ -42,6 +42,19 @@ Add to your MCP client config:
     "dazzle": {
       "command": "dazzle",
       "args": ["mcp"]
+    }
+  }
+}
+```
+
+Or use npx (no install required, just needs Node.js):
+
+```json
+{
+  "mcpServers": {
+    "dazzle": {
+      "command": "npx",
+      "args": ["@dazzle-labs/cli", "mcp"]
     }
   }
 }
