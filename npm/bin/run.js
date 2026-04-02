@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const { execFileSync, execSync } = require("child_process");
+const { chmodSync, realpathSync, statSync } = require("fs");
 const path = require("path");
 
 const PLATFORMS = {
@@ -22,9 +23,13 @@ if (!pkg) {
 const ext = process.platform === "win32" ? ".exe" : "";
 const binName = `bin/dazzle${ext}`;
 
+// Resolve from the real path of this package so pnpm's strict node_modules
+// layout can find the optional platform dependency via its symlinks.
+const pkgDir = realpathSync(path.resolve(__dirname, ".."));
+
 function tryResolve() {
   try {
-    return require.resolve(`${pkg}/${binName}`);
+    return require.resolve(`${pkg}/${binName}`, { paths: [pkgDir] });
   } catch {
     return null;
   }
@@ -36,7 +41,6 @@ if (!binPath) {
   // Platform binary not found — install optionalDependencies into this
   // package's directory. This handles npx/pnpx where optional deps are
   // skipped during ephemeral installs (same pattern as turbo).
-  const pkgDir = path.resolve(__dirname, "..");
   const env = { ...process.env, npm_config_global: undefined };
   try {
     execSync(
@@ -60,6 +64,12 @@ if (!binPath) {
     process.exit(1);
   }
 }
+
+// Ensure the binary is executable (pnpm may strip the bit on unpack)
+try {
+  const mode = statSync(binPath).mode;
+  if (!(mode & 0o111)) chmodSync(binPath, mode | 0o755);
+} catch {}
 
 try {
   execFileSync(binPath, process.argv.slice(2), { stdio: "inherit" });
