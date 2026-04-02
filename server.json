@@ -10,7 +10,7 @@
       "mimeType": "image/png"
     }
   ],
-  "version": "0.5.7",
+  "version": "0.6.0",
   "repository": {
     "url": "https://github.com/dazzle-labs/cli",
     "source": "github"
@@ -19,7 +19,7 @@
     {
       "registryType": "npm",
       "identifier": "@dazzle-labs/cli",
-      "version": "0.5.7",
+      "version": "0.6.0",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"
@@ -57,7 +57,7 @@
     },
     {
       "name": "guide",
-      "description": "Get the Dazzle quick-start guide — platform overview, setup, CLI basics, and links to full docs. Read this first before creating or modifying stage content."
+      "description": "Get the complete Dazzle reference — getting started, CLI commands, content capabilities, and streaming setup. Read this before creating or modifying stage content."
     },
     {
       "name": "list_files",
