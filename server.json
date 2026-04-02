@@ -10,7 +10,7 @@
       "mimeType": "image/png"
     }
   ],
-  "version": "0.6.2",
+  "version": "0.6.3",
   "repository": {
     "url": "https://github.com/dazzle-labs/cli",
     "source": "github"
@@ -19,7 +19,7 @@
     {
       "registryType": "npm",
       "identifier": "@dazzle-labs/cli",
-      "version": "0.6.2",
+      "version": "0.6.3",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"
