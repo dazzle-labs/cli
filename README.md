@@ -67,7 +67,7 @@ The MCP server starts without credentials — agents can call `guide` to learn t
 |------|------------|
 | `cli` | Run a dazzle CLI command. Use ["--help"] to discover available commands. Output is JSON. |
 | `edit_file` | Edit a file in the stage workspace by exact string replacement. The old_string must match exactly once in the file. Use read_file first to see the current content. |
-| `guide` | Get the Dazzle quick-start guide — platform overview, setup, CLI basics, and links to full docs. Read this first before creating or modifying stage content. |
+| `guide` | Get the complete Dazzle reference — getting started, CLI commands, content capabilities, and streaming setup. Read this before creating or modifying stage content. |
 | `list_files` | List all files in the stage workspace (~/.dazzle/stages/{stage}/). Returns relative paths, one per line. |
 | `read_file` | Read a file from the stage workspace (~/.dazzle/stages/{stage}/{path}). |
 | `screenshot` | Capture a screenshot of the stage's current browser output. Returns a PNG image. |
