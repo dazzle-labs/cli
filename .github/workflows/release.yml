@@ -115,7 +115,7 @@ jobs:
           (cd npm && pnpm publish --access public --no-git-checks)
 
   mcp-registry-publish:
-    needs: release
+    needs: npm-publish
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
