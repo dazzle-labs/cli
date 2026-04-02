@@ -113,3 +113,17 @@ jobs:
           # Publish main wrapper
           echo "Publishing @dazzle-labs/cli..."
           (cd npm && pnpm publish --access public --no-git-checks)
+
+  mcp-registry-publish:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install mcp-publisher
+        run: |
+          curl -sL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz
+          chmod +x mcp-publisher
+      - name: Publish to MCP Registry
+        run: |
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish
