@@ -41,7 +41,10 @@ Add to your MCP client config. If you installed the CLI binary:
   "mcpServers": {
     "dazzle": {
       "command": "dazzle",
-      "args": ["mcp"]
+      "args": ["mcp"],
+      "env": {
+        "DAZZLE_API_KEY": "dzl_your_key_here"
+      }
     }
   }
 }
@@ -54,11 +57,16 @@ Or use npx (no install required, just needs Node.js):
   "mcpServers": {
     "dazzle": {
       "command": "npx",
-      "args": ["@dazzle-labs/cli", "mcp"]
+      "args": ["@dazzle-labs/cli", "mcp"],
+      "env": {
+        "DAZZLE_API_KEY": "dzl_your_key_here"
+      }
     }
   }
 }
 ```
+
+The `DAZZLE_API_KEY` env var is optional if you've already run `dazzle login`. Other env vars: `DAZZLE_STAGE` (pin to a stage), `DAZZLE_API_URL` (custom API endpoint).
 
 Restart your MCP client. The dazzle MCP server provides 8 tools: `cli`, `screenshot`, `write_file`, `read_file`, `edit_file`, `list_files`, `sync`, and `guide`.
 

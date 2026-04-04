@@ -52,6 +52,7 @@ Workflow:
   5. dazzle s ss -o preview.png         # take a screenshot to verify
   6. dazzle s down                      # stop streaming and shut down
 
+Auth: dazzle login, or set DAZZLE_API_KEY for headless/CI use.
 Stage selection: use -s <name>, DAZZLE_STAGE env, or auto-selected if only one.
 
 https://dazzle.fm`),

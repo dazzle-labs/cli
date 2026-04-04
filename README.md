@@ -123,7 +123,8 @@ Workflow:
  5. dazzle s ss -o preview.png # take a screenshot to verify
  6. dazzle s down # stop streaming and shut down
 
-Stage selection: use -s <name>, DAZZLE_STAGE env, or auto-selected if only one.
+Auth: dazzle login, or set DAZZLE_API_KEY for headless/CI use. Stage selection:
+use -s <name>, DAZZLE_STAGE env, or auto-selected if only one.
 
 https://dazzle.fm
 
@@ -329,10 +330,19 @@ export DAZZLE_STAGE=my-stage               # or set for your session
 
 ## Configuration
 
+**Environment variables** (override config files and stored credentials):
+
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `DAZZLE_API_KEY` | API key — skip `dazzle login` for CI, scripting, one-off commands | stored credentials |
+| `DAZZLE_API_URL` | API base URL | `https://dazzle.fm` |
+| `DAZZLE_STAGE` | Stage name or ID | auto-selects if only one |
+
+**Config files** (`~/.config/dazzle/`, `0600` permissions):
+
 ```
-~/.config/dazzle/
-  config.json        # { "api_url": "..." }
-  credentials.json   # { "api_key": "dzl_..." }
+config.json        # { "api_url": "..." }
+credentials.json   # { "api_key": "dzl_...", "email": "..." }
 ```
 
 ## Security
