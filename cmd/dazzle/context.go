@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 
 	"connectrpc.com/connect"
 )
@@ -27,6 +28,11 @@ func newContext(apiURL, stageFlag string, jsonOutput bool) (*Context, error) {
 	}
 
 	creds, _ := loadCredentials() // credentials may not exist yet
+
+	// DAZZLE_API_KEY env var overrides stored credentials for one-off commands.
+	if envKey := os.Getenv("DAZZLE_API_KEY"); envKey != "" {
+		creds = &Credentials{APIKey: envKey}
+	}
 
 	// Resolve API URL: flag/env (already applied by Kong) > config > default
 	resolvedURL := apiURL

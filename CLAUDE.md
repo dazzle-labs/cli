@@ -64,6 +64,10 @@ git push origin v1.2.3-beta.1
 
 CI (`.github/workflows/ci.yml`) runs on every push to `main` and on PRs: golangci-lint, `go build ./...`, `go test ./...`.
 
-## API URL
+## Environment Variables
 
-Default: `https://dazzle.fm`. Override with `--api-url` flag or `DAZZLE_API_URL` env var.
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `DAZZLE_API_URL` | API base URL | `https://dazzle.fm` |
+| `DAZZLE_API_KEY` | API key — overrides stored credentials for one-off commands | (none, uses `dazzle login` creds) |
+| `DAZZLE_STAGE` | Stage name or ID | (auto-selects if only one) |
